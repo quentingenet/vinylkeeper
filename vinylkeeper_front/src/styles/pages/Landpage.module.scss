@@ -1,0 +1,58 @@
+@import "../../styles/variables.scss";
+
+.globalContainer {
+    .videoBackgroundVinylKeeper {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: -1000;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    .imgMobileBackgroundVinylKeeper {
+        background-image: url("mobileBackgroundLandpage.webp");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: -1000;
+    }
+    .textContainer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        flex-direction: column;
+        margin-top: 10rem;
+        .testTypo {
+            font-family: Oswald-ExtraLight, sans-serif;
+            font-weight: normal;
+            font-size: 1.5rem;
+            color: #fffbf9;
+            font-weight: 700;
+            margin: 5rem 0;
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .globalContainer {
+        .textContainer {
+            margin-top: 5rem;
+            .testTypo {
+                font-size: 1rem;
+            }
+        }
+    }
+}

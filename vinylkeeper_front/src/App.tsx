@@ -21,7 +21,6 @@ function App() {
           path="/"
           element={userContext.isUserLoggedIn ? <Dashboard /> : <Landpage />}
         />
-
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route
           path="/dashboard"

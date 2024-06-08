@@ -1,0 +1,70 @@
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.footerLandpage {
+    font-family: Oswald-Light, sans-serif;
+    color: #fffbf9;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    align-items: center;
+    text-align: center;
+    gap: 1%;
+    margin: 1% 0;
+    width: 99%;
+    position: absolute;
+    bottom: 0;
+}
+
+.footerLandpage > * {
+    animation: fadeIn 4s;
+}
+
+span {
+    cursor: pointer;
+    .heartFooter {
+        color: red;
+    }
+}
+
+a {
+    color: #fffbf9;
+    text-decoration: none;
+}
+
+a:visited {
+    color: #fffbf9;
+}
+
+@media only screen and (min-width: 1200px) {
+}
+
+@media only screen and (min-width: 768px) and (max-width: 1199px) {
+}
+
+@media only screen and (max-width: 767px) {
+    .footerLandpage {
+        color: #fffbf9;
+        font-size: 0.7rem;
+        opacity: 0.6rem;
+        display: flex;
+        justify-content: center;
+        flex-direction: row;
+        align-items: center;
+        text-align: center;
+        gap: 1%;
+        margin: 1% 0;
+        width: 99%;
+        position: fixed;
+        bottom: 0;
+    }
+}

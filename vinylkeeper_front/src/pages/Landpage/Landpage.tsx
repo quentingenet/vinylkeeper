@@ -1,65 +1,68 @@
 import { useState } from "react";
-
+import styles from "../../styles/pages/Landpage.module.scss";
 import useDetectMobile from "../../hooks/useDetectMobile";
 import Login from "@components/Login/Login";
 import Register from "@components/Register/Register";
 import Footer from "@components/Footer/Footer";
+import { Button, Typography } from "@mui/material";
 
 export default function Landpage() {
-  const isMobile = useDetectMobile();
+  const { isMobile } = useDetectMobile();
 
   const [login, setLogin] = useState<boolean>(false);
   const [register, setRegister] = useState<boolean>(false);
 
   return (
-    <>
+    <div className={styles.globalContainer}>
       {isMobile ? (
-        <video autoPlay muted loop id="videoBackgroundVinylKeeper">
-          <source
-            src={"https://vinyl-keeper.quentingenet.fr/landpageBackground.mp4"}
-            type="video/mp4"
-          />
-        </video>
+        <div className={styles.imgMobileBackgroundVinylKeeper}></div>
       ) : (
-        <div id="imgMobileBackgroundVinylKeeper"></div>
+        <video
+          autoPlay
+          muted
+          loop
+          className={styles.videoBackgroundVinylKeeper}
+        >
+          <source src={"landpageBackground.mp4"} type="video/mp4" />
+        </video>
       )}
-      <div className="global-container">
-        <h1>Vinyl Keeper</h1>
-        <p>
+      <div className={styles.textContainer}>
+        <Typography variant="h1">Vinyl Keeper</Typography>
+        <p className={styles.testTypo}>
           Free and open-source
           <br /> Vinyl Keeper is your go-to solution
           <br /> for effortlessly managing your vinyl collection with fun !
         </p>
         {!login && !register && (
-          <div className="button-container">
-            <button
+          <div className={styles.buttonContainer}>
+            <Button
               onClick={() => {
                 setLogin(true);
               }}
             >
               Login
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 setRegister(true);
               }}
             >
               Register
-            </button>
+            </Button>
           </div>
         )}
       </div>
       {login && (
-        <div className="action-container">
+        <div className={styles.actionContainer}>
           <Login />
         </div>
       )}
       {register && (
-        <div className="action-container">
+        <div className={styles.actionContainer}>
           <Register />
         </div>
       )}
       <Footer />
-    </>
+    </div>
   );
 }
