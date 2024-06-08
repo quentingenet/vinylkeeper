@@ -11,7 +11,6 @@ const ThemeVinylKeeper = createTheme({
   },
   typography: {
     h1: {
-      margin: "3%",
       textAlign: "center",
       textShadow: "0 0 10px #2e3440",
       opacity: 0.8,
@@ -30,7 +29,12 @@ const ThemeVinylKeeper = createTheme({
     body1: {},
     body2: {},
     button: {},
-    caption: {},
+    caption: {
+      fontFamily: "Oswald-Light",
+      fontSize: ".9rem",
+      color: "#fffbf9",
+      opacity: 0.9,
+    },
     overline: {},
   },
   components: {

@@ -13,56 +13,67 @@ export default function Landpage() {
   const [register, setRegister] = useState<boolean>(false);
 
   return (
-    <div className={styles.globalContainer}>
-      {isMobile ? (
-        <div className={styles.imgMobileBackgroundVinylKeeper}></div>
-      ) : (
-        <video
-          autoPlay
-          muted
-          loop
-          className={styles.videoBackgroundVinylKeeper}
-        >
-          <source src={"landpageBackground.mp4"} type="video/mp4" />
-        </video>
-      )}
-      <div className={styles.textContainer}>
-        <Typography variant="h1">Vinyl Keeper</Typography>
-        <p className={styles.testTypo}>
-          Free and open-source
-          <br /> Vinyl Keeper is your go-to solution
-          <br /> for effortlessly managing your vinyl collection with fun !
-        </p>
-        {!login && !register && (
-          <div className={styles.buttonContainer}>
-            <Button
-              onClick={() => {
-                setLogin(true);
-              }}
-            >
-              Login
-            </Button>
-            <Button
-              onClick={() => {
-                setRegister(true);
-              }}
-            >
-              Register
-            </Button>
-          </div>
+    <>
+      <div className={styles.globalContainer}>
+        {isMobile ? (
+          <div className={styles.imgMobileBackgroundVinylKeeper}></div>
+        ) : (
+          <video
+            autoPlay
+            muted
+            loop
+            className={styles.videoBackgroundVinylKeeper}
+          >
+            <source src={"landpageBackground.mp4"} type="video/mp4" />
+          </video>
         )}
+        <div className={styles.textContainer}>
+          <Typography
+            variant="h1"
+            className={
+              !login && !register ? styles.titleNormal : styles.titleHigher
+            }
+          >
+            Vinyl Keeper
+          </Typography>
+          {!login && !register && (
+            <p className={styles.textTypo}>
+              Free and open-source,
+              <br /> Vinyl Keeper is your go-to solution
+              <br /> for effortlessly managing your vinyl collection with fun !
+            </p>
+          )}
+          {login && (
+            <div className={styles.actionContainer}>
+              <Login setRegister={setRegister} setLogin={setLogin} />
+            </div>
+          )}
+          {register && (
+            <div className={styles.actionContainer}>
+              <Register />
+            </div>
+          )}
+          {!login && !register && (
+            <div className={styles.buttonContainer}>
+              <Button
+                onClick={() => {
+                  setLogin(true);
+                }}
+              >
+                Login
+              </Button>
+              <Button
+                onClick={() => {
+                  setRegister(true);
+                }}
+              >
+                Register
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
-      {login && (
-        <div className={styles.actionContainer}>
-          <Login />
-        </div>
-      )}
-      {register && (
-        <div className={styles.actionContainer}>
-          <Register />
-        </div>
-      )}
       <Footer />
-    </div>
+    </>
   );
 }
