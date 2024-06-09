@@ -40,17 +40,22 @@ export default function Landpage() {
             <p className={styles.textTypo}>
               Free and open-source,
               <br /> Vinyl Keeper is your go-to solution
-              <br /> for effortlessly managing your vinyl collection with fun !
+              <br /> for effortlessly managing your vinyl collection with
+              fun&nbsp;!
             </p>
           )}
           {login && (
-            <div className={styles.actionContainer}>
+            <div
+              className={
+                login ? styles.actionContainerDisplayed : styles.actionContainer
+              }
+            >
               <Login setRegister={setRegister} setLogin={setLogin} />
             </div>
           )}
           {register && (
             <div className={styles.actionContainer}>
-              <Register />
+              <Register setRegister={setRegister} setLogin={setLogin} />
             </div>
           )}
           {!login && !register && (

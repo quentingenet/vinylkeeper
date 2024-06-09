@@ -1,14 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
 const ThemeVinylKeeper = createTheme({
-  palette: {
-    primary: {
-      main: "#ff4400",
-    },
-    secondary: {
-      main: "#f44336",
-    },
-  },
   typography: {
     h1: {
       textAlign: "center",
@@ -53,13 +45,30 @@ const ThemeVinylKeeper = createTheme({
           borderRadius: "5px",
           boxShadow: "0 0 10px #2e3440",
           textShadow: "0 0 10px #2e3440",
-          opacity: 0.6,
+          opacity: 0.8,
           "&:hover": {
             backgroundColor: " #fffbf9",
             color: "#2e3440",
             border: "1px solid #2e3440",
             borderRadius: "5px",
             opacity: 0.8,
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "& label.Mui-focused": {
+            color: "black",
+          },
+          "& .MuiInput-underline:after": {
+            borderBottomColor: "black",
+          },
+          "& .MuiOutlinedInput-root": {
+            "&.Mui-focused fieldset": {
+              borderColor: "black",
+            },
           },
         },
       },

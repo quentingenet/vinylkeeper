@@ -136,7 +136,10 @@ export default function Login(props: LoginProps) {
   return (
     <>
       <Grid container className={styles.formContainer}>
-        <form onSubmit={handleSubmit(submitLogin)} className={styles.loginForm}>
+        <form
+          onSubmit={handleSubmit(submitLogin)}
+          className={styles.globalForm}
+        >
           <Grid container>
             <Grid item>
               <Controller
@@ -235,7 +238,7 @@ export default function Login(props: LoginProps) {
 
           <Grid
             container
-            marginY={2}
+            marginTop={2}
             justifyContent={"center"}
             flexDirection={"column"}
             alignItems={"center"}
@@ -255,11 +258,22 @@ export default function Login(props: LoginProps) {
                 </Button>
               )}
             </Grid>{" "}
+            <Grid container justifyContent={"center"} alignItems={"center"}>
+              <Grid item>
+                <Typography
+                  variant="caption"
+                  color={"black"}
+                  onClick={() => setForgotPassword(!forgotPassword)}
+                >
+                  Forgot password ?
+                </Typography>
+              </Grid>
+            </Grid>
             <Grid
               container
-              justifyContent={"center"}
+              justifyContent={"start"}
               alignItems={"center"}
-              gap={1}
+              flexDirection={"row"}
             >
               <Grid item>
                 <IconButton
@@ -270,15 +284,6 @@ export default function Login(props: LoginProps) {
                 >
                   <ArrowBackIcon />
                 </IconButton>
-              </Grid>
-              <Grid item>
-                <Typography
-                  variant="caption"
-                  color={"black"}
-                  onClick={() => setForgotPassword(!forgotPassword)}
-                >
-                  Forgot password ?
-                </Typography>
               </Grid>
             </Grid>
             {forgotPassword && (
@@ -368,8 +373,7 @@ export default function Login(props: LoginProps) {
                           </IconButton>
                         }
                       >
-                        Mail is sent. Maybe check your spams folder if you don't
-                        see it from inbox
+                        Mail sent.
                       </Alert>
                     </Collapse>
                   </Grid>
