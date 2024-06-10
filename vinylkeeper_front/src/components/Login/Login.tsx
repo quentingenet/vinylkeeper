@@ -14,7 +14,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useEffect, useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
 import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
-import { ILoginForm } from "@models/ILoginForm";
 import { Controller, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -24,13 +23,17 @@ import { useNavigate } from "react-router-dom";
 import { emailValidator } from "@utils/Regex";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-interface LoginProps {
-  setRegister: React.Dispatch<React.SetStateAction<boolean>>;
-  setLogin: React.Dispatch<React.SetStateAction<boolean>>;
+type LoginProps = {
+  setRegister: (value: boolean) => void;
+  setLogin: (value: boolean) => void;
+};
+
+interface ILoginForm {
+  email: string;
+  password: string;
 }
 
-export default function Login(props: LoginProps) {
-  const { setRegister, setLogin } = props;
+export default function Login({ setRegister, setLogin }: LoginProps) {
   const userContext = useUserContext();
 
   const navigate = useNavigate();

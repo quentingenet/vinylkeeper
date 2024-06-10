@@ -1,11 +1,11 @@
 import { Box, Modal, Typography } from "@mui/material";
 
-interface ModalVinylKeeperProps {
+interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTermsModal: boolean;
 }
 
-const ModalVinylKeeper: React.FC<ModalVinylKeeperProps> = ({
+const ModalTermsVinylKeeper: React.FC<ModalTermsVinylKeeperProps> = ({
   setOpenTermsModal,
   openTermsModal,
 }) => {
@@ -28,6 +28,7 @@ const ModalVinylKeeper: React.FC<ModalVinylKeeperProps> = ({
     bgcolor: "background.paper",
     border: "2px solid #000",
     boxShadow: 24,
+    opacity: 0.7,
     p: 2,
   };
   return (
@@ -145,4 +146,4 @@ const ModalVinylKeeper: React.FC<ModalVinylKeeperProps> = ({
   );
 };
 
-export default ModalVinylKeeper;
+export default ModalTermsVinylKeeper;

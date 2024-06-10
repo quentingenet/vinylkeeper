@@ -26,16 +26,22 @@ import {
   passwordWithNumber,
 } from "@utils/Regex";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { IRegisterForm } from "@models/IregisterForm";
-import ModalVinylKeeper from "@components/Modals/ModalVinylKeeper";
+import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
 
-interface IRegisterProps {
-  setRegister: React.Dispatch<React.SetStateAction<boolean>>;
-  setLogin: React.Dispatch<React.SetStateAction<boolean>>;
+type RegisterProps = {
+  setRegister: (value: boolean) => void;
+  setLogin: (value: boolean) => void;
+};
+
+interface IRegisterForm {
+  username: string;
+  email: string;
+  password: string;
+  passwordBis: string;
+  isAcceptedTerms: boolean;
 }
 
-export default function Login(props: IRegisterProps) {
-  const { setRegister, setLogin } = props;
+export default function Login({ setRegister, setLogin }: RegisterProps) {
   const userContext = useUserContext();
 
   const navigate = useNavigate();
@@ -337,7 +343,7 @@ export default function Login(props: IRegisterProps) {
                   Terms and conditions
                 </Typography>
               </Grid>
-              <ModalVinylKeeper
+              <ModalTermsVinylKeeper
                 openTermsModal={openTermsModal}
                 setOpenTermsModal={setOpenTermsModal}
               />

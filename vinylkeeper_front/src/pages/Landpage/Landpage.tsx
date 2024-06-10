@@ -27,7 +27,6 @@ export default function Landpage() {
             <source src={"landpageBackground.mp4"} type="video/mp4" />
           </video>
         )}
-
         <Typography
           variant="h1"
           className={
