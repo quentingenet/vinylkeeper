@@ -27,15 +27,16 @@ export default function Landpage() {
             <source src={"landpageBackground.mp4"} type="video/mp4" />
           </video>
         )}
+
+        <Typography
+          variant="h1"
+          className={
+            !login && !register ? styles.titleNormal : styles.titleHigher
+          }
+        >
+          Vinyl Keeper
+        </Typography>
         <div className={styles.textContainer}>
-          <Typography
-            variant="h1"
-            className={
-              !login && !register ? styles.titleNormal : styles.titleHigher
-            }
-          >
-            Vinyl Keeper
-          </Typography>
           {!login && !register && (
             <p className={styles.textTypo}>
               Free and open-source,

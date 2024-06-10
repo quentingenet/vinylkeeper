@@ -159,7 +159,7 @@ export default function Login(props: IRegisterProps) {
           className={styles.globalForm}
         >
           <Grid container justifyContent={"center"}>
-            <Grid item xs={10}>
+            <Grid item>
               <Controller
                 name="username"
                 control={control}
@@ -187,7 +187,7 @@ export default function Login(props: IRegisterProps) {
               />
               {errors.username && (
                 <Grid container justifyContent={"center"}>
-                  <Grid item xs={10}>
+                  <Grid item>
                     <span className={styles.errorText}>
                       {errors.username.message}
                     </span>
@@ -198,7 +198,7 @@ export default function Login(props: IRegisterProps) {
           </Grid>
 
           <Grid container justifyContent={"center"}>
-            <Grid item xs={10}>
+            <Grid item>
               <Controller
                 name="email"
                 control={control}
@@ -223,7 +223,7 @@ export default function Login(props: IRegisterProps) {
               />
               {errors.email && (
                 <Grid container justifyContent={"center"}>
-                  <Grid item xs={10}>
+                  <Grid item>
                     <span className={styles.errorText}>
                       {errors.email.message}
                     </span>
@@ -234,7 +234,7 @@ export default function Login(props: IRegisterProps) {
           </Grid>
 
           <Grid container justifyContent={"center"}>
-            <Grid item xs={10}>
+            <Grid item>
               <Controller
                 name="password"
                 control={control}
@@ -266,7 +266,7 @@ export default function Login(props: IRegisterProps) {
               />
               {errors.password && (
                 <Grid container justifyContent={"center"}>
-                  <Grid item xs={10}>
+                  <Grid item>
                     <span className={styles.errorText}>
                       {errors.password.message}
                     </span>
@@ -276,7 +276,7 @@ export default function Login(props: IRegisterProps) {
             </Grid>
           </Grid>
           <Grid container justifyContent={"center"}>
-            <Grid item xs={10}>
+            <Grid item>
               <Controller
                 name="passwordBis"
                 control={control}
@@ -308,7 +308,7 @@ export default function Login(props: IRegisterProps) {
               />
               {errors.passwordBis && (
                 <Grid container justifyContent={"center"}>
-                  <Grid item xs={10}>
+                  <Grid item>
                     <span className={styles.errorText}>
                       {errors.passwordBis.message}
                     </span>
@@ -343,7 +343,7 @@ export default function Login(props: IRegisterProps) {
               />
             </Grid>
             <Grid container justifyContent={"center"}>
-              <Grid item xs={10} sx={{ color: "black" }}>
+              <Grid item sx={{ color: "black" }}>
                 <Controller
                   name="isAcceptedTerms"
                   control={control}
@@ -361,7 +361,7 @@ export default function Login(props: IRegisterProps) {
             </Grid>
           </Grid>
           <Grid container justifyContent={"center"}>
-            <Grid item marginBottom={2} xs={10}>
+            <Grid item>
               {isLoading ? (
                 <CircularProgress color="primary" />
               ) : (

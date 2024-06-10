@@ -51,7 +51,7 @@
         transition: margin-top 0.5s ease-in-out;
     }
     .titleHigher {
-        margin-top: 0.3rem;
+        margin-top: 2rem;
         transition: margin-top 0.5s ease-in-out;
     }
     .textContainer {
@@ -60,7 +60,7 @@
         align-items: center;
         text-align: center;
         flex-direction: column;
-        margin-top: 10rem;
+        margin-top: 2rem;
         .textTypo {
             font-family: Oswald-ExtraLight, sans-serif;
             font-weight: normal;
@@ -84,13 +84,14 @@
     .globalContainer > * {
         animation: fadeIn 4s;
     }
-    /*Login css*/
+    /*Login and Register css*/
     .formContainer {
         background-color: #fffbf9;
         opacity: 0.7;
         padding: 0 1rem;
         border-radius: 5px;
         z-index: -998;
+        max-width: 300px;
         .globalForm {
             margin-top: 2rem;
             display: flex;
@@ -113,13 +114,13 @@
 @media screen and (max-width: 768px) {
     .globalContainer {
         .textContainer {
-            margin-top: 5rem;
+            margin-top: 2rem;
             .textTypo {
                 font-family: Oswald-Light;
                 font-size: 1rem;
             }
         }
-        /*Login css*/
+        /*Login and Register css*/
         .formContainer {
             margin-top: 2rem;
             opacity: 0.9;
