@@ -1,19 +1,37 @@
-from pydantic import BaseModel, EmailStr, constr
+import datetime
+
+from pydantic import BaseModel, EmailStr
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
 
 class UserBase(BaseModel):
-    username: constr(min_length=3, max_length=255)
+    username: str
     email: EmailStr
+    full_name: str
+
 
 class UserCreate(UserBase):
-    password: constr(min_length=8, max_length=255)
+    password: str
 
-class UserInDB(UserBase):
-    hashed_password: str
+
+class UserUpdate(UserBase):
+    password: str
+
 
 class User(UserBase):
     id: int
     is_active: bool
     is_superuser: bool
+    last_login: datetime.datetime
+    registered_at: datetime.datetime
 
     class Config:
         from_attributes = True

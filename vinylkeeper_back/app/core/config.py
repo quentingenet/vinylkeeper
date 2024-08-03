@@ -1,9 +1,8 @@
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-import os
 
-# Charger les variables d'environnement à partir du fichier .env
 load_dotenv()
+
 
 class Settings(BaseSettings):
     DB_NAME: str
@@ -11,7 +10,9 @@ class Settings(BaseSettings):
     DB_PORT: str
     DB_USERNAME: str
     DB_PASSWORD: str
-    API_SECRET_KEY: str
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ALGORITHM: str
     DEBUG: bool = False
 
     @property
@@ -20,5 +21,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()
