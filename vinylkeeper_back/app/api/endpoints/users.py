@@ -2,7 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from app.schemas.user import User, UserCreate, UserUpdate, Token
+from app.schemas.user import User, UserCreate, UserUpdate
+from app.schemas.token import Token
 from app.services.user_service import get_user_by_id, get_users, create_user, update_user, delete_user, \
     authenticate_user
 from app.utils.utils import get_db
