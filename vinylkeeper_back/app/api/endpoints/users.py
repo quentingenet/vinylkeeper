@@ -6,7 +6,7 @@ from app.schemas.token import Token
 from app.schemas.Login import Login
 from app.services.user_service import get_user_by_id, get_users, create_user, update_user, delete_user, \
     authenticate_user
-from app.repositories.user_repository import get_user_by_username
+from app.repositories.user_repository import get_user_by_email
 from app.utils.utils import get_db, create_access_token
 from datetime import timedelta
 from app.core.config import settings
@@ -16,11 +16,11 @@ router = APIRouter()
 
 @router.post("/users/register", response_model=User)
 def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
-    existing_user = get_user_by_username(db, user.username)
+    existing_user = get_user_by_email(db, user.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already taken"
+            detail="Email already taken"
         )
     try:
         db_user = create_user(db=db, user=user)
@@ -71,7 +71,7 @@ def delete_user_endpoint(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/users/login", response_model=Token)
 def login_for_access_token(login: Login, db: Session = Depends(get_db)):
-    user = authenticate_user(db, login.username, login.password)
+    user = authenticate_user(db, login.email, login.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

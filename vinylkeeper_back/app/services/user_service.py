@@ -5,15 +5,15 @@ from app.db.models import User as UserModel
 from app.schemas.user import UserCreate, UserUpdate, User
 from app.utils.utils import hash_password, verify_password
 from app.repositories.user_repository import create_user as create_user_repo, get_user_by_id as repo_get_user_by_id, \
-    get_user_by_username as repo_get_user_by_username
+    get_user_by_email as repo_get_user_by_email
 
 
 def get_user_by_id(db: Session, user_id: int):
     return repo_get_user_by_id(db, user_id)
 
 
-def get_user_by_username(db: Session, username: str):
-    return repo_get_user_by_username(db, username)
+def get_user_by_email(db: Session, email: str):
+    return repo_get_user_by_email(db, email)
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 10):
@@ -49,10 +49,10 @@ def delete_user(db: Session, user_id: int):
     return True
 
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = repo_get_user_by_username(db, username)
+def authenticate_user(db: Session, email: str, password: str):
+    user = repo_get_user_by_email(db, email)
     if not user or not verify_password(password, user.password):
         return None
-    user.last_login = datetime.now(pytz.timezone(user.timezone))  # Set last_login to user's timezone
+    user.last_login = datetime.now(pytz.timezone(user.timezone))
     db.commit()
     return user
