@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 import jwt
 from app.core.config import settings
-from app.schemas.user import TokenData
+from app.schemas.token import TokenData
 from app.services.user_service import get_user_by_username
 from app.db.session import SessionLocal
 

@@ -46,16 +46,13 @@ export const register = async (dataRegister: IRegisterForm) => {
   };
 
   try {
-    const response = await fetch(
-      API_URL.concat("users/register_user_step_one/"),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestDataRegister),
-      }
-    );
+    const response = await fetch(API_URL.concat("/users/register"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestDataRegister),
+    });
 
     if (!response.ok) {
       throw new Error("Erreur lors de la requête à l'API");
