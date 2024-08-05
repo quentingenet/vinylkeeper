@@ -1,17 +1,23 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.schemas.token import Token
 from app.schemas.Login import Login
 from app.services.user_service import get_user_by_id, get_users, create_user, update_user, delete_user, \
     authenticate_user
 from app.repositories.user_repository import get_user_by_email
-from app.utils.utils import get_db, create_access_token
+from app.utils.utils_jwt import create_access_token, get_current_superuser, get_current_user, oauth2_scheme
+from app.db.session import get_db
 from datetime import timedelta
 from app.core.config import settings
+import logging
+from app.core.logging import logger
 
 router = APIRouter()
+
+logger = logging.getLogger("app")
 
 
 @router.post("/users/register", response_model=User)
@@ -33,7 +39,10 @@ def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/users/", response_model=List[User])
-def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: User = Depends(get_current_superuser)):
+    """
+    Endpoint to get all users, only superusers can access it.
+    """
     users = get_users(db, skip=skip, limit=limit)
     return users
 
@@ -71,6 +80,7 @@ def delete_user_endpoint(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/users/login", response_model=Token)
 def login_for_access_token(login: Login, db: Session = Depends(get_db)):
+    logger.info("User is trying to login")
     user = authenticate_user(db, login.email, login.password)
     if not user:
         raise HTTPException(
@@ -79,5 +89,6 @@ def login_for_access_token(login: Login, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.id}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"user_id": user.id}, expires_delta=access_token_expires)
+    logger.info(f"User {user.username} , id {user.id} , email {user.email} : is logged in")
     return {"access_token": access_token, "token_type": "Bearer"}
