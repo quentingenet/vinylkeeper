@@ -29,6 +29,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { IRegisterForm } from "@models/IRegisterForm";
+import { getTimezone } from "@utils/GlobalUtils";
 
 type RegisterProps = {
   setRegister: (value: boolean) => void;
@@ -72,6 +73,7 @@ export default function Register({
     password: "",
     passwordBis: "",
     isAcceptedTerms: false,
+    timezone: "UTC",
   };
 
   const validationSchema = yup.object({
@@ -107,6 +109,7 @@ export default function Register({
       .matches(passwordWithNumber, "Password must contain a number")
       .matches(passwordAtLeast4, "Password must contain at least 4 characters")
       .oneOf([yup.ref("password"), ""], "It must be the same as the password"),
+    timezone: yup.string().required(),
   });
 
   const {
@@ -125,6 +128,7 @@ export default function Register({
     password: watch("password"),
     passwordBis: watch("passwordBis"),
     isAcceptedTerms: watch("isAcceptedTerms"),
+    timezone: getTimezone(),
   };
 
   const { isMobile } = useDetectMobile();

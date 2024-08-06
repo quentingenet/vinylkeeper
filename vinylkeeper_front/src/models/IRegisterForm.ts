@@ -4,4 +4,5 @@ export interface IRegisterForm {
   password: string;
   passwordBis: string;
   isAcceptedTerms: boolean;
+  timezone: string;
 }

@@ -41,6 +41,7 @@ export const register = async (dataRegister: IRegisterForm) => {
     email: dataRegister.email,
     password: dataRegister.password,
     is_accepted_terms: dataRegister.isAcceptedTerms,
+    timezone: dataRegister.timezone,
   };
 
   try {
