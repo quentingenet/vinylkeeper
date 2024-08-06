@@ -4,19 +4,21 @@ import { API_URL } from "@utils/GlobalUtils";
 
 export const login = async (data: ILoginForm) => {
   const requestDataLogin = {
-    username: data.email,
+    email: data.email,
     password: data.password,
   };
-
   try {
-    const response = await fetch(API_URL.concat("token/"), {
+    console.log(requestDataLogin);
+    console.log("API_URL", API_URL);
+    const response = await fetch("http://127.0.0.1:8000/api/users/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestDataLogin),
     });
-
+    console.log("response");
+    console.log(response);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
@@ -25,7 +27,7 @@ export const login = async (data: ILoginForm) => {
     }
 
     const responseData = await response.json();
-    const accessToken = responseData.access;
+    const accessToken = responseData.access_token;
     localStorage.setItem("jwt", accessToken);
 
     return {
@@ -53,7 +55,6 @@ export const register = async (dataRegister: IRegisterForm) => {
       },
       body: JSON.stringify(requestDataRegister),
     });
-
     if (!response.ok) {
       throw new Error("Erreur lors de la requête à l'API");
     }
