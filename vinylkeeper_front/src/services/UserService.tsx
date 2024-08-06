@@ -10,7 +10,7 @@ export const login = async (data: ILoginForm) => {
   try {
     console.log(requestDataLogin);
     console.log("API_URL", API_URL);
-    const response = await fetch("http://127.0.0.1:8000/api/users/login", {
+    const response = await fetch(API_URL.concat("/users/login"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
