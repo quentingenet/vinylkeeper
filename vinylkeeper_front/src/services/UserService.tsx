@@ -8,8 +8,6 @@ export const login = async (data: ILoginForm) => {
     password: data.password,
   };
   try {
-    console.log(requestDataLogin);
-    console.log("API_URL", API_URL);
     const response = await fetch(API_URL.concat("/users/login"), {
       method: "POST",
       headers: {
@@ -17,8 +15,6 @@ export const login = async (data: ILoginForm) => {
       },
       body: JSON.stringify(requestDataLogin),
     });
-    console.log("response");
-    console.log(response);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(

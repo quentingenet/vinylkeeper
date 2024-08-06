@@ -161,7 +161,6 @@ export default function Register({
             setIsLoading(false);
             userContext.setIsFirstConnection(true);
             userContext.setIsUserLoggedIn(false);
-            console.log("SUCCESS +++ Logged in");
             navigate("/");
           }
         }

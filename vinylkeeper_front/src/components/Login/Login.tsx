@@ -146,17 +146,17 @@ export default function Login({
           } else if (response.status === 401) {
             setIsLoading(false);
             setOpenSnackBar(true);
-            console.log("Unauthorized: Invalid username or password.");
+            console.error("Unauthorized: Invalid username or password.");
           } else {
             setIsLoading(false);
             setOpenSnackBar(true);
-            console.log("Error while logging in.");
+            console.error("Error while logging in.");
           }
         }
       } catch (error) {
         setIsLoading(false);
         setOpenSnackBar(true);
-        console.log("Error:", error);
+        console.error("Error:", error);
       }
     }
   };
