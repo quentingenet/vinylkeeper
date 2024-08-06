@@ -1,8 +1,8 @@
 import pytz
 from sqlalchemy.orm import Session
 from datetime import datetime
-from app.db.models import User as UserModel
-from app.schemas.user import UserCreate, User
+from app.models.user_model import User as UserModel
+from app.schemas.user_schemas import UserCreate, User
 
 
 def get_user_by_id(db: Session, user_id: int):

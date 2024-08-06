@@ -34,7 +34,7 @@ log_config = {
             "handlers": ["console", "file"],
             "propagate": False,
         },
-        "myapp": {
+        "app": {
             "level": "DEBUG",
             "handlers": ["console", "file"],
             "propagate": False,

@@ -1,10 +1,8 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
-from app.schemas.user import User, UserCreate, UserUpdate
-from app.schemas.token import Token
-from app.schemas.Login import Login
+from app.schemas.user_schemas import User, UserCreate, UserUpdate
+from app.schemas.authentication_schemas import Token, Login
 from app.services.user_service import get_user_by_id, get_users, create_user, update_user, delete_user, \
     authenticate_user
 from app.repositories.user_repository import get_user_by_email
@@ -80,7 +78,6 @@ def delete_user_endpoint(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/users/login", response_model=Token)
 def login_for_access_token(login: Login, db: Session = Depends(get_db)):
-    logger.info("User is trying to login")
     user = authenticate_user(db, login.email, login.password)
     if not user:
         raise HTTPException(

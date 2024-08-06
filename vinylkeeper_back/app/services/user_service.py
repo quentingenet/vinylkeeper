@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
 import pytz
-from app.db.models import User as UserModel
-from app.schemas.user import UserCreate, UserUpdate, User
+from app.models.user_model import User as UserModel
+from app.schemas.user_schemas import UserCreate, UserUpdate, User
 from app.utils.utils_password import hash_password, verify_password
 from app.repositories.user_repository import create_user as create_user_repo, get_user_by_id as repo_get_user_by_id, \
     get_user_by_email as repo_get_user_by_email
