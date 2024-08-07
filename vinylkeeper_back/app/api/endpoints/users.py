@@ -10,12 +10,9 @@ from app.utils.utils_jwt import create_access_token, get_current_superuser, get_
 from app.db.session import get_db
 from datetime import timedelta
 from app.core.config import settings
-import logging
 from app.core.logging import logger
 
 router = APIRouter()
-
-logger = logging.getLogger("app")
 
 
 @router.post("/users/register", response_model=User)
