@@ -1,6 +1,10 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr
+from app.schemas.musicals_schemas.collection_schemas import Collection
+from app.schemas.musicals_schemas.rating_schemas import Rating
+from app.schemas.musicals_schemas.loan_schemas import Loan
+from app.schemas.musicals_schemas.wishlist_schemas import Wishlist
 
 
 class UserBase(BaseModel):
@@ -32,6 +36,11 @@ class User(UserBase):
     is_superuser: bool
     last_login: Optional[datetime.datetime] = None
     registered_at: datetime.datetime
+    timezone: str
+    collections: List[Collection] = []
+    ratings: List[Rating] = []
+    loans: List[Loan] = []
+    wishlist_items: List[Wishlist] = []
 
     class Config:
         from_attributes = True
