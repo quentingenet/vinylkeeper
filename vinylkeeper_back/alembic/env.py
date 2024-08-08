@@ -5,7 +5,6 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 from dotenv import load_dotenv
-from app.db.base import Base
 
 load_dotenv()
 
@@ -24,6 +23,8 @@ DB_NAME = os.getenv('DB_NAME')
 DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 config.set_main_option('sqlalchemy.url', DATABASE_URL)
+
+from app.db.base import Base
 
 target_metadata = Base.metadata
 

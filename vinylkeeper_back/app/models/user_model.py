@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.db.base import Base
 
 
@@ -16,3 +18,8 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     registered_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     timezone = Column(String(100), nullable=False, server_default="UTC")
+
+    collections = relationship("Collection", back_populates="owner")
+    ratings = relationship("Rating", back_populates="user")
+    loans = relationship("Loan", back_populates="user")
+    wishlist_items = relationship("Wishlist", back_populates="user")
