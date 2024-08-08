@@ -9,6 +9,10 @@ class CollectionCreate(CollectionBase):
     pass
 
 
+class CollectionUpdate(CollectionBase):
+    pass
+
+
 class Collection(CollectionBase):
     id: int
     user_id: int

@@ -15,7 +15,7 @@ from app.core.logging import logger
 router = APIRouter()
 
 
-@router.post("/users/register", response_model=User)
+@router.post("/register", response_model=User)
 def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = get_user_by_email(db, user.email)
     if existing_user:
@@ -33,7 +33,7 @@ def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
         )
 
 
-@router.get("/users/", response_model=List[User])
+@router.get("/", response_model=List[User])
 def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: User = Depends(get_current_superuser)):
     """
     Endpoint to get all users, only superusers can access it.
@@ -42,7 +42,7 @@ def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), to
     return users
 
 
-@router.get("/users/{user_id}", response_model=User)
+@router.get("/{user_id}", response_model=User)
 def read_user(user_id: int, db: Session = Depends(get_db)):
     db_user = get_user_by_id(db, user_id)
     if db_user is None:
@@ -50,7 +50,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@router.put("/users/{user_id}", response_model=User)
+@router.put("/{user_id}", response_model=User)
 def update_user_endpoint(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
     db_user = get_user_by_id(db, user_id)
     if not db_user:
@@ -65,7 +65,7 @@ def update_user_endpoint(user_id: int, user: UserUpdate, db: Session = Depends(g
         )
 
 
-@router.delete("/users/{user_id}", response_model=dict)
+@router.delete("/{user_id}", response_model=dict)
 def delete_user_endpoint(user_id: int, db: Session = Depends(get_db)):
     success = delete_user(db=db, user_id=user_id)
     if not success:
@@ -73,7 +73,7 @@ def delete_user_endpoint(user_id: int, db: Session = Depends(get_db)):
     return {"detail": "User deleted"}
 
 
-@router.post("/users/login", response_model=Token)
+@router.post("/login", response_model=Token)
 def login_for_access_token(login: Login, db: Session = Depends(get_db)):
     user = authenticate_user(db, login.email, login.password)
     if not user:
