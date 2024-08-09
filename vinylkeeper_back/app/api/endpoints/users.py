@@ -15,7 +15,7 @@ from app.core.logging import logger
 router = APIRouter()
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=dict)
 def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = get_user_by_email(db, user.email)
     if existing_user:
@@ -25,7 +25,15 @@ def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
         )
     try:
         db_user = create_user(db=db, user=user)
-        return User.model_validate(db_user)
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(data={"user_id": db_user.id}, expires_delta=access_token_expires)
+        return {"access_token": access_token, "token_type": "Bearer"}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
