@@ -33,6 +33,7 @@ def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
             )
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(data={"user_id": db_user.id}, expires_delta=access_token_expires)
+        logger.info(f"User {db_user.username} , id {db_user.id} , email {db_user.email} : is registered")
         return {"access_token": access_token, "token_type": "Bearer"}
     except Exception as e:
         raise HTTPException(

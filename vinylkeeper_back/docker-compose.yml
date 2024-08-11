@@ -1,0 +1,23 @@
+services:
+  vk_db:
+    image: postgres:16.4
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_db:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    restart: always
+
+  vk_api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - vk_db
+    restart: always
+
+volumes:
+  postgres_db:
