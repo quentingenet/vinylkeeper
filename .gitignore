@@ -28,5 +28,13 @@ replay_pid*
 settings.json
 node_modules
 
+#Capacitor files
+android/
+ios/
+build/
+dist/
+capacitor.config.json
+capacitor.config.ts
+
 #ENV FILES
 .env.production
