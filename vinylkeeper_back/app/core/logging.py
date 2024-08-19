@@ -1,5 +1,6 @@
 import logging
 from logging.config import dictConfig
+from logging.handlers import TimedRotatingFileHandler
 
 # Logging configuration
 log_config = {
@@ -19,9 +20,12 @@ log_config = {
             "formatter": "default",
         },
         "file": {
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.TimedRotatingFileHandler",
             "formatter": "detailed",
-            "filename": "app.log",
+            "filename": "app_vk.log",
+            "when": "W0",  # W0 --> every Monday
+            "interval": 1,  # 1 week
+            "backupCount": 4,  # Keep 4 weeks of log files
         },
     },
     "root": {
