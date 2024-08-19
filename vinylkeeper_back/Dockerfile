@@ -1,7 +1,7 @@
 FROM python:3.11-alpine
 
 RUN apk update && \
-    apk add --no-cache bash tzdata
+    apk add --no-cache tzdata
 
 COPY vinylkeeper_back /vinylkeeper_back
 
@@ -12,4 +12,4 @@ RUN python -m venv venv && \
 
 EXPOSE 8000
 
-CMD /bin/bash -c "venv/bin/alembic upgrade head && venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000"
+CMD ["sh", "-c", "venv/bin/alembic upgrade head && exec venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000"]

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   vk_db:
     image: postgres:16.4
@@ -10,6 +12,13 @@ services:
     ports:
       - "5432:5432"
     restart: always
+    networks:
+      - vk_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   vk_api:
     build: .
@@ -18,6 +27,17 @@ services:
     depends_on:
       - vk_db
     restart: always
+    networks:
+      - vk_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_db:
+
+networks:
+  vk_network:
+    driver: bridge
