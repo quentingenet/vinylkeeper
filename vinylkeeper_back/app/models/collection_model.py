@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -12,3 +12,4 @@ class Collection(Base):
 
     owner = relationship("User", back_populates="collections")
     albums = relationship("Album", back_populates="collection")
+    registered_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

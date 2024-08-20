@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from datetime import datetime
+
+from pydantic import BaseModel, Field
 from typing import List
 from app.schemas.musicals_schemas.album_schemas import Album
 
@@ -22,6 +24,6 @@ class Collection(CollectionBase):
     id: int
     user_id: int
     albums: List[Album] = []
-
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     class Config:
         from_attributes = True

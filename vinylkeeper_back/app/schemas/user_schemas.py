@@ -17,7 +17,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    registered_at: datetime.datetime = datetime.datetime.utcnow()
+    registered_at: datetime.datetime
     is_accepted_terms: bool
     is_active: bool = True
     is_superuser: bool = False
