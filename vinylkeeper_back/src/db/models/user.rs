@@ -1,4 +1,3 @@
-use crate::models::role::Role;
 use crate::schema::users;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;

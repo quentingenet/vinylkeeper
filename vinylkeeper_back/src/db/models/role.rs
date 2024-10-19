@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use diesel::sql_types::Text;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, AsExpression, FromSqlRow)]
 #[sql_type = "Text"]
