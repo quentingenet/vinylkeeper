@@ -1,16 +1,43 @@
+#[macro_use]
+extern crate rocket;
+
+mod api;
+mod core;
+
+use api::{albums, artists, genres, loans, ratings, users, wishlists};
+use core::security::{cors, create_cors_fairing};
+use dotenvy::dotenv;
+use rocket::{launch, Build};
+
 #[cfg(feature = "dev")]
 fn load_env() {
     dotenvy::from_filename(".env.development").ok();
-    println!("Environnement de développement chargé");
+    println!("Development environment loaded");
 }
 
 #[cfg(feature = "prod")]
 fn load_env() {
     dotenvy::from_filename(".env.production").ok();
-    println!("Environnement de production chargé");
+    println!("Production environment loaded");
 }
 
-fn main() {
+#[rocket::main]
+async fn main() {
     load_env();
+
+    let _ = rocket().launch().await;
 }
 
+#[launch]
+fn rocket() -> Rocket<Build> {
+    rocket::build()
+        .attach(cors())
+        .attach(create_cors_fairing())
+        .mount("/api/albums", albums::routes())
+        .mount("/api/artists", artists::routes())
+        .mount("/api/genres", genres::routes())
+        .mount("/api/loans", loans::routes())
+        .mount("/api/ratings", ratings::routes())
+        .mount("/api/users", users::routes())
+        .mount("/api/wishlists", wishlists::routes())
+}
