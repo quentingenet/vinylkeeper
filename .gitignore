@@ -38,3 +38,60 @@ capacitor.config.ts
 
 #ENV FILES
 .env.production
+
+# Compiled Rust binary
+target/
+**/*.rs.bk
+
+# Debug files
+*.dSYM
+*.pdb
+*.stackdump
+
+# Cargo.lock file should be included for libraries but can be ignored for applications
+# Cargo.lock
+
+# Dependency directories
+**/target/
+
+# Rust-specific
+**/*.rlib
+**/*.rmeta
+**/*.so
+**/*.dylib
+**/*.dll
+
+# Test files
+*.t
+*.output
+*.log
+
+# Backup files
+*~
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Node modules (if using Node.js for a frontend)
+node_modules/
+
+# Capacitor files
+android/
+ios/
+build/
+dist/
+capacitor.config.json
+capacitor.config.ts
+
+# Environment variable files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Misc
+*.tmp
+*.swp

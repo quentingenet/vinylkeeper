@@ -1,0 +1,21 @@
+[package]
+name = "vinylkeeper_back"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rocket = { version = "0.5.0-rc.2", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+diesel = { version = "2.0.0", features = ["postgres", "r2d2", "chrono"] }
+dotenvy = "0.15"
+rocket_sync_db_pools = { version = "0.1.0-rc.4", features = ["diesel_postgres_pool"] }
+jsonwebtoken = "8.1"
+argon2 = "0.3"
+openssl = "0.10"
+
+[features]
+default = ["dev"]
+dev = []
+prod = []
+
