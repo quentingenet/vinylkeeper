@@ -1,11 +1,10 @@
-use crate::schema::users;
+use crate::db::schema::users;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use diesel::sql_types::{Bool, Integer, Text, Timestamp};
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Insertable, Serialize, Deserialize)]
-#[table_name = "users"]
+#[diesel(table_name = users)]
 pub struct User {
     pub id: i32,
     pub role_id: i32,

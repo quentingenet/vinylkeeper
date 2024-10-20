@@ -1,7 +1,7 @@
-use crate::db::models::User;
+use crate::db::models::user::User;
 use crate::repositories::user_repository::UserRepository;
 use bcrypt::{hash, verify, DEFAULT_COST};
-use diesel::r2d2::{self, Pool};
+use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 
 pub struct UserService<'a> {
@@ -12,7 +12,7 @@ impl<'a> UserService<'a> {
     pub fn new(pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
         UserService {
             user_repository: UserRepository {
-                connection: pool.get().expect("Failed to get connection"),
+                connection: &pool.get().expect("Failed to get connection"),
             },
         }
     }

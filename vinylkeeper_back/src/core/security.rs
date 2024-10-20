@@ -1,27 +1,18 @@
-use rocket::fairing::AdHoc;
-use rocket_cors::{AllowedOrigins, Cors};
+use rocket::http::Method;
+use rocket_cors::{AllowedOrigins, Cors, CorsOptions}; // Utilise rocket::http::Method
 
-pub fn cors() -> Cors {
-    Cors::from_options(&AllowedOrigins::some(&["http://localhost:3000"]))
-        .allow_credentials(true)
-        .allow_headers(rocket_cors::AllowedHeaders::All)
-        .allow_methods(rocket_cors::AllowedMethods::All)
-        .finish()
-}
+pub fn create_cors_fairing() -> Cors {
+    let allowed_origins = AllowedOrigins::some_exact(&["http://localhost:3000"]);
 
-pub fn create_cors_fairing() -> AdHoc {
-    AdHoc::on_request("CORS", |req, _| {
-        req.set_header(rocket::http::Header::new(
-            "Access-Control-Allow-Origin",
-            "*",
-        ));
-        req.set_header(rocket::http::Header::new(
-            "Access-Control-Allow-Methods",
-            "GET, POST, PUT, PATCH, DELETE",
-        ));
-        req.set_header(rocket::http::Header::new(
-            "Access-Control-Allow-Headers",
-            "Authorization, Content-Type",
-        ));
-    })
+    CorsOptions {
+        allowed_origins,
+        allowed_methods: vec![Method::Get, Method::Post]
+            .into_iter()
+            .map(Into::into)
+            .collect(), // Convertit en rocket_cors::Method
+        allow_credentials: true,
+        ..Default::default()
+    }
+    .to_cors()
+    .expect("Cors options failed")
 }

@@ -1,4 +1,4 @@
-use crate::models::role::Role;
+use crate::db::models::role::Role;
 use chrono::{Duration, Utc};
 use dotenvy::dotenv;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
