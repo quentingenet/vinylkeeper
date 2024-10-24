@@ -6,14 +6,12 @@ edition = "2021"
 [dependencies]
 rocket = { version = "0.5.1", features = ["json"] }
 serde = { version = "1.0.213", features = ["derive"] }
-serde_json = "1.0.132"
 diesel = { version = "2.2.4", features = ["postgres", "chrono"] }
 diesel-async = { version = "0.5.0", features = ["postgres","bb8"] }
 dotenvy = "0.15"
 rocket_cors = "0.6.0" 
 jsonwebtoken = "9.3.0"
 argon2 = {version = "0.5.3", features = ["password-hash"] }
-openssl = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
