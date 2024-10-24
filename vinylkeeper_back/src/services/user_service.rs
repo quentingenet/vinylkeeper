@@ -1,5 +1,5 @@
-use crate::core::jwt::{generate_jwt, generate_refresh_token}; // Assure-toi d'importer les deux fonctions
-use crate::db::models::role::{self, Role};
+use crate::core::jwt::{generate_jwt, generate_refresh_token};
+use crate::db::models::role::Role;
 use crate::db::models::user::{NewUser, User};
 use crate::repositories::user_repository::UserRepository;
 use argon2::password_hash::{rand_core, PasswordHash, PasswordHasher, SaltString};
