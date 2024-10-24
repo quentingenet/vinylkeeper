@@ -1,11 +1,12 @@
 use crate::db::models::user::{NewUser, User};
 use crate::services::user_service::{AuthError, UserService};
-use rocket::http::Status;
-use rocket::post;
+use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::serde::json::Json;
 use rocket::State;
+use rocket::{post, time};
 use serde::Deserialize;
 use std::sync::Arc;
+use time::Duration;
 
 #[derive(Deserialize)]
 pub struct AuthUser {
@@ -41,12 +42,21 @@ impl From<CreateUser> for NewUser {
 pub async fn authenticate(
     auth_user: Json<AuthUser>,
     user_service: &State<Arc<UserService>>,
+    cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Status> {
     match user_service
         .authenticate(&auth_user.email, &auth_user.password)
         .await
     {
-        Ok(token) => Ok(Json(token)),
+        Ok(tokens) => {
+            let refresh_cookie = Cookie::build(Cookie::new("refresh_token", tokens.refresh_token))
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Lax)
+                .max_age(Duration::days(7));
+            cookies.add(refresh_cookie);
+            Ok(Json(tokens.access_token))
+        }
         Err(err) => map_auth_error_to_status_string(err),
     }
 }
@@ -64,7 +74,7 @@ pub async fn create_user(
     }
 }
 
-fn map_auth_error_to_status(err: AuthError) -> Result<Json<User>, Status> {
+fn map_auth_error_to_status<T>(err: AuthError) -> Result<Json<T>, Status> {
     match err {
         AuthError::UserAlreadyExists => Err(Status::Conflict),
         AuthError::DatabaseError => Err(Status::InternalServerError),

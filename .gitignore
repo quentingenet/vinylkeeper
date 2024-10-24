@@ -92,6 +92,9 @@ capacitor.config.ts
 .env.production
 .env.test
 
+# keys
+keys/
+
 # Misc
 *.tmp
 *.swp

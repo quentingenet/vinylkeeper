@@ -1,5 +1,5 @@
-use crate::core::jwt::generate_jwt;
-use crate::db::models::role::Role;
+use crate::core::jwt::{generate_jwt, generate_refresh_token}; // Assure-toi d'importer les deux fonctions
+use crate::db::models::role::{self, Role};
 use crate::db::models::user::{NewUser, User};
 use crate::repositories::user_repository::UserRepository;
 use argon2::password_hash::{rand_core, PasswordHash, PasswordHasher, SaltString};
@@ -24,6 +24,11 @@ pub enum AuthError {
     UserAlreadyExists,
 }
 
+pub struct AuthTokens {
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
 pub struct UserService {
     user_repository: Arc<UserRepository>,
 }
@@ -33,7 +38,7 @@ impl UserService {
         UserService { user_repository }
     }
 
-    pub async fn authenticate(&self, email: &str, password: &str) -> Result<String, AuthError> {
+    pub async fn authenticate(&self, email: &str, password: &str) -> Result<AuthTokens, AuthError> {
         let user = self
             .user_repository
             .find_by_email(email)
@@ -48,7 +53,7 @@ impl UserService {
             .verify_password(password.as_bytes(), &parsed_hash)
             .map_err(|_| AuthError::InvalidCredentials)?;
 
-        let mut user = user.clone(); // If mutability is needed only after clone.
+        let mut user = user.clone();
         user.last_login = Some(Utc::now().naive_utc());
         self.user_repository
             .update_user(&user)
@@ -56,7 +61,16 @@ impl UserService {
             .map_err(|_| AuthError::DatabaseError)?;
 
         let user_role = Role::from_id(user.role_id);
-        generate_jwt(user.id, user_role).map_err(|_| AuthError::JwtGenerationError)
+
+        let access_token =
+            generate_jwt(user.id, user_role.clone()).map_err(|_| AuthError::JwtGenerationError)?;
+        let refresh_token = generate_refresh_token(user.id, user_role.clone())
+            .map_err(|_| AuthError::JwtGenerationError)?;
+
+        Ok(AuthTokens {
+            access_token,
+            refresh_token,
+        })
     }
 
     pub async fn create_user(&self, mut new_user: NewUser) -> Result<User, AuthError> {
