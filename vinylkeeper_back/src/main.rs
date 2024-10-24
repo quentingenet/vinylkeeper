@@ -56,7 +56,6 @@ fn load_env() {
         println!("Production environment loaded");
     }
 
-    // Vérifier si DATABASE_URL est défini
     if let Ok(database_url) = std::env::var("DATABASE_URL") {
         println!("DATABASE_URL: {}", database_url);
     } else {
@@ -67,7 +66,7 @@ fn load_env() {
 fn build_rocket(pool: PoolDB, user_service: Arc<UserService>) -> Rocket<Build> {
     rocket::build()
         .attach(create_cors_fairing())
-        .manage(pool) // Rocket enveloppe déjà `pool` dans un Arc.
+        .manage(pool)
         .manage(user_service)
         .mount("/api/users", routes![authenticate, create_user])
 }
