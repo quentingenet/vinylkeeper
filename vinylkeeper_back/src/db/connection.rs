@@ -1,15 +1,17 @@
 use diesel_async::pooled_connection::bb8::Pool;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::AsyncPgConnection;
+use std::error::Error;
+
+pub type PgPool = Pool<AsyncPgConnection>;
 
 pub struct PoolDB {
-    pub pool: Pool<AsyncPgConnection>,
+    pub pool: PgPool,
 }
 
-pub async fn create_pool(database_url: &str) -> Pool<AsyncPgConnection> {
+pub async fn create_pool(database_url: &str) -> Result<PgPool, Box<dyn Error>> {
     let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
-    Pool::builder()
-        .build(manager)
-        .await
-        .expect("Failed to create async pool.")
+    let pool = Pool::builder().build(manager).await?;
+
+    Ok(pool)
 }

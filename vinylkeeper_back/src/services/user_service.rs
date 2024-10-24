@@ -9,7 +9,6 @@ use diesel::result::Error as DieselError;
 use rand_core::OsRng;
 use std::sync::Arc;
 use thiserror::Error;
-use tokio::sync::Mutex;
 
 #[derive(Debug, Error)]
 pub enum AuthError {
@@ -26,18 +25,17 @@ pub enum AuthError {
 }
 
 pub struct UserService {
-    user_repository: Arc<Mutex<UserRepository>>,
+    user_repository: Arc<UserRepository>,
 }
 
 impl UserService {
-    pub fn new(user_repository: Arc<Mutex<UserRepository>>) -> Self {
+    pub fn new(user_repository: Arc<UserRepository>) -> Self {
         UserService { user_repository }
     }
 
     pub async fn authenticate(&self, email: &str, password: &str) -> Result<String, AuthError> {
-        let mut user_repository = self.user_repository.lock().await;
-
-        let mut user = user_repository
+        let user = self
+            .user_repository
             .find_by_email(email)
             .await
             .map_err(|_| AuthError::InvalidCredentials)?;
@@ -50,8 +48,9 @@ impl UserService {
             .verify_password(password.as_bytes(), &parsed_hash)
             .map_err(|_| AuthError::InvalidCredentials)?;
 
+        let mut user = user.clone(); // If mutability is needed only after clone.
         user.last_login = Some(Utc::now().naive_utc());
-        user_repository
+        self.user_repository
             .update_user(&user)
             .await
             .map_err(|_| AuthError::DatabaseError)?;
@@ -61,8 +60,6 @@ impl UserService {
     }
 
     pub async fn create_user(&self, mut new_user: NewUser) -> Result<User, AuthError> {
-        let mut user_repository = self.user_repository.lock().await;
-
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
             .hash_password(new_user.password.as_bytes(), &salt)
@@ -70,7 +67,7 @@ impl UserService {
             .to_string();
         new_user.password = password_hash;
 
-        user_repository
+        self.user_repository
             .create(&new_user)
             .await
             .map_err(|err| match err {

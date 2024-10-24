@@ -16,7 +16,7 @@ impl UserRepository {
     }
 
     pub async fn find_by_email(&self, email: &str) -> Result<User, DieselError> {
-        let mut conn = self.pool.get().await.expect("Failed to get connection");
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
         users::table
             .filter(users::email.eq(email))
             .select(User::as_select())
@@ -25,7 +25,7 @@ impl UserRepository {
     }
 
     pub async fn create(&self, new_user: &NewUser) -> Result<User, DieselError> {
-        let mut conn = self.pool.get().await.expect("Failed to get connection");
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
         diesel::insert_into(users::table)
             .values(new_user)
             .get_result(&mut conn)
@@ -33,7 +33,7 @@ impl UserRepository {
     }
 
     pub async fn update_user(&self, user: &User) -> Result<(), DieselError> {
-        let mut conn = self.pool.get().await.expect("Failed to get connection");
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
         diesel::update(users::table.filter(users::id.eq(user.id)))
             .set((
                 users::last_login.eq(user.last_login),
