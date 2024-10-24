@@ -6,7 +6,6 @@ pub struct PoolDB {
     pub pool: Pool<AsyncPgConnection>,
 }
 
-// Fonction pour créer un pool de connexions asynchrones
 pub async fn create_pool(database_url: &str) -> Pool<AsyncPgConnection> {
     let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
     Pool::builder()

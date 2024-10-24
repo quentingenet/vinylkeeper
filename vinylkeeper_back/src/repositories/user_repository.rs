@@ -17,7 +17,7 @@ impl<'a> UserRepository<'a> {
     pub async fn find_by_email(&mut self, email: &str) -> Result<User, DieselError> {
         users::table
             .filter(users::email.eq(email))
-            .select(User::as_select()) // Assurez-vous que `User::as_select()` est disponible
+            .select(User::as_select())
             .first::<User>(self.connection)
             .await
     }
