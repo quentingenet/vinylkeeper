@@ -17,4 +17,13 @@ impl Role {
             Role::SuperUser => "superuser",
         }
     }
+
+    pub fn from_id(role_id: i32) -> Role {
+        match role_id {
+            1 => Role::Admin,
+            2 => Role::User,
+            3 => Role::SuperUser,
+            _ => Role::User,
+        }
+    }
 }

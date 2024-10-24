@@ -1,5 +1,5 @@
 use rocket::http::Method;
-use rocket_cors::{AllowedOrigins, Cors, CorsOptions}; // Utilise rocket::http::Method
+use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
 
 pub fn create_cors_fairing() -> Cors {
     let allowed_origins = AllowedOrigins::some_exact(&["http://localhost:3000"]);

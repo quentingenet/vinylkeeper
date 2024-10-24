@@ -1,16 +1,16 @@
-#[macro_use]
-extern crate rocket;
-
 mod api;
 mod core;
 mod db;
 mod repositories;
 mod services;
+mod utils;
 
-//use api::{albums, artists, genres, loans, ratings, users, wishlists};
+use crate::api::users::{authenticate, create_user};
 use core::security::create_cors_fairing;
+use db::connection::{create_pool, PoolDB};
 use dotenvy;
-use rocket::{Build, Rocket};
+use rocket::{routes, Build, Rocket};
+use std::sync::Arc;
 
 #[cfg(feature = "dev")]
 fn load_env() {
@@ -28,18 +28,26 @@ fn load_env() {
 async fn main() {
     load_env();
 
-    let _ = rocket().launch().await;
-    fn rocket() -> Rocket<Build> {
-        rocket::build().attach(create_cors_fairing())
-        /*
-                .mount("/api/albums", albums::routes())
-                .mount("/api/artists", artists::routes())
-                .mount("/api/collections", collections::routes())
-                .mount("/api/genres", genres::routes())
-                .mount("/api/loans", loans::routes())
-                .mount("/api/ratings", ratings::routes())
-                .mount("/api/users", users::routes())
-                .mount("/api/wishlists", wishlists::routes())
-        */
-    }
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pool = create_pool(&database_url).await;
+
+    let pool_db = PoolDB { pool };
+
+    let _ = build_rocket(pool_db).launch().await;
+}
+
+fn build_rocket(pool: PoolDB) -> Rocket<Build> {
+    rocket::build()
+        .attach(create_cors_fairing())
+        .manage(Arc::new(pool))
+        .mount("/api/users", routes![authenticate, create_user])
+    /*
+    .mount("/api/albums", albums::routes())
+    .mount("/api/artists", artists::routes())
+    .mount("/api/genres", genres::routes())
+    .mount("/api/loans", loans::routes())
+    .mount("/api/ratings", ratings::routes())
+
+    .mount("/api/wishlists", wishlists::routes())
+    */
 }

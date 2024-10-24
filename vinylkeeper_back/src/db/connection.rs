@@ -1,9 +1,16 @@
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::PgConnection;
+use diesel_async::pooled_connection::bb8::Pool;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::AsyncPgConnection;
 
-pub fn create_pool(database_url: &str) -> Pool<ConnectionManager<PgConnection>> {
-    let manager = ConnectionManager::<PgConnection>::new(database_url);
+pub struct PoolDB {
+    pub pool: Pool<AsyncPgConnection>,
+}
+
+// Fonction pour créer un pool de connexions asynchrones
+pub async fn create_pool(database_url: &str) -> Pool<AsyncPgConnection> {
+    let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
     Pool::builder()
         .build(manager)
-        .expect("Failed to create pool.")
+        .await
+        .expect("Failed to create async pool.")
 }

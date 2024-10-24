@@ -1,53 +1,88 @@
+use crate::core::jwt::generate_jwt;
+use crate::db::models::role::Role;
 use crate::db::models::user::User;
 use crate::repositories::user_repository::UserRepository;
-use bcrypt::{hash, verify, DEFAULT_COST};
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::PgConnection;
+use argon2::password_hash::{rand_core, PasswordHash, PasswordHasher, SaltString};
+use argon2::{self, Argon2, PasswordVerifier};
+use diesel::result::Error as DieselError;
+use diesel_async::pooled_connection::bb8::Pool;
+use diesel_async::AsyncPgConnection;
+use rand_core::OsRng;
+use thiserror::Error;
 
-pub struct UserService<'a> {
-    pub user_repository: UserRepository<'a>,
+#[derive(Debug, Error)]
+pub enum AuthError {
+    #[error("Invalid credentials")]
+    InvalidCredentials,
+    #[error("Database error")]
+    DatabaseError,
+    #[error("Password hash error")]
+    PasswordHashError,
+    #[error("JWT generation error")]
+    JwtGenerationError,
+    #[error("User already exists")]
+    UserAlreadyExists,
 }
 
-impl<'a> UserService<'a> {
-    pub fn new(pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
-        UserService {
-            user_repository: UserRepository {
-                connection: &pool.get().expect("Failed to get connection"),
-            },
+pub struct UserService {
+    pool: Pool<AsyncPgConnection>,
+}
+
+impl UserService {
+    pub fn new(pool: &Pool<AsyncPgConnection>) -> Self {
+        UserService { pool: pool.clone() }
+    }
+
+    pub async fn authenticate(&self, email: &str, password: &str) -> Result<String, AuthError> {
+        let mut conn = self
+            .pool
+            .get()
+            .await
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        let mut user_repository = UserRepository::new(&mut conn);
+        match user_repository.find_by_email(email).await {
+            Ok(user) => {
+                let password_hash = &user.password;
+                let parsed_hash =
+                    PasswordHash::new(password_hash).map_err(|_| AuthError::PasswordHashError)?;
+
+                Argon2::default()
+                    .verify_password(password.as_bytes(), &parsed_hash)
+                    .map_err(|_| AuthError::InvalidCredentials)?;
+
+                let user_role = Role::from_id(user.role_id);
+                generate_jwt(user.id, user_role).map_err(|_| AuthError::JwtGenerationError)
+            }
+            Err(_) => Err(AuthError::InvalidCredentials),
         }
     }
 
-    pub fn create_user(&self, username: &str, email: &str, password: &str) -> Result<User, String> {
-        let hashed_password = hash(password, DEFAULT_COST).map_err(|e| e.to_string())?;
-        let new_user = User {
-            id: 0,
-            role_id: 2, // role id for simple user by default
-            username: username.to_string(),
-            email: email.to_string(),
-            password: hashed_password,
-            is_accepted_terms: false,
-            is_active: true,
-            is_superuser: false,
-            last_login: None,
-            registered_at: chrono::Utc::now().naive_utc(),
-            updated_at: chrono::Utc::now().naive_utc(),
-            timezone: "Europe/Paris".to_string(),
-        };
+    pub async fn create_user(&self, new_user: &mut User) -> Result<User, AuthError> {
+        let mut conn = self
+            .pool
+            .get()
+            .await
+            .map_err(|_| AuthError::DatabaseError)?;
 
-        self.user_repository
-            .create(&new_user)
-            .map_err(|e| e.to_string())
-    }
+        let mut user_repository = UserRepository::new(&mut conn);
 
-    pub fn authenticate(&self, email: &str, password: &str) -> Result<User, String> {
-        let user = self
-            .user_repository
-            .find_by_email(email)
-            .map_err(|e| e.to_string())?;
-        if verify(password, &user.password).map_err(|e| e.to_string())? {
-            Ok(user)
-        } else {
-            Err("Invalid password".to_string())
-        }
+        let salt = SaltString::generate(&mut OsRng);
+        let password_hash = Argon2::default()
+            .hash_password(new_user.password.as_bytes(), &salt)
+            .map_err(|_| AuthError::PasswordHashError)?
+            .to_string();
+        new_user.password = password_hash;
+
+        user_repository
+            .create(new_user)
+            .await
+            .map_err(|err| match err {
+                DieselError::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UniqueViolation,
+                    _,
+                ) => AuthError::UserAlreadyExists,
+                _ => AuthError::DatabaseError,
+            })
     }
 }
