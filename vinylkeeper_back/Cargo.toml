@@ -16,6 +16,7 @@ argon2 = {version = "0.5.3", features = ["password-hash"] }
 openssl = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
+tokio = { version = "1", features = ["full"] }
 
 [features]
 default = ["dev"]

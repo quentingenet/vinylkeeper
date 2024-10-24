@@ -1,5 +1,4 @@
-use crate::db::connection::PoolDB;
-use crate::db::models::user::User;
+use crate::db::models::user::{NewUser, User};
 use crate::services::user_service::{AuthError, UserService};
 use rocket::http::Status;
 use rocket::post;
@@ -7,6 +6,7 @@ use rocket::serde::json::Json;
 use rocket::State;
 use serde::Deserialize;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Deserialize)]
 pub struct AuthUser {
@@ -26,10 +26,9 @@ pub struct CreateUser {
 #[post("/auth", format = "json", data = "<auth_user>")]
 pub async fn authenticate(
     auth_user: Json<AuthUser>,
-    db: &State<Arc<PoolDB>>,
+    user_service: &State<Arc<Mutex<UserService>>>,
 ) -> Result<Json<String>, Status> {
-    let user_service = UserService::new(&db.pool);
-
+    let user_service = user_service.lock().await;
     match user_service
         .authenticate(&auth_user.email, &auth_user.password)
         .await
@@ -46,12 +45,10 @@ pub async fn authenticate(
 #[post("/register", format = "json", data = "<new_user>")]
 pub async fn create_user(
     new_user: Json<CreateUser>,
-    db: &State<Arc<PoolDB>>,
+    user_service: &State<Arc<Mutex<UserService>>>,
 ) -> Result<Json<User>, Status> {
-    let user_service = UserService::new(&db.pool);
-
-    let mut user = User {
-        id: 0,
+    let user_service = user_service.lock().await;
+    let user = NewUser {
         role_id: new_user.role_id,
         username: new_user.username.clone(),
         email: new_user.email.clone(),
@@ -59,13 +56,10 @@ pub async fn create_user(
         is_accepted_terms: Some(true),
         is_active: Some(true),
         is_superuser: Some(false),
-        last_login: None,
-        registered_at: None,
-        updated_at: None,
         timezone: new_user.timezone.clone(),
     };
 
-    match user_service.create_user(&mut user).await {
+    match user_service.create_user(user).await {
         Ok(created_user) => Ok(Json(created_user)),
         Err(err) => match err {
             AuthError::UserAlreadyExists => Err(Status::Conflict),

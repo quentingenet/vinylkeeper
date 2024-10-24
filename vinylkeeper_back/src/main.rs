@@ -6,11 +6,14 @@ mod services;
 mod utils;
 
 use crate::api::users::{authenticate, create_user};
+use crate::repositories::user_repository::UserRepository;
+use crate::services::user_service::UserService;
 use core::security::create_cors_fairing;
 use db::connection::{create_pool, PoolDB};
 use dotenvy;
 use rocket::{routes, Build, Rocket};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[cfg(feature = "dev")]
 fn load_env() {
@@ -33,21 +36,16 @@ async fn main() {
 
     let pool_db = PoolDB { pool };
 
-    let _ = build_rocket(pool_db).launch().await;
+    let user_repository = Arc::new(Mutex::new(UserRepository::new(pool_db.pool.clone())));
+    let user_service = Arc::new(Mutex::new(UserService::new(user_repository)));
+
+    let _ = build_rocket(pool_db, user_service).launch().await;
 }
 
-fn build_rocket(pool: PoolDB) -> Rocket<Build> {
+fn build_rocket(pool: PoolDB, user_service: Arc<Mutex<UserService>>) -> Rocket<Build> {
     rocket::build()
         .attach(create_cors_fairing())
         .manage(Arc::new(pool))
+        .manage(user_service)
         .mount("/api/users", routes![authenticate, create_user])
-    /*
-    .mount("/api/albums", albums::routes())
-    .mount("/api/artists", artists::routes())
-    .mount("/api/genres", genres::routes())
-    .mount("/api/loans", loans::routes())
-    .mount("/api/ratings", ratings::routes())
-
-    .mount("/api/wishlists", wishlists::routes())
-    */
 }

@@ -1,14 +1,15 @@
 use crate::core::jwt::generate_jwt;
 use crate::db::models::role::Role;
-use crate::db::models::user::User;
+use crate::db::models::user::{NewUser, User};
 use crate::repositories::user_repository::UserRepository;
 use argon2::password_hash::{rand_core, PasswordHash, PasswordHasher, SaltString};
-use argon2::{self, Argon2, PasswordVerifier};
+use argon2::{Argon2, PasswordVerifier};
+use chrono::Utc;
 use diesel::result::Error as DieselError;
-use diesel_async::pooled_connection::bb8::Pool;
-use diesel_async::AsyncPgConnection;
 use rand_core::OsRng;
+use std::sync::Arc;
 use thiserror::Error;
+use tokio::sync::Mutex;
 
 #[derive(Debug, Error)]
 pub enum AuthError {
@@ -25,47 +26,42 @@ pub enum AuthError {
 }
 
 pub struct UserService {
-    pool: Pool<AsyncPgConnection>,
+    user_repository: Arc<Mutex<UserRepository>>,
 }
 
 impl UserService {
-    pub fn new(pool: &Pool<AsyncPgConnection>) -> Self {
-        UserService { pool: pool.clone() }
+    pub fn new(user_repository: Arc<Mutex<UserRepository>>) -> Self {
+        UserService { user_repository }
     }
 
     pub async fn authenticate(&self, email: &str, password: &str) -> Result<String, AuthError> {
-        let mut conn = self
-            .pool
-            .get()
+        let mut user_repository = self.user_repository.lock().await;
+
+        let mut user = user_repository
+            .find_by_email(email)
+            .await
+            .map_err(|_| AuthError::InvalidCredentials)?;
+
+        let password_hash = &user.password;
+        let parsed_hash =
+            PasswordHash::new(password_hash).map_err(|_| AuthError::PasswordHashError)?;
+
+        Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .map_err(|_| AuthError::InvalidCredentials)?;
+
+        user.last_login = Some(Utc::now().naive_utc());
+        user_repository
+            .update_user(&user)
             .await
             .map_err(|_| AuthError::DatabaseError)?;
 
-        let mut user_repository = UserRepository::new(&mut conn);
-        match user_repository.find_by_email(email).await {
-            Ok(user) => {
-                let password_hash = &user.password;
-                let parsed_hash =
-                    PasswordHash::new(password_hash).map_err(|_| AuthError::PasswordHashError)?;
-
-                Argon2::default()
-                    .verify_password(password.as_bytes(), &parsed_hash)
-                    .map_err(|_| AuthError::InvalidCredentials)?;
-
-                let user_role = Role::from_id(user.role_id);
-                generate_jwt(user.id, user_role).map_err(|_| AuthError::JwtGenerationError)
-            }
-            Err(_) => Err(AuthError::InvalidCredentials),
-        }
+        let user_role = Role::from_id(user.role_id);
+        generate_jwt(user.id, user_role).map_err(|_| AuthError::JwtGenerationError)
     }
 
-    pub async fn create_user(&self, new_user: &mut User) -> Result<User, AuthError> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|_| AuthError::DatabaseError)?;
-
-        let mut user_repository = UserRepository::new(&mut conn);
+    pub async fn create_user(&self, mut new_user: NewUser) -> Result<User, AuthError> {
+        let mut user_repository = self.user_repository.lock().await;
 
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
@@ -75,7 +71,7 @@ impl UserService {
         new_user.password = password_hash;
 
         user_repository
-            .create(new_user)
+            .create(&new_user)
             .await
             .map_err(|err| match err {
                 DieselError::DatabaseError(
