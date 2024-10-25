@@ -1,16 +1,17 @@
 use crate::db::schema::users;
 use chrono::NaiveDateTime;
-use diesel::prelude::*;
+use diesel::{pg::Pg, prelude::*};
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Clone, Selectable, Serialize, Deserialize)]
+#[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize)]
+#[diesel(check_for_backend(Pg))]
 #[diesel(table_name = users)]
 pub struct User {
     pub id: i32,
     pub username: String,
     pub email: String,
     pub password: String,
-    pub is_accepted_terms: bool,
+    pub is_accepted_terms: Option<bool>,
     pub is_active: Option<bool>,
     pub is_superuser: Option<bool>,
     pub last_login: Option<NaiveDateTime>,
