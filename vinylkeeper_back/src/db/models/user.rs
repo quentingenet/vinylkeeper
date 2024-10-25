@@ -30,5 +30,5 @@ pub struct NewUser {
     pub is_active: Option<bool>,
     pub is_superuser: Option<bool>,
     pub timezone: String,
-    pub role_id: i32,
+    pub role_id: Option<i32>,
 }

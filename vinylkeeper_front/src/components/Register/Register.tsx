@@ -74,7 +74,6 @@ export default function Register({
     passwordBis: "",
     isAcceptedTerms: false,
     timezone: "Europe/Paris",
-    role_id: 2,
   };
 
   const validationSchema = yup.object({

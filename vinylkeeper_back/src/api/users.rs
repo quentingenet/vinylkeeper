@@ -20,14 +20,14 @@ pub struct CreateUser {
     pub email: String,
     pub password: String,
     pub is_accepted_terms: bool,
-    pub role_id: i32,
+    pub role_id: Option<i32>,
     pub timezone: String,
 }
 
 impl From<CreateUser> for NewUser {
     fn from(user: CreateUser) -> Self {
         NewUser {
-            role_id: 2, // role id for simple user by default
+            role_id: Some(2), // role id for simple user by default
             username: user.username,
             email: user.email,
             password: user.password,

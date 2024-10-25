@@ -30,7 +30,6 @@ export const register = (dataRegister: IRegisterForm) => {
     password: dataRegister.password,
     is_accepted_terms: dataRegister.isAcceptedTerms,
     timezone: dataRegister.timezone,
-    role_id: 2, // Par défaut, rôle utilisateur standard
   };
 
   return requestService({
