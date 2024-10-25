@@ -7,6 +7,7 @@ use argon2::{Argon2, PasswordVerifier};
 use chrono::Utc;
 use diesel::result::Error as DieselError;
 use rand_core::OsRng;
+use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -24,6 +25,8 @@ pub enum AuthError {
     UserAlreadyExists,
     #[error("Invalid token")]
     InvalidToken,
+    #[error("Invalid role")]
+    InvalidRole,
 }
 
 pub struct AuthTokens {
@@ -47,27 +50,24 @@ impl UserService {
             .await
             .map_err(|_| AuthError::InvalidCredentials)?;
 
-        let password_hash = &user.password;
         let parsed_hash =
-            PasswordHash::new(password_hash).map_err(|_| AuthError::PasswordHashError)?;
+            PasswordHash::new(&user.password).map_err(|_| AuthError::PasswordHashError)?;
 
         Argon2::default()
             .verify_password(password.as_bytes(), &parsed_hash)
             .map_err(|_| AuthError::InvalidCredentials)?;
 
-        let mut user = user.clone();
-        user.last_login = Some(Utc::now().naive_utc());
-        self.user_repository
-            .update_user(&user)
-            .await
-            .map_err(|_| AuthError::DatabaseError)?;
-
         let user_role = Role::from_id(user.role_id);
 
         let access_token =
             generate_jwt(user.id, user_role.clone()).map_err(|_| AuthError::JwtGenerationError)?;
-        let refresh_token = generate_refresh_token(user.id, user_role.clone())
+        let refresh_token = generate_refresh_token(user.id, user_role)
             .map_err(|_| AuthError::JwtGenerationError)?;
+
+        self.user_repository
+            .update_last_login(user.id, Utc::now().naive_utc())
+            .await
+            .map_err(|_| AuthError::DatabaseError)?;
 
         Ok(AuthTokens {
             access_token,
@@ -97,13 +97,8 @@ impl UserService {
 
     pub async fn refresh_jwt(&self, refresh_token: &str) -> Result<String, AuthError> {
         let claims = validate_refresh_token(refresh_token).map_err(|_| AuthError::InvalidToken)?;
-        let user = self
-            .user_repository
-            .find_by_id(claims.sub)
-            .await
-            .map_err(|_| AuthError::InvalidCredentials)?;
-        let user_role = Role::from_id(user.role_id);
+        let user_role = Role::from_str(&claims.role).map_err(|_| AuthError::InvalidRole)?;
 
-        generate_jwt(user.id, user_role).map_err(|_| AuthError::JwtGenerationError)
+        generate_jwt(claims.sub, user_role).map_err(|_| AuthError::JwtGenerationError)
     }
 }

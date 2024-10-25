@@ -38,7 +38,6 @@ impl From<CreateUser> for NewUser {
     }
 }
 
-// Endpoint d'authentification
 #[post("/auth", format = "json", data = "<auth_user>")]
 pub async fn authenticate(
     auth_user: Json<AuthUser>,
@@ -53,8 +52,9 @@ pub async fn authenticate(
             let refresh_cookie = Cookie::build(Cookie::new("refresh_token", tokens.refresh_token))
                 .http_only(true)
                 .secure(true)
-                .same_site(SameSite::Lax)
-                .max_age(Duration::days(7));
+                .same_site(SameSite::None)
+                .max_age(Duration::days(7))
+                .build();
             cookies.add(refresh_cookie);
             Ok(Json(tokens.access_token))
         }
@@ -75,19 +75,24 @@ pub async fn create_user(
     }
 }
 
-#[derive(Deserialize)]
-pub struct RefreshTokenRequest {
-    pub refresh_token: String,
-}
-
-#[post("/refresh-token", format = "json", data = "<token_request>")]
+#[post("/refresh-token", format = "json")]
 pub async fn refresh_token(
-    token_request: Json<RefreshTokenRequest>,
+    cookies: &CookieJar<'_>,
     user_service: &State<Arc<UserService>>,
 ) -> Result<Json<String>, Status> {
-    match user_service.refresh_jwt(&token_request.refresh_token).await {
-        Ok(new_jwt) => Ok(Json(new_jwt)),
-        Err(_) => Err(Status::Unauthorized), // ou une autre gestion d'erreur
+    if let Some(refresh_token) = cookies.get("refresh_token") {
+        let refresh_token_str = refresh_token.value();
+
+        match user_service.refresh_jwt(refresh_token_str).await {
+            Ok(new_jwt) => Ok(Json(new_jwt)),
+            Err(err) => {
+                println!("Failed to refresh JWT: {:?}", err);
+                Err(Status::Unauthorized)
+            }
+        }
+    } else {
+        println!("No refresh token found in cookies");
+        Err(Status::Unauthorized)
     }
 }
 

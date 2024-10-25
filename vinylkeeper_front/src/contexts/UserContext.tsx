@@ -1,21 +1,22 @@
-import { createContext, useContext, useState } from "react";
+import { API_URL } from "@utils/GlobalUtils";
+import { createContext, useContext, useState, useEffect } from "react";
 
 interface IUserContext {
   jwt: string;
   setJwt: (jwt: string) => void;
-  isFirstConnection: boolean;
-  setIsFirstConnection: (isFirstConnection: boolean) => void;
   isUserLoggedIn: boolean;
-  setIsUserLoggedIn: (isUserLoggedIn: boolean) => void;
+  setIsUserLoggedIn: (isLoggedIn: boolean) => void;
+  refreshJwt: () => Promise<void>;
+  logout: () => void;
 }
 
 export const UserContext = createContext<IUserContext>({
   jwt: "",
   setJwt: () => {},
-  isFirstConnection: false,
-  setIsFirstConnection: () => {},
   isUserLoggedIn: false,
   setIsUserLoggedIn: () => {},
+  refreshJwt: async () => {},
+  logout: () => {},
 });
 
 export function useUserContext() {
@@ -28,16 +29,52 @@ export function UserContextProvider({
   children: React.ReactNode;
 }) {
   const [jwt, setJwt] = useState<string>("");
-  const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false);
 
+  const refreshJwt = async () => {
+    try {
+      const response = await fetch(API_URL.concat("/users/refresh-token"), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        setIsUserLoggedIn(true);
+      } else {
+        console.error("Échec du rafraîchissement du JWT:", response.status);
+        logout();
+      }
+    } catch (error) {
+      console.error("Erreur réseau lors du rafraîchissement du JWT :", error);
+      logout();
+    }
+  };
+
+  const logout = () => {
+    setJwt("");
+    setIsUserLoggedIn(false);
+  };
+
+  useEffect(() => {
+    refreshJwt();
+    const intervalId = setInterval(() => {
+      if (isUserLoggedIn) {
+        refreshJwt();
+      }
+    }, 14 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [isUserLoggedIn]);
+
   const value: IUserContext = {
-    jwt: jwt,
-    setJwt: setJwt,
-    isFirstConnection: isFirstConnection,
-    setIsFirstConnection: setIsFirstConnection,
-    isUserLoggedIn: isUserLoggedIn,
-    setIsUserLoggedIn: setIsUserLoggedIn,
+    jwt,
+    setJwt,
+    isUserLoggedIn,
+    setIsUserLoggedIn,
+    refreshJwt,
+    logout,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

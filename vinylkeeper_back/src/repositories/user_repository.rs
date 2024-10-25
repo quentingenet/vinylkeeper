@@ -1,5 +1,6 @@
 use crate::db::models::user::{NewUser, User};
 use crate::db::schema::users;
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use diesel_async::pooled_connection::bb8::Pool;
@@ -48,6 +49,19 @@ impl UserRepository {
                 users::last_login.eq(user.last_login),
                 users::updated_at.eq(user.updated_at),
             ))
+            .execute(&mut conn)
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn update_last_login(
+        &self,
+        user_id: i32,
+        last_login: NaiveDateTime,
+    ) -> Result<(), DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        diesel::update(users::table.filter(users::id.eq(user_id)))
+            .set(users::last_login.eq(last_login))
             .execute(&mut conn)
             .await
             .map(|_| ())

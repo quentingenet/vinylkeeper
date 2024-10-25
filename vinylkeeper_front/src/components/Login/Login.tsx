@@ -131,27 +131,22 @@ export default function Login({
     if (isValid) {
       try {
         setIsLoading(true);
-        const response = await loginService(dataLogin);
-        if (response) {
-          if (response.status === 200) {
-            const localStorageJwt = localStorage.getItem("jwt") || "";
-            if (localStorageJwt !== null && localStorageJwt !== "") {
-              localStorageJwt?.startsWith("Bearer")
-                ? userContext.setJwt(localStorageJwt)
-                : userContext.setJwt(`Bearer ${localStorageJwt}`);
-              setIsLoading(false);
-              userContext.setIsUserLoggedIn(true);
-              navigate("/dashboard");
-            }
-          } else if (response.status === 401) {
-            setIsLoading(false);
-            setOpenSnackBar(true);
-            console.error("Unauthorized: Invalid username or password.");
-          } else {
-            setIsLoading(false);
-            setOpenSnackBar(true);
-            console.error("Error while logging in.");
-          }
+        const response = await loginService(
+          dataLogin,
+          userContext.setJwt,
+          userContext.setIsUserLoggedIn
+        );
+        if (response && response.status === 200) {
+          setIsLoading(false);
+          navigate("/dashboard");
+        } else if (response && response.status === 401) {
+          setIsLoading(false);
+          setOpenSnackBar(true);
+          console.error("Unauthorized: Invalid username or password.");
+        } else {
+          setIsLoading(false);
+          setOpenSnackBar(true);
+          console.error("Error while logging in.");
         }
       } catch (error) {
         setIsLoading(false);
