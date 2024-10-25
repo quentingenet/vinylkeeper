@@ -126,33 +126,27 @@ export default function Login({
     email: watch("email"),
     password: watch("password"),
   };
-
   const submitLogin = async () => {
     if (isValid) {
-      try {
-        setIsLoading(true);
-        const response = await loginService(
-          dataLogin,
-          userContext.setJwt,
-          userContext.setIsUserLoggedIn
-        );
-        if (response && response.status === 200) {
-          setIsLoading(false);
-          navigate("/dashboard");
-        } else if (response && response.status === 401) {
-          setIsLoading(false);
+      setIsLoading(true);
+
+      loginService(dataLogin)
+        .then((response) => {
+          if (response) {
+            userContext.setJwt(response.data);
+            userContext.setIsUserLoggedIn(true);
+            navigate("/dashboard");
+          } else {
+            console.error("Error while logging in.");
+            setIsLoading(false);
+            setOpenSnackBar(true);
+          }
+        })
+        .catch((error) => {
+          console.error("Error while logging in:", error);
           setOpenSnackBar(true);
-          console.error("Unauthorized: Invalid username or password.");
-        } else {
-          setIsLoading(false);
-          setOpenSnackBar(true);
-          console.error("Error while logging in.");
-        }
-      } catch (error) {
-        setIsLoading(false);
-        setOpenSnackBar(true);
-        console.error("Error:", error);
-      }
+        })
+        .finally(() => setIsLoading(false));
     }
   };
 

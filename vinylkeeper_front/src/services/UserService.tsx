@@ -2,58 +2,46 @@ import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { API_URL } from "@utils/GlobalUtils";
 
-export const login = async (
-  data: ILoginForm,
-  setJwt: (jwt: string) => void,
-  setIsUserLoggedIn: (isLoggedIn: boolean) => void
-) => {
+export const login = (data: ILoginForm) => {
   const requestDataLogin = {
     email: data.email,
     password: data.password,
   };
 
-  try {
-    const response = await fetch(API_URL.concat("/users/auth"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestDataLogin),
-      credentials: "include",
+  return fetch(API_URL.concat("/users/auth"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestDataLogin),
+    credentials: "include",
+  })
+    .then((response) => {
+      if (!response.ok) {
+        return response.json().then((errorData) => {
+          throw new Error(
+            errorData.message || `Login failed with status ${response.status}`
+          );
+        });
+      }
+      return response.json();
+    })
+    .then((responseData) => {
+      if (!responseData) {
+        throw new Error("Access token missing in response");
+      }
+      return { status: 200, data: responseData };
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Error during login");
-    }
-
-    const responseData = await response.json();
-    const accessToken = responseData;
-
-    setJwt(accessToken);
-    setIsUserLoggedIn(true);
-
-    return {
-      status: response.status,
-      data: responseData,
-    };
-  } catch (error) {
-    setIsUserLoggedIn(false);
-    throw new Error("Error while logging in: " + error);
-  }
 };
 
-export const register = async (
-  dataRegister: IRegisterForm,
-  setJwt: (jwt: string) => void,
-  setIsUserLoggedIn: (isLoggedIn: boolean) => void
-) => {
+export const register = async (dataRegister: IRegisterForm) => {
   const requestDataRegister = {
     username: dataRegister.username,
     email: dataRegister.email,
     password: dataRegister.password,
     is_accepted_terms: dataRegister.isAcceptedTerms,
     timezone: dataRegister.timezone,
+    role_id: 2,
   };
 
   try {
@@ -71,14 +59,9 @@ export const register = async (
     }
 
     const responseData = await response.json();
-    const accessToken = responseData.access_token;
-
-    setJwt(accessToken);
-    setIsUserLoggedIn(true);
 
     return responseData;
   } catch (error) {
-    setIsUserLoggedIn(false);
     throw new Error("Error during registration: " + error);
   }
 };

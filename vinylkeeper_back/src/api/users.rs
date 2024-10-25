@@ -1,4 +1,4 @@
-use crate::db::models::user::{NewUser, User};
+use crate::db::models::user::NewUser;
 use crate::services::user_service::{AuthError, UserService};
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::serde::json::Json;
@@ -19,6 +19,7 @@ pub struct CreateUser {
     pub username: String,
     pub email: String,
     pub password: String,
+    pub is_accepted_terms: bool,
     pub role_id: i32,
     pub timezone: String,
 }
@@ -26,11 +27,11 @@ pub struct CreateUser {
 impl From<CreateUser> for NewUser {
     fn from(user: CreateUser) -> Self {
         NewUser {
-            role_id: user.role_id,
+            role_id: 2, // role id for simple user by default
             username: user.username,
             email: user.email,
             password: user.password,
-            is_accepted_terms: Some(true),
+            is_accepted_terms: user.is_accepted_terms,
             is_active: Some(true),
             is_superuser: Some(false),
             timezone: user.timezone,
@@ -66,12 +67,20 @@ pub async fn authenticate(
 pub async fn create_user(
     new_user: Json<CreateUser>,
     user_service: &State<Arc<UserService>>,
-) -> Result<Json<User>, Status> {
-    let user: NewUser = new_user.into_inner().into();
-
-    match user_service.create_user(user).await {
-        Ok(created_user) => Ok(Json(created_user)),
-        Err(err) => map_auth_error_to_status(err),
+    cookies: &CookieJar<'_>,
+) -> Result<Json<String>, Status> {
+    match user_service.create_user(new_user.into_inner().into()).await {
+        Ok(tokens) => {
+            let refresh_cookie = Cookie::build(Cookie::new("refresh_token", tokens.refresh_token))
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::None)
+                .max_age(Duration::days(7))
+                .build();
+            cookies.add(refresh_cookie);
+            Ok(Json(tokens.access_token))
+        }
+        Err(err) => map_auth_error_to_status_string(err),
     }
 }
 

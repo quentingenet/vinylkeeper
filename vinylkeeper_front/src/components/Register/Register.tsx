@@ -73,7 +73,8 @@ export default function Register({
     password: "",
     passwordBis: "",
     isAcceptedTerms: false,
-    timezone: "UTC",
+    timezone: "Europe/Paris",
+    role_id: 2,
   };
 
   const validationSchema = yup.object({
@@ -153,28 +154,15 @@ export default function Register({
         const response = await registerService(dataRegister);
 
         if (response) {
-          const localStorageJwt = localStorage.getItem("jwt") || "";
-
-          if (localStorageJwt !== null && localStorageJwt !== "") {
-            userContext.setJwt(
-              localStorageJwt.startsWith("Bearer")
-                ? localStorageJwt
-                : `Bearer ${localStorageJwt}`
-            );
-
-            setIsLoading(false);
-            userContext.setIsFirstConnection(true);
-            userContext.setIsUserLoggedIn(false);
-            navigate("/");
-          }
+          userContext.setJwt(response);
+          userContext.setIsFirstConnection(true);
+          userContext.setIsUserLoggedIn(true);
+          navigate("/dashboard");
         }
       } catch (error) {
-        setIsLoading(false);
         console.error("Erreur lors de l'inscription :", error);
       } finally {
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 500);
+        setIsLoading(false);
       }
     }
   };

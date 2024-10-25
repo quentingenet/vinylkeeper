@@ -5,4 +5,5 @@ export interface IRegisterForm {
   passwordBis: string;
   isAcceptedTerms: boolean;
   timezone: string;
+  role_id?: number;
 }

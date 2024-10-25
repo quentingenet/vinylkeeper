@@ -85,7 +85,7 @@ diesel::table! {
         email -> Varchar,
         #[max_length = 255]
         password -> Varchar,
-        is_accepted_terms -> Nullable<Bool>,
+        is_accepted_terms -> Bool,
         is_active -> Nullable<Bool>,
         is_superuser -> Nullable<Bool>,
         last_login -> Nullable<Timestamptz>,

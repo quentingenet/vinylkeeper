@@ -6,6 +6,8 @@ interface IUserContext {
   setJwt: (jwt: string) => void;
   isUserLoggedIn: boolean;
   setIsUserLoggedIn: (isLoggedIn: boolean) => void;
+  isFirstConnection: boolean;
+  setIsFirstConnection: (isFirstConnection: boolean) => void;
   refreshJwt: () => Promise<void>;
   logout: () => void;
 }
@@ -15,6 +17,8 @@ export const UserContext = createContext<IUserContext>({
   setJwt: () => {},
   isUserLoggedIn: false,
   setIsUserLoggedIn: () => {},
+  isFirstConnection: false,
+  setIsFirstConnection: () => {},
   refreshJwt: async () => {},
   logout: () => {},
 });
@@ -30,6 +34,7 @@ export function UserContextProvider({
 }) {
   const [jwt, setJwt] = useState<string>("");
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false);
+  const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
 
   const refreshJwt = async () => {
     try {
@@ -73,6 +78,8 @@ export function UserContextProvider({
     setJwt,
     isUserLoggedIn,
     setIsUserLoggedIn,
+    isFirstConnection,
+    setIsFirstConnection,
     refreshJwt,
     logout,
   };

@@ -57,7 +57,7 @@ impl UserService {
             .verify_password(password.as_bytes(), &parsed_hash)
             .map_err(|_| AuthError::InvalidCredentials)?;
 
-        let user_role = Role::from_id(user.role_id);
+        let user_role = Role::from_id(2); // role by default for simple user
 
         let access_token =
             generate_jwt(user.id, user_role.clone()).map_err(|_| AuthError::JwtGenerationError)?;
@@ -75,7 +75,7 @@ impl UserService {
         })
     }
 
-    pub async fn create_user(&self, mut new_user: NewUser) -> Result<User, AuthError> {
+    pub async fn create_user(&self, mut new_user: NewUser) -> Result<AuthTokens, AuthError> {
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
             .hash_password(new_user.password.as_bytes(), &salt)
@@ -83,16 +83,29 @@ impl UserService {
             .to_string();
         new_user.password = password_hash;
 
-        self.user_repository
-            .create(&new_user)
-            .await
-            .map_err(|err| match err {
-                DieselError::DatabaseError(
-                    diesel::result::DatabaseErrorKind::UniqueViolation,
-                    _,
-                ) => AuthError::UserAlreadyExists,
-                _ => AuthError::DatabaseError,
-            })
+        let created_user =
+            self.user_repository
+                .create(&new_user)
+                .await
+                .map_err(|err| match err {
+                    DieselError::DatabaseError(
+                        diesel::result::DatabaseErrorKind::UniqueViolation,
+                        _,
+                    ) => AuthError::UserAlreadyExists,
+                    _ => AuthError::DatabaseError,
+                })?;
+
+        let user_role = Role::from_id(2); // Rôle par défaut
+
+        let access_token = generate_jwt(created_user.id, user_role.clone())
+            .map_err(|_| AuthError::JwtGenerationError)?;
+        let refresh_token = generate_refresh_token(created_user.id, user_role)
+            .map_err(|_| AuthError::JwtGenerationError)?;
+
+        Ok(AuthTokens {
+            access_token,
+            refresh_token,
+        })
     }
 
     pub async fn refresh_jwt(&self, refresh_token: &str) -> Result<String, AuthError> {
