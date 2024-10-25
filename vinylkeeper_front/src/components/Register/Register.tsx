@@ -146,25 +146,24 @@ export default function Register({
     borderRadius: "5px",
   };
 
-  const submitRegister = async () => {
-    if (isValid) {
-      try {
-        setIsLoading(true);
+  const submitRegister = () => {
+    if (!isValid) return;
 
-        const response = await registerService(dataRegister);
+    setIsLoading(true);
 
-        if (response) {
-          userContext.setJwt(response);
-          userContext.setIsFirstConnection(true);
-          userContext.setIsUserLoggedIn(true);
-          navigate("/dashboard");
-        }
-      } catch (error) {
+    registerService(dataRegister)
+      .then((response) => {
+        userContext.setJwt(response);
+        userContext.setIsFirstConnection(true);
+        userContext.setIsUserLoggedIn(true);
+        navigate("/dashboard");
+      })
+      .catch((error) => {
         console.error("Erreur lors de l'inscription :", error);
-      } finally {
+      })
+      .finally(() => {
         setIsLoading(false);
-      }
-    }
+      });
   };
 
   return (

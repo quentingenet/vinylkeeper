@@ -1,4 +1,5 @@
-import { API_URL } from "@utils/GlobalUtils";
+import { API_VK_URL } from "@utils/GlobalUtils";
+import requestService from "@utils/RequestService";
 import { createContext, useContext, useState, useEffect } from "react";
 
 interface IUserContext {
@@ -38,21 +39,16 @@ export function UserContextProvider({
 
   const refreshJwt = async () => {
     try {
-      const response = await fetch(API_URL.concat("/users/refresh-token"), {
+      await requestService({
+        apiTarget: API_VK_URL,
         method: "POST",
+        endpoint: "/users/refresh-token",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
-      if (response.ok) {
-        setIsUserLoggedIn(true);
-      } else {
-        console.error("Échec du rafraîchissement du JWT:", response.status);
-        logout();
-      }
+
+      setIsUserLoggedIn(true);
     } catch (error) {
-      console.error("Erreur réseau lors du rafraîchissement du JWT :", error);
+      console.error("Échec du rafraîchissement du JWT :", error);
       logout();
     }
   };

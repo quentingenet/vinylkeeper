@@ -126,28 +126,23 @@ export default function Login({
     email: watch("email"),
     password: watch("password"),
   };
-  const submitLogin = async () => {
-    if (isValid) {
-      setIsLoading(true);
 
-      loginService(dataLogin)
-        .then((response) => {
-          if (response) {
-            userContext.setJwt(response.data);
-            userContext.setIsUserLoggedIn(true);
-            navigate("/dashboard");
-          } else {
-            console.error("Error while logging in.");
-            setIsLoading(false);
-            setOpenSnackBar(true);
-          }
-        })
-        .catch((error) => {
-          console.error("Error while logging in:", error);
-          setOpenSnackBar(true);
-        })
-        .finally(() => setIsLoading(false));
-    }
+  const submitLogin = () => {
+    if (!isValid) return;
+
+    setIsLoading(true);
+
+    loginService(dataLogin)
+      .then((response) => {
+        userContext.setJwt(response.data);
+        userContext.setIsUserLoggedIn(true);
+        navigate("/dashboard");
+      })
+      .catch((error) => {
+        console.error("Error while logging in:", error);
+        setOpenSnackBar(true);
+      })
+      .finally(() => setIsLoading(false));
   };
 
   return (

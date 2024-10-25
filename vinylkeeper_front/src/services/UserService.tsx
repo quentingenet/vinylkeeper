@@ -1,6 +1,7 @@
+import requestService from "@utils/RequestService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
-import { API_URL } from "@utils/GlobalUtils";
+import { API_VK_URL } from "@utils/GlobalUtils";
 
 export const login = (data: ILoginForm) => {
   const requestDataLogin = {
@@ -8,60 +9,35 @@ export const login = (data: ILoginForm) => {
     password: data.password,
   };
 
-  return fetch(API_URL.concat("/users/auth"), {
+  return requestService({
+    apiTarget: API_VK_URL,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestDataLogin),
+    endpoint: "/users/auth",
+    body: requestDataLogin,
     credentials: "include",
-  })
-    .then((response) => {
-      if (!response.ok) {
-        return response.json().then((errorData) => {
-          throw new Error(
-            errorData.message || `Login failed with status ${response.status}`
-          );
-        });
-      }
-      return response.json();
-    })
-    .then((responseData) => {
-      if (!responseData) {
-        throw new Error("Access token missing in response");
-      }
-      return { status: 200, data: responseData };
-    });
+  }).then((responseData) => {
+    if (!responseData) {
+      throw new Error("Access token missing in response");
+    }
+    return { status: 200, data: responseData };
+  });
 };
 
-export const register = async (dataRegister: IRegisterForm) => {
+export const register = (dataRegister: IRegisterForm) => {
   const requestDataRegister = {
     username: dataRegister.username,
     email: dataRegister.email,
     password: dataRegister.password,
     is_accepted_terms: dataRegister.isAcceptedTerms,
     timezone: dataRegister.timezone,
-    role_id: 2,
+    role_id: 2, // Par défaut, rôle utilisateur standard
   };
 
-  try {
-    const response = await fetch(API_URL.concat("/users/register"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestDataRegister),
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error("Error during registration");
-    }
-
-    const responseData = await response.json();
-
-    return responseData;
-  } catch (error) {
-    throw new Error("Error during registration: " + error);
-  }
+  return requestService({
+    apiTarget: API_VK_URL,
+    method: "POST",
+    endpoint: "/users/register",
+    body: requestDataRegister,
+    credentials: "include",
+  });
 };
