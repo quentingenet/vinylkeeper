@@ -24,6 +24,15 @@ impl UserRepository {
             .await
     }
 
+    pub async fn find_by_id(&self, user_id: i32) -> Result<User, DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        users::table
+            .filter(users::id.eq(user_id))
+            .select(User::as_select())
+            .first::<User>(&mut conn)
+            .await
+    }
+
     pub async fn create(&self, new_user: &NewUser) -> Result<User, DieselError> {
         let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
         diesel::insert_into(users::table)

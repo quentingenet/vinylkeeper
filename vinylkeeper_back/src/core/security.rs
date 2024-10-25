@@ -6,10 +6,16 @@ pub fn create_cors_fairing() -> Cors {
 
     CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post]
-            .into_iter()
-            .map(Into::into)
-            .collect(), // Convertit en rocket_cors::Method
+        allowed_methods: vec![
+            Method::Get,
+            Method::Post,
+            Method::Put,
+            Method::Patch,
+            Method::Delete,
+        ]
+        .into_iter()
+        .map(Into::into)
+        .collect(),
         allow_credentials: true,
         ..Default::default()
     }

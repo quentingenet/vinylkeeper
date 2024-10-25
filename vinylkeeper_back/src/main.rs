@@ -5,7 +5,7 @@ mod repositories;
 mod services;
 mod utils;
 
-use crate::api::users::{authenticate, create_user};
+use crate::api::users::{authenticate, create_user, refresh_token};
 use crate::repositories::user_repository::UserRepository;
 use crate::services::user_service::UserService;
 use core::security::create_cors_fairing;
@@ -68,5 +68,8 @@ fn build_rocket(pool: PoolDB, user_service: Arc<UserService>) -> Rocket<Build> {
         .attach(create_cors_fairing())
         .manage(pool)
         .manage(user_service)
-        .mount("/api/users", routes![authenticate, create_user])
+        .mount(
+            "/api/users",
+            routes![authenticate, create_user, refresh_token],
+        )
 }

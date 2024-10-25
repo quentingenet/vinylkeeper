@@ -1,4 +1,4 @@
-use crate::core::jwt::{generate_jwt, generate_refresh_token};
+use crate::core::jwt::{generate_jwt, generate_refresh_token, validate_refresh_token};
 use crate::db::models::role::Role;
 use crate::db::models::user::{NewUser, User};
 use crate::repositories::user_repository::UserRepository;
@@ -22,6 +22,8 @@ pub enum AuthError {
     JwtGenerationError,
     #[error("User already exists")]
     UserAlreadyExists,
+    #[error("Invalid token")]
+    InvalidToken,
 }
 
 pub struct AuthTokens {
@@ -91,5 +93,17 @@ impl UserService {
                 ) => AuthError::UserAlreadyExists,
                 _ => AuthError::DatabaseError,
             })
+    }
+
+    pub async fn refresh_jwt(&self, refresh_token: &str) -> Result<String, AuthError> {
+        let claims = validate_refresh_token(refresh_token).map_err(|_| AuthError::InvalidToken)?;
+        let user = self
+            .user_repository
+            .find_by_id(claims.sub)
+            .await
+            .map_err(|_| AuthError::InvalidCredentials)?;
+        let user_role = Role::from_id(user.role_id);
+
+        generate_jwt(user.id, user_role).map_err(|_| AuthError::JwtGenerationError)
     }
 }

@@ -38,6 +38,7 @@ impl From<CreateUser> for NewUser {
     }
 }
 
+// Endpoint d'authentification
 #[post("/auth", format = "json", data = "<auth_user>")]
 pub async fn authenticate(
     auth_user: Json<AuthUser>,
@@ -71,6 +72,22 @@ pub async fn create_user(
     match user_service.create_user(user).await {
         Ok(created_user) => Ok(Json(created_user)),
         Err(err) => map_auth_error_to_status(err),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct RefreshTokenRequest {
+    pub refresh_token: String,
+}
+
+#[post("/refresh-token", format = "json", data = "<token_request>")]
+pub async fn refresh_token(
+    token_request: Json<RefreshTokenRequest>,
+    user_service: &State<Arc<UserService>>,
+) -> Result<Json<String>, Status> {
+    match user_service.refresh_jwt(&token_request.refresh_token).await {
+        Ok(new_jwt) => Ok(Json(new_jwt)),
+        Err(_) => Err(Status::Unauthorized), // ou une autre gestion d'erreur
     }
 }
 
