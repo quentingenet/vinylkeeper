@@ -12,6 +12,8 @@ pub fn send_email(
     let from_address = env::var("SMTP_FROM_ADDRESS")
         .unwrap_or_else(|_| "the.vinyl.keeper.app@gmail.com".to_string());
 
+    println!("Preparing email to be sent from {} to {}", from_address, to);
+
     let mut email_builder = Message::builder()
         .from(from_address.parse().map_err(|e| {
             eprintln!("Failed to parse 'from' address: {:?}", e);
@@ -29,7 +31,12 @@ pub fn send_email(
         email_builder = email_builder.header(ContentType::TEXT_PLAIN);
     }
 
-    let email = email_builder.body(body.to_string())?;
+    let email = email_builder.body(body.to_string()).map_err(|e| {
+        eprintln!("Failed to build email body: {:?}", e);
+        e
+    })?;
+
+    println!("Sending email...");
 
     smtp_client().send(&email).map_err(|e| {
         eprintln!("Failed to send email: {:?}", e);
