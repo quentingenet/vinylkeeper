@@ -15,6 +15,7 @@ import {
 import { emailValidator } from "@utils/Regex";
 import { useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
+import { forgotPasswordService } from "@services/UserService";
 
 type ForgotPasswordProps = {
   openForgotPassword: boolean;
@@ -92,7 +93,7 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
                 size="large"
                 onClick={() => {
                   if (emailRecovery.match(emailValidator)) {
-                    /*resetAndChangePassword(emailRecovery);*/
+                    forgotPasswordService(emailRecovery);
                     setIsMailSended(true);
                     setErrorRecovery(false);
                   } else {

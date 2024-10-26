@@ -1,6 +1,7 @@
 mod api;
 mod core;
 mod db;
+mod mail;
 mod repositories;
 mod services;
 mod utils;
@@ -8,6 +9,7 @@ mod utils;
 use crate::api::users::{authenticate, create_user, refresh_token};
 use crate::repositories::user_repository::UserRepository;
 use crate::services::user_service::UserService;
+use api::users::{forgot_password, reset_password};
 use core::security::create_cors_fairing;
 use db::connection::{create_pool, PoolDB};
 use dotenvy;
@@ -82,6 +84,12 @@ fn build_rocket(pool: PoolDB, user_service: Arc<UserService>) -> Rocket<Build> {
         .manage(user_service)
         .mount(
             "/api/users",
-            routes![authenticate, create_user, refresh_token],
+            routes![
+                authenticate,
+                create_user,
+                refresh_token,
+                forgot_password,
+                reset_password
+            ],
         )
 }

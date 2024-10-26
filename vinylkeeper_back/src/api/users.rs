@@ -24,6 +24,17 @@ pub struct CreateUser {
     pub timezone: String,
 }
 
+#[derive(Deserialize)]
+pub struct ResetPasswordRequest {
+    pub email: String,
+}
+
+#[derive(Deserialize)]
+pub struct ResetPasswordData {
+    pub token: String,
+    pub new_password: String,
+}
+
 impl From<CreateUser> for NewUser {
     fn from(user: CreateUser) -> Self {
         NewUser {
@@ -102,6 +113,42 @@ pub async fn refresh_token(
     } else {
         println!("No refresh token found in cookies");
         Err(Status::Unauthorized)
+    }
+}
+
+#[post("/forgot-password", format = "json", data = "<request>")]
+pub async fn forgot_password(
+    request: Json<ResetPasswordRequest>,
+    user_service: &State<Arc<UserService>>,
+) -> Result<Json<&'static str>, Status> {
+    let email = &request.email;
+
+    match user_service.send_password_reset_email(email).await {
+        Ok(_) => Ok(Json("Password reset email sent successfully")),
+        Err(AuthError::InvalidCredentials) => Err(Status::NotFound),
+        Err(_) => {
+            println!("Error during password reset request.");
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+#[post("/reset-password", format = "json", data = "<data>")]
+pub async fn reset_password(
+    data: Json<ResetPasswordData>,
+    user_service: &State<Arc<UserService>>,
+) -> Result<Json<&'static str>, Status> {
+    match user_service
+        .reset_password(&data.token, &data.new_password)
+        .await
+    {
+        Ok(_) => Ok(Json("Password has been reset successfully")),
+        Err(AuthError::InvalidToken) => Err(Status::Unauthorized),
+        Err(AuthError::PasswordHashError) => Err(Status::BadRequest),
+        Err(_) => {
+            println!("Error during password reset.");
+            Err(Status::InternalServerError)
+        }
     }
 }
 
