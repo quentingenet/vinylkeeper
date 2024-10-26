@@ -70,3 +70,28 @@ pub fn validate_refresh_token(token: &str) -> Result<RefreshClaims, jsonwebtoken
 
     decode::<RefreshClaims>(token, &decoding_key, &validation).map(|data| data.claims)
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResetClaims {
+    pub sub: i32,
+    pub exp: usize,
+}
+
+pub fn generate_reset_token(user_id: i32) -> Result<String, jsonwebtoken::errors::Error> {
+    let claims = ResetClaims {
+        sub: user_id,
+        exp: (Utc::now() + Duration::minutes(15)).timestamp() as usize,
+    };
+
+    let header = Header::new(jsonwebtoken::Algorithm::RS256);
+    let encoding_key = get_private_key();
+
+    encode(&header, &claims, &encoding_key)
+}
+
+pub fn validate_reset_token(token: &str) -> Result<ResetClaims, jsonwebtoken::errors::Error> {
+    let decoding_key = get_public_key();
+    let validation = Validation::new(jsonwebtoken::Algorithm::RS256);
+
+    decode::<ResetClaims>(token, &decoding_key, &validation).map(|data| data.claims)
+}

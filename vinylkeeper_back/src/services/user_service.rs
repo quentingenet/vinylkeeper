@@ -1,6 +1,12 @@
-use crate::core::jwt::{generate_jwt, generate_refresh_token, validate_refresh_token};
+use crate::core::jwt::{
+    generate_jwt, generate_refresh_token, generate_reset_token, validate_refresh_token,
+    validate_reset_token,
+};
 use crate::db::models::role::Role;
 use crate::db::models::user::NewUser;
+use crate::mail::sender::send_email;
+use crate::mail::subject::MailSubject;
+use crate::mail::templates::password_reset::password_reset_template;
 use crate::repositories::user_repository::UserRepository;
 use argon2::password_hash::{rand_core, PasswordHash, PasswordHasher, SaltString};
 use argon2::{Argon2, PasswordVerifier};
@@ -57,7 +63,7 @@ impl UserService {
             .verify_password(password.as_bytes(), &parsed_hash)
             .map_err(|_| AuthError::InvalidCredentials)?;
 
-        let user_role = Role::from_id(2); // role by default for simple user
+        let user_role = Role::from_id(2);
 
         let access_token =
             generate_jwt(user.id, user_role.clone()).map_err(|_| AuthError::JwtGenerationError)?;
@@ -95,7 +101,7 @@ impl UserService {
                     _ => AuthError::DatabaseError,
                 })?;
 
-        let user_role = Role::from_id(2); // Rôle par défaut
+        let user_role = Role::from_id(2);
 
         let access_token = generate_jwt(created_user.id, user_role.clone())
             .map_err(|_| AuthError::JwtGenerationError)?;
@@ -113,5 +119,46 @@ impl UserService {
         let user_role = Role::from_str(&claims.role).map_err(|_| AuthError::InvalidRole)?;
 
         generate_jwt(claims.sub, user_role).map_err(|_| AuthError::JwtGenerationError)
+    }
+
+    pub async fn send_password_reset_email(&self, email: &str) -> Result<(), AuthError> {
+        let user = self
+            .user_repository
+            .find_by_email(email)
+            .await
+            .map_err(|_| AuthError::InvalidCredentials)?;
+
+        let reset_token =
+            generate_reset_token(user.id).map_err(|_| AuthError::JwtGenerationError)?;
+
+        let email_body = password_reset_template(&reset_token);
+
+        send_email(email, MailSubject::PasswordReset, &email_body, false)
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        Ok(())
+    }
+
+    pub async fn reset_password(&self, token: &str, new_password: &str) -> Result<(), AuthError> {
+        let claims = validate_reset_token(token).map_err(|_| AuthError::InvalidToken)?;
+
+        let user = self
+            .user_repository
+            .find_by_id(claims.sub)
+            .await
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        let salt = SaltString::generate(&mut OsRng);
+        let hashed_password = Argon2::default()
+            .hash_password(new_password.as_bytes(), &salt)
+            .map_err(|_| AuthError::PasswordHashError)?
+            .to_string();
+
+        self.user_repository
+            .update_password(user.id, &hashed_password)
+            .await
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        Ok(())
     }
 }

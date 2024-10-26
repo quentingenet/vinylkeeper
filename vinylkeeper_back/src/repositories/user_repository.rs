@@ -66,4 +66,17 @@ impl UserRepository {
             .await
             .map(|_| ())
     }
+
+    pub async fn update_password(
+        &self,
+        user_id: i32,
+        hashed_password: &str,
+    ) -> Result<(), DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        diesel::update(users::table.filter(users::id.eq(user_id)))
+            .set(users::password.eq(hashed_password))
+            .execute(&mut conn)
+            .await
+            .map(|_| ())
+    }
 }

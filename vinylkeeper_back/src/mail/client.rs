@@ -1,6 +1,6 @@
 use lettre::transport::smtp::authentication::Credentials;
-use lettre::transport::smtp::client::Tls;
-use lettre::{SmtpTransport, Transport};
+use lettre::transport::smtp::client::{Tls, TlsParameters};
+use lettre::SmtpTransport;
 use std::env;
 
 pub fn smtp_client() -> SmtpTransport {
@@ -14,9 +14,13 @@ pub fn smtp_client() -> SmtpTransport {
 
     let creds = Credentials::new(smtp_username, smtp_password);
 
-    SmtpTransport::builder_dangerous(smtp_server)
+    let tls_parameters =
+        TlsParameters::new(smtp_server.clone()).expect("Failed to create TLS parameters");
+
+    SmtpTransport::relay(&smtp_server)
+        .expect("Could not create SMTP relay")
         .port(smtp_port)
         .credentials(creds)
-        .tls(Tls::Opportunistic)
+        .tls(Tls::Required(tls_parameters))
         .build()
 }

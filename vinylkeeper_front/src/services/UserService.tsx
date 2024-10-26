@@ -40,3 +40,13 @@ export const register = (dataRegister: IRegisterForm) => {
     credentials: "include",
   });
 };
+
+export const forgotPasswordService = (emailRecovery: string) => {
+  return requestService({
+    apiTarget: API_VK_URL,
+    method: "POST",
+    endpoint: "/users/forgot-password",
+    body: { email: emailRecovery },
+    credentials: "include",
+  });
+};
