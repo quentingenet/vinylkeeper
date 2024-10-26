@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 
 #[derive(Queryable, Insertable, Associations)]
-#[belongs_to(User)]
+#[diesel(belongs_to(User))]
 #[diesel(table_name = collections)]
 pub struct Collection {
     pub id: i32,

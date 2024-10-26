@@ -1,8 +1,8 @@
-use diesel::prelude::*;
 use crate::schema::artists;
+use diesel::prelude::*;
 
 #[derive(Queryable, Insertable)]
-#[table_name = "artists"]
+#[diesel(table_name = artists)]
 pub struct Artist {
     pub id: i32,
     pub name: String,

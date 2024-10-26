@@ -1,11 +1,11 @@
-use diesel::prelude::*;
 use crate::schema::loans;
 use chrono::NaiveDateTime;
+use diesel::prelude::*;
 
 #[derive(Queryable, Insertable, Associations)]
-#[belongs_to(User)]
-#[belongs_to(Album)]
-#[table_name = "loans"]
+#[diesel(belongs_to(User))]
+#[diesel(belongs_to(Album))]
+#[diesel(table_name = loans)]
 pub struct Loan {
     pub id: i32,
     pub user_id: i32,

@@ -56,10 +56,22 @@ fn load_env() {
         println!("Production environment loaded");
     }
 
-    if let Ok(database_url) = std::env::var("DATABASE_URL") {
-        println!("DATABASE_URL: {}", database_url);
+    if std::env::var("DATABASE_URL").is_err() {
+        let username = std::env::var("DATABASE_USERNAME").expect("DATABASE_USERNAME must be set");
+        let password = std::env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD must be set");
+        let host = std::env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = std::env::var("DATABASE_PORT").unwrap_or_else(|_| "5432".to_string());
+        let db_name = std::env::var("DATABASE_NAME").expect("DATABASE_NAME must be set");
+
+        let database_url = format!(
+            "postgres://{}:{}@{}:{}/{}",
+            username, password, host, port, db_name
+        );
+        std::env::set_var("DATABASE_URL", &database_url);
+
+        println!("DATABASE_URL generated dynamically");
     } else {
-        println!("DATABASE_URL must be set");
+        println!("DATABASE_URL loaded from environment");
     }
 }
 

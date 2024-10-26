@@ -1,133 +1,66 @@
-// @generated automatically by Diesel CLI.
+Print table definitions for database schema.
 
-diesel::table! {
-    albums (id) {
-        id -> Int4,
-        #[max_length = 255]
-        title -> Varchar,
-        artist_id -> Int4,
-        genre_id -> Int4,
-        collection_id -> Int4,
-        release_year -> Nullable<Int4>,
-        description -> Nullable<Text>,
-        cover_condition -> Nullable<Text>,
-        record_condition -> Nullable<Text>,
-        mood -> Nullable<Text>,
-        updated_at -> Nullable<Timestamptz>,
-    }
-}
+Usage: diesel print-schema [OPTIONS] [table-name]...
 
-diesel::table! {
-    artists (id) {
-        id -> Int4,
-        #[max_length = 255]
-        name -> Varchar,
-        #[max_length = 100]
-        country -> Nullable<Varchar>,
-        biography -> Nullable<Text>,
-    }
-}
+Arguments:
+  [table-name]...
+          Table names to filter.
 
-diesel::table! {
-    collections (id) {
-        id -> Int4,
-        #[max_length = 255]
-        name -> Varchar,
-        user_id -> Int4,
-        registered_at -> Nullable<Timestamptz>,
-        updated_at -> Nullable<Timestamptz>,
-        is_public -> Nullable<Bool>,
-    }
-}
+Options:
+      --database-url <DATABASE_URL>
+          Specifies the database URL to connect to. Falls back to the DATABASE_URL environment variable if unspecified.
 
-diesel::table! {
-    genres (id) {
-        id -> Int4,
-        #[max_length = 255]
-        name -> Varchar,
-    }
-}
+  -s, --schema <schema>
+          The name of the schema.
 
-diesel::table! {
-    loans (id) {
-        id -> Int4,
-        user_id -> Int4,
-        album_id -> Int4,
-        loan_date -> Nullable<Timestamptz>,
-        return_date -> Nullable<Timestamptz>,
-        updated_at -> Nullable<Timestamptz>,
-    }
-}
+      --config-file <CONFIG_FILE>
+          The location of the configuration file to use. Falls back to the `DIESEL_CONFIG_FILE` environment variable if unspecified. Defaults to `diesel.toml` in your project root. See diesel.rs/guides/configuring-diesel-cli for documentation on this file.
 
-diesel::table! {
-    ratings (id) {
-        id -> Int4,
-        rating -> Nullable<Int4>,
-        #[max_length = 255]
-        comment -> Nullable<Varchar>,
-        user_id -> Int4,
-        album_id -> Int4,
-    }
-}
+  -o, --only-tables
+          Only include tables from table-name that matches regexp.
 
-diesel::table! {
-    roles (id) {
-        id -> Int4,
-        name -> Text,
-    }
-}
+  -e, --except-tables
+          Exclude tables from table-name that matches regex.
 
-diesel::table! {
-    users (id) {
-        id -> Int4,
-        #[max_length = 255]
-        username -> Varchar,
-        #[max_length = 255]
-        email -> Varchar,
-        #[max_length = 255]
-        password -> Varchar,
-        is_accepted_terms -> Nullable<Bool>,
-        is_active -> Nullable<Bool>,
-        is_superuser -> Nullable<Bool>,
-        last_login -> Nullable<Timestamptz>,
-        registered_at -> Nullable<Timestamptz>,
-        updated_at -> Nullable<Timestamptz>,
-        #[max_length = 100]
-        timezone -> Varchar,
-        role_id -> Int4,
-    }
-}
+      --locked-schema
+          When `print_schema.file` is specified in your config file, this flag will cause Diesel CLI to error if any command would result in changes to that file. It is recommended that you use this flag when running migrations in CI or production.
 
-diesel::table! {
-    wishlists (id) {
-        id -> Int4,
-        user_id -> Int4,
-        album_id -> Int4,
-        created_at -> Nullable<Timestamptz>,
-        updated_at -> Nullable<Timestamptz>,
-    }
-}
+      --with-docs
+          Render documentation comments for tables and columns.
 
-diesel::joinable!(albums -> artists (artist_id));
-diesel::joinable!(albums -> collections (collection_id));
-diesel::joinable!(albums -> genres (genre_id));
-diesel::joinable!(collections -> users (user_id));
-diesel::joinable!(loans -> albums (album_id));
-diesel::joinable!(loans -> users (user_id));
-diesel::joinable!(ratings -> albums (album_id));
-diesel::joinable!(ratings -> users (user_id));
-diesel::joinable!(users -> roles (role_id));
-diesel::joinable!(wishlists -> albums (album_id));
-diesel::joinable!(wishlists -> users (user_id));
+      --with-docs-config <with-docs-config>
+          Render documentation comments for tables and columns.
+          
+          [possible values: database-comments-fallback-to-auto-generated-doc-comment, only-database-comments, no-doc-comments]
 
-diesel::allow_tables_to_appear_in_same_query!(
-    albums,
-    artists,
-    collections,
-    genres,
-    loans,
-    ratings,
-    roles,
-    users,
-    wishlists,
-);
+      --column-sorting <column-sorting>
+          Sort order for table columns.
+          
+          [possible values: ordinal_position, name]
+
+      --patch-file <patch-file>
+          A unified diff file to be applied to the final schema.
+
+      --import-types <import-types>
+          A list of types to import for every table, separated by commas.
+
+      --no-generate-missing-sql-type-definitions
+          Generate SQL type definitions for types not provided by diesel
+
+      --except-custom-type-definitions <except-custom-type-definitions>...
+          A list of regexes to filter the custom types definitions generated
+
+      --custom-type-derives <custom-type-derives>
+          A list of derives to implement for every automatically generated SqlType in the schema, separated by commas.
+
+      --schema-key <schema-key>
+          select schema key from diesel.toml, use 'default' for print_schema without key.
+          
+          [default: default]
+
+      --sqlite-integer-primary-key-is-bigint
+          For SQLite 3.37 and above, detect `INTEGER PRIMARY KEY` columns as `BigInt`, when the table isn't declared with `WITHOUT ROWID`.
+          See https://www.sqlite.org/lang_createtable.html#rowid for more information.
+
+  -h, --help
+          Print help (see a summary with '-h')

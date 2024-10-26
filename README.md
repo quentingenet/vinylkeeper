@@ -41,7 +41,7 @@ Ensure the following are installed on your machine:
 ```bash
 git clone https://github.com/quentingenet/vinylkeeper.git
 ```
-**Don't forget to create your personal .env.development file for the environment variables used in the project (front and back)**
+**Don't forget to create your personal .env.development file for the environment variables used in the project (front and back), to do that you can use the .env.template.contributors file**
 
 ### Backend Setup
 Navigate to the backend folder, install dependencies, and run migrations:
@@ -72,7 +72,7 @@ We welcome contributions to improve Vinyl Keeper! To contribute:
 1. Fork this repository.
 2. Create a feature branch **from develop** (`git checkout -b features/AmazingFeature`).
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
+4. Push to the branch (`git push origin features/AmazingFeature`).
 5. Open a Pull Request.
 
 The project promotes the four essential freedoms:
