@@ -122,20 +122,32 @@ impl UserService {
     }
 
     pub async fn send_password_reset_email(&self, email: &str) -> Result<(), AuthError> {
+        println!("Searching for user by email: {}", email);
         let user = self
             .user_repository
             .find_by_email(email)
             .await
-            .map_err(|_| AuthError::InvalidCredentials)?;
+            .map_err(|_| {
+                println!("User not found with email: {}", email);
+                AuthError::InvalidCredentials
+            })?;
 
-        let reset_token =
-            generate_reset_token(user.id).map_err(|_| AuthError::JwtGenerationError)?;
+        println!("Generating reset token for user ID: {}", user.id);
+        let reset_token = generate_reset_token(user.id).map_err(|e| {
+            println!("Failed to generate reset token: {:?}", e);
+            AuthError::JwtGenerationError
+        })?;
 
+        println!("Creating password reset email body.");
         let email_body = password_reset_template(&reset_token);
+        println!("Email body created.{}", email_body);
+        println!("Sending email to {}", email);
+        send_email(email, MailSubject::PasswordReset, &email_body, false).map_err(|e| {
+            println!("Failed to send email: {:?}", e);
+            AuthError::DatabaseError
+        })?;
 
-        send_email(email, MailSubject::PasswordReset, &email_body, false)
-            .map_err(|_| AuthError::DatabaseError)?;
-
+        println!("Password reset email sent successfully to {}", email);
         Ok(())
     }
 
