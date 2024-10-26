@@ -1,8 +1,8 @@
-use diesel::prelude::*;
+use crate::models::{Artist, Collection, Genre};
 use crate::schema::albums;
-use crate::models::{Artist, Genre, Collection};
 use chrono::NaiveDateTime;
-use serde::{Serialize, Deserialize};
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 // Définition des enums
 #[derive(Debug, Serialize, Deserialize, AsExpression, FromSqlRow)]
@@ -32,16 +32,16 @@ pub enum MoodEnum {
 }
 
 #[derive(Queryable, Insertable, Associations)]
-#[belongs_to(Artist)]
-#[belongs_to(Genre)]
-#[belongs_to(Collection)]
-#[table_name = "albums"]
+#[diesel(belongs_to(Artist))]
+#[diesel(belongs_to(Genre))]
+#[diesel(belongs_to(Collection))]
+#[diesel(table_name = albums)]
 pub struct Album {
     pub id: i32,
     pub title: String,
-    pub artist_id: i32,           // Clé étrangère vers Artist
-    pub genre_id: i32,            // Clé étrangère vers Genre
-    pub collection_id: i32,       // Clé étrangère vers Collection
+    pub artist_id: i32,     // Clé étrangère vers Artist
+    pub genre_id: i32,      // Clé étrangère vers Genre
+    pub collection_id: i32, // Clé étrangère vers Collection
     pub release_year: Option<i32>,
     pub description: Option<String>,
     pub cover_condition: Option<ConditionEnum>,

@@ -1,11 +1,11 @@
-use diesel::prelude::*;
 use crate::schema::wishlists;
 use chrono::NaiveDateTime;
+use diesel::prelude::*;
 
 #[derive(Queryable, Insertable, Associations)]
-#[belongs_to(User)]
-#[belongs_to(Album)]
-#[table_name = "wishlists"]
+#[diesel(belongs_to(User))]
+#[diesel(belongs_to(Album))]
+#[diesel(table_name = wishlists)]
 pub struct Wishlist {
     pub id: i32,
     pub user_id: i32,
