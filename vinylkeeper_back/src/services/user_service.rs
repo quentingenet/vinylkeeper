@@ -142,7 +142,7 @@ impl UserService {
         let email_body = password_reset_template(&reset_token);
         println!("Email body created.{}", email_body);
         println!("Sending email to {}", email);
-        send_email(email, MailSubject::PasswordReset, &email_body, false).map_err(|e| {
+        send_email(email, MailSubject::PasswordReset, &email_body).map_err(|e| {
             println!("Failed to send email: {:?}", e);
             AuthError::DatabaseError
         })?;

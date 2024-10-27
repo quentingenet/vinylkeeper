@@ -16,6 +16,6 @@ pub fn smtp_client() -> SmtpTransport {
     SmtpTransport::relay(&smtp_server)
         .expect("Could not create SMTP relay")
         .credentials(creds)
-        .tls(Tls::Required(tls_parameters))
+        .tls(Tls::Wrapper(tls_parameters))
         .build()
 }
