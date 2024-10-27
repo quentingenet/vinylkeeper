@@ -6,6 +6,7 @@ use crate::db::models::role::Role;
 use crate::db::models::user::NewUser;
 use crate::mail::sender::send_email;
 use crate::mail::subject::MailSubject;
+use crate::mail::templates::new_user_register::new_user_register_template;
 use crate::mail::templates::password_reset::password_reset_template;
 use crate::repositories::user_repository::UserRepository;
 use argon2::password_hash::{rand_core, PasswordHash, PasswordHasher, SaltString};
@@ -13,6 +14,7 @@ use argon2::{Argon2, PasswordVerifier};
 use chrono::Utc;
 use diesel::result::Error as DieselError;
 use rand_core::OsRng;
+use std::env;
 use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
@@ -33,6 +35,14 @@ pub enum AuthError {
     InvalidToken,
     #[error("Invalid role")]
     InvalidRole,
+}
+
+pub fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(), AuthError> {
+    let admin_email = env::var("EMAIL_ADMIN").expect("EMAIL_ADMIN must be set");
+    let email_body = new_user_register_template(username, user_email);
+
+    send_email(&admin_email, MailSubject::NewUserNotification, &email_body)
+        .map_err(|_| AuthError::DatabaseError)
 }
 
 pub struct AuthTokens {
@@ -101,8 +111,9 @@ impl UserService {
                     _ => AuthError::DatabaseError,
                 })?;
 
-        let user_role = Role::from_id(2);
+        notify_admin_new_user(&created_user.username, &created_user.email)?;
 
+        let user_role = Role::from_id(2);
         let access_token = generate_jwt(created_user.id, user_role.clone())
             .map_err(|_| AuthError::JwtGenerationError)?;
         let refresh_token = generate_refresh_token(created_user.id, user_role)

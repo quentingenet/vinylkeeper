@@ -2,6 +2,7 @@ pub enum MailSubject {
     PasswordReset,
     Welcome,
     AccountConfirmation,
+    NewUserNotification,
 }
 
 impl MailSubject {
@@ -10,6 +11,7 @@ impl MailSubject {
             MailSubject::PasswordReset => "Password reset",
             MailSubject::Welcome => "Welcome to Vinyl Keeper",
             MailSubject::AccountConfirmation => "Please confirm your account",
+            MailSubject::NewUserNotification => "New user notification",
         }
     }
 }
