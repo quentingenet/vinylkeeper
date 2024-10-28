@@ -17,7 +17,9 @@ use rand_core::OsRng;
 use std::env;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::Duration;
 use thiserror::Error;
+use tokio::time::timeout;
 
 #[derive(Debug, Error)]
 pub enum AuthError {
@@ -35,14 +37,37 @@ pub enum AuthError {
     InvalidToken,
     #[error("Invalid role")]
     InvalidRole,
+    #[error("Email send error")]
+    EmailSendError,
+    #[error("Missing config error")]
+    MissingConfigError,
+    #[error("Email timeout error")]
+    EmailTimeoutError,
 }
 
-pub fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(), AuthError> {
-    let admin_email = env::var("EMAIL_ADMIN").expect("EMAIL_ADMIN must be set");
+pub async fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(), AuthError> {
+    let admin_email = env::var("EMAIL_ADMIN").map_err(|_| {
+        eprintln!("EMAIL_ADMIN environment variable is not set.");
+        AuthError::MissingConfigError
+    })?;
+
     let email_body = new_user_register_template(username, user_email);
 
-    send_email(&admin_email, MailSubject::NewUserNotification, &email_body)
-        .map_err(|_| AuthError::DatabaseError)
+    timeout(
+        Duration::from_secs(5),
+        send_email(&admin_email, MailSubject::NewUserRegistered, &email_body),
+    )
+    .await
+    .map_err(|_| {
+        eprintln!("Sending email timed out.");
+        AuthError::EmailTimeoutError
+    })??;
+
+    println!(
+        "Registration notification sent successfully to {}.",
+        admin_email
+    );
+    Ok(())
 }
 
 pub struct AuthTokens {
@@ -111,7 +136,7 @@ impl UserService {
                     _ => AuthError::DatabaseError,
                 })?;
 
-        notify_admin_new_user(&created_user.username, &created_user.email)?;
+        notify_admin_new_user(&created_user.username, &created_user.email).await?;
 
         let user_role = Role::from_id(2);
         let access_token = generate_jwt(created_user.id, user_role.clone())
@@ -149,16 +174,11 @@ impl UserService {
             AuthError::JwtGenerationError
         })?;
 
-        println!("Creating password reset email body.");
         let email_body = password_reset_template(&reset_token);
-        println!("Email body created.{}", email_body);
-        println!("Sending email to {}", email);
-        send_email(email, MailSubject::PasswordReset, &email_body).map_err(|e| {
-            println!("Failed to send email: {:?}", e);
-            AuthError::DatabaseError
-        })?;
+        send_email(email, MailSubject::PasswordReset, &email_body)
+            .await
+            .map_err(|_| AuthError::DatabaseError)?;
 
-        println!("Password reset email sent successfully to {}", email);
         Ok(())
     }
 
