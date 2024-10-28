@@ -95,6 +95,7 @@ diesel::table! {
         #[max_length = 100]
         timezone -> Varchar,
         role_id -> Int4,
+        uuid_user -> Uuid,
     }
 }
 

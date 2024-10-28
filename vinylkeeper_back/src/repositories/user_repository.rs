@@ -4,9 +4,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use diesel_async::pooled_connection::bb8::Pool;
-use diesel_async::AsyncPgConnection;
-use diesel_async::RunQueryDsl;
-
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 pub struct UserRepository {
     pub pool: Pool<AsyncPgConnection>,
 }
