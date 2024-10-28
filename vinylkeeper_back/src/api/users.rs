@@ -7,6 +7,7 @@ use rocket::{post, time};
 use serde::Deserialize;
 use std::sync::Arc;
 use time::Duration;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct AuthUser {
@@ -38,6 +39,7 @@ pub struct ResetPasswordData {
 impl From<CreateUser> for NewUser {
     fn from(user: CreateUser) -> Self {
         NewUser {
+            uuid_user: Uuid::new_v4(),
             role_id: Some(2), // role id for simple user by default
             username: user.username,
             email: user.email,

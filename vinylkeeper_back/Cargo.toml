@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 rocket = { version = "0.5.1", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
-diesel = { version = "2.2", features = ["postgres", "chrono"] }
+diesel = { version = "2.2", features = ["postgres", "chrono","uuid"] }
 diesel-async = { version = "0.5", features = ["postgres", "bb8"] }
 dotenvy = "0.15"
 rocket_cors = "0.6" 
@@ -16,7 +16,7 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 tokio = { version = "1.41", features = ["full"] }
 lettre = "0.11.10"
-
+uuid = { version = "1", features = ["v4","serde"] }
 [features]
 default = ["dev"]
 dev = []
