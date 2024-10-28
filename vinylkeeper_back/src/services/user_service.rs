@@ -44,7 +44,6 @@ pub enum AuthError {
     #[error("Email timeout error")]
     EmailTimeoutError,
 }
-
 pub async fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(), AuthError> {
     let admin_email = env::var("EMAIL_ADMIN").map_err(|_| {
         eprintln!("EMAIL_ADMIN environment variable is not set.");
@@ -53,15 +52,12 @@ pub async fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(
 
     let email_body = new_user_register_template(username, user_email);
 
-    timeout(
-        Duration::from_secs(5),
-        send_email(&admin_email, MailSubject::NewUserRegistered, &email_body),
-    )
-    .await
-    .map_err(|_| {
-        eprintln!("Sending email timed out.");
-        AuthError::EmailTimeoutError
-    })??;
+    send_email(&admin_email, MailSubject::NewUserRegistered, &email_body)
+        .await
+        .map_err(|_| {
+            eprintln!("Sending email failed.");
+            AuthError::EmailSendError
+        })?;
 
     println!(
         "Registration notification sent successfully to {}.",
@@ -136,7 +132,15 @@ impl UserService {
                     _ => AuthError::DatabaseError,
                 })?;
 
-        notify_admin_new_user(&created_user.username, &created_user.email).await?;
+        timeout(
+            Duration::from_secs(1),
+            notify_admin_new_user(&created_user.username, &created_user.email),
+        )
+        .await
+        .map_err(|_| {
+            eprintln!("Sending email timed out.");
+            AuthError::EmailTimeoutError
+        })??;
 
         let user_role = Role::from_id(2);
         let access_token = generate_jwt(created_user.id, user_role.clone())
