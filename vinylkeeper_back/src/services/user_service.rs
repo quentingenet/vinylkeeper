@@ -96,9 +96,9 @@ impl UserService {
 
         let user_role = Role::from_id(2);
 
-        let access_token =
-            generate_jwt(user.id, user_role.clone()).map_err(|_| AuthError::JwtGenerationError)?;
-        let refresh_token = generate_refresh_token(user.id, user_role)
+        let access_token = generate_jwt(user.uuid_user, user_role.clone())
+            .map_err(|_| AuthError::JwtGenerationError)?;
+        let refresh_token = generate_refresh_token(user.uuid_user, user_role)
             .map_err(|_| AuthError::JwtGenerationError)?;
 
         self.user_repository
@@ -143,9 +143,9 @@ impl UserService {
         })??;
 
         let user_role = Role::from_id(2);
-        let access_token = generate_jwt(created_user.id, user_role.clone())
+        let access_token = generate_jwt(created_user.uuid_user, user_role.clone())
             .map_err(|_| AuthError::JwtGenerationError)?;
-        let refresh_token = generate_refresh_token(created_user.id, user_role)
+        let refresh_token = generate_refresh_token(created_user.uuid_user, user_role)
             .map_err(|_| AuthError::JwtGenerationError)?;
 
         Ok(AuthTokens {
@@ -173,7 +173,7 @@ impl UserService {
             })?;
 
         println!("Generating reset token for user ID: {}", user.id);
-        let reset_token = generate_reset_token(user.id).map_err(|e| {
+        let reset_token = generate_reset_token(user.uuid_user).map_err(|e| {
             println!("Failed to generate reset token: {:?}", e);
             AuthError::JwtGenerationError
         })?;
@@ -191,7 +191,7 @@ impl UserService {
 
         let user = self
             .user_repository
-            .find_by_id(claims.sub)
+            .find_user_by_uuid(claims.sub)
             .await
             .map_err(|_| AuthError::DatabaseError)?;
 

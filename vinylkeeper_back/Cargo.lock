@@ -2524,6 +2524,7 @@ dependencies = [
  "dotenvy",
  "jsonwebtoken",
  "lettre",
+ "once_cell",
  "rocket",
  "rocket_cors",
  "serde",

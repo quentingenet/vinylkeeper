@@ -1,29 +1,44 @@
 use crate::db::models::role::Role;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::fs;
-
+use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
+
 pub struct Claims {
-    pub sub: i32,
+    pub sub: Uuid,
     pub role: String,
     pub exp: usize,
 }
 
-fn get_private_key() -> EncodingKey {
-    let private_key = fs::read("src/keys/private_key.pem").expect("Unable to read private key");
-    EncodingKey::from_rsa_pem(&private_key).expect("Invalid RSA private key")
+static PRIVATE_KEY: OnceCell<EncodingKey> = OnceCell::new();
+static PUBLIC_KEY: OnceCell<DecodingKey> = OnceCell::new();
+
+fn load_private_key() -> EncodingKey {
+    let private_key = fs::read("src/keys/private_key.pem")
+        .expect("Unable to read private key from 'src/keys/private_key.pem'");
+    EncodingKey::from_rsa_pem(&private_key).expect("Invalid RSA private key format")
 }
 
-fn get_public_key() -> DecodingKey {
-    let public_key = fs::read("src/keys/public_key.pem").expect("Unable to read public key");
-    DecodingKey::from_rsa_pem(&public_key).expect("Invalid RSA public key")
+fn load_public_key() -> DecodingKey {
+    let public_key = fs::read("src/keys/public_key.pem")
+        .expect("Unable to read public key from 'src/keys/public_key.pem'");
+    DecodingKey::from_rsa_pem(&public_key).expect("Invalid RSA public key format")
 }
 
-pub fn generate_jwt(user_id: i32, role: Role) -> Result<String, jsonwebtoken::errors::Error> {
-    let claims = Claims {
-        sub: user_id,
+fn get_private_key() -> &'static EncodingKey {
+    PRIVATE_KEY.get_or_init(load_private_key)
+}
+
+fn get_public_key() -> &'static DecodingKey {
+    PUBLIC_KEY.get_or_init(load_public_key)
+}
+
+pub fn generate_jwt(uuid_user: Uuid, role: Role) -> Result<String, jsonwebtoken::errors::Error> {
+    let claims: Claims = Claims {
+        sub: uuid_user,
         role: role.as_str().to_string(),
         exp: (Utc::now() + Duration::minutes(15)).timestamp() as usize,
     };
@@ -43,17 +58,17 @@ pub fn validate_jwt(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RefreshClaims {
-    pub sub: i32,
+    pub sub: Uuid,
     pub role: String,
     pub exp: usize,
 }
 
 pub fn generate_refresh_token(
-    user_id: i32,
+    uuid_user: Uuid,
     role: Role,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     let claims = RefreshClaims {
-        sub: user_id,
+        sub: uuid_user,
         role: role.as_str().to_string(),
         exp: (Utc::now() + Duration::days(7)).timestamp() as usize,
     };
@@ -73,13 +88,13 @@ pub fn validate_refresh_token(token: &str) -> Result<RefreshClaims, jsonwebtoken
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResetClaims {
-    pub sub: i32,
+    pub sub: Uuid,
     pub exp: usize,
 }
 
-pub fn generate_reset_token(user_id: i32) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_reset_token(uuid_user: Uuid) -> Result<String, jsonwebtoken::errors::Error> {
     let claims = ResetClaims {
-        sub: user_id,
+        sub: uuid_user,
         exp: (Utc::now() + Duration::minutes(15)).timestamp() as usize,
     };
 
