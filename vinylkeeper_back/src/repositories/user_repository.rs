@@ -5,6 +5,7 @@ use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use diesel_async::pooled_connection::bb8::Pool;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use uuid::Uuid;
 pub struct UserRepository {
     pub pool: Pool<AsyncPgConnection>,
 }
@@ -23,10 +24,10 @@ impl UserRepository {
             .await
     }
 
-    pub async fn find_by_id(&self, user_id: i32) -> Result<User, DieselError> {
+    pub async fn find_user_by_uuid(&self, user_uuid: Uuid) -> Result<User, DieselError> {
         let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
         users::table
-            .filter(users::id.eq(user_id))
+            .filter(users::uuid_user.eq(user_uuid))
             .select(User::as_select())
             .first::<User>(&mut conn)
             .await
