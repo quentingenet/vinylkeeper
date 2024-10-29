@@ -145,10 +145,16 @@ pub async fn reset_password(
         .await
     {
         Ok(_) => Ok(Json("Password has been reset successfully")),
-        Err(AuthError::InvalidToken) => Err(Status::Unauthorized),
-        Err(AuthError::PasswordHashError) => Err(Status::BadRequest),
+        Err(AuthError::InvalidToken) => {
+            println!("Invalid token provided for password reset.");
+            Err(Status::Unauthorized)
+        }
+        Err(AuthError::PasswordHashError) => {
+            println!("Error hashing new password.");
+            Err(Status::BadRequest)
+        }
         Err(_) => {
-            println!("Error during password reset.");
+            println!("Internal error during password reset.");
             Err(Status::InternalServerError)
         }
     }
