@@ -33,6 +33,25 @@ impl UserRepository {
             .await
     }
 
+    pub async fn is_unique_user(
+        &self,
+        email: &str,
+        username: &str,
+        uuid_user: Uuid,
+    ) -> Result<bool, DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+
+        let existing_user = users::table
+            .filter(users::email.eq(email))
+            .or_filter(users::username.eq(username))
+            .or_filter(users::uuid_user.eq(uuid_user))
+            .first::<User>(&mut conn)
+            .await
+            .optional()?;
+
+        Ok(existing_user.is_none())
+    }
+
     pub async fn create(&self, new_user: &NewUser) -> Result<User, DieselError> {
         let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
         diesel::insert_into(users::table)
