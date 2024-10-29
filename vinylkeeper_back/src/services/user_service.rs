@@ -113,6 +113,15 @@ impl UserService {
     }
 
     pub async fn create_user(&self, mut new_user: NewUser) -> Result<AuthTokens, AuthError> {
+        if !self
+            .user_repository
+            .is_unique_user(&new_user.email, &new_user.username, new_user.uuid_user)
+            .await
+            .map_err(|_err| AuthError::DatabaseError)?
+        {
+            return Err(AuthError::UserAlreadyExists);
+        }
+
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
             .hash_password(new_user.password.as_bytes(), &salt)
