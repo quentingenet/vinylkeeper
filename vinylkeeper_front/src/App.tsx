@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { useUserContext } from "@contexts/UserContext.tsx";
 import Protected from "@routing/Protected";
 import NoMatch from "@pages/NoMatch/NoMatch";
@@ -8,20 +8,22 @@ import Dashboard from "@pages/Dashboard/Dashboard";
 import Contact from "@pages/Contact/Contact";
 import Terms from "@pages/Terms/Terms";
 import NavBar from "@components/NavBar/NavBar";
-import ResetPassword from "@components/ResetPassword/ResetPassword";
+import ResetPassword from "@pages/ResetPassword/ResetPassword";
 
 function App() {
   const userContext = useUserContext();
+  const location = useLocation();
 
   return (
     <>
-      {userContext.isUserLoggedIn && <NavBar />}
+      {userContext.isUserLoggedIn &&
+        !location.pathname.includes("reset-password") && <NavBar />}
       <Routes>
         <Route
           path="/"
           element={userContext.isUserLoggedIn ? <Dashboard /> : <Landpage />}
         />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/reset-password/" element={<ResetPassword />} />
         <Route
           path="/dashboard"
           element={

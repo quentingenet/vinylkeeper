@@ -2,6 +2,8 @@ import requestService from "@utils/RequestService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { API_VK_URL } from "@utils/GlobalUtils";
+import { IResetPassword } from "@models/IResetPassword";
+import { IResetPasswordToBackend } from "@models/IResetPasswordToBackend";
 
 export const login = (data: ILoginForm) => {
   const requestDataLogin = {
@@ -47,6 +49,16 @@ export const forgotPasswordService = (emailRecovery: string) => {
     method: "POST",
     endpoint: "/users/forgot-password",
     body: { email: emailRecovery },
+    credentials: "include",
+  });
+};
+
+export const resetPasswordService = (dataReset: IResetPasswordToBackend) => {
+  return requestService({
+    apiTarget: API_VK_URL,
+    method: "POST",
+    endpoint: "/users/reset-password",
+    body: dataReset,
     credentials: "include",
   });
 };
