@@ -6,14 +6,13 @@ mod repositories;
 mod services;
 mod utils;
 
-use crate::api::users::{authenticate, create_user, refresh_token};
 use crate::repositories::user_repository::UserRepository;
 use crate::services::user_service::UserService;
-use api::users::{forgot_password, reset_password};
+use api::api_routes::user_routes;
 use core::security::create_cors_fairing;
 use db::connection::{create_pool, PoolDB};
 use dotenvy;
-use rocket::{routes, Build, Rocket};
+use rocket::{Build, Rocket};
 use std::sync::Arc;
 
 #[rocket::main]
@@ -82,14 +81,5 @@ fn build_rocket(pool: PoolDB, user_service: Arc<UserService>) -> Rocket<Build> {
         .attach(create_cors_fairing())
         .manage(pool)
         .manage(user_service)
-        .mount(
-            "/api/users",
-            routes![
-                authenticate,
-                create_user,
-                refresh_token,
-                forgot_password,
-                reset_password
-            ],
-        )
+        .mount("/api/users", user_routes())
 }
