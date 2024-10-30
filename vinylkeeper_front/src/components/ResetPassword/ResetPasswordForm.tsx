@@ -16,11 +16,12 @@ import { Controller, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useLocation, useNavigate } from "react-router-dom";
-
 import useDetectMobile from "@hooks/useDetectMobile";
-import { IResetPassword } from "@models/IResetPassword";
+import {
+  IResetPassword,
+  IResetPasswordToBackend,
+} from "@models/IResetPassword";
 import { resetPasswordService } from "@services/UserService";
-import { IResetPasswordToBackend } from "@models/IResetPasswordToBackend";
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate();
