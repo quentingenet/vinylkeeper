@@ -1,5 +1,13 @@
 @use "../../styles/variables.scss";
 
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
 .videoBackgroundVinylKeeper {
     position: fixed;
     right: 0;
@@ -12,6 +20,7 @@
     background-position: center;
     background-repeat: no-repeat;
 }
+
 .imgMobileBackgroundVinylKeeper {
     background-image: url("../../assets/mobileBackgroundLandpage.webp");
     background-repeat: no-repeat;
@@ -25,33 +34,23 @@
     width: auto;
     height: auto;
 }
-.globalContainer {
-    @keyframes fadeIn {
-        0% {
-            opacity: 0;
-        }
 
-        100% {
-            opacity: 1;
-        }
-    }
-    @keyframes fadeIn {
-        0% {
-            opacity: 0;
-        }
-        100% {
-            opacity: 0.8;
-        }
+.globalContainer {
+    animation: fadeIn 4s;
+
+    .titleNormal,
+    .titleHigher {
+        transition: margin-top 0.5s ease-in-out;
     }
 
     .titleNormal {
         margin-top: 3rem;
-        transition: margin-top 0.5s ease-in-out;
     }
+
     .titleHigher {
         margin-top: 2rem;
-        transition: margin-top 0.5s ease-in-out;
     }
+
     .textContainer {
         display: flex;
         justify-content: center;
@@ -59,16 +58,17 @@
         text-align: center;
         flex-direction: column;
         margin-top: 2rem;
+
         .textTypo {
             font-family: Oswald-ExtraLight, sans-serif;
-            font-weight: normal;
+            font-weight: 700;
             font-size: 1.5rem;
             opacity: 0.8;
             color: #fffbf9;
-            font-weight: 700;
             margin: 5rem 0;
         }
     }
+
     .buttonContainer {
         display: flex;
         flex-direction: row;
@@ -79,16 +79,15 @@
     .actionContainerDisplayed {
         animation: fadeIn 0.5s ease-in-out forwards;
     }
-    .globalContainer > * {
-        animation: fadeIn 4s;
-    }
 }
-/*Login and Register css*/
+
+/* Login and Register */
 .formContainer {
     background-color: #fffbf9;
     opacity: 0.9;
     padding: 0 1rem;
     border-radius: 5px;
+
     .globalForm {
         margin-top: 2rem;
         display: flex;
@@ -96,9 +95,11 @@
         justify-content: center;
         align-items: center;
         gap: 0.7rem;
+
         .inputForm {
             color: #fffbf9;
         }
+
         .errorText {
             font-family: Oswald-Light, sans-serif;
             color: black;
@@ -106,16 +107,20 @@
         }
     }
 }
+
 @media screen and (max-width: 768px) {
     .globalContainer {
         .textContainer {
             margin-top: 2rem;
+
             .textTypo {
                 font-family: Oswald-Light;
                 font-size: 1rem;
             }
         }
-    } /*Login and Register css*/
+    }
+
+    /* Login and Register */
     .formContainer {
         opacity: 0.9;
     }
