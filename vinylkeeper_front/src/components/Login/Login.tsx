@@ -2,7 +2,7 @@ import {
   Alert,
   Button,
   CircularProgress,
-  Grid,
+  Grid2,
   IconButton,
   InputAdornment,
   Snackbar,
@@ -10,7 +10,6 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import styles from "../../styles/pages/Landpage.module.scss";
 import {
   Person2,
   Visibility,
@@ -18,25 +17,25 @@ import {
   ArrowBack,
 } from "@mui/icons-material";
 import { Controller, useForm } from "react-hook-form";
-import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { login as loginService } from "@services/UserService";
 import { useUserContext } from "../../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
-import { emailValidator } from "@utils/Regex";
 import Modal from "@mui/material/Modal";
 import useDetectMobile from "@hooks/useDetectMobile";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { ILoginForm } from "@models/ILoginForm";
+import { loginValidationSchema } from "@utils/validators/loginValidationSchema";
+import styles from "../../styles/pages/Landpage.module.scss";
 
-type LoginProps = {
+interface LoginProps {
   setRegister: (value: boolean) => void;
   setLogin: (value: boolean) => void;
   open: boolean;
   setOpen: (value: boolean) => void;
   openForgotPassword: boolean;
   setOpenForgotPassword: (value: boolean) => void;
-};
+}
 
 export default function Login({
   setRegister,
@@ -47,6 +46,11 @@ export default function Login({
   openForgotPassword,
 }: LoginProps) {
   const userContext = useUserContext();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [openSnackBar, setOpenSnackBar] = useState(false);
+  const { isMobile } = useDetectMobile();
 
   const handleClose = () => {
     setOpen(false);
@@ -55,272 +59,149 @@ export default function Login({
     setOpenForgotPassword(false);
   };
 
-  const { isMobile } = useDetectMobile();
-
-  const styleLogin = {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "5% auto",
-    width: isMobile ? "80%" : "20%",
-    bgcolor: "#fffbf9",
-    border: "none",
-    borderRadius: "5px",
-  };
-
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [forgotPassword, setForgotPassword] = useState<boolean>(false);
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-
-  const [openSnackBar, setOpenSnackBar] = useState<boolean>(false);
-
-  const handleOpenForgotPassword = () => {
-    setOpenForgotPassword(true);
-  };
-
-  const handleCloseSnackBar = () => {
-    setOpenSnackBar(false);
-  };
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const handleMouseDownPassword = (
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    event.preventDefault();
-  };
-
-  const initialValues: ILoginForm = {
-    email: "",
-    password: "",
-  };
-
-  const validationSchema = yup.object({
-    email: yup
-      .string()
-      .test("email", "Email not valid", (value) => {
-        if (value != undefined) {
-          return emailValidator.test(value);
-        }
-        return false;
-      })
-      .min(3, "Email must contain at least 4 characters.")
-      .required("You must enter your Email."),
-    password: yup
-      .string()
-      .min(4, "Password must contain at least 4 characters.")
-      .required("You must enter your password."),
-  });
-
   const {
     handleSubmit,
     control,
-    watch,
     formState: { errors, isValid },
   } = useForm<ILoginForm>({
-    defaultValues: initialValues,
-    resolver: yupResolver(validationSchema),
+    defaultValues: { email: "", password: "" },
+    resolver: yupResolver(loginValidationSchema),
   });
 
-  const dataLogin: ILoginForm = {
-    email: watch("email"),
-    password: watch("password"),
-  };
-
-  const submitLogin = () => {
+  const submitLogin = (data: ILoginForm) => {
     if (!isValid) return;
 
     setIsLoading(true);
-
-    loginService(dataLogin)
+    loginService(data)
       .then((response) => {
         userContext.setJwt(response.data);
         userContext.setIsUserLoggedIn(true);
         navigate("/dashboard");
       })
-      .catch((error) => {
-        console.error("Error while logging in:", error);
-        setOpenSnackBar(true);
-      })
+      .catch(() => setOpenSnackBar(true))
       .finally(() => setIsLoading(false));
   };
 
   return (
-    <>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="child-modal-title"
-        aria-describedby="child-modal-description"
-        sx={styleLogin}
-        className={styles.formContainer}
-      >
-        <form
-          onSubmit={handleSubmit(submitLogin)}
-          className={styles.globalForm}
-        >
-          <ForgotPasswordModal
-            setForgotPassword={setForgotPassword}
-            setOpenForgotPassword={setOpenForgotPassword}
-            openForgotPassword={openForgotPassword}
-          />
-          <Grid container>
-            <Grid item>
-              <Controller
-                name="email"
-                control={control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    id="email"
-                    className={styles.inputForm}
-                    label="Email"
-                    type="text"
-                    variant="outlined"
-                    InputProps={{
+    <Modal
+      open={open}
+      onClose={handleClose}
+      aria-labelledby="login-modal-title"
+      aria-describedby="login-modal-description"
+      sx={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: " auto",
+        width: isMobile ? "80%" : "20%",
+        bgcolor: "#fffbf9",
+        border: "none",
+        borderRadius: "5px",
+      }}
+      className={styles.formContainer}
+    >
+      <form onSubmit={handleSubmit(submitLogin)} className={styles.globalForm}>
+        <ForgotPasswordModal
+          setForgotPassword={setOpenForgotPassword}
+          setOpenForgotPassword={setOpenForgotPassword}
+          openForgotPassword={openForgotPassword}
+        />
+        <Grid2 container spacing={2} justifyContent="center">
+          <Grid2 sx={{ width: "100%" }}>
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Email"
+                  variant="outlined"
+                  fullWidth
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                  slotProps={{
+                    input: {
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton
-                            aria-label="toggle password visibility"
-                            edge="end"
-                          >
-                            <Person2 />
-                          </IconButton>
+                          <Person2 />
                         </InputAdornment>
                       ),
-                    }}
-                    onChange={(e) =>
-                      field.onChange(e.target.value.toLowerCase())
-                    }
-                  />
-                )}
-              />
-              {errors.email && (
-                <Grid container justifyContent={"center"}>
-                  <Grid item>
-                    <span className={styles.errorText}>
-                      {errors.email.message}
-                    </span>
-                  </Grid>
-                </Grid>
+                    },
+                  }}
+                />
               )}
-            </Grid>
-          </Grid>
-          <Grid container>
-            <Grid item>
-              <Controller
-                name="password"
-                control={control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    id="password"
-                    label="Password"
-                    type={showPassword ? "text" : "password"}
-                    variant="outlined"
-                    InputProps={{
+            />
+          </Grid2>
+
+          <Grid2 sx={{ width: "100%" }}>
+            <Controller
+              name="password"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Password"
+                  type={showPassword ? "text" : "password"}
+                  variant="outlined"
+                  fullWidth
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  slotProps={{
+                    input: {
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton
-                            aria-label="toggle password visibility"
-                            onClick={handleClickShowPassword}
-                            onMouseDown={handleMouseDownPassword}
-                            edge="end"
+                            onClick={() => setShowPassword(!showPassword)}
+                            onMouseDown={(e) => e.preventDefault()}
                           >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
                         </InputAdornment>
                       ),
-                    }}
-                  />
-                )}
-              />
-              {errors.password && (
-                <Grid container justifyContent={"center"}>
-                  <Grid item>
-                    <span className={styles.errorText}>
-                      {errors.password.message}
-                    </span>
-                  </Grid>
-                </Grid>
+                    },
+                  }}
+                />
               )}
-            </Grid>
-            {openSnackBar && (
-              <Snackbar
-                open={openSnackBar}
-                autoHideDuration={3000}
-                onClose={handleCloseSnackBar}
-              >
-                <Alert
-                  onClose={handleCloseSnackBar}
-                  severity="error"
-                  sx={{ width: "100%" }}
-                >
-                  Error while logging in. Try again.
-                </Alert>
-              </Snackbar>
-            )}
-          </Grid>
+            />
+          </Grid2>
 
-          <Grid
-            container
-            marginTop={2}
-            justifyContent={"center"}
+          <Grid2
+            display="flex"
             flexDirection={"column"}
-            alignItems={"center"}
+            justifyContent="center"
+            sx={{ width: "40%" }}
           >
-            <Grid item>
-              {isLoading ? (
-                <CircularProgress color="primary" />
-              ) : (
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  disabled={forgotPassword ? true : false}
-                >
-                  Login
-                </Button>
-              )}
-            </Grid>{" "}
-            <Grid container justifyContent={"center"} alignItems={"center"}>
-              <Grid item>
-                <Typography
-                  variant="caption"
-                  color={"black"}
-                  sx={{ cursor: "pointer" }}
-                  onClick={() => {
-                    setForgotPassword(true);
-                    handleOpenForgotPassword();
-                  }}
-                >
-                  Forgot password ?
-                </Typography>
-              </Grid>
-            </Grid>
-            <Grid
-              container
-              justifyContent={"start"}
-              alignItems={"center"}
-              flexDirection={"row"}
+            {isLoading ? (
+              <CircularProgress />
+            ) : (
+              <Button type="submit" variant="contained">
+                Login
+              </Button>
+            )}
+            <Typography
+              onClick={() => setOpenForgotPassword(true)}
+              variant="caption"
+              color="black"
+              sx={{ textAlign: "center", mb: 1, cursor: "pointer" }}
             >
-              <Grid item>
-                <IconButton
-                  onClick={() => {
-                    setRegister(false);
-                    setLogin(false);
-                  }}
-                >
-                  <ArrowBack />
-                </IconButton>
-              </Grid>
-            </Grid>
-          </Grid>
-        </form>
-      </Modal>
-    </>
+              Forgot password?
+            </Typography>
+          </Grid2>
+
+          {openSnackBar && (
+            <Snackbar
+              open={openSnackBar}
+              autoHideDuration={3000}
+              onClose={() => setOpenSnackBar(false)}
+            >
+              <Alert onClose={() => setOpenSnackBar(false)} severity="error">
+                Error while logging in. Try again.
+              </Alert>
+            </Snackbar>
+          )}
+        </Grid2>
+      </form>
+    </Modal>
   );
 }

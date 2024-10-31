@@ -23,28 +23,18 @@ const DesktopThemeLandpageVinylKeeper = createTheme({
       fontWeight: "bold",
       color: "#fffbf9",
     },
-    h2: {},
-    h3: {},
-    h4: {},
-    h5: {},
-    h6: {},
-    subtitle1: {},
     subtitle2: {
       fontFamily: "Oswald-Light",
       fontSize: "1.2rem",
       color: "#fffbf9",
       opacity: 0.9,
     },
-    body1: {},
-    body2: {},
-    button: {},
     caption: {
       fontFamily: "Oswald-Light",
       fontSize: ".9rem",
       color: "#fffbf9",
       opacity: 0.9,
     },
-    overline: {},
   },
   components: {
     MuiButton: {
@@ -99,6 +89,7 @@ const DesktopThemeLandpageVinylKeeper = createTheme({
     MuiFormHelperText: {
       styleOverrides: {
         root: {
+          textAlign: "center",
           "&.Mui-error": {
             color: "black",
             fontWeight: "bold",

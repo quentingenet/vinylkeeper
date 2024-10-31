@@ -1,9 +1,8 @@
 import useDetectMobile from "@hooks/useDetectMobile";
-import { Email } from "@mui/icons-material";
-import CloseIcon from "@mui/icons-material/Close";
+import { Email, Close as CloseIcon } from "@mui/icons-material";
 import {
   Modal,
-  Grid,
+  Grid2,
   TextField,
   InputAdornment,
   Button,
@@ -11,6 +10,7 @@ import {
   Alert,
   IconButton,
   Typography,
+  Box,
 } from "@mui/material";
 import { emailValidator } from "@utils/Regex";
 import { useState } from "react";
@@ -32,133 +32,121 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
     setForgotPassword(false);
   };
 
-  const [isMailSended, setIsMailSended] = useState<boolean>(false);
-  const [errorRecovery, setErrorRecovery] = useState<boolean>(false);
-  const [emailRecovery, setEmailrecovery] = useState<string>("");
+  const [isMailSended, setIsMailSended] = useState(false);
+  const [errorRecovery, setErrorRecovery] = useState(false);
+  const [emailRecovery, setEmailrecovery] = useState("");
 
   const { isMobile } = useDetectMobile();
 
-  const styleForgotPassword = {
-    position: "relative",
-    margin: "auto",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    width: isMobile ? "80%" : "20%",
-    bgcolor: "#fffbf9",
-    border: "none",
-    borderRadius: "5px",
-    opacity: 0.7,
-  };
-
   return (
-    <>
-      <Modal
-        open={openForgotPassword}
-        onClose={handleCloseForgotPassword}
-        aria-labelledby="child-modal-title"
-        aria-describedby="child-modal-description"
-        sx={styleForgotPassword}
+    <Modal
+      open={openForgotPassword}
+      onClose={handleCloseForgotPassword}
+      aria-labelledby="child-modal-title"
+      aria-describedby="child-modal-description"
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          bgcolor: "#fffbf9",
+          borderRadius: "5px",
+          width: isMobile ? "80%" : "20%",
+          p: 4,
+        }}
       >
-        <Grid container className={styles.formContainer}>
-          <Grid container className={styles.globalForm}>
-            <Grid item>
-              <Typography variant={"subtitle2"} color={"black"}>
-                Enter the email you used to register
-              </Typography>
-            </Grid>
-            <Grid item>
-              <TextField
-                id="emailRecovery"
-                label="Send recovery email to..."
-                type="email"
-                variant="outlined"
-                onChange={(event) => setEmailrecovery(event.target.value)}
-                value={emailRecovery}
-                InputProps={{
+        <Grid2 container className={styles.formContainer} spacing={2}>
+          <Grid2 sx={{ width: "100%", textAlign: "center" }}>
+            <Typography variant="subtitle2" color="black">
+              Enter the email you used to register
+            </Typography>
+          </Grid2>
+          <Grid2 sx={{ width: "100%" }}>
+            <TextField
+              fullWidth
+              id="emailRecovery"
+              label="Send recovery email to..."
+              type="email"
+              variant="outlined"
+              onChange={(event) => setEmailrecovery(event.target.value)}
+              value={emailRecovery}
+              slotProps={{
+                input: {
                   endAdornment: (
                     <InputAdornment position="end">
                       <Email />
                     </InputAdornment>
                   ),
-                }}
-              />
-            </Grid>
-          </Grid>
-          <Grid container flexDirection={"row"} justifyContent={"center"}>
-            <Grid item>
-              <Button
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={() => {
-                  if (emailRecovery.match(emailValidator)) {
-                    forgotPasswordService(emailRecovery);
-                    setIsMailSended(true);
-                    setErrorRecovery(false);
-                  } else {
-                    setErrorRecovery(true);
-                  }
-                }}
+                },
+              }}
+            />
+          </Grid2>
+          <Grid2 sx={{ width: "100%", textAlign: "center" }}>
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={() => {
+                if (emailRecovery.match(emailValidator)) {
+                  forgotPasswordService(emailRecovery);
+                  setIsMailSended(true);
+                  setErrorRecovery(false);
+                } else {
+                  setErrorRecovery(true);
+                }
+              }}
+            >
+              Send
+            </Button>
+          </Grid2>
+          <Grid2 sx={{ width: "100%", textAlign: "center" }}>
+            <Collapse in={errorRecovery}>
+              <Alert
+                severity="error"
+                action={
+                  <IconButton
+                    aria-label="close"
+                    color="inherit"
+                    size="small"
+                    onClick={() => {
+                      setErrorRecovery(false);
+                      setOpenForgotPassword(false);
+                      setForgotPassword(false);
+                    }}
+                  >
+                    <CloseIcon fontSize="inherit" />
+                  </IconButton>
+                }
               >
-                Send
-              </Button>
-            </Grid>
-          </Grid>
-          {errorRecovery && (
-            <Grid container justifyContent={"center"}>
-              <Grid item>
-                <Collapse in={errorRecovery}>
-                  <Alert
-                    severity="error"
-                    action={
-                      <IconButton
-                        aria-label="close"
-                        color="inherit"
-                        size="small"
-                        onClick={() => {
-                          setErrorRecovery(false);
-                          setOpenForgotPassword(false);
-                          setForgotPassword(false);
-                        }}
-                      >
-                        <CloseIcon fontSize="inherit" />
-                      </IconButton>
-                    }
+                Error, email not sent
+              </Alert>
+            </Collapse>
+          </Grid2>
+          <Grid2 sx={{ width: "100%", textAlign: "center" }}>
+            <Collapse in={isMailSended}>
+              <Alert
+                action={
+                  <IconButton
+                    aria-label="close"
+                    color="inherit"
+                    size="small"
+                    onClick={() => {
+                      setIsMailSended(false);
+                      setForgotPassword(false);
+                    }}
                   >
-                    Error, email not sent
-                  </Alert>
-                </Collapse>
-              </Grid>
-            </Grid>
-          )}
-          {isMailSended && (
-            <Grid container justifyContent={"center"}>
-              <Grid item>
-                <Collapse in={isMailSended}>
-                  <Alert
-                    action={
-                      <IconButton
-                        aria-labautoel="close"
-                        color="inherit"
-                        size="small"
-                        onClick={() => {
-                          setIsMailSended(false);
-                          setForgotPassword(false);
-                        }}
-                      >
-                        <CloseIcon fontSize="inherit" />
-                      </IconButton>
-                    }
-                  >
-                    Mail sent.
-                  </Alert>
-                </Collapse>
-              </Grid>
-            </Grid>
-          )}
-        </Grid>
-      </Modal>
-    </>
+                    <CloseIcon fontSize="inherit" />
+                  </IconButton>
+                }
+              >
+                Mail sent.
+              </Alert>
+            </Collapse>
+          </Grid2>
+        </Grid2>
+      </Box>
+    </Modal>
   );
 }
