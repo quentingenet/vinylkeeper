@@ -1,6 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
-const ThemeVinylKeeper = createTheme({
+const DesktopThemeLandpageVinylKeeper = createTheme({
   palette: {
     primary: {
       main: "#2e3440",
@@ -109,4 +109,4 @@ const ThemeVinylKeeper = createTheme({
   },
 });
 
-export default ThemeVinylKeeper;
+export default DesktopThemeLandpageVinylKeeper;
