@@ -2,21 +2,16 @@ import {
   Alert,
   Button,
   CircularProgress,
-  Grid2,
   IconButton,
   InputAdornment,
   Snackbar,
   TextField,
   Typography,
+  Grid2,
 } from "@mui/material";
 import { useState } from "react";
-import {
-  Person2,
-  Visibility,
-  VisibilityOff,
-  ArrowBack,
-} from "@mui/icons-material";
-import { Controller, useForm } from "react-hook-form";
+import { Person2, Visibility, VisibilityOff } from "@mui/icons-material";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { login as loginService } from "@services/UserService";
 import { useUserContext } from "../../contexts/UserContext";
@@ -63,16 +58,17 @@ export default function Login({
     handleSubmit,
     control,
     formState: { errors, isValid },
+    watch,
   } = useForm<ILoginForm>({
     defaultValues: { email: "", password: "" },
     resolver: yupResolver(loginValidationSchema),
   });
 
-  const submitLogin = (data: ILoginForm) => {
+  const submitLogin = () => {
     if (!isValid) return;
 
     setIsLoading(true);
-    loginService(data)
+    loginService(watch())
       .then((response) => {
         userContext.setJwt(response.data);
         userContext.setIsUserLoggedIn(true);
@@ -93,7 +89,7 @@ export default function Login({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        margin: " auto",
+        margin: "auto",
         width: isMobile ? "80%" : "20%",
         bgcolor: "#fffbf9",
         border: "none",
@@ -101,68 +97,59 @@ export default function Login({
       }}
       className={styles.formContainer}
     >
-      <form onSubmit={handleSubmit(submitLogin)} className={styles.globalForm}>
-        <ForgotPasswordModal
-          setForgotPassword={setOpenForgotPassword}
-          setOpenForgotPassword={setOpenForgotPassword}
-          openForgotPassword={openForgotPassword}
-        />
-        <Grid2 container spacing={2} justifyContent="center">
+      <Grid2 container spacing={2} justifyContent="center">
+        <form
+          onSubmit={handleSubmit(submitLogin)}
+          className={styles.globalForm}
+        >
+          <ForgotPasswordModal
+            setForgotPassword={setOpenForgotPassword}
+            setOpenForgotPassword={setOpenForgotPassword}
+            openForgotPassword={openForgotPassword}
+          />
           <Grid2 sx={{ width: "100%" }}>
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Email"
-                  variant="outlined"
-                  fullWidth
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Person2 />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              )}
+            <TextField
+              fullWidth
+              label="Email"
+              variant="outlined"
+              error={!!errors.email}
+              helperText={errors.email?.message}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Person2 />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              {...control.register("email")}
             />
           </Grid2>
 
           <Grid2 sx={{ width: "100%" }}>
-            <Controller
-              name="password"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Password"
-                  type={showPassword ? "text" : "password"}
-                  variant="outlined"
-                  fullWidth
-                  error={!!errors.password}
-                  helperText={errors.password?.message}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              )}
+            <TextField
+              fullWidth
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              variant="outlined"
+              error={!!errors.password}
+              helperText={errors.password?.message}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              {...control.register("password")}
             />
           </Grid2>
 
@@ -199,8 +186,8 @@ export default function Login({
               </Alert>
             </Snackbar>
           )}
-        </Grid2>
-      </form>
+        </form>
+      </Grid2>
     </Modal>
   );
 }
