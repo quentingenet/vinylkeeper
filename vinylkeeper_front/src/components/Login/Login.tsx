@@ -168,9 +168,9 @@ export default function Login({
 
           <Grid2
             display="flex"
-            flexDirection={"column"}
             justifyContent="center"
-            sx={{ width: "40%" }}
+            alignItems="center"
+            flexDirection="column"
           >
             {isLoading ? (
               <CircularProgress />
@@ -188,7 +188,6 @@ export default function Login({
               Forgot password?
             </Typography>
           </Grid2>
-
           {openSnackBar && (
             <Snackbar
               open={openSnackBar}

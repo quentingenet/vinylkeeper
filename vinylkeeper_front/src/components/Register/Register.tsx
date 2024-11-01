@@ -226,9 +226,9 @@ const Register = ({
             />
           </Grid2>
 
-          <Grid2 display="flex" justifyContent="center">
+          <Grid2 display="flex" alignItems={"center"} justifyContent="center">
             {isLoading ? (
-              <CircularProgress color="primary" />
+              <CircularProgress color="primary" sx={{ mb: 2 }} />
             ) : (
               <Button
                 type="submit"
