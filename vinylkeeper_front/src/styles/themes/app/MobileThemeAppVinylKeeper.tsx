@@ -4,58 +4,76 @@ const MobileThemeAppVinylKeeper = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#c9a726", // Jaune doré pour les éléments principaux
+      main: "#2e3440", // Gris profond pour rappeler la landing page
     },
     background: {
-      default: "#353538", // Fond principal
-      paper: "#3f3f41", // Fond des surfaces comme le Drawer
+      default: "#3f3f41", // Fond principal de l'application
+      paper: "#2c2c2e", // Fond des surfaces avec contraste doux
     },
     text: {
-      primary: "#e4e4e4", // Texte principal
+      primary: "#fffbf9", // Texte principal pour un bon contraste
       secondary: "#b0b0b0", // Texte secondaire
     },
   },
   typography: {
-    fontFamily: "Roboto, sans-serif",
-    h1: { color: "#e4e4e4", fontSize: "2rem", fontWeight: 600 },
-    h2: { color: "#e4e4e4", fontSize: "1.75rem", fontWeight: 500 },
+    fontFamily: "Roboto, Oswald, sans-serif", // Intégration d'Oswald pour rappeler la landing page
+    h1: {
+      color: "#fffbf9",
+      fontSize: "1.75rem",
+      fontWeight: 600,
+      textShadow: "0 0 8px #2e3440",
+    },
+    h2: {
+      color: "#fffbf9",
+      fontSize: "1.5rem",
+      fontWeight: 500,
+      textShadow: "0 0 6px #2e3440",
+    },
     body1: { color: "#e4e4e4", fontSize: "0.875rem" },
-    button: { textTransform: "none" },
+    button: { textTransform: "none", fontFamily: "Oswald" },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          backgroundColor: "#2c2c2e", // Couleur de fond des boutons
-          color: "#e4e4e4",
+          backgroundColor: "#2e3440", // Gris profond pour les boutons
+          color: "#fffbf9",
           fontSize: "0.875rem",
+          border: "1px solid #2e3440",
+          borderRadius: "5px",
+          boxShadow: "0 0 5px rgba(0,0,0,0.4)", // Ombrage pour rappel de la landing page
+          textShadow: "0 0 8px #2e3440",
           "&:hover": {
-            backgroundColor: "#4a4a4c", // Couleur au survol
+            backgroundColor: "#fffbf9", // Inversion au survol
+            color: "#2e3440",
           },
-          padding: "8px 16px", // Plus petit padding pour mobile
+          padding: "8px 16px", // Padding adapté au mobile
         },
       },
     },
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: "#3f3f41", // Fond du Drawer
-          color: "#e4e4e4",
-          width: 240, // Largeur plus étroite pour mobile
+          backgroundColor: "#3f3f41", // Fond du Drawer pour le mobile
+          color: "#fffbf9",
+          width: 240, // Largeur adaptée pour mobile
+          boxShadow: "0 0 8px rgba(0,0,0,0.6)", // Ombrage plus doux pour mobile
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#353538", // Fond de l'AppBar
+          backgroundColor: "#3f3f41", // Fond de l'AppBar harmonisé
+          boxShadow: "0 0 4px rgba(0,0,0,0.3)", // Ombrage plus léger pour mobile
         },
       },
     },
     MuiTypography: {
       styleOverrides: {
         body1: {
-          color: "#e4e4e4", // Texte par défaut
+          color: "#fffbf9", // Harmonisation du texte par défaut
+          opacity: 0.9,
         },
       },
     },
