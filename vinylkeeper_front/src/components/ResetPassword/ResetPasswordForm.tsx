@@ -39,6 +39,7 @@ export default function ResetPasswordForm() {
     border: "none",
     borderRadius: "5px",
     padding: "20px",
+    opacity: "0.5",
   };
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
