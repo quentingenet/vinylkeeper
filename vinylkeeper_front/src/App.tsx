@@ -14,32 +14,40 @@ function App() {
   const userContext = useUserContext();
   const location = useLocation();
 
+  const shouldDisplayNavBar =
+    userContext.isUserLoggedIn && !location.pathname.includes("reset-password");
+
   return (
     <>
-      {userContext.isUserLoggedIn &&
-        !location.pathname.includes("reset-password") && <NavBar />}
+      {shouldDisplayNavBar && <NavBar />}
       <Routes>
         <Route
           path="/"
           element={userContext.isUserLoggedIn ? <Dashboard /> : <Landpage />}
         />
         <Route path="/reset-password/" element={<ResetPassword />} />
-        <Route
-          path="/dashboard"
-          element={
-            <Protected>
-              <Dashboard />
-            </Protected>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <Protected>
-              <Profile />
-            </Protected>
-          }
-        />
+
+        {userContext.isUserLoggedIn && (
+          <>
+            <Route
+              path="/dashboard"
+              element={
+                <Protected>
+                  <Dashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <Protected>
+                  <Profile />
+                </Protected>
+              }
+            />
+          </>
+        )}
+
         <Route path="/contact" element={<Contact />} />
         <Route path="/vinylkeeper-terms-and-conditions" element={<Terms />} />
         <Route path="*" element={<NoMatch />} />
