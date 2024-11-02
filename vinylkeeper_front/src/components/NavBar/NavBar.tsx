@@ -20,9 +20,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import GroupIcon from "@mui/icons-material/Group";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import StarIcon from "@mui/icons-material/Star";
 import SettingsIcon from "@mui/icons-material/Settings";
-import HelpIcon from "@mui/icons-material/Help";
 import { useUserContext } from "@contexts/UserContext";
 
 const drawerWidth = 240;
