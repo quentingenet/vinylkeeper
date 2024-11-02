@@ -26,10 +26,10 @@ export default function ModalTermsVinylKeeper(
       xl: "30%",
     },
     maxHeight: "50%",
-    bgcolor: "background.paper",
+    bgcolor: "#f9f9f9",
     border: "2px solid #000",
     boxShadow: 24,
-    opacity: 0.7,
+    opacity: 0.8,
     p: 2,
   };
   return (
