@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  styled,
-  Theme,
-  CSSObject,
-  keyframes,
-  useTheme,
-} from "@mui/material/styles";
+import { styled, Theme, CSSObject, keyframes } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
@@ -29,7 +23,6 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import StarIcon from "@mui/icons-material/Star";
 import SettingsIcon from "@mui/icons-material/Settings";
 import HelpIcon from "@mui/icons-material/Help";
-import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
 
 const drawerWidth = 210;
@@ -79,7 +72,6 @@ interface NavBarProps {
 
 const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
   const { logout } = useUserContext();
-  const theme = useTheme();
 
   const Drawer = styled(MuiDrawer, {
     shouldForwardProp: (prop) => prop !== "open",
@@ -125,7 +117,7 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
           </Typography>
         )}
         <IconButton
-          sx={{ animation: !open ? `${growIcon} 1s ease infinite` : "none" }}
+          sx={{ animation: `${growIcon} 1s ease infinite` }}
           onClick={toggleMenu}
         >
           {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
