@@ -2,8 +2,7 @@ import requestService from "@utils/RequestService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { API_VK_URL } from "@utils/GlobalUtils";
-import { IResetPassword } from "@models/IResetPassword";
-import { IResetPasswordToBackend } from "@models/IResetPasswordToBackend";
+import { IResetPasswordToBackend } from "@models/IResetPassword";
 
 export const login = (data: ILoginForm) => {
   const requestDataLogin = {

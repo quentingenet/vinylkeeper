@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -8,33 +8,36 @@ import MobileThemeLandpageVinylKeeper from "@styles/themes/landpage/MobileThemeL
 import DesktopThemeLandpageVinylKeeper from "@styles/themes/landpage/DesktopThemeLandpageVinylKeeper";
 import DesktopThemeAppVinylKeeper from "@styles/themes/app/DesktopThemeAppVinylKeeper";
 import MobileThemeAppVinylKeeper from "@styles/themes/app/MobileThemeAppVinylKeeper";
+import React from "react";
 
 const RootContent: React.FC = () => {
   const { isMobile } = useDetectMobile();
   const { isUserLoggedIn } = useUserContext();
 
-  const theme = !isUserLoggedIn
-    ? isMobile
-      ? MobileThemeLandpageVinylKeeper
-      : DesktopThemeLandpageVinylKeeper
-    : isMobile
-    ? MobileThemeAppVinylKeeper
-    : DesktopThemeAppVinylKeeper;
+  const theme = useMemo(() => {
+    return !isUserLoggedIn
+      ? isMobile
+        ? MobileThemeLandpageVinylKeeper
+        : DesktopThemeLandpageVinylKeeper
+      : isMobile
+      ? MobileThemeAppVinylKeeper
+      : DesktopThemeAppVinylKeeper;
+  }, [isMobile, isUserLoggedIn]);
 
   return (
     <ThemeProvider theme={theme}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     </ThemeProvider>
   );
 };
 
 const Root: React.FC = () => (
   <React.StrictMode>
-    <UserContextProvider>
-      <RootContent />
-    </UserContextProvider>
+    <BrowserRouter>
+      <UserContextProvider>
+        <RootContent />
+      </UserContextProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );
 
