@@ -25,7 +25,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import HelpIcon from "@mui/icons-material/Help";
 import { useUserContext } from "@contexts/UserContext";
 
-const drawerWidth = 210;
+const drawerWidth = 240;
 
 const growIcon = keyframes`
   0% {
@@ -90,17 +90,22 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
     }),
   }));
 
+  const StyledList = styled(List)({
+    "& .MuiListItemText-primary": {
+      fontSize: "1.1rem",
+      color: "#C9A726",
+    },
+  });
+
   const menuItems = [
     { text: "Dashboard", icon: <SpaceDashboardOutlinedIcon /> },
     { text: "My Collection", icon: <AlbumIcon /> },
-    { text: "Add Vinyl", icon: <AddBoxIcon /> },
+    { text: "Add Vinyls", icon: <AddBoxIcon /> },
     { text: "Explore", icon: <SearchIcon /> },
     { text: "Community", icon: <GroupIcon /> },
     { text: "Wishlist", icon: <FavoriteIcon /> },
     { text: "Loans", icon: <SwapHorizIcon /> },
     { text: "Settings", icon: <SettingsIcon /> },
-    { text: "Suggestions", icon: <StarIcon /> },
-    { text: "Contact", icon: <HelpIcon /> },
   ];
 
   return (
@@ -108,8 +113,9 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
       <DrawerHeader>
         {open && (
           <Typography
-            variant="h6"
+            variant="h5"
             fontFamily="RockSalt"
+            color="#C9A726"
             noWrap
             sx={{ marginX: "auto", textShadow: "2px 2px 4px #000000" }}
           >
@@ -117,7 +123,7 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
           </Typography>
         )}
         <IconButton
-          sx={{ animation: `${growIcon} 1s ease infinite` }}
+          sx={{ animation: `${growIcon} 1s ease infinite`, color: "#C9A726" }}
           onClick={toggleMenu}
         >
           {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
@@ -129,7 +135,7 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
           <ListItem key={text} disablePadding sx={{ display: "block" }}>
             <ListItemButton
               sx={{
-                minHeight: 48,
+                minHeight: 60,
                 justifyContent: open ? "initial" : "center",
                 px: 2.5,
               }}
@@ -139,11 +145,15 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
                   minWidth: 0,
                   mr: open ? 3 : "auto",
                   justifyContent: "center",
+                  color: "#C9A726",
                 }}
               >
                 {icon}
               </ListItemIcon>
-              <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
+              <ListItemText
+                primary={text}
+                sx={{ fontSize: "3rem", opacity: open ? 1 : 0 }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -159,7 +169,7 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
               justifyContent: "center",
             }}
           >
-            <PowerSettingsNewIcon />
+            <PowerSettingsNewIcon sx={{ color: "#C9A726" }} />
           </ListItemIcon>
           <ListItemText primary="Logout" sx={{ opacity: open ? 1 : 0 }} />
         </ListItemButton>
