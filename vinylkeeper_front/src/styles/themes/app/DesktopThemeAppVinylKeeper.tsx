@@ -54,8 +54,8 @@ const DesktopThemeAppVinylKeeper = createTheme({
         paper: {
           backgroundColor: "#3f3f41", // Fond du Drawer harmonisé avec la palette
           color: "#fffbf9",
-          width: 220, // Largeur du Drawer pour desktop
-          boxShadow: "0 0 10px rgba(0,0,0,0.6)", // Ombrage cohérent avec la landing page
+          width: 240, // Largeur du Drawer pour desktop
+          boxShadow: "0 0 10px rgba(0,0,0,0.6)",
         },
       },
     },
@@ -72,6 +72,13 @@ const DesktopThemeAppVinylKeeper = createTheme({
         body1: {
           color: "#fffbf9", // Harmonisation du texte par défaut
           opacity: 0.9,
+        },
+      },
+    },
+    MuiListItemText: {
+      styleOverrides: {
+        primary: {
+          fontSize: "1.3rem", // Taille du texte plus grande pour les éléments de menu
         },
       },
     },

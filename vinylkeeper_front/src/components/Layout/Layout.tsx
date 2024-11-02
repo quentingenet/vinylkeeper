@@ -8,7 +8,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const drawerWidth = 210;
+const drawerWidth = 240;
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [open, setOpen] = useState(true);
