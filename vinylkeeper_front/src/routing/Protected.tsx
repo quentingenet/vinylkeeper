@@ -1,12 +1,18 @@
 import { Navigate } from "react-router-dom";
 import { useUserContext } from "../contexts/UserContext";
 
-function Protected(props: { children: React.ReactNode }) {
-  const userContext = useUserContext();
+interface ProtectedProps {
+  children: React.ReactNode;
+}
 
-  if (!userContext.isUserLoggedIn) {
+function Protected({ children }: ProtectedProps) {
+  const { isUserLoggedIn } = useUserContext();
+
+  if (!isUserLoggedIn) {
     return <Navigate to="/" replace />;
   }
-  return props.children;
+
+  return <>{children}</>;
 }
+
 export default Protected;
