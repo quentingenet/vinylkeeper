@@ -2,7 +2,6 @@
     0% {
         opacity: 0;
     }
-
     100% {
         opacity: 1;
     }
@@ -17,18 +16,20 @@
     flex-direction: row;
     align-items: center;
     text-align: center;
-    gap: 1%;
+    gap: 1rem;
     width: 99%;
     position: fixed;
     bottom: 0;
+    animation: fadeIn 4s;
 
-    .footerContainer > * {
+    & > * {
         animation: fadeIn 4s;
     }
 
     span {
         font-size: 1rem;
         cursor: pointer;
+
         .heartFooter {
             color: red;
         }
@@ -43,25 +44,27 @@
         color: #fffbf9;
     }
 }
+
 @media only screen and (min-width: 1200px) {
+    .footerContainer {
+        span {
+            font-size: 1.2rem;
+        }
+    }
 }
 
 @media only screen and (min-width: 768px) and (max-width: 1199px) {
+    .footerContainer {
+        span {
+            font-size: 1rem;
+        }
+    }
 }
 
 @media only screen and (max-width: 767px) {
     .footerContainer {
-        color: #fffbf9;
-        opacity: 0.6rem;
-        display: flex;
-        justify-content: center;
-        flex-direction: row;
         align-items: flex-end;
-        text-align: center;
-        gap: 1%;
-        width: 99%;
-        position: fixed;
-        bottom: 0;
+
         span {
             font-size: 0.7rem;
         }

@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import NavBar from "@components/NavBar/NavBar";
+import MobileNavBar from "@components/NavBar/MobileNavBar";
 import { useTheme } from "@mui/material/styles";
 import Footer from "@components/Footer/Footer";
+import useDetectMobile from "@hooks/useDetectMobile";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,12 +15,18 @@ const drawerWidth = 240;
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [open, setOpen] = useState(true);
   const theme = useTheme();
+  const { isMobile } = useDetectMobile();
   const toggleMenu = () => setOpen((prev) => !prev);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", overflow: "hidden" }}>
-      <NavBar open={open} toggleMenu={toggleMenu} />
+      {isMobile ? (
+        <MobileNavBar />
+      ) : (
+        <NavBar open={open} toggleMenu={toggleMenu} />
+      )}
+
       <Box
         sx={{
           flexGrow: 1,
@@ -30,19 +38,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          width: `calc(100% - ${open ? drawerWidth : theme.spacing(7)}px)`,
+          width: isMobile
+            ? "100%"
+            : `calc(100% - ${open ? drawerWidth : theme.spacing(7)}px)`,
+          maxWidth: "800px",
+          ml: open && !isMobile ? `${drawerWidth}px` : 0,
+          mx: "auto",
         }}
       >
         <Box
           sx={{
             flexGrow: 1,
-            p: 3,
+            p: isMobile ? 1 : 3,
             width: "100%",
             maxWidth: "100%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
           }}
         >
           {children}
@@ -53,7 +65,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             width: "100%",
             display: "flex",
             justifyContent: "center",
-            p: 2,
+            p: isMobile ? 1 : 2,
           }}
         >
           <Footer
