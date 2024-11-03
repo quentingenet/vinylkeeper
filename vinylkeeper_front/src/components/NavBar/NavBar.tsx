@@ -1,27 +1,38 @@
 import React from "react";
-import { styled, Theme, CSSObject, keyframes } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import MuiDrawer from "@mui/material/Drawer";
-import IconButton from "@mui/material/IconButton";
-import Divider from "@mui/material/Divider";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Typography from "@mui/material/Typography";
-import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
-import AlbumIcon from "@mui/icons-material/Album";
-import AddBoxIcon from "@mui/icons-material/AddBox";
-import SearchIcon from "@mui/icons-material/Search";
-import GroupIcon from "@mui/icons-material/Group";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import SettingsIcon from "@mui/icons-material/Settings";
+import {
+  Drawer,
+  Box,
+  IconButton,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  keyframes,
+} from "@mui/material";
+import {
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  PowerSettingsNew as PowerSettingsNewIcon,
+  SpaceDashboardOutlined as SpaceDashboardOutlinedIcon,
+  Album as AlbumIcon,
+  AddBox as AddBoxIcon,
+  Search as SearchIcon,
+  Group as GroupIcon,
+  Favorite as FavoriteIcon,
+  SwapHoriz as SwapHorizIcon,
+  Settings as SettingsIcon,
+} from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
+
+interface NavBarProps {
+  open: boolean;
+  toggleMenu: () => void;
+  setTitlePage: (title: string) => void;
+  titlePage: string;
+}
 
 const drawerWidth = 240;
 
@@ -37,139 +48,147 @@ const growIcon = keyframes`
   }
 `;
 
-const openedMixin = (theme: Theme): CSSObject => ({
-  width: drawerWidth,
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-  }),
-  overflowX: "hidden",
-});
-
-const closedMixin = (theme: Theme): CSSObject => ({
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  overflowX: "hidden",
-});
-
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-  justifyContent: "flex-end",
-}));
-
-interface NavBarProps {
-  open: boolean;
-  toggleMenu: () => void;
-}
-
-const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
+const NavBar: React.FC<NavBarProps> = ({
+  open,
+  toggleMenu,
+  setTitlePage,
+  titlePage,
+}) => {
   const { logout } = useUserContext();
 
-  const Drawer = styled(MuiDrawer, {
-    shouldForwardProp: (prop) => prop !== "open",
-  })(({ theme, open }) => ({
-    width: open ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    boxSizing: "border-box",
-    ...(open && {
-      ...openedMixin(theme),
-      "& .MuiDrawer-paper": openedMixin(theme),
-    }),
-    ...(!open && {
-      ...closedMixin(theme),
-      "& .MuiDrawer-paper": closedMixin(theme),
-    }),
-  }));
-
-  const StyledList = styled(List)({
-    "& .MuiListItemText-primary": {
-      fontSize: "1.1rem",
-      color: "#C9A726",
-    },
-  });
+  const handleItemClick = (title: string) => {
+    setTitlePage(title);
+  };
 
   const menuItems = [
-    { text: "Dashboard", icon: <SpaceDashboardOutlinedIcon /> },
-    { text: "My Collection", icon: <AlbumIcon /> },
-    { text: "Add Vinyls", icon: <AddBoxIcon /> },
-    { text: "Explore", icon: <SearchIcon /> },
-    { text: "Community", icon: <GroupIcon /> },
-    { text: "Wishlist", icon: <FavoriteIcon /> },
-    { text: "Loans", icon: <SwapHorizIcon /> },
-    { text: "Settings", icon: <SettingsIcon /> },
+    {
+      text: "Dashboard",
+      icon: <SpaceDashboardOutlinedIcon fontSize="large" />,
+    },
+    { text: "Collections", icon: <AlbumIcon fontSize="large" /> },
+    { text: "Add vinyls", icon: <AddBoxIcon fontSize="large" /> },
+    { text: "Explore", icon: <SearchIcon fontSize="large" /> },
+    { text: "Wishlist", icon: <FavoriteIcon fontSize="large" /> },
+    { text: "Loans", icon: <SwapHorizIcon fontSize="large" /> },
+    { text: "Community", icon: <GroupIcon fontSize="large" /> },
+    { text: "Settings", icon: <SettingsIcon fontSize="large" /> },
   ];
 
   return (
-    <Drawer variant="permanent" open={open}>
-      <DrawerHeader>
-        {open && (
-          <Typography
-            variant="h5"
-            fontFamily="RockSalt"
-            color="#C9A726"
-            noWrap
-            sx={{ marginX: "auto", textShadow: "2px 2px 4px #000000" }}
-          >
-            Vinyl Keeper
-          </Typography>
-        )}
+    <Drawer
+      variant="permanent"
+      open={open}
+      sx={{
+        width: open ? drawerWidth : 60,
+        flexShrink: 0,
+        "& .MuiDrawer-paper": {
+          width: open ? drawerWidth : 60,
+          transition: "width 0.3s ease",
+          overflowX: "hidden",
+        },
+      }}
+    >
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        px={1}
+        py={1}
+      >
+        <Typography
+          variant="h5"
+          fontFamily="RockSalt"
+          color="#C9A726"
+          sx={{
+            textShadow: "2px 2px 4px #000000",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            opacity: open ? 1 : 0,
+            transition: "opacity 0.3s ease",
+          }}
+        >
+          Vinyl Keeper
+        </Typography>
         <IconButton
-          sx={{ animation: `${growIcon} 1s ease infinite`, color: "#C9A726" }}
           onClick={toggleMenu}
+          sx={{ animation: `${growIcon} 1s ease infinite`, color: "#C9A726" }}
         >
           {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
-      </DrawerHeader>
+      </Box>
       <Divider />
-      <List>
+      <List
+        sx={{
+          paddingY: "2rem",
+        }}
+      >
         {menuItems.map(({ text, icon }) => (
-          <ListItem key={text} disablePadding sx={{ display: "block" }}>
+          <ListItem
+            key={text}
+            onClick={() => handleItemClick(text)}
+            disablePadding
+          >
             <ListItemButton
+              selected={text === titlePage}
               sx={{
-                minHeight: 60,
                 justifyContent: open ? "initial" : "center",
-                px: 2.5,
+                gap: "8px",
+                height: 70,
               }}
             >
               <ListItemIcon
                 sx={{
-                  minWidth: 0,
-                  mr: open ? 3 : "auto",
+                  display: "flex",
                   justifyContent: "center",
                   color: "#C9A726",
+                  minWidth: 0,
                 }}
               >
                 {icon}
               </ListItemIcon>
               <ListItemText
                 primary={text}
-                sx={{ fontSize: "3rem", opacity: open ? 1 : 0 }}
+                sx={{
+                  color: "#fffbf9",
+                  opacity: open ? 1 : 0,
+                  transition: "opacity 0.3s ease-in-out",
+                  whiteSpace: "nowrap",
+                }}
               />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
-      <Box sx={{ flexGrow: 1 }} />
+      <Box flexGrow={1} />
       <Divider />
-      <ListItem disablePadding sx={{ display: "block" }}>
-        <ListItemButton onClick={logout} sx={{ minHeight: 48, px: 2.5 }}>
+      <ListItem disablePadding>
+        <ListItemButton
+          onClick={logout}
+          sx={{
+            justifyContent: open ? "initial" : "center",
+            alignItems: "center",
+            height: 56,
+            gap: "8px",
+          }}
+        >
           <ListItemIcon
             sx={{
-              minWidth: 0,
-              mr: open ? 3 : "auto",
               justifyContent: "center",
+              color: "#C9A726",
+              minWidth: 0,
             }}
           >
-            <PowerSettingsNewIcon sx={{ color: "#C9A726" }} />
+            <PowerSettingsNewIcon fontSize="large" />
           </ListItemIcon>
-          <ListItemText primary="Logout" sx={{ opacity: open ? 1 : 0 }} />
+          <ListItemText
+            primary="Logout"
+            sx={{
+              color: "#fffbf9",
+              opacity: open ? 1 : 0,
+              transition: "opacity 0.3s ease",
+              whiteSpace: "nowrap",
+            }}
+          />
         </ListItemButton>
       </ListItem>
     </Drawer>

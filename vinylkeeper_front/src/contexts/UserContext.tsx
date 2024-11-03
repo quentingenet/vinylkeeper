@@ -47,14 +47,12 @@ export function UserContextProvider({
 
   const refreshJwt = useCallback(async () => {
     try {
-      const response = await requestService({
+      const newJwt = await requestService<string>({
         apiTarget: API_VK_URL,
         method: "POST",
         endpoint: "/users/refresh-token",
-        credentials: "include",
       });
 
-      const newJwt = response;
       if (newJwt) {
         setJwt(newJwt);
         setIsUserLoggedIn(true);
@@ -73,7 +71,6 @@ export function UserContextProvider({
         apiTarget: API_VK_URL,
         method: "POST",
         endpoint: "/users/logout",
-        credentials: "include",
       });
     } catch (error) {
       console.error("Error while logging out:", error);

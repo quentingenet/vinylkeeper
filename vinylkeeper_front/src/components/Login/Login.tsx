@@ -140,6 +140,7 @@ export default function Login({
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
+                        sx={{ marginRight: "-8px" }}
                         onClick={() => setShowPassword(!showPassword)}
                         onMouseDown={(e) => e.preventDefault()}
                       >

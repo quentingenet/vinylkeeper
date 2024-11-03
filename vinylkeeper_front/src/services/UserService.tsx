@@ -15,7 +15,6 @@ export const login = (data: ILoginForm) => {
     method: "POST",
     endpoint: "/users/auth",
     body: requestDataLogin,
-    credentials: "include",
   }).then((responseData) => {
     if (!responseData) {
       throw new Error("Access token missing in response");
@@ -38,7 +37,6 @@ export const register = (dataRegister: IRegisterForm) => {
     method: "POST",
     endpoint: "/users/register",
     body: requestDataRegister,
-    credentials: "include",
   });
 };
 
@@ -48,7 +46,6 @@ export const forgotPasswordService = (emailRecovery: string) => {
     method: "POST",
     endpoint: "/users/forgot-password",
     body: { email: emailRecovery },
-    credentials: "include",
   });
 };
 
@@ -58,6 +55,5 @@ export const resetPasswordService = (dataReset: IResetPasswordToBackend) => {
     method: "POST",
     endpoint: "/users/reset-password",
     body: dataReset,
-    credentials: "include",
   });
 };

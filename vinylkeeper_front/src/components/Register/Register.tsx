@@ -11,13 +11,7 @@ import {
   Grid2,
 } from "@mui/material";
 import { useState } from "react";
-import {
-  Email,
-  Person2,
-  Visibility,
-  VisibilityOff,
-  ArrowBack,
-} from "@mui/icons-material";
+import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { register as registerService } from "@services/UserService";
@@ -169,6 +163,7 @@ const Register = ({
                       <IconButton
                         onClick={handleClickShowPassword}
                         onMouseDown={handleMouseDownPassword}
+                        sx={{ marginRight: "-8px" }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -195,6 +190,7 @@ const Register = ({
                       <IconButton
                         onClick={handleClickShowPassword}
                         onMouseDown={handleMouseDownPassword}
+                        sx={{ marginRight: "-8px" }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
