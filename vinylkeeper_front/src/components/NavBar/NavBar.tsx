@@ -88,17 +88,10 @@ const NavBar: React.FC<NavBarProps> = ({ open, toggleMenu }) => {
     }),
   }));
 
-  const StyledList = styled(List)({
-    "& .MuiListItemText-primary": {
-      fontSize: "1.1rem",
-      color: "#C9A726",
-    },
-  });
-
   const menuItems = [
     { text: "Dashboard", icon: <SpaceDashboardOutlinedIcon /> },
-    { text: "My Collection", icon: <AlbumIcon /> },
-    { text: "Add Vinyls", icon: <AddBoxIcon /> },
+    { text: "Collections", icon: <AlbumIcon /> },
+    { text: "Add vinyls", icon: <AddBoxIcon /> },
     { text: "Explore", icon: <SearchIcon /> },
     { text: "Community", icon: <GroupIcon /> },
     { text: "Wishlist", icon: <FavoriteIcon /> },

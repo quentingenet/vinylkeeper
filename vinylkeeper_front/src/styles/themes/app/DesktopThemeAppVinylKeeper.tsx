@@ -18,10 +18,10 @@ const DesktopThemeAppVinylKeeper = createTheme({
   typography: {
     fontFamily: "Roboto, Oswald, sans-serif", // Intégration d'Oswald pour cohérence
     h1: {
-      color: "#fffbf9",
-      fontSize: "2.5rem",
+      color: "#C9A726",
+      fontSize: "2.8rem",
       fontWeight: 600,
-      textShadow: "0 0 10px #2e3440",
+      textShadow: "2px 2px 4px #000000",
     },
     h2: {
       color: "#fffbf9",
@@ -52,7 +52,7 @@ const DesktopThemeAppVinylKeeper = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: "#3f3f41", // Fond du Drawer harmonisé avec la palette
+          backgroundColor: "#1f1f1f", // Fond du Drawer harmonisé avec la palette 3f3f41
           color: "#fffbf9",
           width: 240, // Largeur du Drawer pour desktop
           boxShadow: "0 0 10px rgba(0,0,0,0.6)",

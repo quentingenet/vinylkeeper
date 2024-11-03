@@ -1,0 +1,34 @@
+.dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    // Statistiques principales en haut
+    &__stat {
+        flex: 1 1 23%; // Chaque bloc occupe environ 25% de la largeur
+        min-width: 200px;
+    }
+
+    &__card {
+        padding: 16px;
+        background-color: #4a4a4c;
+        text-align: center;
+        color: #e4e4e4;
+    }
+
+    // Conteneur pour centrer la deuxième ligne
+    &__rowCenter {
+        display: flex;
+        justify-content: center; // Centre les éléments horizontalement
+        gap: 16px;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    // Graphiques et liste avec une largeur max et une hauteur égale
+    &__chart {
+        flex: 1 1 48%; // Largeur de 50% pour chaque élément
+        max-width: 400px;
+        min-height: 300px; // Hauteur égale pour alignement
+    }
+}
