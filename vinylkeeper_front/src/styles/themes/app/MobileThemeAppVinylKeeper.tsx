@@ -1,3 +1,4 @@
+// MobileThemeAppVinylKeeper.js
 import { createTheme } from "@mui/material/styles";
 
 const shadow = "0 0 10px rgba(0,0,0,0.6)";
@@ -27,7 +28,7 @@ const MobileThemeAppVinylKeeper = createTheme({
     },
     h2: {
       color: "#fffbf9",
-      fontSize: "1.5rem",
+      fontSize: "1.5rem", // Ajustement de taille pour mobile
       fontWeight: 500,
       textShadow: "0 0 8px #2e3440",
     },
