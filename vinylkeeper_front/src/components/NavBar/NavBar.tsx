@@ -29,6 +29,14 @@ import { useUserContext } from "@contexts/UserContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 
+/**
+ * NavBar component props interface
+ * @interface NavBarProps
+ * @property {boolean} open - Whether the drawer is open or not
+ * @property {() => void} toggleMenu - Function to toggle the drawer
+ * @property {(title: string) => void} setTitlePage - Function to set the title of the page
+ * @property {string} titlePage - The current title of the page
+ */
 interface NavBarProps {
   open: boolean;
   toggleMenu: () => void;

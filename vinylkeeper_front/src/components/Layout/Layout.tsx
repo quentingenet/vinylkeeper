@@ -7,6 +7,26 @@ import Footer from "@components/Footer/Footer";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { Typography } from "@mui/material";
 
+/**
+ * Layout component that provides the main structure for the application
+ * Handles responsive navigation, title animations, and content layout
+ *
+ * @component
+ * @param {LayoutProps} props - Component props
+ * @returns {JSX.Element} Layout component with navigation and content area
+ *
+ * @example
+ * <Layout>
+ *   <SomeContent />
+ * </Layout>
+ */
+
+/**
+ * Layout component props interface
+ * @interface LayoutProps
+ * @property {React.ReactNode} children - Child components to be rendered within the layout
+ */
+
 interface LayoutProps {
   children: React.ReactNode;
 }

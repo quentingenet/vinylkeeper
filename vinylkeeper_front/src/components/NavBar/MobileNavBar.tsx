@@ -26,7 +26,15 @@ import {
   ContactMail as ContactMailIcon,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
+import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useNavigate } from "react-router-dom";
 
+/**
+ * MobileNavBar component props interface
+ * @interface MobileNavBarProps
+ * @property {() => void} setTitlePage - Function to set the title of the page
+ * @property {string} titlePage - The current title of the page
+ */
 interface MobileNavBarProps {
   setTitlePage: (title: string) => void;
   titlePage: string;
@@ -39,6 +47,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const { logout } = useUserContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const colorYellow = "#C9A726";
   const sizeIcons = "large";
@@ -47,42 +56,52 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     {
       text: "Dashboard",
       icon: <SpaceDashboardOutlinedIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.DASHBOARD,
     },
     {
       text: "Collections",
       icon: <AlbumIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.COLLECTIONS,
     },
     {
       text: "Add vinyls",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.ADD_VINYLS,
     },
     {
       text: "Explore",
       icon: <SearchIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.EXPLORE,
     },
     {
       text: "Wishlist",
       icon: <FavoriteIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.WISHLIST,
     },
     {
       text: "Loans",
       icon: <SwapHorizIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.LOANS,
     },
     {
       text: "Community",
       icon: <GroupIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.COMMUNITY,
     },
     {
       text: "Settings",
       icon: <SettingsIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.SETTINGS,
     },
     {
       text: "Contact",
       icon: <ContactMailIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.CONTACT,
     },
     {
       text: "Logout",
       icon: <PowerSettingsNewIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.ROOT,
     },
   ];
 
@@ -90,7 +109,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleMenuItemClick = (text: string) => {
+  const handleMenuItemClick = (text: string, linkTo: EGlobalUrls) => {
     setActiveItem(text);
     setTitlePage(text);
     setTimeout(() => {
@@ -101,6 +120,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     if (text === "Logout") {
       logout();
     }
+    navigate(linkTo);
   };
 
   const growIcon = keyframes`
@@ -184,10 +204,10 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             paddingY: 5,
           }}
         >
-          {menuItems.map(({ text, icon }) => (
+          {menuItems.map(({ text, icon, linkTo }) => (
             <Box key={text} sx={{ display: "flex", justifyContent: "center" }}>
               <ListItemButton
-                onClick={() => handleMenuItemClick(text)}
+                onClick={() => handleMenuItemClick(text, linkTo)}
                 selected={text === titlePage}
                 sx={{
                   display: "flex",
