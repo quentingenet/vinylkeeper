@@ -26,6 +26,8 @@ import {
   Settings as SettingsIcon,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
+import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useNavigate } from "react-router-dom";
 
 interface NavBarProps {
   open: boolean;
@@ -55,9 +57,11 @@ const NavBar: React.FC<NavBarProps> = ({
   titlePage,
 }) => {
   const { logout } = useUserContext();
+  const navigate = useNavigate();
 
-  const handleItemClick = (title: string) => {
+  const handleItemClick = (title: string, linkTo: EGlobalUrls) => {
     setTitlePage(title);
+    navigate(linkTo);
   };
 
   const colorYellow = "#C9A726";
@@ -67,17 +71,43 @@ const NavBar: React.FC<NavBarProps> = ({
     {
       text: "Dashboard",
       icon: <SpaceDashboardOutlinedIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.DASHBOARD,
     },
     {
       text: "Collections",
       icon: <AlbumIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.COLLECTIONS,
     },
-    { text: "Add vinyls", icon: <AddBoxIcon fontSize={sizeIcons} /> },
-    { text: "Explore", icon: <SearchIcon fontSize={sizeIcons} /> },
-    { text: "Wishlist", icon: <FavoriteIcon fontSize={sizeIcons} /> },
-    { text: "Loans", icon: <SwapHorizIcon fontSize={sizeIcons} /> },
-    { text: "Community", icon: <GroupIcon fontSize={sizeIcons} /> },
-    { text: "Settings", icon: <SettingsIcon fontSize={sizeIcons} /> },
+    {
+      text: "Add vinyls",
+      icon: <AddBoxIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.ADD_VINYLS,
+    },
+    {
+      text: "Explore",
+      icon: <SearchIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.EXPLORE,
+    },
+    {
+      text: "Wishlist",
+      icon: <FavoriteIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.WISHLIST,
+    },
+    {
+      text: "Loans",
+      icon: <SwapHorizIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.LOANS,
+    },
+    {
+      text: "Community",
+      icon: <GroupIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.COMMUNITY,
+    },
+    {
+      text: "Settings",
+      icon: <SettingsIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.SETTINGS,
+    },
   ];
 
   return (
@@ -131,10 +161,10 @@ const NavBar: React.FC<NavBarProps> = ({
           paddingY: "2rem",
         }}
       >
-        {menuItems.map(({ text, icon }) => (
+        {menuItems.map(({ text, icon, linkTo }) => (
           <ListItem
             key={text}
-            onClick={() => handleItemClick(text)}
+            onClick={() => handleItemClick(text, linkTo)}
             disablePadding
           >
             <ListItemButton

@@ -1,0 +1,15 @@
+export enum EGlobalUrls {
+  ROOT = "/",
+  DASHBOARD = "/dashboard",
+  COLLECTIONS = "/collections",
+  ADD_VINYLS = "/add-vinyls",
+  EXPLORE = "/explore",
+  WISHLIST = "/wishlist",
+  LOANS = "/loans",
+  COMMUNITY = "/community",
+  SETTINGS = "/settings",
+  RESET_PASSWORD = "/reset-password/",
+  CONTACT = "/contact",
+  TERMS = "/vinylkeeper-terms-and-conditions",
+  NO_MATCH = "*",
+}
