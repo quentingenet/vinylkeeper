@@ -98,7 +98,8 @@ const DesktopThemeAppVinylKeeper = createTheme({
     MuiListItemText: {
       styleOverrides: {
         primary: {
-          fontSize: "1.3rem",
+          fontSize: "1.6rem",
+          opacity: 0.9,
         },
       },
     },

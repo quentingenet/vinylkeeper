@@ -60,18 +60,24 @@ const NavBar: React.FC<NavBarProps> = ({
     setTitlePage(title);
   };
 
+  const colorYellow = "#C9A726";
+  const sizeIcons = "large";
+
   const menuItems = [
     {
       text: "Dashboard",
-      icon: <SpaceDashboardOutlinedIcon fontSize="large" />,
+      icon: <SpaceDashboardOutlinedIcon fontSize={sizeIcons} />,
     },
-    { text: "Collections", icon: <AlbumIcon fontSize="large" /> },
-    { text: "Add vinyls", icon: <AddBoxIcon fontSize="large" /> },
-    { text: "Explore", icon: <SearchIcon fontSize="large" /> },
-    { text: "Wishlist", icon: <FavoriteIcon fontSize="large" /> },
-    { text: "Loans", icon: <SwapHorizIcon fontSize="large" /> },
-    { text: "Community", icon: <GroupIcon fontSize="large" /> },
-    { text: "Settings", icon: <SettingsIcon fontSize="large" /> },
+    {
+      text: "Collections",
+      icon: <AlbumIcon fontSize={sizeIcons} />,
+    },
+    { text: "Add vinyls", icon: <AddBoxIcon fontSize={sizeIcons} /> },
+    { text: "Explore", icon: <SearchIcon fontSize={sizeIcons} /> },
+    { text: "Wishlist", icon: <FavoriteIcon fontSize={sizeIcons} /> },
+    { text: "Loans", icon: <SwapHorizIcon fontSize={sizeIcons} /> },
+    { text: "Community", icon: <GroupIcon fontSize={sizeIcons} /> },
+    { text: "Settings", icon: <SettingsIcon fontSize={sizeIcons} /> },
   ];
 
   return (
@@ -98,7 +104,7 @@ const NavBar: React.FC<NavBarProps> = ({
         <Typography
           variant="h5"
           fontFamily="RockSalt"
-          color="#C9A726"
+          color={colorYellow}
           sx={{
             textShadow: "2px 2px 4px #000000",
             overflow: "hidden",
@@ -111,7 +117,10 @@ const NavBar: React.FC<NavBarProps> = ({
         </Typography>
         <IconButton
           onClick={toggleMenu}
-          sx={{ animation: `${growIcon} 1s ease infinite`, color: "#C9A726" }}
+          sx={{
+            animation: `${growIcon} 1s ease infinite`,
+            color: colorYellow,
+          }}
         >
           {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
@@ -140,7 +149,7 @@ const NavBar: React.FC<NavBarProps> = ({
                 sx={{
                   display: "flex",
                   justifyContent: "center",
-                  color: "#C9A726",
+                  color: colorYellow,
                   minWidth: 0,
                 }}
               >
@@ -174,11 +183,11 @@ const NavBar: React.FC<NavBarProps> = ({
           <ListItemIcon
             sx={{
               justifyContent: "center",
-              color: "#C9A726",
+              color: colorYellow,
               minWidth: 0,
             }}
           >
-            <PowerSettingsNewIcon fontSize="large" />
+            <PowerSettingsNewIcon fontSize={sizeIcons} />
           </ListItemIcon>
           <ListItemText
             primary="Logout"

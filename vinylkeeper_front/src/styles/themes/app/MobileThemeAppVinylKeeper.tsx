@@ -91,7 +91,8 @@ const MobileThemeAppVinylKeeper = createTheme({
     MuiListItemText: {
       styleOverrides: {
         primary: {
-          fontSize: "1.2rem",
+          fontSize: "1.5rem",
+          opacity: 0.9,
         },
       },
     },

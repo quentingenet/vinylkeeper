@@ -40,51 +40,49 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
+  const colorYellow = "#C9A726";
+  const sizeIcons = "large";
+
   const menuItems = [
     {
       text: "Dashboard",
-      icon: (
-        <SpaceDashboardOutlinedIcon
-          fontSize="large"
-          sx={{ fontSize: "3rem" }}
-        />
-      ),
+      icon: <SpaceDashboardOutlinedIcon fontSize={sizeIcons} />,
     },
     {
       text: "Collections",
-      icon: <AlbumIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <AlbumIcon fontSize={sizeIcons} />,
     },
     {
       text: "Add vinyls",
-      icon: <AddBoxIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <AddBoxIcon fontSize={sizeIcons} />,
     },
     {
       text: "Explore",
-      icon: <SearchIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <SearchIcon fontSize={sizeIcons} />,
     },
     {
       text: "Wishlist",
-      icon: <FavoriteIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <FavoriteIcon fontSize={sizeIcons} />,
     },
     {
       text: "Loans",
-      icon: <SwapHorizIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <SwapHorizIcon fontSize={sizeIcons} />,
     },
     {
       text: "Community",
-      icon: <GroupIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <GroupIcon fontSize={sizeIcons} />,
     },
     {
       text: "Settings",
-      icon: <SettingsIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <SettingsIcon fontSize={sizeIcons} />,
     },
     {
       text: "Contact",
-      icon: <ContactMailIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <ContactMailIcon fontSize={sizeIcons} />,
     },
     {
       text: "Logout",
-      icon: <PowerSettingsNewIcon fontSize="large" sx={{ fontSize: "3rem" }} />,
+      icon: <PowerSettingsNewIcon fontSize={sizeIcons} />,
     },
   ];
 
@@ -119,14 +117,14 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             <MenuIcon
               sx={{
                 animation: `${growIcon} 1.3s ease infinite`,
-                color: "#C9A726",
+                color: colorYellow,
               }}
             />
           </IconButton>
           <Typography
             variant="h5"
             fontFamily="Oswald"
-            color="#C9A726"
+            color={colorYellow}
             noWrap
             sx={{ marginX: "auto", textShadow: "2px 2px 4px #000000" }}
           >
@@ -156,7 +154,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             display: "flex",
             justifyContent: "flex-end",
             width: "100%",
-            color: "#C9A726",
+            color: { colorYellow },
           }}
         >
           <IconButton onClick={handleMenuToggle} color="inherit">
@@ -167,7 +165,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
         <Typography
           variant="h4"
           fontFamily="RockSalt"
-          color="#C9A726"
+          color={colorYellow}
           sx={{
             textAlign: "center",
             textShadow: "2px 2px 4px #000000",
@@ -201,7 +199,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
               >
                 <ListItemIcon
                   sx={{
-                    color: "#C9A726",
+                    color: colorYellow,
                     minWidth: 0,
                   }}
                 >
