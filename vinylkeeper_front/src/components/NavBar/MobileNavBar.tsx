@@ -109,6 +109,11 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     setIsMenuOpen(!isMenuOpen);
   };
 
+  /**
+   * Handles the click event for a menu item
+   * @param {string} text - The text of the menu item
+   * @param {EGlobalUrls} linkTo - The URL to navigate to
+   */
   const handleMenuItemClick = (text: string, linkTo: EGlobalUrls) => {
     setActiveItem(text);
     setTitlePage(text);

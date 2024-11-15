@@ -1,5 +1,14 @@
 import ky from "ky";
 
+/**
+ * Request options interface
+ * @interface RequestOptions
+ * @property {string} apiTarget - The target API URL
+ * @property {"GET" | "POST" | "PUT" | "PATCH" | "DELETE"} method - The HTTP method to use
+ * @property {string} endpoint - The endpoint to request
+ * @property {any} body - The request body
+ * @property {HeadersInit} headers - The request headers
+ */
 interface RequestOptions {
   apiTarget: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -8,6 +17,12 @@ interface RequestOptions {
   headers?: HeadersInit;
 }
 
+/**
+ * Request service function
+ * @function requestService
+ * @param {RequestOptions} options - The request options
+ * @returns {Promise<T>} The response data
+ */
 const requestService = async <T = any>({
   apiTarget,
   method,

@@ -2,6 +2,11 @@ import { RefObject, useEffect, useState } from "react";
 
 const MOBILE_MAX_WIDTH = 767;
 
+/**
+ * Hook to detect if the screen is mobile
+ * @param {RefObject<HTMLDivElement> | null} containerRef - The ref object for the container element
+ * @returns {boolean} - Whether the screen is mobile or not
+ */
 const useDetectMobile = (
   containerRef: RefObject<HTMLDivElement> | null = null
 ) => {

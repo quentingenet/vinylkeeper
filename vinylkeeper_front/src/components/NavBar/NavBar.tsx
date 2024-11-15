@@ -58,6 +58,12 @@ const growIcon = keyframes`
   }
 `;
 
+/**
+ * NavBar component that provides the navigation menu for the application
+ * @component
+ * @param {NavBarProps} props - Component props
+ * @returns {JSX.Element} NavBar component with navigation menu
+ */
 const NavBar: React.FC<NavBarProps> = ({
   open,
   toggleMenu,

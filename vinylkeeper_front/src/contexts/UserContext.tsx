@@ -9,6 +9,18 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 
+/**
+ * User context interface
+ * @interface IUserContext
+ * @property {string} jwt - The JWT token
+ * @property {(jwt: string) => void} setJwt - Function to set the JWT token
+ * @property {boolean | null} isUserLoggedIn - Whether the user is logged in or not
+ * @property {(isLoggedIn: boolean) => void} setIsUserLoggedIn - Function to set the user login status
+ * @property {boolean} isFirstConnection - Whether the user is on their first connection
+ * @property {(isFirstConnection: boolean) => void} setIsFirstConnection - Function to set the first connection status
+ * @property {() => Promise<void>} refreshJwt - Function to refresh the JWT token
+ * @property {() => void} logout - Function to log out the user
+ */
 interface IUserContext {
   jwt: string;
   setJwt: (jwt: string) => void;
@@ -20,6 +32,11 @@ interface IUserContext {
   logout: () => void;
 }
 
+/**
+ * User context object
+ * @constant
+ * @type {IUserContext}
+ */
 export const UserContext = createContext<IUserContext>({
   jwt: "",
   setJwt: () => {},
