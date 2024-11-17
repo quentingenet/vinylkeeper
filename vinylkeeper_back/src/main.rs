@@ -8,11 +8,13 @@ mod utils;
 
 use crate::repositories::user_repository::UserRepository;
 use crate::services::user_service::UserService;
-use api::api_routes::user_routes;
+use api::api_routes::{collection_routes, user_routes};
 use core::security::create_cors_fairing;
 use db::connection::{create_pool, PoolDB};
 use dotenvy;
+use repositories::collection_repository::CollectionRepository;
 use rocket::{Build, Rocket};
+use services::collection_service::{self, CollectionService};
 use std::sync::Arc;
 
 #[rocket::main]
@@ -37,9 +39,17 @@ async fn main() {
 
     let pool_db = PoolDB { pool };
     let user_repository = Arc::new(UserRepository::new(pool_db.pool.clone()));
-    let user_service = Arc::new(UserService::new(user_repository));
+    let user_service = Arc::new(UserService::new(user_repository.clone()));
+    let collection_repository = Arc::new(CollectionRepository::new(pool_db.pool.clone()));
+    let collection_service = Arc::new(CollectionService::new(
+        collection_repository,
+        user_repository,
+    ));
 
-    if let Err(e) = build_rocket(pool_db, user_service).launch().await {
+    if let Err(e) = build_rocket(pool_db, user_service, collection_service)
+        .launch()
+        .await
+    {
         eprintln!("Failed to launch Rocket: {}", e);
     }
 }
@@ -76,10 +86,16 @@ fn load_env() {
     }
 }
 
-fn build_rocket(pool: PoolDB, user_service: Arc<UserService>) -> Rocket<Build> {
+fn build_rocket(
+    pool: PoolDB,
+    user_service: Arc<UserService>,
+    collection_service: Arc<CollectionService>,
+) -> Rocket<Build> {
     rocket::build()
         .attach(create_cors_fairing())
         .manage(pool)
         .manage(user_service)
+        .manage(collection_service)
         .mount("/api/users", user_routes())
+        .mount("/api/collections", collection_routes())
 }

@@ -42,7 +42,6 @@ const Register = ({
 }: RegisterProps) => {
   const userContext = useUserContext();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const { isMobile } = useDetectMobile();
@@ -68,7 +67,7 @@ const Register = ({
 
   const submitRegister = () => {
     if (!isValid) return;
-    setIsLoading(true);
+    userContext.setIsLoading(true);
 
     registerService(watch())
       .then((response) => {
@@ -78,7 +77,7 @@ const Register = ({
         navigate("/dashboard");
       })
       .catch((error) => console.error("Erreur lors de l'inscription :", error))
-      .finally(() => setIsLoading(false));
+      .finally(() => userContext.setIsLoading(false));
   };
 
   return (
@@ -223,7 +222,7 @@ const Register = ({
           </Grid2>
 
           <Grid2 display="flex" alignItems={"center"} justifyContent="center">
-            {isLoading ? (
+            {userContext.isLoading ? (
               <CircularProgress color="primary" sx={{ mb: 2 }} />
             ) : (
               <Button

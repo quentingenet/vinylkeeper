@@ -6,7 +6,7 @@ const DesktopThemeAppVinylKeeper = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#2e3440",
+      main: "#C9A726",
     },
     background: {
       default: "#3f3f41",
@@ -28,6 +28,12 @@ const DesktopThemeAppVinylKeeper = createTheme({
     h2: {
       color: "#fffbf9",
       fontSize: "2rem",
+      fontWeight: 500,
+      textShadow: "2px 2px 5px rgba(0,0,0,0.7)",
+    },
+    h3: {
+      color: "#fffbf9",
+      fontSize: "1.5rem",
       fontWeight: 500,
       textShadow: "2px 2px 5px rgba(0,0,0,0.7)",
     },

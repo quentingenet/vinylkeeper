@@ -110,3 +110,10 @@ pub fn validate_reset_token(token: &str) -> Result<ResetClaims, jsonwebtoken::er
 
     decode::<ResetClaims>(token, &decoding_key, &validation).map(|data| data.claims)
 }
+
+pub fn decode_jwt_uuid(token: &str) -> Result<Uuid, jsonwebtoken::errors::Error> {
+    let decoding_key = get_public_key();
+    let validation = Validation::new(jsonwebtoken::Algorithm::RS256);
+
+    decode::<Claims>(token, &decoding_key, &validation).map(|data| data.claims.sub)
+}

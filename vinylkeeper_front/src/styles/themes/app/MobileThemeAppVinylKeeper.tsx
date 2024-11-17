@@ -7,7 +7,7 @@ const MobileThemeAppVinylKeeper = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#2e3440",
+      main: "#C9A726",
     },
     background: {
       default: "#3f3f41",
@@ -29,6 +29,12 @@ const MobileThemeAppVinylKeeper = createTheme({
     h2: {
       color: "#fffbf9",
       fontSize: "1.5rem", // Ajustement de taille pour mobile
+      fontWeight: 500,
+      textShadow: "0 0 8px #2e3440",
+    },
+    h3: {
+      color: "#fffbf9",
+      fontSize: "1.2rem",
       fontWeight: 500,
       textShadow: "0 0 8px #2e3440",
     },

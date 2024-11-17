@@ -36,7 +36,9 @@ diesel::table! {
         user_id -> Int4,
         registered_at -> Nullable<Timestamptz>,
         updated_at -> Nullable<Timestamptz>,
-        is_public -> Nullable<Bool>,
+        is_public -> Bool,
+        #[max_length = 200]
+        description -> Nullable<Varchar>,
     }
 }
 

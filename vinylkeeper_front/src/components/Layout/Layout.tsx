@@ -81,9 +81,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           sx={{
             p: 2,
             textAlign: "center",
-            mb: 2,
+            mb: 3,
             opacity: isAnimating ? 0 : 1,
-            transition: "opacity 0.3s ease, transform 0.3s ease",
+            transition: "opacity 0.3s ease-in-out, transform 0.3s ease-in-out",
           }}
         >
           {!isMobile && (
@@ -111,7 +111,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            p: isMobile ? 1 : 2,
           }}
         >
           <Footer

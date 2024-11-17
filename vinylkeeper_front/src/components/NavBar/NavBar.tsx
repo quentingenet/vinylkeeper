@@ -10,7 +10,6 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-  keyframes,
 } from "@mui/material";
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -28,6 +27,7 @@ import {
 import { useUserContext } from "@contexts/UserContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
+import { growItem } from "@utils/Animations";
 
 /**
  * NavBar component props interface
@@ -45,18 +45,6 @@ interface NavBarProps {
 }
 
 const drawerWidth = 240;
-
-const growIcon = keyframes`
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
-`;
 
 /**
  * NavBar component that provides the navigation menu for the application
@@ -162,7 +150,7 @@ const NavBar: React.FC<NavBarProps> = ({
         <IconButton
           onClick={toggleMenu}
           sx={{
-            animation: `${growIcon} 1s ease infinite`,
+            animation: `${growItem} 1s ease infinite`,
             color: colorYellow,
           }}
         >

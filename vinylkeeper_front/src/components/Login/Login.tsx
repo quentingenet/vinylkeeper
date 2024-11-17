@@ -42,7 +42,6 @@ export default function Login({
 }: LoginProps) {
   const userContext = useUserContext();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [openSnackBar, setOpenSnackBar] = useState(false);
   const { isMobile } = useDetectMobile();
@@ -67,7 +66,7 @@ export default function Login({
   const submitLogin = () => {
     if (!isValid) return;
 
-    setIsLoading(true);
+    userContext.setIsLoading(true);
     loginService(watch())
       .then((response) => {
         userContext.setJwt(response.data);
@@ -75,7 +74,7 @@ export default function Login({
         navigate("/dashboard");
       })
       .catch(() => setOpenSnackBar(true))
-      .finally(() => setIsLoading(false));
+      .finally(() => userContext.setIsLoading(false));
   };
 
   return (
@@ -160,7 +159,7 @@ export default function Login({
             alignItems="center"
             flexDirection="column"
           >
-            {isLoading ? (
+            {userContext.isLoading ? (
               <CircularProgress />
             ) : (
               <Button type="submit" variant="contained">

@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 /**
  * User context interface
  * @interface IUserContext
+ * @property {boolean} isLoading - Whether the user is loading
+ * @property {(isLoading: boolean) => void} setIsLoading - Function to set the loading status
  * @property {string} jwt - The JWT token
  * @property {(jwt: string) => void} setJwt - Function to set the JWT token
  * @property {boolean | null} isUserLoggedIn - Whether the user is logged in or not
@@ -22,6 +24,8 @@ import { useNavigate } from "react-router-dom";
  * @property {() => void} logout - Function to log out the user
  */
 interface IUserContext {
+  isLoading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
   jwt: string;
   setJwt: (jwt: string) => void;
   isUserLoggedIn: boolean | null;
@@ -38,6 +42,8 @@ interface IUserContext {
  * @type {IUserContext}
  */
 export const UserContext = createContext<IUserContext>({
+  isLoading: false,
+  setIsLoading: () => {},
   jwt: "",
   setJwt: () => {},
   isUserLoggedIn: null,
@@ -61,6 +67,7 @@ export function UserContextProvider({
   const [jwt, setJwt] = useState<string>("");
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const refreshJwt = useCallback(async () => {
     try {
@@ -117,6 +124,8 @@ export function UserContextProvider({
   }, [isUserLoggedIn, refreshJwt]);
 
   const value: IUserContext = {
+    isLoading,
+    setIsLoading,
     jwt,
     setJwt,
     isUserLoggedIn,

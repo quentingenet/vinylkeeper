@@ -28,6 +28,7 @@ import {
 import { useUserContext } from "@contexts/UserContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
+import { growItem } from "@utils/Animations";
 
 /**
  * MobileNavBar component props interface
@@ -128,12 +129,6 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     navigate(linkTo);
   };
 
-  const growIcon = keyframes`
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-  `;
-
   return (
     <>
       <AppBar position="fixed" sx={{ backgroundColor: "#1F1F1F" }}>
@@ -141,7 +136,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
           <IconButton edge="start" color="inherit" onClick={handleMenuToggle}>
             <MenuIcon
               sx={{
-                animation: `${growIcon} 1.3s ease infinite`,
+                animation: `${growItem} 1.3s ease infinite`,
                 color: colorYellow,
               }}
             />

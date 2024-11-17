@@ -1,7 +1,8 @@
 use rocket::routes;
 
-use crate::api::users::{
-    authenticate, create_user, forgot_password, logout, refresh_token, reset_password,
+use crate::api::{
+    collections::{create_collection, get_collections},
+    users::{authenticate, create_user, forgot_password, logout, refresh_token, reset_password},
 };
 
 pub fn user_routes() -> Vec<rocket::Route> {
@@ -13,4 +14,8 @@ pub fn user_routes() -> Vec<rocket::Route> {
         logout,
         reset_password
     ]
+}
+
+pub fn collection_routes() -> Vec<rocket::Route> {
+    routes![create_collection, get_collections]
 }

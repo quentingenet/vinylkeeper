@@ -5,6 +5,7 @@ use std::error::Error;
 
 pub type PgPool = Pool<AsyncPgConnection>;
 
+#[derive(Clone)]
 pub struct PoolDB {
     pub pool: PgPool,
 }
