@@ -11,30 +11,23 @@ import { useState, useEffect } from "react";
 /**
  * CollectionItem Component
  *
- * A card component that displays a collection's information including:
- * - Collection name
- * - Description
- * - Creation date
- * - Public/Private status toggle
+ * A card component that displays collection information including name, description,
+ * creation date and public/private status.
  *
- * @component
- * @example
- * ```tsx
- * <CollectionItem
- *   name="My Collection"
- *   description="A collection of vinyl records"
- *   createdAt={new Date()}
- * />
- * ```
+ * Props:
+ * @param {string} name - The name of the collection
+ * @param {string} description - The description of the collection
+ * @param {string} createdAt - The creation date of the collection
+ * @param {boolean} isPublic - Whether the collection is public or private
+ * @param {function} onSwitchArea - Callback function when toggling public/private status
  *
- * @param {Object} props - Component props
- * @param {string} props.name - The name of the collection
- * @param {string} props.description - A description of the collection
- * @param {Date} props.createdAt - The date when the collection was created
- *
- * @returns {JSX.Element} A card displaying collection information
+ * Features:
+ * - Displays collection info in a Material-UI Card
+ * - Allows toggling between public/private status
+ * - Truncates long descriptions
+ * - Hover animations
+ * - Responsive design
  */
-
 interface CollectionItemProps {
   name: string;
   description: string;

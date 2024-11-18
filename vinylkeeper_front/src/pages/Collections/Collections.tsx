@@ -12,6 +12,11 @@ import {
 import { ICollection } from "@models/ICollectionForm";
 import { useUserContext } from "@contexts/UserContext";
 
+/**
+ * Collections Component
+ *
+ * Displays a list of collections with options to create new ones.
+ */
 export default function Collections() {
   const [openModal, setOpenModal] = useState(false);
   const [collections, setCollections] = useState<ICollection[]>([]);
