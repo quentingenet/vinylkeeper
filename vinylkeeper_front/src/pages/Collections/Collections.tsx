@@ -5,20 +5,36 @@ import CollectionItem from "@components/Collections/CollectionItem";
 import { useEffect, useState } from "react";
 import ModalCollectionCreate from "@components/Collections/ModalCollectionCreate";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { getCollections } from "@services/CollectionService";
+import {
+  getCollections,
+  switchAreaCollection,
+} from "@services/CollectionService";
 import { ICollection } from "@models/ICollectionForm";
 import { useUserContext } from "@contexts/UserContext";
 
 export default function Collections() {
-  const [isPublic, setIsPublic] = useState<boolean>(false);
-
   const [openModal, setOpenModal] = useState(false);
-  const handleOpen = () => setOpenModal(true);
-  const handleClose = () => setOpenModal(false);
   const [collections, setCollections] = useState<ICollection[]>([]);
-
   const { isLoading, setIsLoading } = useUserContext();
   const { isMobile } = useDetectMobile();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleClose = () => setOpenModal(false);
+  const handleOpen = () => setOpenModal(true);
+
+  const handleSwitchAreaCollection = async (
+    collectionId: number,
+    newIsPublic: boolean
+  ) => {
+    try {
+      const response = await switchAreaCollection(collectionId, newIsPublic);
+      if (response.data.success) {
+        setRefreshTrigger((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error updating collection area status:", error);
+    }
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -33,7 +49,7 @@ export default function Collections() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [refreshTrigger]);
 
   return (
     <>
@@ -77,8 +93,10 @@ export default function Collections() {
               name={collection.name}
               description={collection.description}
               createdAt={collection.registered_at}
-              setIsPublic={setIsPublic}
               isPublic={collection.is_public}
+              onSwitchArea={(newIsPublic) =>
+                handleSwitchAreaCollection(collection.id, newIsPublic)
+              }
             />
           ))
         ) : (

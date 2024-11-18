@@ -5,8 +5,8 @@ import Typography from "@mui/material/Typography";
 import CardActionArea from "@mui/material/CardActionArea";
 import CardActions from "@mui/material/CardActions";
 import { Box, FormControlLabel, Switch } from "@mui/material";
-import { useState } from "react";
 import { truncateText } from "@utils/GlobalUtils";
+import { useState, useEffect } from "react";
 
 /**
  * CollectionItem Component
@@ -39,17 +39,29 @@ interface CollectionItemProps {
   name: string;
   description: string;
   createdAt: string;
-  setIsPublic: (isPublic: boolean) => void;
   isPublic: boolean;
+  onSwitchArea: (newIsPublic: boolean) => void;
 }
 
 export default function CollectionItem({
   name,
   description,
   createdAt,
-  setIsPublic,
   isPublic,
+  onSwitchArea,
 }: CollectionItemProps) {
+  const [localIsPublic, setLocalIsPublic] = useState(isPublic);
+
+  useEffect(() => {
+    setLocalIsPublic(isPublic);
+  }, [isPublic]);
+
+  const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.checked;
+    setLocalIsPublic(newValue);
+    onSwitchArea(newValue);
+  };
+
   return (
     <Card
       sx={{
@@ -66,7 +78,12 @@ export default function CollectionItem({
         <CardMedia
           component="img"
           height="140"
-          sx={{ objectFit: "cover", backgroundColor: "#C9A726", opacity: 0.8 }}
+          sx={{
+            objectFit: "cover",
+            backgroundColor: "#C9A726",
+            opacity: 0.8,
+            height: 140,
+          }}
           image="/images/vinylKeeper.svg"
           alt="VinylKeeper"
         />
@@ -75,12 +92,12 @@ export default function CollectionItem({
             gutterBottom
             variant="h5"
             component="div"
-            sx={{ textShadow: "0px 0px 3px #000000" }}
+            sx={{ textShadow: "0px 0px 3px #000000", height: 50 }}
           >
-            {truncateText(name, 15)}
+            {truncateText(name, 25)}
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {truncateText(description, 120)}
+            {truncateText(description, 50)}
           </Typography>
         </CardContent>
       </CardActionArea>
@@ -90,8 +107,9 @@ export default function CollectionItem({
           display={"flex"}
           flexDirection={"row"}
           justifyContent={"center"}
-          alignItems={"center"}
+          alignItems={"flex-end"}
           gap={1}
+          sx={{ height: 50 }}
         >
           <FormControlLabel
             sx={{ paddingX: 1 }}
@@ -99,13 +117,11 @@ export default function CollectionItem({
               <Switch
                 size="small"
                 color="default"
-                checked={isPublic}
-                onChange={(e) => {
-                  setIsPublic(e.target.checked);
-                }}
+                checked={localIsPublic}
+                onChange={handleToggle}
               />
             }
-            label={isPublic ? "Public" : "Private"}
+            label={localIsPublic ? "Public" : "Private"}
           />
           <Typography variant="body2" sx={{ position: "absolute", right: 8 }}>
             Created at {new Date(createdAt).toLocaleDateString()}

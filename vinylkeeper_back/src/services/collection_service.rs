@@ -73,4 +73,35 @@ impl CollectionService {
             .await
             .map_err(|_| CollectionError::DatabaseError)
     }
+
+    pub async fn switch_area_collection(
+        &self,
+        collection_id: i32,
+        is_public: bool,
+        token: String,
+    ) -> Result<(), CollectionError> {
+        let user_uuid = decode_jwt_uuid(&token).map_err(|_| CollectionError::InvalidToken)?;
+        let user = self
+            .user_repository
+            .find_user_by_uuid(user_uuid)
+            .await
+            .map_err(|_| CollectionError::InvalidToken)?;
+
+        let collection = self
+            .collection_repository
+            .get_collection_by_id(collection_id)
+            .await
+            .map_err(|_| CollectionError::DatabaseError)?;
+
+        if collection.user_id != user.id {
+            return Err(CollectionError::DatabaseError);
+        }
+
+        self.collection_repository
+            .update_collection_area_status(collection_id, is_public)
+            .await
+            .map_err(|_| CollectionError::DatabaseError)?;
+
+        Ok(())
+    }
 }

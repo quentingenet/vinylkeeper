@@ -18,3 +18,15 @@ export const getCollections = () => {
     endpoint: "/collections/get",
   });
 };
+
+export const switchAreaCollection = (
+  collectionId: number,
+  isPublic: boolean
+) => {
+  return requestService({
+    apiTarget: API_VK_URL,
+    method: "PATCH",
+    endpoint: `/collections/area/${collectionId}`,
+    body: { is_public: isPublic },
+  });
+};

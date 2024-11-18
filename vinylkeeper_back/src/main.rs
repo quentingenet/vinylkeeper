@@ -14,7 +14,7 @@ use db::connection::{create_pool, PoolDB};
 use dotenvy;
 use repositories::collection_repository::CollectionRepository;
 use rocket::{Build, Rocket};
-use services::collection_service::{self, CollectionService};
+use services::collection_service::CollectionService;
 use std::sync::Arc;
 
 #[rocket::main]

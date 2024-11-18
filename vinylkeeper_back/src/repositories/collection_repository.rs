@@ -36,4 +36,29 @@ impl CollectionRepository {
             .await?;
         Ok(collections)
     }
+
+    pub async fn get_collection_by_id(
+        &self,
+        collection_id: i32,
+    ) -> Result<Collection, DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        Ok(collections::table
+            .find(collection_id)
+            .first::<Collection>(&mut conn)
+            .await?)
+    }
+
+    pub async fn update_collection_area_status(
+        &self,
+        collection_id: i32,
+        is_public: bool,
+    ) -> Result<(), DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        diesel::update(collections::table.find(collection_id))
+            .set(collections::is_public.eq(is_public))
+            .execute(&mut conn)
+            .await
+            .map_err(|_| DieselError::NotFound)?;
+        Ok(())
+    }
 }
