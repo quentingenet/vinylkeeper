@@ -3,7 +3,6 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
 import { useEffect, useState } from "react";
-import ModalCollectionCreate from "@components/Collections/ModalCollectionCreate";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
   getCollections,
@@ -11,6 +10,7 @@ import {
 } from "@services/CollectionService";
 import { ICollection } from "@models/ICollectionForm";
 import { useUserContext } from "@contexts/UserContext";
+import ModalCollection from "@components/Collections/ModalCollection";
 
 /**
  * Collections Component
@@ -92,7 +92,7 @@ export default function Collections() {
 
   return (
     <>
-      <ModalCollectionCreate
+      <ModalCollection
         collection={collection}
         openModal={openModal}
         handleClose={handleClose}

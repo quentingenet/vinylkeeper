@@ -25,7 +25,7 @@ interface IModalCollectionCreateProps {
   collection?: ICollection;
 }
 
-export default function ModalCollectionCreate({
+export default function ModalCollection({
   openModal,
   isUpdatingCollection,
   handleClose,
@@ -61,7 +61,7 @@ export default function ModalCollectionCreate({
       setValue("description", "");
       setValue("is_public", true);
     }
-  }, [isUpdatingCollection, setValue]);
+  }, [isUpdatingCollection, setValue, collection?.id]);
 
   const submitCollection = () => {
     if (!isValid) return;
