@@ -23,6 +23,8 @@ interface IModalCollectionCreateProps {
   handleClose: () => void;
   onCollectionAdded: () => void;
   collection?: ICollection;
+  isPublic: boolean;
+  setIsPublic: (isPublic: boolean) => void;
 }
 
 export default function ModalCollection({
@@ -31,10 +33,11 @@ export default function ModalCollection({
   handleClose,
   onCollectionAdded,
   collection,
+  isPublic,
+  setIsPublic,
 }: IModalCollectionCreateProps) {
   const userContext = useUserContext();
   const { isMobile } = useDetectMobile();
-  const [isPublic, setIsPublic] = useState(true);
   const [openSnackBar, setOpenSnackBar] = useState(false);
   const {
     handleSubmit,
@@ -46,7 +49,7 @@ export default function ModalCollection({
     defaultValues: {
       name: "",
       description: "",
-      is_public: true,
+      is_public: isPublic,
     },
     resolver: yupResolver(collectionValidationSchema),
   });
@@ -55,13 +58,21 @@ export default function ModalCollection({
     if (isUpdatingCollection) {
       setValue("name", collection?.name || "");
       setValue("description", collection?.description || "");
-      setValue("is_public", collection?.is_public || true);
+      setValue("is_public", collection?.is_public || isPublic);
     } else {
       setValue("name", "");
       setValue("description", "");
-      setValue("is_public", true);
+      setValue("is_public", isPublic);
     }
   }, [isUpdatingCollection, setValue, collection?.id]);
+
+  useEffect(() => {
+    if (openModal) {
+      setIsPublic(
+        isUpdatingCollection ? collection?.is_public ?? false : isPublic
+      );
+    }
+  }, [openModal, isUpdatingCollection, collection, setIsPublic]);
 
   const submitCollection = () => {
     if (!isValid) return;
@@ -133,13 +144,12 @@ export default function ModalCollection({
                   variant="h3"
                   component="h2"
                   color={"#C9A726"}
-                  sx={{ width: isMobile ? "75%" : "50%" }}
+                  sx={{ textAlign: "center", width: isMobile ? "75%" : "50%" }}
                   marginBottom={1}
                 >
                   {isUpdatingCollection ? "Updating" : "Creating a new"}
                   {" collection"}
                 </Typography>
-
                 <FormControlLabel
                   sx={{ width: isMobile ? "25%" : "15%" }}
                   control={

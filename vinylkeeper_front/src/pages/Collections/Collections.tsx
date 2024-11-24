@@ -51,6 +51,7 @@ export default function Collections() {
   const [collection, setCollection] = useState<ICollection | undefined>(
     undefined
   );
+  const [isPublic, setIsPublic] = useState(false);
   const handleClose = () => setOpenModal(false);
 
   const handleOpenModalCollection = (isUpdating: boolean) => {
@@ -98,6 +99,8 @@ export default function Collections() {
         handleClose={handleClose}
         isUpdatingCollection={isUpdatingCollection}
         onCollectionAdded={() => setRefreshTrigger((prev) => prev + 1)}
+        isPublic={isPublic}
+        setIsPublic={setIsPublic}
       />
       <Box
         display={"flex"}
