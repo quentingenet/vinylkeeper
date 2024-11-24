@@ -6,22 +6,31 @@ import Typography from "@mui/material/Typography";
 import useDetectMobile from "@hooks/useDetectMobile";
 import TextField from "@mui/material/TextField";
 import { Button, FormControlLabel, Switch } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { collectionValidationSchema } from "@utils/validators/collectionValidationSchema";
 import { useUserContext } from "@contexts/UserContext";
-import { ICollectionForm } from "@models/ICollectionForm";
-import { createCollection } from "@services/CollectionService";
+import { ICollection, ICollectionForm } from "@models/ICollectionForm";
+import {
+  createCollection,
+  updateCollection,
+} from "@services/CollectionService";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
+  isUpdatingCollection: boolean;
   handleClose: () => void;
+  onCollectionAdded: () => void;
+  collection?: ICollection;
 }
 
 export default function ModalCollectionCreate({
   openModal,
+  isUpdatingCollection,
   handleClose,
+  onCollectionAdded,
+  collection,
 }: IModalCollectionCreateProps) {
   const userContext = useUserContext();
   const { isMobile } = useDetectMobile();
@@ -32,19 +41,51 @@ export default function ModalCollectionCreate({
     control,
     formState: { errors, isValid },
     watch,
+    setValue,
   } = useForm<ICollectionForm>({
-    defaultValues: { name: "", description: "", is_public: true },
+    defaultValues: {
+      name: "",
+      description: "",
+      is_public: true,
+    },
     resolver: yupResolver(collectionValidationSchema),
   });
+
+  useEffect(() => {
+    if (isUpdatingCollection) {
+      setValue("name", collection?.name || "");
+      setValue("description", collection?.description || "");
+      setValue("is_public", collection?.is_public || true);
+    } else {
+      setValue("name", "");
+      setValue("description", "");
+      setValue("is_public", true);
+    }
+  }, [isUpdatingCollection, setValue]);
 
   const submitCollection = () => {
     if (!isValid) return;
 
-    userContext.setIsLoading(true);
-    createCollection(watch())
-      .then((response) => {})
-      .catch(() => setOpenSnackBar(true))
-      .finally(() => userContext.setIsLoading(false));
+    if (isUpdatingCollection && collection?.id) {
+      updateCollection(collection?.id, watch())
+        .then(() => {
+          onCollectionAdded();
+        })
+        .catch(() => setOpenSnackBar(true))
+        .finally(() => {
+          handleClose();
+        });
+    } else {
+      createCollection(watch())
+        .then((response) => {
+          onCollectionAdded();
+        })
+        .catch(() => setOpenSnackBar(true))
+        .finally(() => {
+          userContext.setIsLoading(false);
+          handleClose();
+        });
+    }
   };
 
   const style = {
@@ -59,6 +100,7 @@ export default function ModalCollectionCreate({
     boxShadow: 24,
     p: 2,
   };
+
   return (
     <div>
       <Modal
@@ -94,7 +136,8 @@ export default function ModalCollectionCreate({
                   sx={{ width: isMobile ? "75%" : "50%" }}
                   marginBottom={1}
                 >
-                  Creating a new collection
+                  {isUpdatingCollection ? "Updating" : "Creating a new"}
+                  {" collection"}
                 </Typography>
 
                 <FormControlLabel
@@ -147,7 +190,7 @@ export default function ModalCollectionCreate({
                   color="primary"
                   type="submit"
                 >
-                  Create
+                  {isUpdatingCollection ? "Update" : "Create"}
                 </Button>
               </Box>
             </Box>

@@ -27,3 +27,11 @@ pub struct NewCollection {
     pub registered_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
+
+#[derive(Insertable, Clone, Serialize, Deserialize)]
+#[diesel(table_name = collections)]
+pub struct UpdatedCollection {
+    pub name: String,
+    pub description: Option<String>,
+    pub is_public: bool,
+}

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use crate::{
     api::collections::CollectionError,
-    core::jwt::decode_jwt_uuid,
-    db::models::collection::{Collection, NewCollection},
+    db::models::collection::{Collection, NewCollection, UpdatedCollection},
     repositories::{collection_repository::CollectionRepository, user_repository},
+    utils::utils::get_user_from_token,
 };
 
 pub struct CollectionService {
@@ -39,13 +39,7 @@ impl CollectionService {
                 return Err(CollectionError::InvalidDescription);
             }
         }
-
-        let user_uuid = decode_jwt_uuid(&token).map_err(|_| CollectionError::InvalidToken)?;
-        let user = self
-            .user_repository
-            .find_user_by_uuid(user_uuid)
-            .await
-            .map_err(|_| CollectionError::InvalidToken)?;
+        let user = get_user_from_token(&token, self.user_repository.clone()).await?;
         let now = chrono::Local::now().naive_local();
         let collection: NewCollection = NewCollection {
             name: new_collection.name,
@@ -62,12 +56,7 @@ impl CollectionService {
     }
 
     pub async fn get_collections(&self, token: String) -> Result<Vec<Collection>, CollectionError> {
-        let user_uuid = decode_jwt_uuid(&token).map_err(|_| CollectionError::InvalidToken)?;
-        let user = self
-            .user_repository
-            .find_user_by_uuid(user_uuid)
-            .await
-            .map_err(|_| CollectionError::InvalidToken)?;
+        let user = get_user_from_token(&token, self.user_repository.clone()).await?;
         self.collection_repository
             .get_collections(user.id)
             .await
@@ -80,12 +69,7 @@ impl CollectionService {
         is_public: bool,
         token: String,
     ) -> Result<(), CollectionError> {
-        let user_uuid = decode_jwt_uuid(&token).map_err(|_| CollectionError::InvalidToken)?;
-        let user = self
-            .user_repository
-            .find_user_by_uuid(user_uuid)
-            .await
-            .map_err(|_| CollectionError::InvalidToken)?;
+        let user = get_user_from_token(&token, self.user_repository.clone()).await?;
 
         let collection = self
             .collection_repository
@@ -102,6 +86,38 @@ impl CollectionService {
             .await
             .map_err(|_| CollectionError::DatabaseError)?;
 
+        Ok(())
+    }
+
+    pub async fn delete_collection(
+        &self,
+        collection_id: i32,
+        token: String,
+    ) -> Result<(), CollectionError> {
+        let user = get_user_from_token(&token, self.user_repository.clone()).await?;
+        self.collection_repository
+            .delete_collection(user.id, collection_id)
+            .await
+            .map_err(|_| CollectionError::DatabaseError)?;
+        Ok(())
+    }
+
+    pub async fn update_collection(
+        &self,
+        collection_id: i32,
+        token: String,
+        data: UpdatedCollection,
+    ) -> Result<(), CollectionError> {
+        let user = get_user_from_token(&token, self.user_repository.clone()).await?;
+        let collection_updated: UpdatedCollection = UpdatedCollection {
+            name: data.name,
+            description: data.description,
+            is_public: data.is_public,
+        };
+        self.collection_repository
+            .update_collection(user.id, collection_id, collection_updated)
+            .await
+            .map_err(|_| CollectionError::DatabaseError)?;
         Ok(())
     }
 }

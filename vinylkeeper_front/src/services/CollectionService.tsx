@@ -30,3 +30,23 @@ export const switchAreaCollection = (
     body: { is_public: isPublic },
   });
 };
+
+export const updateCollection = (
+  collectionId: number,
+  data: ICollectionForm
+) => {
+  return requestService({
+    apiTarget: API_VK_URL,
+    method: "PATCH",
+    endpoint: `/collections/update/${collectionId}`,
+    body: data,
+  });
+};
+
+export const deleteCollection = (collectionId: number) => {
+  return requestService({
+    apiTarget: API_VK_URL,
+    method: "DELETE",
+    endpoint: `/collections/delete/${collectionId}`,
+  });
+};

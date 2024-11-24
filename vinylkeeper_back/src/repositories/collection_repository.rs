@@ -2,7 +2,7 @@ use diesel::{result::Error as DieselError, ExpressionMethods, QueryDsl, Selectab
 use diesel_async::{pooled_connection::bb8::Pool, AsyncPgConnection, RunQueryDsl};
 
 use crate::db::{
-    models::collection::{Collection, NewCollection},
+    models::collection::{Collection, NewCollection, UpdatedCollection},
     schema::collections,
 };
 
@@ -59,6 +59,39 @@ impl CollectionRepository {
             .execute(&mut conn)
             .await
             .map_err(|_| DieselError::NotFound)?;
+        Ok(())
+    }
+
+    pub async fn delete_collection(
+        &self,
+        user_id: i32,
+        collection_id: i32,
+    ) -> Result<(), DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        diesel::delete(collections::table.find(collection_id))
+            .filter(collections::user_id.eq(user_id))
+            .execute(&mut conn)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn update_collection(
+        &self,
+        user_id: i32,
+        collection_id: i32,
+        collection_updated: UpdatedCollection,
+    ) -> Result<(), DieselError> {
+        let mut conn = self.pool.get().await.map_err(|_| DieselError::NotFound)?;
+        diesel::update(collections::table.find(collection_id))
+            .filter(collections::user_id.eq(user_id))
+            .set((
+                collections::name.eq(collection_updated.name),
+                collections::description.eq(collection_updated.description),
+                collections::is_public.eq(collection_updated.is_public),
+                collections::updated_at.eq(chrono::Local::now().naive_local()),
+            ))
+            .execute(&mut conn)
+            .await?;
         Ok(())
     }
 }

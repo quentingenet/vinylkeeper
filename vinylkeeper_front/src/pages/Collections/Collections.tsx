@@ -15,37 +15,71 @@ import { useUserContext } from "@contexts/UserContext";
 /**
  * Collections Component
  *
- * Displays a list of collections with options to create new ones.
+ * Main page component for displaying and managing vinyl collections.
+ * Allows users to:
+ * - View all their collections in a grid layout
+ * - Create new collections
+ * - Edit existing collections
+ * - Toggle collection visibility (public/private)
+ * - Delete collections
+ * - View collection details
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <Collections />
+ * ```
+ *
+ * State:
+ * - openModal: Controls visibility of collection create/edit modal
+ * - collections: Array of user's collections
+ * - isLoading: Loading state while fetching collections
+ * - refreshTrigger: Counter to trigger collection refresh
+ * - isUpdatingCollection: Whether modal is in update or create mode
+ * - collection: Currently selected collection for editing
+ *
+ * @returns React component displaying collections grid and management UI
  */
+
 export default function Collections() {
   const [openModal, setOpenModal] = useState(false);
   const [collections, setCollections] = useState<ICollection[]>([]);
   const { isLoading, setIsLoading } = useUserContext();
   const { isMobile } = useDetectMobile();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
+  const [isUpdatingCollection, setIsUpdatingCollection] = useState(false);
+  const [collection, setCollection] = useState<ICollection | undefined>(
+    undefined
+  );
   const handleClose = () => setOpenModal(false);
-  const handleOpen = () => setOpenModal(true);
+
+  const handleOpenModalCollection = (isUpdating: boolean) => {
+    setIsUpdatingCollection(isUpdating);
+    setOpenModal(true);
+  };
 
   const handleSwitchAreaCollection = async (
     collectionId: number,
     newIsPublic: boolean
   ) => {
     try {
-      const response = await switchAreaCollection(collectionId, newIsPublic);
-      if (response.data.success) {
-        setRefreshTrigger((prev) => prev + 1);
-      }
+      await switchAreaCollection(collectionId, newIsPublic);
     } catch (error) {
       console.error("Error updating collection area status:", error);
     }
+  };
+
+  const handleCollectionClick = (collectionId: number) => {
+    const selectedCollection = collections.find(
+      (collection) => collection.id === collectionId
+    );
+    setCollection(selectedCollection);
   };
 
   useEffect(() => {
     setIsLoading(true);
     getCollections()
       .then((res) => {
-        console.log("Collections:", res.data);
         setCollections(res.data.collections);
       })
       .catch((error) => {
@@ -58,7 +92,13 @@ export default function Collections() {
 
   return (
     <>
-      <ModalCollectionCreate openModal={openModal} handleClose={handleClose} />
+      <ModalCollectionCreate
+        collection={collection}
+        openModal={openModal}
+        handleClose={handleClose}
+        isUpdatingCollection={isUpdatingCollection}
+        onCollectionAdded={() => setRefreshTrigger((prev) => prev + 1)}
+      />
       <Box
         display={"flex"}
         gap={1}
@@ -66,7 +106,7 @@ export default function Collections() {
         justifyContent={"center"}
         alignItems={"center"}
         sx={{ cursor: "pointer" }}
-        onClick={() => handleOpen()}
+        onClick={() => handleOpenModalCollection(false)}
       >
         <AddCircleOutlineIcon
           fontSize="large"
@@ -90,18 +130,18 @@ export default function Collections() {
         marginY={isMobile ? 1 : 3}
       >
         {isLoading ? (
-          <Typography>Chargement...</Typography>
+          <Typography>Loading...</Typography>
         ) : collections.length > 0 ? (
           collections.map((collection) => (
             <CollectionItem
               key={collection.id}
-              name={collection.name}
-              description={collection.description}
-              createdAt={collection.registered_at}
-              isPublic={collection.is_public}
+              collection={collection}
               onSwitchArea={(newIsPublic) =>
                 handleSwitchAreaCollection(collection.id, newIsPublic)
               }
+              refreshCollections={() => setRefreshTrigger((prev) => prev + 1)}
+              handleOpenModalCollection={() => handleOpenModalCollection(true)}
+              onCollectionClick={handleCollectionClick}
             />
           ))
         ) : (

@@ -1,7 +1,10 @@
 use rocket::routes;
 
 use crate::api::{
-    collections::{create_collection, get_collections, switch_area_collection},
+    collections::{
+        create_collection, delete_collection, get_collections, switch_area_collection,
+        update_collection,
+    },
     users::{authenticate, create_user, forgot_password, logout, refresh_token, reset_password},
 };
 
@@ -17,5 +20,11 @@ pub fn user_routes() -> Vec<rocket::Route> {
 }
 
 pub fn collection_routes() -> Vec<rocket::Route> {
-    routes![create_collection, get_collections, switch_area_collection]
+    routes![
+        create_collection,
+        get_collections,
+        switch_area_collection,
+        update_collection,
+        delete_collection
+    ]
 }

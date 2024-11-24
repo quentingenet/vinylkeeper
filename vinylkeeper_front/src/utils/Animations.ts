@@ -5,3 +5,9 @@ export const growItem = keyframes`
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
   `;
+
+export const zoomIn = keyframes`
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  `;

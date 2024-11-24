@@ -6,48 +6,69 @@ import CardActionArea from "@mui/material/CardActionArea";
 import CardActions from "@mui/material/CardActions";
 import { Box, FormControlLabel, Switch } from "@mui/material";
 import { truncateText } from "@utils/GlobalUtils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { deleteCollection } from "@services/CollectionService";
+import { ICollection } from "@models/ICollectionForm";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import { zoomIn } from "@utils/Animations";
 
 /**
  * CollectionItem Component
  *
- * A card component that displays collection information including name, description,
- * creation date and public/private status.
+ * A card component that displays a collection's information and provides actions to:
+ * - Toggle public/private visibility
+ * - Delete the collection
+ * - Edit the collection
+ * - View the collection details
  *
- * Props:
- * @param {string} name - The name of the collection
- * @param {string} description - The description of the collection
- * @param {string} createdAt - The creation date of the collection
- * @param {boolean} isPublic - Whether the collection is public or private
- * @param {function} onSwitchArea - Callback function when toggling public/private status
+ * @component
+ * @param {Object} props
+ * @param {ICollection} props.collection - The collection object containing id, name, description etc
+ * @param {Function} props.onSwitchArea - Callback when public/private toggle is switched
+ * @param {Function} props.refreshCollections - Callback to refresh the collections list
+ * @param {Function} props.handleOpenModalCollection - Callback to open edit collection modal
+ * @param {Function} props.onCollectionClick - Callback when collection card is clicked
  *
- * Features:
- * - Displays collection info in a Material-UI Card
- * - Allows toggling between public/private status
- * - Truncates long descriptions
- * - Hover animations
- * - Responsive design
+ * @example
+ * <CollectionItem
+ *   collection={collectionData}
+ *   onSwitchArea={(isPublic) => handleAreaSwitch(isPublic)}
+ *   refreshCollections={refreshCollectionsList}
+ *   handleOpenModalCollection={openEditModal}
+ *   onCollectionClick={(id) => navigateToCollection(id)}
+ * />
  */
+
 interface CollectionItemProps {
-  name: string;
-  description: string;
-  createdAt: string;
-  isPublic: boolean;
+  collection: ICollection;
   onSwitchArea: (newIsPublic: boolean) => void;
+  refreshCollections: () => void;
+  handleOpenModalCollection: () => void;
+  onCollectionClick: (collectionId: number) => void;
 }
 
 export default function CollectionItem({
-  name,
-  description,
-  createdAt,
-  isPublic,
+  collection,
   onSwitchArea,
+  refreshCollections,
+  handleOpenModalCollection,
+  onCollectionClick,
 }: CollectionItemProps) {
-  const [localIsPublic, setLocalIsPublic] = useState(isPublic);
+  const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setLocalIsPublic(isPublic);
-  }, [isPublic]);
+    setLocalIsPublic(collection.is_public);
+  }, [collection.is_public]);
+
+  useEffect(() => {
+    if (isDeleted) {
+      refreshCollections();
+    }
+  }, [isDeleted, refreshCollections]);
 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
@@ -55,8 +76,15 @@ export default function CollectionItem({
     onSwitchArea(newValue);
   };
 
+  const handleDelete = () => {
+    deleteCollection(collection.id).then(() => {
+      setIsDeleted(true);
+    });
+  };
+
   return (
     <Card
+      ref={cardRef}
       sx={{
         width: 350,
         position: "relative",
@@ -66,20 +94,86 @@ export default function CollectionItem({
           boxShadow: "0px 0px 6px 0px #000000",
         },
       }}
+      onClick={() => onCollectionClick(collection.id)}
     >
-      <CardActionArea>
-        <CardMedia
-          component="img"
-          height="140"
+      <CardMedia
+        component="img"
+        height="140"
+        sx={{
+          objectFit: "cover",
+          backgroundColor: "#C9A726",
+          opacity: 0.8,
+          height: 200,
+        }}
+        image="/images/vinylKeeper.svg"
+        alt="VinylKeeper"
+      ></CardMedia>
+      <Box display={"flex"} flexDirection={"column"} alignItems={"flex-end"}>
+        <Box
           sx={{
-            objectFit: "cover",
-            backgroundColor: "#C9A726",
-            opacity: 0.8,
-            height: 140,
+            position: "absolute",
+            cursor: "pointer",
+            backgroundColor: "#1F1F1F",
+            borderRadius: "50%",
+            padding: 1,
+            top: 10,
+            right: 10,
+            opacity: 0.9,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            "&:hover": {
+              animation: `${zoomIn} 0.3s ease-in-out`,
+            },
           }}
-          image="/images/vinylKeeper.svg"
-          alt="VinylKeeper"
-        />
+        >
+          <VisibilityIcon fontSize="small" />
+        </Box>
+        <Box
+          sx={{
+            position: "absolute",
+            cursor: "pointer",
+            backgroundColor: "#1F1F1F",
+            borderRadius: "50%",
+            padding: 1,
+            top: 53,
+            right: 10,
+            opacity: 0.9,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            "&:hover": {
+              animation: `${zoomIn} 0.3s ease-in-out`,
+            },
+          }}
+        >
+          <EditIcon
+            fontSize="small"
+            onClick={() => handleOpenModalCollection()}
+          />
+        </Box>
+        <Box
+          sx={{
+            position: "absolute",
+            cursor: "pointer",
+            backgroundColor: "#1F1F1F",
+            borderRadius: "50%",
+            padding: 1,
+            top: 94,
+            right: 10,
+            opacity: 0.9,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            "&:hover": {
+              animation: `${zoomIn} 0.3s ease-in-out`,
+            },
+          }}
+        >
+          <DeleteIcon fontSize="small" onClick={handleDelete} />
+        </Box>
+      </Box>
+      <CardActionArea>
         <CardContent>
           <Typography
             gutterBottom
@@ -87,10 +181,10 @@ export default function CollectionItem({
             component="div"
             sx={{ textShadow: "0px 0px 3px #000000", height: 50 }}
           >
-            {truncateText(name, 25)}
+            {truncateText(collection.name, 25)}
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {truncateText(description, 50)}
+            {truncateText(collection.description, 50)}
           </Typography>
         </CardContent>
       </CardActionArea>
@@ -102,7 +196,6 @@ export default function CollectionItem({
           justifyContent={"center"}
           alignItems={"flex-end"}
           gap={1}
-          sx={{ height: 50 }}
         >
           <FormControlLabel
             sx={{ paddingX: 1 }}
@@ -117,7 +210,7 @@ export default function CollectionItem({
             label={localIsPublic ? "Public" : "Private"}
           />
           <Typography variant="body2" sx={{ position: "absolute", right: 8 }}>
-            Created at {new Date(createdAt).toLocaleDateString()}
+            Created at {new Date(collection.registered_at).toLocaleDateString()}
           </Typography>
         </Box>
       </CardActions>
