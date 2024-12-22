@@ -5,7 +5,7 @@ import Fade from "@mui/material/Fade";
 import Typography from "@mui/material/Typography";
 import useDetectMobile from "@hooks/useDetectMobile";
 import TextField from "@mui/material/TextField";
-import { Button, FormControlLabel, Switch } from "@mui/material";
+import { Button, FormControlLabel, IconButton, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -16,6 +16,7 @@ import {
   createCollection,
   updateCollection,
 } from "@services/CollectionService";
+import CloseIcon from "@mui/icons-material/Close";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
@@ -88,7 +89,7 @@ export default function ModalCollection({
         });
     } else {
       createCollection(watch())
-        .then((response) => {
+        .then(() => {
           onCollectionAdded();
         })
         .catch(() => setOpenSnackBar(true))
@@ -130,6 +131,11 @@ export default function ModalCollection({
         <Fade in={openModal}>
           <form onSubmit={handleSubmit(submitCollection)}>
             <Box sx={style}>
+              <Box display={"flex"} justifyContent={"flex-end"}>
+                <IconButton onClick={handleClose}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
               <Box
                 display={"flex"}
                 flexDirection={"row"}

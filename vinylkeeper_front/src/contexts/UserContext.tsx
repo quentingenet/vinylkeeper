@@ -10,18 +10,20 @@ import {
 import { useNavigate } from "react-router-dom";
 
 /**
- * User context interface
+ * Interface defining the structure of the User Context
  * @interface IUserContext
- * @property {boolean} isLoading - Whether the user is loading
- * @property {(isLoading: boolean) => void} setIsLoading - Function to set the loading status
- * @property {string} jwt - The JWT token
- * @property {(jwt: string) => void} setJwt - Function to set the JWT token
- * @property {boolean | null} isUserLoggedIn - Whether the user is logged in or not
- * @property {(isLoggedIn: boolean) => void} setIsUserLoggedIn - Function to set the user login status
- * @property {boolean} isFirstConnection - Whether the user is on their first connection
- * @property {(isFirstConnection: boolean) => void} setIsFirstConnection - Function to set the first connection status
- * @property {() => Promise<void>} refreshJwt - Function to refresh the JWT token
- * @property {() => void} logout - Function to log out the user
+ * @property {boolean} isLoading - Loading state flag
+ * @property {function} setIsLoading - Function to update loading state
+ * @property {string} jwt - JSON Web Token for authentication
+ * @property {function} setJwt - Function to update JWT
+ * @property {boolean|null} isUserLoggedIn - User login status
+ * @property {function} setIsUserLoggedIn - Function to update login status
+ * @property {boolean} isFirstConnection - Flag for first time connection
+ * @property {function} setIsFirstConnection - Function to update first connection status
+ * @property {boolean} openDialog - Dialog display state
+ * @property {function} setOpenDialog - Function to control dialog visibility
+ * @property {function} refreshJwt - Async function to refresh JWT token
+ * @property {function} logout - Function to handle user logout
  */
 interface IUserContext {
   isLoading: boolean;
@@ -32,6 +34,8 @@ interface IUserContext {
   setIsUserLoggedIn: (isLoggedIn: boolean) => void;
   isFirstConnection: boolean;
   setIsFirstConnection: (isFirstConnection: boolean) => void;
+  openDialog: boolean;
+  setOpenDialog: (openDialog: boolean) => void;
   refreshJwt: () => Promise<void>;
   logout: () => void;
 }
@@ -50,6 +54,8 @@ export const UserContext = createContext<IUserContext>({
   setIsUserLoggedIn: () => {},
   isFirstConnection: false,
   setIsFirstConnection: () => {},
+  openDialog: false,
+  setOpenDialog: () => {},
   refreshJwt: async () => {},
   logout: () => {},
 });
@@ -68,6 +74,7 @@ export function UserContextProvider({
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
 
   const refreshJwt = useCallback(async () => {
     try {
@@ -132,6 +139,8 @@ export function UserContextProvider({
     setIsUserLoggedIn,
     isFirstConnection,
     setIsFirstConnection,
+    openDialog,
+    setOpenDialog,
     refreshJwt,
     logout,
   };
