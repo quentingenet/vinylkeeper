@@ -13,6 +13,8 @@ import { ICollection } from "@models/ICollectionForm";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import { zoomIn } from "@utils/Animations";
+import VinylKeeperDialog from "@components/UI/VinylKeeperDialog";
+import { useUserContext } from "@contexts/UserContext";
 
 /**
  * CollectionItem Component
@@ -59,6 +61,7 @@ export default function CollectionItem({
   const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
   const [isDeleted, setIsDeleted] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const userContext = useUserContext();
 
   useEffect(() => {
     setLocalIsPublic(collection.is_public);
@@ -79,141 +82,155 @@ export default function CollectionItem({
   const handleDelete = () => {
     deleteCollection(collection.id).then(() => {
       setIsDeleted(true);
+      userContext.setOpenDialog(false);
     });
   };
 
   return (
-    <Card
-      ref={cardRef}
-      sx={{
-        width: 350,
-        position: "relative",
-        boxShadow: "0px 0px 3px 0px #000000",
-        transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-        "&:hover": {
-          boxShadow: "0px 0px 6px 0px #000000",
-        },
-      }}
-      onClick={() => onCollectionClick(collection.id)}
-    >
-      <CardMedia
-        component="img"
-        height="140"
+    <>
+      <Card
+        ref={cardRef}
         sx={{
-          objectFit: "cover",
-          backgroundColor: "#C9A726",
-          opacity: 0.8,
-          height: 200,
+          width: 350,
+          position: "relative",
+          boxShadow: "0px 0px 3px 0px #000000",
+          transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+          "&:hover": {
+            boxShadow: "0px 0px 6px 0px #000000",
+          },
         }}
-        image="/images/vinylKeeper.svg"
-        alt="VinylKeeper"
-      ></CardMedia>
-      <Box display={"flex"} flexDirection={"column"} alignItems={"flex-end"}>
-        <Box
+        onClick={() => onCollectionClick(collection.id)}
+      >
+        <CardMedia
+          component="img"
+          height="140"
           sx={{
-            position: "absolute",
-            cursor: "pointer",
-            backgroundColor: "#1F1F1F",
-            borderRadius: "50%",
-            padding: 1,
-            top: 10,
-            right: 10,
-            opacity: 0.9,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            "&:hover": {
-              animation: `${zoomIn} 0.3s ease-in-out`,
-            },
+            objectFit: "cover",
+            backgroundColor: "#C9A726",
+            opacity: 0.8,
+            height: 200,
           }}
-        >
-          <VisibilityIcon fontSize="small" />
-        </Box>
-        <Box
-          sx={{
-            position: "absolute",
-            cursor: "pointer",
-            backgroundColor: "#1F1F1F",
-            borderRadius: "50%",
-            padding: 1,
-            top: 53,
-            right: 10,
-            opacity: 0.9,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            "&:hover": {
-              animation: `${zoomIn} 0.3s ease-in-out`,
-            },
-          }}
-        >
-          <EditIcon
-            fontSize="small"
-            onClick={() => handleOpenModalCollection()}
-          />
-        </Box>
-        <Box
-          sx={{
-            position: "absolute",
-            cursor: "pointer",
-            backgroundColor: "#1F1F1F",
-            borderRadius: "50%",
-            padding: 1,
-            top: 94,
-            right: 10,
-            opacity: 0.9,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            "&:hover": {
-              animation: `${zoomIn} 0.3s ease-in-out`,
-            },
-          }}
-        >
-          <DeleteIcon fontSize="small" onClick={handleDelete} />
-        </Box>
-      </Box>
-      <CardActionArea>
-        <CardContent>
-          <Typography
-            gutterBottom
-            variant="h5"
-            component="div"
-            sx={{ textShadow: "0px 0px 3px #000000", height: 50 }}
+          image="/images/vinylKeeper.svg"
+          alt="VinylKeeper"
+        ></CardMedia>
+        <Box display={"flex"} flexDirection={"column"} alignItems={"flex-end"}>
+          <Box
+            sx={{
+              position: "absolute",
+              cursor: "pointer",
+              backgroundColor: "#1F1F1F",
+              borderRadius: "50%",
+              padding: 1,
+              top: 10,
+              right: 10,
+              opacity: 0.9,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              "&:hover": {
+                animation: `${zoomIn} 0.3s ease-in-out`,
+              },
+            }}
           >
-            {truncateText(collection.name, 25)}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {truncateText(collection.description, 50)}
-          </Typography>
-        </CardContent>
-      </CardActionArea>
-
-      <CardActions>
-        <Box
-          display={"flex"}
-          flexDirection={"row"}
-          justifyContent={"center"}
-          alignItems={"flex-end"}
-          gap={1}
-        >
-          <FormControlLabel
-            sx={{ paddingX: 1 }}
-            control={
-              <Switch
-                size="small"
-                color="default"
-                checked={localIsPublic}
-                onChange={handleToggle}
-              />
-            }
-            label={localIsPublic ? "Public" : "Private"}
-          />
-          <Typography variant="body2" sx={{ position: "absolute", right: 8 }}>
-            Created at {new Date(collection.registered_at).toLocaleDateString()}
-          </Typography>
+            <VisibilityIcon fontSize="small" />
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              cursor: "pointer",
+              backgroundColor: "#1F1F1F",
+              borderRadius: "50%",
+              padding: 1,
+              top: 53,
+              right: 10,
+              opacity: 0.9,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              "&:hover": {
+                animation: `${zoomIn} 0.3s ease-in-out`,
+              },
+            }}
+          >
+            <EditIcon
+              fontSize="small"
+              onClick={() => handleOpenModalCollection()}
+            />
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              cursor: "pointer",
+              backgroundColor: "#1F1F1F",
+              borderRadius: "50%",
+              padding: 1,
+              top: 94,
+              right: 10,
+              opacity: 0.9,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              "&:hover": {
+                animation: `${zoomIn} 0.3s ease-in-out`,
+              },
+            }}
+          >
+            <DeleteIcon
+              fontSize="small"
+              onClick={() => userContext.setOpenDialog(true)}
+            />
+          </Box>
         </Box>
-      </CardActions>
-    </Card>
+        <CardActionArea>
+          <CardContent>
+            <Typography
+              gutterBottom
+              variant="h5"
+              component="div"
+              sx={{ textShadow: "0px 0px 3px #000000", height: 50 }}
+            >
+              {truncateText(collection.name, 25)}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {truncateText(collection.description, 50)}
+            </Typography>
+          </CardContent>
+        </CardActionArea>
+
+        <CardActions>
+          <Box
+            display={"flex"}
+            flexDirection={"row"}
+            justifyContent={"center"}
+            alignItems={"flex-end"}
+            gap={1}
+          >
+            <FormControlLabel
+              sx={{ paddingX: 1 }}
+              control={
+                <Switch
+                  size="small"
+                  color="default"
+                  checked={localIsPublic}
+                  onChange={handleToggle}
+                />
+              }
+              label={localIsPublic ? "Public" : "Private"}
+            />
+            <Typography variant="body2" sx={{ position: "absolute", right: 8 }}>
+              Created at{" "}
+              {new Date(collection.registered_at).toLocaleDateString()}
+            </Typography>
+          </Box>
+        </CardActions>
+      </Card>
+      <VinylKeeperDialog
+        title="Delete collection"
+        content="Are you sure you want to delete this collection ?"
+        onConfirm={handleDelete}
+        textConfirm="Delete"
+        textCancel="Cancel"
+      />
+    </>
   );
 }
