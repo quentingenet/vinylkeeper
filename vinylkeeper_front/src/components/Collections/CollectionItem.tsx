@@ -135,6 +135,7 @@ export default function CollectionItem({
             <VisibilityIcon fontSize="small" />
           </Box>
           <Box
+            onClick={() => handleOpenModalCollection()}
             sx={{
               position: "absolute",
               cursor: "pointer",
@@ -154,10 +155,10 @@ export default function CollectionItem({
           >
             <EditIcon
               fontSize="small"
-              onClick={() => handleOpenModalCollection()}
             />
           </Box>
           <Box
+            onClick={() => userContext.setOpenDialog(true)}
             sx={{
               position: "absolute",
               cursor: "pointer",
@@ -177,7 +178,6 @@ export default function CollectionItem({
           >
             <DeleteIcon
               fontSize="small"
-              onClick={() => userContext.setOpenDialog(true)}
             />
           </Box>
         </Box>

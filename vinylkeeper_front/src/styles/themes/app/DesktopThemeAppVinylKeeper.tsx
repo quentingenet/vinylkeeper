@@ -48,6 +48,21 @@ const DesktopThemeAppVinylKeeper = createTheme({
     },
   },
   components: {
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: "black",
+          boxShadow: shadow,
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          color: "#C9A726",
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {

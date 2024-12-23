@@ -32,18 +32,8 @@ export default function VinylKeeperDialog({
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
-        sx={{
-          "& .MuiDialog-paper": {
-            backgroundColor: "#121212",
-          },
-        }}
       >
-        <DialogTitle
-          id="alert-dialog-title"
-          variant="h3"
-          component="h2"
-          color={"#C9A726"}
-        >
+        <DialogTitle id="alert-dialog-title" variant="h3" component="h2">
           {title}
         </DialogTitle>
         <DialogContent>
