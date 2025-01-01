@@ -1,0 +1,37 @@
+services:
+  vinylkeeper-db:
+    image: postgres:16.2
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - vk_network
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  vinylkeeper-back:
+    build: .
+    container_name: vinylkeeper-back-container
+    ports:
+      - "8000:8000"
+    depends_on:
+      - vinylkeeper-db
+    networks:
+      - vk_network
+    volumes:
+      - .:/app
+    working_dir: /app
+    env_file:
+      - .env.development
+    command: ["./vinylkeeper_back"]
+    restart: always
+
+networks:
+  vk_network:
+    driver: bridge
+volumes:
+  postgres_db:

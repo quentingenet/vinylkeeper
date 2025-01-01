@@ -98,4 +98,9 @@ fn build_rocket(
         .manage(collection_service)
         .mount("/api/users", user_routes())
         .mount("/api/collections", collection_routes())
+        .configure(rocket::Config {
+            address: "0.0.0.0".parse().unwrap(),
+            port: 8000,
+            ..Default::default()
+        })
 }
