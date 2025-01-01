@@ -91,6 +91,7 @@ fn build_rocket(
     user_service: Arc<UserService>,
     collection_service: Arc<CollectionService>,
 ) -> Rocket<Build> {
+    let secret_key = std::env::var("ROCKET_SECRET_KEY").expect("SECRET_KEY must be set");
     rocket::build()
         .attach(create_cors_fairing())
         .manage(pool)
@@ -101,6 +102,7 @@ fn build_rocket(
         .configure(rocket::Config {
             address: "0.0.0.0".parse().unwrap(),
             port: 8000,
+            secret_key: rocket::config::SecretKey::from(secret_key.as_bytes()),
             ..Default::default()
         })
 }
