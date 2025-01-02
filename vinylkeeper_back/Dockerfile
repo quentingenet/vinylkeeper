@@ -9,11 +9,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY vinylkeeper_back /app/
-
-COPY stuff_vk/.env.development /app/
+COPY .env.development /app/
+COPY /src /app/
 
 RUN chmod +x /app/vinylkeeper_back
 
 CMD ["/app/vinylkeeper_back"]
-
-

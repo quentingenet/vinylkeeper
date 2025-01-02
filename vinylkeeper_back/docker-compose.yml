@@ -1,6 +1,7 @@
 services:
   vinylkeeper-db:
     image: postgres:16.2
+    container_name: vinylkeeper-db-container
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
@@ -33,5 +34,6 @@ services:
 networks:
   vk_network:
     driver: bridge
+
 volumes:
   postgres_db:
