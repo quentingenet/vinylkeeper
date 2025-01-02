@@ -10,10 +10,10 @@
 
 **VinylKeeper** is a free and open-source application released under the Copyleft license.
 <br>Vinyl Keeper is your go-to solution for effortlessly managing your vinyl collection while respecting your data and privacy.
-<br><br>Coming soon on [VinylKeeper here!](https://vinyl-keeper.quentingenet.fr/)
+<br><br>Coming soon on [VinylKeeper here!](https://vinylkeeper.quentingenet.fr/)
 
 <p align="center">
-  <a href="https://vinyl-keeper.quentingenet.fr/">
+  <a href="https://vinylkeeper.quentingenet.fr/">
     <img src="https://github.com/quentingenet/vinylkeeper/blob/develop/vinylkeeper_preview.webp" alt="VinylKeeper preview">
   </a>
 </p>
