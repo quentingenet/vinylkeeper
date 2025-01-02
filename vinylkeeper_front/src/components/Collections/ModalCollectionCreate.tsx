@@ -77,7 +77,7 @@ export default function ModalCollectionCreate({
         });
     } else {
       createCollection(watch())
-        .then((response) => {
+        .then(() => {
           onCollectionAdded();
         })
         .catch(() => setOpenSnackBar(true))

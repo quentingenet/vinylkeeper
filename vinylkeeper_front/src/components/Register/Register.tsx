@@ -38,7 +38,6 @@ const Register = ({
   setOpen,
   open,
   setOpenTermsModal,
-  openTermsModal,
 }: RegisterProps) => {
   const userContext = useUserContext();
   const navigate = useNavigate();

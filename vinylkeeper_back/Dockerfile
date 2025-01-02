@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y \
     openssl \
     libpq5 \
     libgcc1 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
