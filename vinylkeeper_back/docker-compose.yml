@@ -27,7 +27,7 @@ services:
       - .:/app
     working_dir: /app
     env_file:
-      - .env.development
+      - .env.production
     command: ["./vinylkeeper_back"]
     restart: always
 

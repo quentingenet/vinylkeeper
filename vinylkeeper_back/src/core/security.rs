@@ -8,6 +8,7 @@ pub fn create_cors_fairing() -> Cors {
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8000",
         "https://vinylkeeper.quentingenet.fr",
+        "http://vinylkeeper.quentingenet.fr",
         "https://vinylkeeper-api.quentingenet.fr",
         "http://vinylkeeper-api.quentingenet.fr",
     ]);

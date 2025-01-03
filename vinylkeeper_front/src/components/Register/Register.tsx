@@ -142,7 +142,9 @@ const Register = ({
                   ),
                 },
               }}
-              {...control.register("email")}
+              {...control.register("email", {
+                setValueAs: (value) => value.toLowerCase(),
+              })}
             />
           </Grid2>
 
