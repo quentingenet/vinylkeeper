@@ -120,8 +120,9 @@ const Register = ({
                   ),
                 },
               }}
-              {...control.register("username")}
-              onChange={(e) => e.target.value.toLowerCase()}
+              {...control.register("username", {
+                setValueAs: (value) => value.toLowerCase(),
+              })}
             />
           </Grid2>
 
