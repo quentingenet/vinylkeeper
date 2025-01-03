@@ -120,6 +120,7 @@ export default function Login({
                       <Person2 />
                     </InputAdornment>
                   ),
+                  style: { textTransform: "lowercase" },
                 },
               }}
               {...control.register("email", {

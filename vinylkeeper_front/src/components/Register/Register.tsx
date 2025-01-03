@@ -118,6 +118,7 @@ const Register = ({
                       <Person2 />
                     </InputAdornment>
                   ),
+                  style: { textTransform: "lowercase" },
                 },
               }}
               {...control.register("username", {
@@ -141,6 +142,7 @@ const Register = ({
                       <Email />
                     </InputAdornment>
                   ),
+                  style: { textTransform: "lowercase" },
                 },
               }}
               {...control.register("email", {
