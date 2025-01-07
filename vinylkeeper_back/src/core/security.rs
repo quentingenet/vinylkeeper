@@ -1,17 +1,12 @@
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
+use std::env;
 
 pub fn create_cors_fairing() -> Cors {
-    let allowed_origins = AllowedOrigins::some_exact(&[
-        "http://localhost:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:8000",
-        "https://vinylkeeper.quentingenet.fr",
-        "http://vinylkeeper.quentingenet.fr",
-        "https://vinylkeeper-api.quentingenet.fr",
-        "http://vinylkeeper-api.quentingenet.fr",
-    ]);
+    let allowed_origins_env = env::var("ALLOWED_ORIGINS").unwrap_or_else(|_| String::from(""));
+    let allowed_origins: Vec<&str> = allowed_origins_env.split(',').collect();
+
+    let allowed_origins = AllowedOrigins::some_exact(&allowed_origins);
 
     CorsOptions {
         allowed_headers: AllowedHeaders::some(&["Content-Type", "Authorization", "Accept"]),

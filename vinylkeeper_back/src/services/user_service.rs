@@ -60,8 +60,10 @@ pub async fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(
         })?;
 
     println!(
-        "Registration notification sent successfully to {}.",
-        admin_email
+        "Registration notification for user : {} sent successfully to : {}. Date : {}",
+        username,
+        admin_email,
+        Utc::now().naive_utc().to_string()
     );
     Ok(())
 }
