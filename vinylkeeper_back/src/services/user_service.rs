@@ -60,10 +60,10 @@ pub async fn notify_admin_new_user(username: &str, user_email: &str) -> Result<(
         })?;
 
     println!(
-        "Registration notification for user : {} sent successfully to : {}. Date : {}",
+        "Registration notification for user : {} sent successfully to : {}. \nDate : {}",
         username,
         admin_email,
-        Utc::now().naive_utc().to_string()
+        Utc::now().naive_utc().format("%d-%m-%Y %H:%M").to_string()
     );
     Ok(())
 }
@@ -108,6 +108,12 @@ impl UserService {
             .await
             .map_err(|_| AuthError::DatabaseError)?;
 
+        println!(
+            "User authenticated : {} - Date : {}",
+            user.username,
+            Utc::now().naive_utc().format("%d-%m-%Y %H:%M").to_string()
+        );
+
         Ok(AuthTokens {
             access_token,
             refresh_token,
@@ -143,8 +149,10 @@ impl UserService {
                     _ => AuthError::DatabaseError,
                 })?;
 
+        println!("New user created : {}", created_user.username);
+
         timeout(
-            Duration::from_secs(1),
+            Duration::from_secs(5),
             notify_admin_new_user(&created_user.username, &created_user.email),
         )
         .await
