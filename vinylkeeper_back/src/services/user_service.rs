@@ -108,12 +108,6 @@ impl UserService {
             .await
             .map_err(|_| AuthError::DatabaseError)?;
 
-        println!(
-            "User authenticated : {} - Date : {}",
-            user.username,
-            Utc::now().naive_utc().format("%d-%m-%Y %H:%M").to_string()
-        );
-
         Ok(AuthTokens {
             access_token,
             refresh_token,
@@ -152,12 +146,12 @@ impl UserService {
         println!("New user created : {}", created_user.username);
 
         timeout(
-            Duration::from_secs(5),
+            Duration::from_secs(1),
             notify_admin_new_user(&created_user.username, &created_user.email),
         )
         .await
         .map_err(|_| {
-            eprintln!("Sending email timed out.");
+            eprintln!("Email sending timed out.");
             AuthError::EmailTimeoutError
         })??;
 
