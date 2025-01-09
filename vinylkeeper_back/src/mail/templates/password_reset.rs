@@ -1,7 +1,7 @@
 pub fn password_reset_template(token: &str) -> String {
     let frontend_url = match std::env::var("APP_ENV").as_deref() {
         Ok("production") => std::env::var("FRONTEND_URL")
-            .unwrap_or_else(|_| "https://vinylkeeper.quentingenet.fr".to_string()),
+            .unwrap_or_else(|_| "https://vinylkeeper.org".to_string()),
         _ => "http://localhost:5173".to_string(),
     };
 
