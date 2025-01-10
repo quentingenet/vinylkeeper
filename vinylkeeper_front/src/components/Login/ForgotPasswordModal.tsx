@@ -90,7 +90,7 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
               size="large"
               onClick={() => {
                 if (emailRecovery.match(emailValidator)) {
-                  forgotPasswordService(emailRecovery);
+                  forgotPasswordService(emailRecovery.toLowerCase());
                   setIsMailSended(true);
                   setErrorRecovery(false);
                 } else {
