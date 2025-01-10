@@ -10,6 +10,8 @@ pub fn new_user_register_template(username: &str, user_email: &str) -> String {
                 <li><strong>Email:</strong> {}</li>
             </ul>
             <p>Best regards,<br>The Vinyl Keeper Team</p>
+            <br/>
+            <p>Not needed to answer to this email.</p>
         </body>
         </html>"#,
         username, user_email
