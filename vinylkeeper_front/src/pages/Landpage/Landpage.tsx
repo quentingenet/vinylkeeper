@@ -42,14 +42,16 @@ export default function Landpage() {
           {!login && !register ? (
             <>
               <p className={styles.textTypo}>
-                Free and open-source,
-                <br /> Vinyl Keeper is your go-to solution
-                <br /> for effortlessly managing your vinyl collection with
-                fun&nbsp;!
+                The free and open-source way
+                <br />
+                to manage your vinyl collection
+                <br />
+                effortlessly with fun !
               </p>
+
               <div className={styles.buttonContainer}>
                 <Button onClick={handleLoginOpen}>Login</Button>
-                <Button onClick={handleRegisterOpen}>Register</Button>
+                <Button onClick={handleRegisterOpen}>Sign up</Button>
               </div>
             </>
           ) : (

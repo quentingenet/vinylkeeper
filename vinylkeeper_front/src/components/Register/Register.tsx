@@ -234,7 +234,7 @@ const Register = ({
                 variant="contained"
                 disabled={!watch().isAcceptedTerms}
               >
-                Register
+                Join now
               </Button>
             )}
           </Grid2>
