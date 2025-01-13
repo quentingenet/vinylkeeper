@@ -168,10 +168,12 @@ pub async fn reset_password(
 #[post("/logout")]
 pub async fn logout(cookies: &CookieJar<'_>) -> Result<status::NoContent, Status> {
     let refresh_cookie = Cookie::build("refresh_token")
-        .path("/")
         .http_only(true)
         .secure(true)
-        .same_site(SameSite::None);
+        .same_site(SameSite::None)
+        .path("/")
+        .domain("vinylkeeper.org")
+        .build();
 
     cookies.remove_private(refresh_cookie);
 
