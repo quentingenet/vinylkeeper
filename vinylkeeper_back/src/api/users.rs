@@ -69,6 +69,8 @@ pub async fn authenticate(
                 .secure(true)
                 .same_site(SameSite::None)
                 .max_age(Duration::days(7))
+                .path("/")
+                .domain("vinylkeeper.org")
                 .build();
             cookies.add(refresh_cookie);
             Ok(Json(tokens.access_token))
@@ -90,6 +92,8 @@ pub async fn create_user(
                 .secure(true)
                 .same_site(SameSite::None)
                 .max_age(Duration::days(7))
+                .path("/")
+                .domain("vinylkeeper.org")
                 .build();
             cookies.add(refresh_cookie);
             Ok(Json(tokens.access_token))
