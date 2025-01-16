@@ -49,30 +49,31 @@ export default function ModalTermsVinylKeeper(
               textAlign: "center",
             }}
           >
-            Terms of Use for the Vinyl Kepper Application
+            Terms of Use for the Vinyl Keeper Application
           </Typography>
           <Typography
             id="modal-modal-description"
             sx={{ mt: 2, color: "black" }}
           >
             <strong>
-              Vinyl Keeper is a free and open-source application under copyleft,
-              developed by Quentin Genet. The purpose of the Application is to
-              provide a tool for managing vinyl collections.
+              Vinyl Keeper is a free and open-source application licensed under
+              GPLv3, developed by Quentin Genet. The purpose of the Application
+              is to provide a tool for managing vinyl collections while
+              promoting freedom to share and modify the software.
               <br /> The Application is available on the website
-              https://vinyl-keeper.quentingenet.fr
+              https://vinylkeeper.org.
             </strong>
             <br />
             <strong>
-              <center>Legal information</center>
+              <center>Legal Information</center>
             </strong>
             <br />
-            Website owner, administrator, and webmaster contact: Quentin Genet,
-            Website hosting: OVH - SAS with a capital of €10,069,020 RCS Lille
-            Métropole 424 761 419 00045Code APE 2620ZN° TVA: FR 22 424 761 419
-            Registered office: 2 rue Kellermann - 59100 Roubaix - France
+            Website owner, administrator, and webmaster contact: Quentin Genet.
+            Website hosting: Hostinger - Registered in France. Contact and
+            address details available via the Hostinger website.
             <br />
             <strong>1. Acceptance of Terms of Use</strong>
+            <br />
             1.1. The use of the Vinyl Keeper application (hereinafter referred
             to as the "Application") is subject to the unconditional acceptance
             of these Terms of Use (hereinafter referred to as "Terms").
@@ -96,27 +97,25 @@ export default function ModalTermsVinylKeeper(
             on the information provided by the Application.
             <br />
             <strong>4. No Warranty</strong> <br />
-            4.1. The Vinyl Keeper Application is provided "as is" without
-            warranty of accuracy, reliability, or fitness for a particular
-            purpose.
+            4.1. The Vinyl Keeper Application is provided "as is" under GPLv3
+            without warranty of accuracy, reliability, or fitness for a
+            particular purpose.
             <br />
             4.2. The creators of the Application do not guarantee the results
             obtained from the use of the Application and cannot be held
             responsible for errors, inaccuracies, or omissions in the
             information provided.
             <br />
-            <strong>
-              5. Non-Disclosure of User Data for Advertising or Marketing
-              Purposes
-            </strong>{" "}
+            <strong>5. Commitment to User Freedom and Privacy</strong>
             <br />
-            5.1. The creators of the Vinyl Keeper Application commit to not
+            5.1. As a GPLv3-licensed application, Vinyl Keeper promotes user
+            freedom, ensuring the right to study, share, and modify the
+            software.
+            <br />
+            5.2. The creators of the Vinyl Keeper Application commit to not
             disclosing user data to third parties for advertising or marketing
-            purposes.
-            <br />
-            5.2. No personal information of the user will be sold, rented, or
-            shared with third parties for commercial prospecting without the
-            explicit consent of the user.
+            purposes. No personal information will be sold, rented, or shared
+            without explicit consent.
             <br />
             <strong>6. Service Interruption</strong> <br />
             6.1. The user acknowledges that the Application may experience
@@ -127,9 +126,7 @@ export default function ModalTermsVinylKeeper(
             <strong>7. Collection and Use of Data</strong> <br />
             7.1. The user consents to the collection, storage, and use of their
             data in accordance with the privacy policy of the Vinyl Keeper
-            Application, accessible on the Application's website. No user data
-            is transferred to a third party or used for marketing or analysis
-            purposes.
+            Application, accessible on the Application's website.
             <br />
             <strong>8. Modification of Terms of Use</strong> <br />
             8.1. The creators of the Vinyl Keeper Application reserve the right
@@ -140,6 +137,9 @@ export default function ModalTermsVinylKeeper(
             9.1. These Terms are governed by French law. Any dispute arising
             from the use of the Application falls under the exclusive
             jurisdiction of French courts.
+          </Typography>
+          <Typography sx={{ mt: 2, color: "black" }}>
+            <strong>Last updated: 13/01/2025</strong>
           </Typography>
         </Box>
       </Modal>

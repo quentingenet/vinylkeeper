@@ -13,11 +13,17 @@ export default function AddVinyls() {
   };
 
   const handleSearch = async () => {
-    const response = await fetch(
-      `${API_DEEZER_URL}${isArtist ? "artist" : "album"}?q=${searchTerm}`
-    );
-    const data = await response.json();
-    console.log(data);
+    try {
+      const response = await fetch(
+        `${API_DEEZER_URL}${isArtist ? "artist" : "album"}?q=${searchTerm}`
+      );
+      if (!response.ok) {
+        throw new Error("Erreur lors de la récupération des données");
+      }
+      const data = await response.json();
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
   };
 
   return (
