@@ -8,7 +8,7 @@ mod utils;
 
 use crate::repositories::user_repository::UserRepository;
 use crate::services::user_service::UserService;
-use api::api_routes::{collection_routes, user_routes};
+use api::api_routes::{collection_routes, request_proxy_routes, user_routes};
 use core::security::create_cors_fairing;
 use db::connection::{create_pool, PoolDB};
 use dotenvy;
@@ -99,6 +99,7 @@ fn build_rocket(
         .manage(collection_service)
         .mount("/api/users", user_routes())
         .mount("/api/collections", collection_routes())
+        .mount("/api/request_proxy", request_proxy_routes())
         .configure(rocket::Config {
             address: "0.0.0.0".parse().unwrap(),
             port: 8000,

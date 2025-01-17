@@ -5,5 +5,6 @@ pub mod collections;
 pub mod genres;
 pub mod loans;
 pub mod ratings;
+pub mod request_proxy;
 pub mod users;
 pub mod wishlists;

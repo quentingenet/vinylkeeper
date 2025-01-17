@@ -19,6 +19,8 @@ tokio = { version = "1.41", features = ["full"] }
 lettre = "0.11.10"
 uuid = { version = "1", features = ["v4","serde"] }
 once_cell = "1.10.0"
+reqwest = { version = "0.11", features = ["json"] }
+urlencoding = "2.1"
 [features]
 default = ["dev"]
 dev = []
