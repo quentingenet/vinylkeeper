@@ -53,8 +53,6 @@ pub struct Artist {
 
 #[post("/search", format = "json", data = "<search_query>")]
 pub async fn search(search_query: Json<SearchQuery>) -> Result<Json<Vec<DeezerData>>, Status> {
-    println!("Received search query: {:?}", search_query);
-
     if search_query.query.trim().is_empty() {
         eprintln!("Empty request.");
         return Err(Status::BadRequest);
@@ -70,7 +68,7 @@ pub async fn search(search_query: Json<SearchQuery>) -> Result<Json<Vec<DeezerDa
         format!("https://api.deezer.com/search/album?q={}", encoded_query)
     };
 
-    println!("Constructed URL: {}", url);
+    println!("Deezer request URL: {}", url);
 
     let response = client.get(&url).send().await.map_err(|e| {
         eprintln!("Network error when calling Deezer: {}", e);
@@ -79,12 +77,12 @@ pub async fn search(search_query: Json<SearchQuery>) -> Result<Json<Vec<DeezerDa
 
     if !response.status().is_success() {
         eprintln!(
-            "Erreur de l'API Deezer (statut HTTP {}): {:?}",
+            "Error from Deezer API (HTTP status {}): {:?}",
             response.status(),
             response
                 .text()
                 .await
-                .unwrap_or_else(|_| "Pas de message".to_string())
+                .unwrap_or_else(|_| "No message".to_string())
         );
         return Err(Status::InternalServerError);
     }

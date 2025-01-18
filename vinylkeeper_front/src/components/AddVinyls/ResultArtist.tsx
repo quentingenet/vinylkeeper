@@ -9,16 +9,8 @@ interface IResultArtistProps {
 
 export default function ResultArtist({ data }: IResultArtistProps) {
   if (!data || data.length === 0) {
-    return (
-      <Typography
-        sx={{ textAlign: "center", marginTop: 2, fontSize: "1rem" }}
-        variant="body1"
-      >
-        No artists found.
-      </Typography>
-    );
+    return <></>;
   }
-
   return (
     <div className={styles.resultsContainer}>
       {data.map((artist: IArtistRequestResults) => (

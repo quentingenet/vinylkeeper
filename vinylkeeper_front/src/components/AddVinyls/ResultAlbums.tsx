@@ -9,14 +9,7 @@ interface IResultAlbumsProps {
 
 export default function ResultAlbums({ data }: IResultAlbumsProps) {
   if (!data || data.length === 0) {
-    return (
-      <Typography
-        sx={{ textAlign: "center", marginTop: 2, fontSize: "1rem" }}
-        variant="body1"
-      >
-        No albums found.
-      </Typography>
-    );
+    return <></>;
   }
 
   return (
@@ -25,7 +18,7 @@ export default function ResultAlbums({ data }: IResultAlbumsProps) {
         <Box key={album.uuid}>
           <Card className={styles.resultCard} sx={{ width: 250, height: 250 }}>
             <CardMedia
-              sx={{ objectFit: "cover" }}
+              sx={{ objectFit: "cover", borderRadius: "5px" }}
               component="img"
               height="auto"
               image={album.picture_medium}

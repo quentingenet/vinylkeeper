@@ -7,7 +7,10 @@ export default function AddVinyls() {
   const [requestResults, setRequestResults] = useState<IRequestResults[]>([]);
   return (
     <>
-      <RequestsMaker setRequestResults={setRequestResults} />
+      <RequestsMaker
+        requestResults={requestResults}
+        setRequestResults={setRequestResults}
+      />
       <RequestResults results={requestResults} />
     </>
   );

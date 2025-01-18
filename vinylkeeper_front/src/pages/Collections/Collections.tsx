@@ -148,9 +148,7 @@ export default function Collections() {
             />
           ))
         ) : (
-          <Typography sx={{ textAlign: "center" }}>
-            No collection found...
-          </Typography>
+          <></>
         )}
       </Box>
     </>
