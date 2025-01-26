@@ -9,10 +9,17 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY vinylkeeper_back_RUST_ROCKET /app/
+COPY vinylkeeper_back /app/
 COPY .env.production /app/
 COPY /src /app/
 
-RUN chmod +x /app/vinylkeeper_back_RUST_ROCKET
+RUN chmod +x ./vinylkeeper_back
 
-CMD ["/app/vinylkeeper_back_RUST_ROCKET"]
+CMD ["/app/vinylkeeper_back"]
+
+
+
+
+
+
+
