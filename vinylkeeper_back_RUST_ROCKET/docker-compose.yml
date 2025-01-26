@@ -28,7 +28,7 @@ services:
     working_dir: /app
     env_file:
       - .env.production
-    command: ["./vinylkeeper_back"]
+    command: ["./vinylkeeper_back_RUST_ROCKET"]
     restart: always
 
 networks:

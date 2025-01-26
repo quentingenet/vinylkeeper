@@ -27,7 +27,7 @@ export default function Footer(props: FooterProps) {
       </span>
       <span>
         <Link
-          to={"https://www.linkedin.com/in/quentin-genet/"}
+          to={"https://quentingenet.fr"}
           target="_blank"
           rel="noopener noreferrer"
         >
