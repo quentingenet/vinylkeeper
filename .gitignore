@@ -98,3 +98,49 @@ keys/
 # Misc
 *.tmp
 *.swp
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# FastAPI specific
+*.db
+*.sqlite3
+
+# Logs
+*.log
+*.out
+*.err
+app_vk_back.log
+# Local development files
+local_settings.py
+
+# IDE specific
+.vscode/
+.idea/
+
+# Miscellaneous
+*.tmp
+*.swp

@@ -23,7 +23,6 @@ function App() {
 
   const shouldDisplayNavBar =
     userContext.isUserLoggedIn && !location.pathname.includes("reset-password");
-
   return (
     <>
       {shouldDisplayNavBar ? (

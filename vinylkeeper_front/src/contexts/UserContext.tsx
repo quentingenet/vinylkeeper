@@ -28,8 +28,8 @@ import { useNavigate } from "react-router-dom";
 interface IUserContext {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
-  jwt: string;
-  setJwt: (jwt: string) => void;
+  jwt: { access_token: string; refresh_token: string };
+  setJwt: (jwt: { access_token: string; refresh_token: string }) => void;
   isUserLoggedIn: boolean | null;
   setIsUserLoggedIn: (isLoggedIn: boolean) => void;
   isFirstConnection: boolean;
@@ -48,7 +48,7 @@ interface IUserContext {
 export const UserContext = createContext<IUserContext>({
   isLoading: false,
   setIsLoading: () => {},
-  jwt: "",
+  jwt: { access_token: "", refresh_token: "" },
   setJwt: () => {},
   isUserLoggedIn: null,
   setIsUserLoggedIn: () => {},
@@ -70,7 +70,10 @@ export function UserContextProvider({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
-  const [jwt, setJwt] = useState<string>("");
+  const [jwt, setJwt] = useState<{
+    access_token: string;
+    refresh_token: string;
+  }>({ access_token: "", refresh_token: "" });
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -78,20 +81,25 @@ export function UserContextProvider({
 
   const refreshJwt = useCallback(async () => {
     try {
-      const newJwt = await requestService<string>({
+      const newJwt = await requestService<{
+        access_token: string;
+        refresh_token: string;
+      }>({
         apiTarget: API_VK_URL,
         method: "POST",
         endpoint: "/users/refresh-token",
       });
-
       if (newJwt) {
-        setJwt(newJwt);
+        setJwt({
+          access_token: newJwt.access_token,
+          refresh_token: newJwt.refresh_token,
+        });
         setIsUserLoggedIn(true);
       } else {
         throw new Error("No JWT returned");
       }
     } catch (error) {
-      setJwt("");
+      setJwt({ access_token: "", refresh_token: "" });
       setIsUserLoggedIn(false);
     }
   }, []);
@@ -106,7 +114,7 @@ export function UserContextProvider({
     } catch (error) {
       console.error("Error while logging out:", error);
     } finally {
-      setJwt("");
+      setJwt({ access_token: "", refresh_token: "" });
       setIsUserLoggedIn(false);
       navigate("/", { replace: true });
     }
