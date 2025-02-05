@@ -4,6 +4,8 @@
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=orange)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Debian](https://img.shields.io/badge/Debian-D70A53?style=for-the-badge&logo=debian&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
@@ -22,9 +24,11 @@
 ## Technologies
 
 **VinylKeeper** is developed using:
-- **[Rust](https://www.rust-lang.org)** with **[Rocket](https://rocket.rs)** for the backend
+- **[Python](https://www.python.org/)** with **[FastAPI](https://fastapi.tiangolo.com/)** for the main API.
+- **[Rust](https://www.rust-lang.org)** with **[Rocket](https://rocket.rs)** also for another version of the API.
 - **[React](https://reactjs.org)** and **[TypeScript](https://www.typescriptlang.org/)** for the frontend
 - **[PostgreSQL](https://www.postgresql.org/)** for the database
+
 
 ## How to run the project?
 
@@ -35,6 +39,8 @@ Ensure the following are installed on your machine:
 - [Rust](https://www.rust-lang.org)
 - [Node.js](https://nodejs.org/)
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [Python](https://www.python.org/)
+- [FastAPI](https://fastapi.tiangolo.com/)
 
 ### Clone the repository
 
@@ -52,6 +58,15 @@ cargo build
 # (Optional) If using Diesel migrations
 diesel migration run
 cargo run
+```
+or if you want to run the backend with FastAPI(poetry):
+```bash
+cd vinylkeeper/vinylkeeper_back
+poetry install
+# make migrations
+poetry alembic upgrade head
+# run the server
+poetry run uvicorn app.main:app --reload
 ```
 The backend server runs at **http://localhost:8000**
 
@@ -84,4 +99,4 @@ The project promotes the four essential freedoms:
 ## Author and contributors
 
 - Quentin GENET
-- Maybe you as a contributor... 😄🚀
+- You like vinyl, music and web development and is motivated to contribute seriously ? Maybe you can contribute ?  😄🚀
