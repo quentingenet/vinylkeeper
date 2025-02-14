@@ -28,15 +28,12 @@ import { useNavigate } from "react-router-dom";
 interface IUserContext {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
-  jwt: { access_token: string; refresh_token: string };
-  setJwt: (jwt: { access_token: string; refresh_token: string }) => void;
   isUserLoggedIn: boolean | null;
   setIsUserLoggedIn: (isLoggedIn: boolean) => void;
   isFirstConnection: boolean;
   setIsFirstConnection: (isFirstConnection: boolean) => void;
   openDialog: boolean;
   setOpenDialog: (openDialog: boolean) => void;
-  refreshJwt: () => Promise<void>;
   logout: () => void;
 }
 
@@ -48,15 +45,12 @@ interface IUserContext {
 export const UserContext = createContext<IUserContext>({
   isLoading: false,
   setIsLoading: () => {},
-  jwt: { access_token: "", refresh_token: "" },
-  setJwt: () => {},
   isUserLoggedIn: null,
   setIsUserLoggedIn: () => {},
   isFirstConnection: false,
   setIsFirstConnection: () => {},
   openDialog: false,
   setOpenDialog: () => {},
-  refreshJwt: async () => {},
   logout: () => {},
 });
 
@@ -70,86 +64,54 @@ export function UserContextProvider({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
-  const [jwt, setJwt] = useState<{
-    access_token: string;
-    refresh_token: string;
-  }>({ access_token: "", refresh_token: "" });
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
 
-  const refreshJwt = useCallback(async () => {
+  const checkUserLoggedIn = useCallback(async () => {
     try {
-      const newJwt = await requestService<{
-        access_token: string;
-        refresh_token: string;
-      }>({
+      const response = await requestService<{ isLoggedIn: boolean }>({
         apiTarget: API_VK_URL,
-        method: "POST",
-        endpoint: "/users/refresh-token",
+        method: "GET",
+        endpoint: "/users/check-auth",
       });
-      if (newJwt) {
-        setJwt({
-          access_token: newJwt.access_token,
-          refresh_token: newJwt.refresh_token,
-        });
-        setIsUserLoggedIn(true);
-      } else {
-        throw new Error("No JWT returned");
-      }
+      setIsUserLoggedIn(response.isLoggedIn);
     } catch (error) {
-      setJwt({ access_token: "", refresh_token: "" });
+      console.error("Error while checking user logged in:", error);
       setIsUserLoggedIn(false);
     }
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await requestService({
+      const response = await requestService({
         apiTarget: API_VK_URL,
         method: "POST",
         endpoint: "/users/logout",
       });
+      setIsUserLoggedIn(response.isLoggedIn);
     } catch (error) {
       console.error("Error while logging out:", error);
     } finally {
-      setJwt({ access_token: "", refresh_token: "" });
       setIsUserLoggedIn(false);
       navigate("/", { replace: true });
     }
   }, [navigate]);
 
   useEffect(() => {
-    const checkUserLoggedIn = async () => {
-      await refreshJwt();
-    };
-
     checkUserLoggedIn();
-  }, [refreshJwt]);
-
-  useEffect(() => {
-    if (isUserLoggedIn) {
-      const intervalId = setInterval(() => {
-        refreshJwt();
-      }, 14 * 60 * 1000);
-
-      return () => clearInterval(intervalId);
-    }
-  }, [isUserLoggedIn, refreshJwt]);
+  }, [checkUserLoggedIn]);
 
   const value: IUserContext = {
     isLoading,
     setIsLoading,
-    jwt,
-    setJwt,
     isUserLoggedIn,
     setIsUserLoggedIn,
     isFirstConnection,
     setIsFirstConnection,
     openDialog,
     setOpenDialog,
-    refreshJwt,
     logout,
   };
 

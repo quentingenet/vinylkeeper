@@ -29,9 +29,13 @@ async def authenticate(response: Response, auth_user: AuthUser, db: Session = De
     try:
         user = authenticate_user(db, auth_user.email, auth_user.password)
         user_uuid = str(user.user_uuid)
+        if len(user_uuid) > 1:
+            isLoggedIn = True
+        else:
+            isLoggedIn = False
         access_token = create_token(user_uuid, TokenType.ACCESS)
         set_token_cookie(response, access_token, TokenType.ACCESS)
-        return {"access_token": access_token}
+        return {"isLoggedIn": isLoggedIn}
     except AuthError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
@@ -47,19 +51,22 @@ async def create_user(response: Response, new_user: CreateUser, db: Session = De
     except AuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.post("/refresh-token")
-async def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
+@router.get("/check-auth")
+async def check_auth(request: Request, response: Response, db: Session = Depends(get_db)):
     try:
-        print("Refreshing token", request.cookies)
         token = request.cookies.get("access_token") or request.cookies.get("refresh_token")
         if not token:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
         user_uuid = verify_token(token)
-        new_access_token = create_token(user_uuid, TokenType.ACCESS)
-        set_token_cookie(response, new_access_token, TokenType.ACCESS)
-        new_refresh_token = create_token(user_uuid, TokenType.REFRESH)
-        set_token_cookie(response, new_refresh_token, TokenType.REFRESH)
-        return {"access_token": new_access_token, "refresh_token": new_refresh_token}
+        if len(user_uuid) > 1:
+            isLoggedIn = True
+            new_access_token = create_token(user_uuid, TokenType.ACCESS)
+            set_token_cookie(response, new_access_token, TokenType.ACCESS)
+            new_refresh_token = create_token(user_uuid, TokenType.REFRESH)
+            set_token_cookie(response, new_refresh_token, TokenType.REFRESH)
+        else:
+            isLoggedIn = False
+        return {"isLoggedIn": isLoggedIn}
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
@@ -68,6 +75,7 @@ async def logout(response: Response):
     domain = None if Settings().APP_ENV == "development" else Settings().COOKIE_DOMAIN
     path = "/"
     samesite = "None"
+    isLoggedIn = False
     
     response.set_cookie(
         key="access_token",
@@ -90,10 +98,7 @@ async def logout(response: Response):
         domain=domain
     )
 
-    return {"message": "Logged out successfully"}
-
-
-
+    return {"isLoggedIn": isLoggedIn}
 
 # TODO: Add a route to send a password reset email
 # TODO: Add a route to reset a password

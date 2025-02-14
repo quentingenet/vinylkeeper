@@ -68,8 +68,7 @@ export default function Login({
 
     userContext.setIsLoading(true);
     loginService(watch())
-      .then((response) => {
-        userContext.setJwt(response.data);
+      .then(() => {
         userContext.setIsUserLoggedIn(true);
         navigate("/dashboard");
       })

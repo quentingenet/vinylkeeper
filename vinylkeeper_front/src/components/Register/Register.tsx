@@ -69,8 +69,7 @@ const Register = ({
     userContext.setIsLoading(true);
 
     registerService(watch())
-      .then((response) => {
-        userContext.setJwt(response);
+      .then(() => {
         userContext.setIsFirstConnection(true);
         userContext.setIsUserLoggedIn(true);
         navigate("/dashboard");

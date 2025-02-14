@@ -6,7 +6,7 @@ export const searchProxy = (requestToSend: IRequestToSend) => {
   return requestService({
     apiTarget: API_VK_URL,
     method: "POST",
-    endpoint: `/request_proxy/search`,
+    endpoint: `/request-proxy/search`,
     body: requestToSend,
   });
 };

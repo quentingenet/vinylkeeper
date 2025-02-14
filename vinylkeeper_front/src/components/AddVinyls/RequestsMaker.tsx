@@ -16,6 +16,7 @@ import { searchProxy } from "@services/RequestProxyService";
 import { useState, useEffect } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
+import { useMutation } from "@tanstack/react-query";
 
 interface IRequestsMakerProps {
   requestResults: IRequestResults[];
@@ -34,19 +35,28 @@ export default function RequestsMaker({
   });
   const { isMobile } = useDetectMobile();
 
+  const mutation = useMutation<IRequestResults, Error, IRequestToSend>({
+    mutationFn: searchProxy,
+    onSuccess: (response) => {
+      setRequestResults([
+        {
+          type: isArtist ? "artist" : "album",
+          data: isArtist
+            ? (response as unknown as IArtistRequestResults[])
+            : (response as unknown as IAlbumRequestResults[]),
+        },
+      ]);
+    },
+    onError: (error) => {
+      console.error("Error fetching data:", error);
+    },
+  });
+
   const handleSwitchChange = () => {
     setIsArtist(!isArtist);
   };
-  const handleSearch = async () => {
-    const response = await searchProxy(requestToSend);
-    setRequestResults([
-      {
-        type: isArtist ? "artist" : "album",
-        data: isArtist
-          ? (response as IArtistRequestResults[])
-          : (response as IAlbumRequestResults[]),
-      },
-    ]);
+  const handleSearch = () => {
+    mutation.mutate(requestToSend);
   };
 
   useEffect(() => {
@@ -66,7 +76,9 @@ export default function RequestsMaker({
       }}
     >
       <Box
+        onClick={handleSwitchChange}
         sx={{
+          cursor: "pointer",
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
@@ -77,7 +89,7 @@ export default function RequestsMaker({
         <Typography sx={{ paddingY: 1 }} variant="h3">
           Album
         </Typography>
-        <Switch checked={isArtist} onChange={handleSwitchChange} />
+        <Switch checked={isArtist} />
         <Typography sx={{ paddingY: 1 }} variant="h3">
           Artist
         </Typography>
