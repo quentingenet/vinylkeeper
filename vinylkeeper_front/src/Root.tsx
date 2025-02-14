@@ -9,6 +9,9 @@ import DesktopThemeLandpageVinylKeeper from "@styles/themes/landpage/DesktopThem
 import DesktopThemeAppVinylKeeper from "@styles/themes/app/DesktopThemeAppVinylKeeper";
 import MobileThemeAppVinylKeeper from "@styles/themes/app/MobileThemeAppVinylKeeper";
 import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 const RootContent: React.FC = () => {
   const { isMobile } = useDetectMobile();
@@ -35,7 +38,9 @@ const Root: React.FC = () => (
   <React.StrictMode>
     <BrowserRouter>
       <UserContextProvider>
-        <RootContent />
+        <QueryClientProvider client={queryClient}>
+          <RootContent />
+        </QueryClientProvider>
       </UserContextProvider>
     </BrowserRouter>
   </React.StrictMode>
