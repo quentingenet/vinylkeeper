@@ -40,3 +40,4 @@ def verify_token(token: str) -> str:
         return user_uuid
     except JWTError:
         raise ValueError("Invalid token")
+
