@@ -102,7 +102,7 @@ function App() {
             />
             <Route path={EGlobalUrls.CONTACT} element={<Contact />} />
             <Route path={EGlobalUrls.TERMS} element={<Terms />} />
-            <Route path="*" element={<NoMatch />} />
+            <Route path="*" element={<Landpage />} />
           </Routes>
         </Layout>
       ) : (
@@ -112,7 +112,7 @@ function App() {
             path={EGlobalUrls.RESET_PASSWORD}
             element={<ResetPassword />}
           />
-          <Route path={EGlobalUrls.NO_MATCH} element={<NoMatch />} />
+          <Route path={EGlobalUrls.NO_MATCH} element={<Landpage />} />
         </Routes>
       )}
     </>
