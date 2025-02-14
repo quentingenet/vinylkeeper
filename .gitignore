@@ -27,6 +27,7 @@ replay_pid*
 .vscode
 settings.json
 node_modules
+.cursor
 
 #Capacitor files
 android/
@@ -130,6 +131,7 @@ coverage.xml
 *.sqlite3
 
 # Logs
+api_vk.log.*
 *.log
 *.out
 *.err

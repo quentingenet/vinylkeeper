@@ -15,7 +15,7 @@ def set_token_cookie(response: Response, token: str, token_type: TokenType):
     
     response.set_cookie(
         key=f"{token_type.value}_token",
-        value=f"Bearer {token}",
+        value=token,
         httponly=True,
         secure=True,
         samesite="None",
@@ -50,6 +50,7 @@ async def create_user(response: Response, new_user: CreateUser, db: Session = De
 @router.post("/refresh-token")
 async def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
     try:
+        print("Refreshing token", request.cookies)
         token = request.cookies.get("access_token") or request.cookies.get("refresh_token")
         if not token:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
@@ -64,9 +65,35 @@ async def refresh_token(request: Request, response: Response, db: Session = Depe
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    domain = None if Settings().APP_ENV == "development" else Settings().COOKIE_DOMAIN
+    path = "/"
+    samesite = "None"
+    
+    response.set_cookie(
+        key="access_token",
+        value="",
+        httponly=True,
+        secure=True,
+        samesite=samesite,
+        max_age=0,
+        path=path,
+        domain=domain
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value="",
+        httponly=True,
+        secure=True,
+        samesite=samesite,
+        max_age=0,
+        path=path,
+        domain=domain
+    )
+
     return {"message": "Logged out successfully"}
+
+
+
 
 # TODO: Add a route to send a password reset email
 # TODO: Add a route to reset a password
