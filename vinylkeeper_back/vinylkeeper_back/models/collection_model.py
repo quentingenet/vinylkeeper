@@ -14,3 +14,4 @@ class Collection(Base):
     owner = relationship("User", back_populates="collections")
     albums = relationship("Album", back_populates="collection")
     registered_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

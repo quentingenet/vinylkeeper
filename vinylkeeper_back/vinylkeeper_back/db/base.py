@@ -10,5 +10,5 @@ import vinylkeeper_back.models.wishlist_model
 import vinylkeeper_back.models.artist_model
 import vinylkeeper_back.models.album_model
 import vinylkeeper_back.models.genre_model
-
+import vinylkeeper_back.models.role_model
 
