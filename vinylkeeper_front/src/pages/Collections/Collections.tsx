@@ -81,7 +81,7 @@ export default function Collections() {
     setIsLoading(true);
     getCollections()
       .then((res) => {
-        setCollections(res.data.collections);
+        setCollections(res);
       })
       .catch((error) => {
         console.error("Error:", error);
