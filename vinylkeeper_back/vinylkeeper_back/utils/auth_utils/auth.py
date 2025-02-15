@@ -8,7 +8,7 @@ from fastapi import Request, Depends, status
 from sqlalchemy.orm import Session
 from vinylkeeper_back.db.session import get_db
 from vinylkeeper_back.schemas.user_schemas import User
-from vinylkeeper_back.repositories.user_repository import get_current_user
+from vinylkeeper_back.repositories.user_repository import get_user_by_uuid
 
 
 base_path = "./keys"
@@ -57,7 +57,7 @@ def user_finder(request: Request, db: Session = Depends(get_db)) -> User:
         if not user_uuid:
             raise ValueError("Invalid token")
         else:
-            user = get_current_user(db, user_uuid)
+            user = get_user_by_uuid(db, user_uuid)
         if not user:
             raise ValueError("Invalid token")
         return user
