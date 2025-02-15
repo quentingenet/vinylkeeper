@@ -6,7 +6,8 @@ from vinylkeeper_back.schemas.user_schemas import AuthUser, CreateUser
 from jose import JWTError
 from vinylkeeper_back.core.config_env import Settings
 from vinylkeeper_back.db.session import get_db
-
+from vinylkeeper_back.core.logging import logger
+from vinylkeeper_back.utils.auth_utils.auth import verify_token
 router = APIRouter()
 
 def set_token_cookie(response: Response, token: str, token_type: TokenType):
@@ -35,6 +36,7 @@ async def authenticate(response: Response, auth_user: AuthUser, db: Session = De
             isLoggedIn = False
         access_token = create_token(user_uuid, TokenType.ACCESS)
         set_token_cookie(response, access_token, TokenType.ACCESS)
+        logger.info(f"User logged in: {user.username} - {user.email}")
         return {"isLoggedIn": isLoggedIn}
     except AuthError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
@@ -47,17 +49,15 @@ async def create_user(response: Response, new_user: CreateUser, db: Session = De
         user_uuid = str(user.user_uuid)
         access_token = create_token(user_uuid, TokenType.ACCESS)
         set_token_cookie(response, access_token, TokenType.ACCESS)
-        return {"access_token": access_token}
+        logger.info(f"New user registered: {user.username} - {user.email}")
+        return {"isLoggedIn": True}
     except AuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.get("/check-auth")
 async def check_auth(request: Request, response: Response, db: Session = Depends(get_db)):
     try:
-        token = request.cookies.get("access_token") or request.cookies.get("refresh_token")
-        if not token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
-        user_uuid = verify_token(token)
+        user_uuid = verify_token(request)
         if len(user_uuid) > 1:
             isLoggedIn = True
             new_access_token = create_token(user_uuid, TokenType.ACCESS)
