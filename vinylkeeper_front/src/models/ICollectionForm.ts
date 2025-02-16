@@ -4,6 +4,11 @@ export interface ICollectionForm {
   is_public: boolean;
 }
 
+export interface ICollectionSwitchArea {
+  collectionId: number;
+  newIsPublic: boolean;
+}
+
 export interface ICollection {
   id: number;
   name: string;

@@ -13,10 +13,10 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { searchProxy } from "@services/RequestProxyService";
-import { useState, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface IRequestsMakerProps {
   requestResults: IRequestResults[];
@@ -29,11 +29,18 @@ export default function RequestsMaker({
 }: IRequestsMakerProps) {
   const [isArtist, setIsArtist] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [requestToSend, setRequestToSend] = useState<IRequestToSend>({
-    query: "",
-    is_artist: true,
-  });
+
+  const requestToSend = useMemo(
+    () => ({
+      query: searchTerm,
+      is_artist: isArtist,
+    }),
+    [searchTerm, isArtist]
+  );
+
   const { isMobile } = useDetectMobile();
+
+  const queryClient = useQueryClient();
 
   const mutation = useMutation<IRequestResults, Error, IRequestToSend>({
     mutationFn: searchProxy,
@@ -46,25 +53,21 @@ export default function RequestsMaker({
             : (response as unknown as IAlbumRequestResults[]),
         },
       ]);
+      queryClient.invalidateQueries({ queryKey: ["requestResults"] });
     },
     onError: (error) => {
       console.error("Error fetching data:", error);
     },
+    onSettled: () => {},
   });
 
-  const handleSwitchChange = () => {
-    setIsArtist(!isArtist);
-  };
-  const handleSearch = () => {
-    mutation.mutate(requestToSend);
-  };
+  const handleSwitchChange = useCallback(() => {
+    setIsArtist((prev) => !prev);
+  }, []);
 
-  useEffect(() => {
-    setRequestToSend({
-      query: searchTerm,
-      is_artist: isArtist,
-    });
-  }, [searchTerm, isArtist]);
+  const handleSearch = useCallback(() => {
+    mutation.mutate(requestToSend);
+  }, [mutation, requestToSend]);
 
   return (
     <Box

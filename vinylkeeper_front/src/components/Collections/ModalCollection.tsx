@@ -3,10 +3,9 @@ import Box from "@mui/material/Box";
 import Modal from "@mui/material/Modal";
 import Fade from "@mui/material/Fade";
 import Typography from "@mui/material/Typography";
-import useDetectMobile from "@hooks/useDetectMobile";
 import TextField from "@mui/material/TextField";
 import { Button, FormControlLabel, IconButton, Switch } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { collectionValidationSchema } from "@utils/validators/collectionValidationSchema";
@@ -17,6 +16,8 @@ import {
   updateCollection,
 } from "@services/CollectionService";
 import CloseIcon from "@mui/icons-material/Close";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useDetectMobile from "@hooks/useDetectMobile";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
@@ -38,65 +39,72 @@ export default function ModalCollection({
   setIsPublic,
 }: IModalCollectionCreateProps) {
   const userContext = useUserContext();
-  const { isMobile } = useDetectMobile();
-  const [openSnackBar, setOpenSnackBar] = useState(false);
+  const queryClient = useQueryClient();
+  const isMobile = useDetectMobile();
   const {
     handleSubmit,
     control,
     formState: { errors, isValid },
     watch,
     setValue,
+    register,
   } = useForm<ICollectionForm>({
     defaultValues: {
-      name: "",
-      description: "",
-      is_public: isPublic,
+      name: collection?.name || "",
+      description: collection?.description || "",
+      is_public: collection?.is_public ?? isPublic,
     },
     resolver: yupResolver(collectionValidationSchema),
+    mode: "onChange",
   });
 
   useEffect(() => {
-    if (isUpdatingCollection) {
+    if (openModal) {
       setValue("name", collection?.name || "");
       setValue("description", collection?.description || "");
-      setValue("is_public", collection?.is_public || isPublic);
-    } else {
-      setValue("name", "");
-      setValue("description", "");
-      setValue("is_public", isPublic);
+      setValue("is_public", collection?.is_public ?? isPublic);
     }
-  }, [isUpdatingCollection, setValue, collection?.id]);
+  }, [openModal, collection, setValue]);
 
-  useEffect(() => {
-    if (openModal) {
-      setIsPublic(
-        isUpdatingCollection ? collection?.is_public ?? false : isPublic
-      );
-    }
-  }, [openModal, isUpdatingCollection, collection, setIsPublic]);
+  const createMutation = useMutation<ICollection, Error, ICollectionForm>({
+    mutationFn: createCollection,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      onCollectionAdded();
+    },
+    onError: () => {
+      userContext.setIsLoading(false);
+    },
+    onSettled: () => {
+      handleClose();
+    },
+  });
 
-  const submitCollection = () => {
+  const updateMutation = useMutation<
+    ICollection,
+    Error,
+    { id: number; data: ICollectionForm }
+  >({
+    mutationFn: ({ id, data }) => updateCollection(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      onCollectionAdded();
+    },
+    onError: () => {
+      userContext.setIsLoading(false);
+    },
+    onSettled: () => {
+      handleClose();
+    },
+  });
+
+  const submitCollection = (data: ICollectionForm) => {
     if (!isValid) return;
 
     if (isUpdatingCollection && collection?.id) {
-      updateCollection(collection?.id, watch())
-        .then(() => {
-          onCollectionAdded();
-        })
-        .catch(() => setOpenSnackBar(true))
-        .finally(() => {
-          handleClose();
-        });
+      updateMutation.mutate({ id: collection.id, data });
     } else {
-      createCollection(watch())
-        .then(() => {
-          onCollectionAdded();
-        })
-        .catch(() => setOpenSnackBar(true))
-        .finally(() => {
-          userContext.setIsLoading(false);
-          handleClose();
-        });
+      createMutation.mutate(data);
     }
   };
 
@@ -105,114 +113,102 @@ export default function ModalCollection({
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: isMobile ? "80%" : 500,
+    width: 500,
     bgcolor: "background.paper",
-    border: "none",
     borderRadius: 2,
     boxShadow: 24,
     p: 2,
   };
 
   return (
-    <div>
-      <Modal
-        aria-labelledby="transition-modal-title"
-        aria-describedby="transition-modal-description"
-        open={openModal}
-        onClose={handleClose}
-        closeAfterTransition
-        slots={{ backdrop: Backdrop }}
-        slotProps={{
-          backdrop: {
-            timeout: 500,
-          },
-        }}
-      >
-        <Fade in={openModal}>
-          <form onSubmit={handleSubmit(submitCollection)}>
-            <Box sx={style}>
-              <Box display={"flex"} justifyContent={"flex-end"}>
-                <IconButton onClick={handleClose}>
-                  <CloseIcon />
-                </IconButton>
-              </Box>
-              <Box
-                display={"flex"}
-                flexDirection={"row"}
-                alignItems={"center"}
-                justifyContent={"space-around"}
-                gap={1}
-                paddingY={1}
-                marginX={1}
-              >
-                <Typography
-                  id="transition-modal-title"
-                  variant="h3"
-                  component="h2"
-                  color={"#C9A726"}
-                  sx={{ textAlign: "center", width: isMobile ? "75%" : "50%" }}
-                  marginBottom={1}
-                >
-                  {isUpdatingCollection ? "Updating" : "Creating a new"}
-                  {" collection"}
-                </Typography>
-                <FormControlLabel
-                  sx={{ width: isMobile ? "25%" : "15%" }}
-                  control={
-                    <Switch
-                      checked={isPublic}
-                      color="default"
-                      onChange={(e) => setIsPublic(e.target.checked)}
-                    />
-                  }
-                  label={isPublic ? "Public" : "Private"}
-                  {...control.register("is_public")}
-                />
-              </Box>
-              <Box
-                display={"flex"}
-                flexDirection={"column"}
-                justifyContent={"center"}
-                gap={2}
-              >
-                <TextField
-                  sx={{
-                    width: isMobile ? "100%" : "85%",
-                    display: "flex",
-                    alignSelf: "center",
-                  }}
-                  error={!!errors.name?.message}
-                  helperText={errors.name?.message}
-                  label="Name"
-                  {...control.register("name")}
-                />
-                <TextField
-                  sx={{
-                    width: isMobile ? "100%" : "85%",
-                    display: "flex",
-                    alignSelf: "center",
-                  }}
-                  error={!!errors.description?.message}
-                  helperText={errors.description?.message}
-                  multiline
-                  rows={4}
-                  label="Description"
-                  {...control.register("description")}
-                />
-
-                <Button
-                  sx={{ alignSelf: "center" }}
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                >
-                  {isUpdatingCollection ? "Update" : "Create"}
-                </Button>
-              </Box>
+    <Modal
+      open={openModal}
+      onClose={handleClose}
+      closeAfterTransition
+      slots={{ backdrop: Backdrop }}
+    >
+      <Fade in={openModal}>
+        <form onSubmit={handleSubmit(submitCollection)}>
+          <Box sx={style}>
+            <Box display="flex" justifyContent="flex-end">
+              <IconButton onClick={handleClose}>
+                <CloseIcon />
+              </IconButton>
             </Box>
-          </form>
-        </Fade>
-      </Modal>
-    </div>
+            <Box
+              display={"flex"}
+              flexDirection={"row"}
+              alignItems={"center"}
+              justifyContent={"space-around"}
+              gap={1}
+              paddingY={1}
+              marginX={1}
+            >
+              <Typography
+                id="transition-modal-title"
+                variant="h3"
+                component="h2"
+                color={"#C9A726"}
+                sx={{ textAlign: "center", width: isMobile ? "75%" : "50%" }}
+                marginBottom={1}
+              >
+                {isUpdatingCollection ? "Updating" : "Creating a new"}
+                {" collection"}
+              </Typography>
+              <FormControlLabel
+                sx={{ width: isMobile ? "25%" : "15%" }}
+                control={
+                  <Switch
+                    checked={watch("is_public")}
+                    color="default"
+                    onChange={(e) => setValue("is_public", e.target.checked)}
+                  />
+                }
+                label={watch("is_public") ? "Public" : "Private"}
+              />
+            </Box>
+            <Box
+              display={"flex"}
+              flexDirection={"column"}
+              justifyContent={"center"}
+              gap={2}
+            >
+              <TextField
+                sx={{
+                  width: isMobile ? "100%" : "85%",
+                  display: "flex",
+                  alignSelf: "center",
+                }}
+                error={!!errors.name?.message}
+                helperText={errors.name?.message}
+                {...register("name")}
+              />
+              <TextField
+                sx={{
+                  width: isMobile ? "100%" : "85%",
+                  display: "flex",
+                  alignSelf: "center",
+                }}
+                error={!!errors.description?.message}
+                helperText={errors.description?.message}
+                multiline
+                rows={4}
+                {...register("description")}
+              />
+            </Box>
+            <Box display={"flex"} justifyContent={"center"} marginTop={2}>
+              <Button
+                sx={{ alignSelf: "center" }}
+                variant="contained"
+                color="primary"
+                type="submit"
+              >
+                {isUpdatingCollection ? "Update" : "Create"}
+              </Button>
+            </Box>
+          </Box>
+        </form>
+      </Fade>
+    </Modal>
   );
 }

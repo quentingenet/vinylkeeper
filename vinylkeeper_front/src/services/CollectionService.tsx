@@ -1,9 +1,11 @@
 import requestService from "@utils/RequestService";
 import { API_VK_URL } from "@utils/GlobalUtils";
-import { ICollectionForm } from "@models/ICollectionForm";
+import { ICollection, ICollectionForm } from "@models/ICollectionForm";
 
-export const createCollection = (data: ICollectionForm) => {
-  return requestService({
+export const createCollection = async (
+  data: ICollectionForm
+): Promise<ICollection> => {
+  return requestService<ICollection>({
     apiTarget: API_VK_URL,
     method: "POST",
     endpoint: "/collections/add",
@@ -11,19 +13,19 @@ export const createCollection = (data: ICollectionForm) => {
   });
 };
 
-export const getCollections = () => {
-  return requestService({
+export const getCollections = async (): Promise<ICollection[]> => {
+  return requestService<ICollection[]>({
     apiTarget: API_VK_URL,
     method: "GET",
     endpoint: "/collections/",
   });
 };
 
-export const switchAreaCollection = (
+export const switchAreaCollection = async (
   collectionId: number,
   isPublic: boolean
-) => {
-  return requestService({
+): Promise<ICollection> => {
+  return requestService<ICollection>({
     apiTarget: API_VK_URL,
     method: "PATCH",
     endpoint: `/collections/area/${collectionId}`,
@@ -31,11 +33,11 @@ export const switchAreaCollection = (
   });
 };
 
-export const updateCollection = (
+export const updateCollection = async (
   collectionId: number,
   data: ICollectionForm
-) => {
-  return requestService({
+): Promise<ICollection> => {
+  return requestService<ICollection>({
     apiTarget: API_VK_URL,
     method: "PATCH",
     endpoint: `/collections/update/${collectionId}`,
@@ -43,8 +45,8 @@ export const updateCollection = (
   });
 };
 
-export const deleteCollection = (collectionId: number) => {
-  return requestService({
+export const deleteCollection = async (collectionId: number): Promise<void> => {
+  return requestService<void>({
     apiTarget: API_VK_URL,
     method: "DELETE",
     endpoint: `/collections/delete/${collectionId}`,

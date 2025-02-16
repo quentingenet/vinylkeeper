@@ -2,106 +2,85 @@ import { Box, Typography } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
   getCollections,
   switchAreaCollection,
 } from "@services/CollectionService";
-import { ICollection } from "@models/ICollectionForm";
-import { useUserContext } from "@contexts/UserContext";
+import { ICollection, ICollectionSwitchArea } from "@models/ICollectionForm";
 import ModalCollection from "@components/Collections/ModalCollection";
-
-/**
- * Collections Component
- *
- * Main page component for displaying and managing vinyl collections.
- * Allows users to:
- * - View all their collections in a grid layout
- * - Create new collections
- * - Edit existing collections
- * - Toggle collection visibility (public/private)
- * - Delete collections
- * - View collection details
- *
- * @component
- * @example
- * ```tsx
- * <Collections />
- * ```
- *
- * State:
- * - openModal: Controls visibility of collection create/edit modal
- * - collections: Array of user's collections
- * - isLoading: Loading state while fetching collections
- * - refreshTrigger: Counter to trigger collection refresh
- * - isUpdatingCollection: Whether modal is in update or create mode
- * - collection: Currently selected collection for editing
- *
- * @returns React component displaying collections grid and management UI
- */
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function Collections() {
   const [openModal, setOpenModal] = useState(false);
-  const [collections, setCollections] = useState<ICollection[]>([]);
-  const { isLoading, setIsLoading } = useUserContext();
-  const { isMobile } = useDetectMobile();
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isUpdatingCollection, setIsUpdatingCollection] = useState(false);
   const [collection, setCollection] = useState<ICollection | undefined>(
     undefined
   );
   const [isPublic, setIsPublic] = useState(false);
-  const handleClose = () => setOpenModal(false);
+
+  const { isMobile } = useDetectMobile();
+  const queryClient = useQueryClient();
+
+  const {
+    data: collectionsData,
+    isLoading: collectionsLoading,
+    error,
+  } = useQuery({
+    queryKey: ["collections"],
+    queryFn: getCollections,
+  });
+
+  const collections = collectionsData ?? [];
+
+  const switchAreaMutation = useMutation({
+    mutationFn: ({ collectionId, newIsPublic }: ICollectionSwitchArea) =>
+      switchAreaCollection(collectionId, newIsPublic),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
+    onError: (error: Error) => {
+      console.error("Error updating collection area status:", error);
+    },
+  });
+
+  const handleSwitchAreaCollection = (
+    collectionId: number,
+    newIsPublic: boolean
+  ) => {
+    switchAreaMutation.mutate({ collectionId, newIsPublic });
+  };
 
   const handleOpenModalCollection = (isUpdating: boolean) => {
     setIsUpdatingCollection(isUpdating);
     setOpenModal(true);
   };
 
-  const handleSwitchAreaCollection = async (
-    collectionId: number,
-    newIsPublic: boolean
-  ) => {
-    try {
-      await switchAreaCollection(collectionId, newIsPublic);
-    } catch (error) {
-      console.error("Error updating collection area status:", error);
-    }
-  };
-
   const handleCollectionClick = (collectionId: number) => {
     const selectedCollection = collections.find(
-      (collection) => collection.id === collectionId
+      (collection: ICollection) => collection.id === collectionId
     );
     setCollection(selectedCollection);
   };
 
-  useEffect(() => {
-    setIsLoading(true);
-    getCollections()
-      .then((res) => {
-        setCollections(res);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [refreshTrigger]);
+  if (collectionsLoading) return <Typography>Loading...</Typography>;
+  if (error) return <Typography>Error loading collections</Typography>;
 
   return (
     <>
       <ModalCollection
         collection={collection}
         openModal={openModal}
-        handleClose={handleClose}
+        handleClose={() => setOpenModal(false)}
         isUpdatingCollection={isUpdatingCollection}
-        onCollectionAdded={() => setRefreshTrigger((prev) => prev + 1)}
         isPublic={isPublic}
         setIsPublic={setIsPublic}
+        onCollectionAdded={() => {
+          queryClient.invalidateQueries({ queryKey: ["collections"] });
+        }}
       />
+
       <Box
         display={"flex"}
         gap={1}
@@ -122,6 +101,7 @@ export default function Collections() {
           <Typography variant="h3">Create a new collection</Typography>
         </Box>
       </Box>
+
       <Box
         display={isMobile ? "flex" : "grid"}
         flexDirection={isMobile ? "column" : "row"}
@@ -132,23 +112,23 @@ export default function Collections() {
         gap={4}
         marginY={isMobile ? 1 : 3}
       >
-        {isLoading ? (
-          <Typography>Loading...</Typography>
-        ) : collections.length > 0 ? (
-          collections.map((collection) => (
+        {collections.length > 0 ? (
+          collections.map((collection: ICollection) => (
             <CollectionItem
               key={collection.id}
               collection={collection}
               onSwitchArea={(newIsPublic) =>
                 handleSwitchAreaCollection(collection.id, newIsPublic)
               }
-              refreshCollections={() => setRefreshTrigger((prev) => prev + 1)}
               handleOpenModalCollection={() => handleOpenModalCollection(true)}
               onCollectionClick={handleCollectionClick}
+              refreshCollections={() => {
+                queryClient.invalidateQueries({ queryKey: ["collections"] });
+              }}
             />
           ))
         ) : (
-          <></>
+          <Typography>No collections found.</Typography>
         )}
       </Box>
     </>
