@@ -15,7 +15,7 @@ export const getCollections = () => {
   return requestService({
     apiTarget: API_VK_URL,
     method: "GET",
-    endpoint: "/collections/get",
+    endpoint: "/collections/",
   });
 };
 

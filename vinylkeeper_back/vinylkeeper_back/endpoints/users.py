@@ -57,16 +57,19 @@ async def create_user(response: Response, new_user: CreateUser, db: Session = De
 @router.get("/check-auth")
 async def check_auth(request: Request, response: Response, db: Session = Depends(get_db)):
     try:
-        user_uuid = verify_token(request)
-        if len(user_uuid) > 1:
-            isLoggedIn = True
-            new_access_token = create_token(user_uuid, TokenType.ACCESS)
-            set_token_cookie(response, new_access_token, TokenType.ACCESS)
-            new_refresh_token = create_token(user_uuid, TokenType.REFRESH)
-            set_token_cookie(response, new_refresh_token, TokenType.REFRESH)
+        if not (request.cookies.get("access_token") or request.cookies.get("refresh_token")):
+            return {"isLoggedIn": False}
         else:
-            isLoggedIn = False
-        return {"isLoggedIn": isLoggedIn}
+            user_uuid = verify_token(request)
+            if len(user_uuid) > 1:
+                isLoggedIn = True
+                new_access_token = create_token(user_uuid, TokenType.ACCESS)
+                set_token_cookie(response, new_access_token, TokenType.ACCESS)
+                new_refresh_token = create_token(user_uuid, TokenType.REFRESH)
+                set_token_cookie(response, new_refresh_token, TokenType.REFRESH)
+            else:
+                isLoggedIn = False
+            return {"isLoggedIn": isLoggedIn}
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 

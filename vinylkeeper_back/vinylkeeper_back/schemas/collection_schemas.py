@@ -11,6 +11,9 @@ class CollectionCreate(CollectionBase):
     user_id: int
     pass
 
+class SwitchAreaRequest(BaseModel):
+    is_public: bool
+    
 class CollectionUpdate(CollectionBase):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -24,6 +27,7 @@ class CollectionResponse(BaseModel):
     user_id: int
     registered_at: datetime
     updated_at: datetime
+    
     class Config:
         from_attributes = True
 
