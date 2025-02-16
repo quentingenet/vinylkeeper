@@ -101,6 +101,8 @@ export function UserContextProvider({
 
   useEffect(() => {
     checkUserLoggedIn();
+    const intervalId = setInterval(checkUserLoggedIn, 15 * 60 * 1000);
+    return () => clearInterval(intervalId);
   }, [checkUserLoggedIn]);
 
   const value: IUserContext = {
