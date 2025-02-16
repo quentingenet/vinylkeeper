@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Response, Request, Depends
 from sqlalchemy.orm import Session
-from vinylkeeper_back.services.user_service import authenticate_user, register_user, AuthError
+from vinylkeeper_back.services.user_service import authenticate_user, register_user, AuthError, send_password_reset_email as send_password_reset_email_service, reset_password as reset_password_service
 from vinylkeeper_back.utils.auth_utils.auth import TokenType, create_token, verify_token   
-from vinylkeeper_back.schemas.user_schemas import AuthUser, CreateUser
+from vinylkeeper_back.schemas.user_schemas import AuthUser, CreateUser, EmailUpdatePassword, ResetPassword
 from jose import JWTError
 from vinylkeeper_back.core.config_env import Settings
 from vinylkeeper_back.db.session import get_db
@@ -109,5 +109,18 @@ async def logout(response: Response):
 
     return {"isLoggedIn": isLoggedIn}
 
-# TODO: Add a route to send a password reset email
-# TODO: Add a route to reset a password
+@router.post("/forgot-password")
+async def forgot_password(email: EmailUpdatePassword, db: Session = Depends(get_db)):
+    try:
+        send_password_reset_email_service(db, email.email)
+        return {"message": "Password reset email sent successfully"}
+    except AuthError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.post("/reset-password")
+async def reset_password(reset_password: ResetPassword, db: Session = Depends(get_db)):
+    try:
+        reset_password_service(db, reset_password.token, reset_password.new_password)
+        return {"message": "Password reset successfully"}
+    except AuthError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

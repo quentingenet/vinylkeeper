@@ -27,3 +27,10 @@ def update_user_last_login(db: Session, user_id: int):
         user.last_login = datetime.now()
         db.commit()
         db.refresh(user)
+
+def update_user_password(db: Session, user_id: int, new_password: str):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.password = new_password
+        db.commit()
+        db.refresh(user)

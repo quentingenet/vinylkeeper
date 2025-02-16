@@ -51,6 +51,24 @@ def verify_token(request: Request) -> str:
     except JWTError:
         raise ValueError("Invalid token")
 
+def create_reset_token(user_uuid: str) -> str:
+    try:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        to_encode = {"sub": str(user_uuid), "exp": expire}
+        return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+    except Exception as e:
+        raise ValueError(f"Failed to create reset token: {str(e)}")
+
+def verify_reset_token(token: str) -> str:
+    try:
+        payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        user_uuid: str = payload.get("sub")
+        if user_uuid is None or user_uuid == "":
+            raise ValueError("Invalid token")
+        return user_uuid
+    except JWTError:
+        raise ValueError("Invalid token")
+    
 def user_finder(request: Request, db: Session = Depends(get_db)) -> User:
     try:
         user_uuid = verify_token(request)

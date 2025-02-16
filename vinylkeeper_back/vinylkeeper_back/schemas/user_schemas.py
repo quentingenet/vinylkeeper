@@ -12,6 +12,13 @@ class UserBase(BaseModel):
     timezone: str = "UTC+1"
     #role_id: Optional[int]
 
+class EmailUpdatePassword(BaseModel):
+    email: EmailStr
+
+class ResetPassword(BaseModel):
+    token: str
+    new_password: constr(min_length=4)
+
 class CreateUser(UserBase):
     password: constr(min_length=4)
 
