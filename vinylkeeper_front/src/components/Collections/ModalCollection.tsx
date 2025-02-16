@@ -40,7 +40,8 @@ export default function ModalCollection({
 }: IModalCollectionCreateProps) {
   const userContext = useUserContext();
   const queryClient = useQueryClient();
-  const isMobile = useDetectMobile();
+  const { isMobile } = useDetectMobile();
+
   const {
     handleSubmit,
     control,
@@ -113,7 +114,7 @@ export default function ModalCollection({
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: 500,
+    width: isMobile ? "80%" : "30%",
     bgcolor: "background.paper",
     borderRadius: 2,
     boxShadow: 24,

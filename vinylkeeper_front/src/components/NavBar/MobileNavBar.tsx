@@ -205,7 +205,14 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
           }}
         >
           {menuItems.map(({ text, icon, linkTo }) => (
-            <Box key={text} sx={{ display: "flex", justifyContent: "center" }}>
+            <Box
+              key={text}
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               <ListItemButton
                 onClick={() => handleMenuItemClick(text, linkTo)}
                 selected={text === titlePage}

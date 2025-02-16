@@ -91,7 +91,7 @@ export default function CollectionItem({
       <Card
         ref={cardRef}
         sx={{
-          width: 350,
+          width: 320,
           position: "relative",
           boxShadow: "0px 0px 3px 0px #000000",
           transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
@@ -153,9 +153,7 @@ export default function CollectionItem({
               },
             }}
           >
-            <EditIcon
-              fontSize="small"
-            />
+            <EditIcon fontSize="small" />
           </Box>
           <Box
             onClick={() => userContext.setOpenDialog(true)}
@@ -176,9 +174,7 @@ export default function CollectionItem({
               },
             }}
           >
-            <DeleteIcon
-              fontSize="small"
-            />
+            <DeleteIcon fontSize="small" />
           </Box>
         </Box>
         <CardActionArea>
