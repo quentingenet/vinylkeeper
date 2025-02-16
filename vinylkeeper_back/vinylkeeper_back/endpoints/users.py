@@ -8,6 +8,8 @@ from vinylkeeper_back.core.config_env import Settings
 from vinylkeeper_back.db.session import get_db
 from vinylkeeper_back.core.logging import logger
 from vinylkeeper_back.utils.auth_utils.auth import verify_token
+from vinylkeeper_back.mails.client_mail import MailSubject, send_mail
+
 router = APIRouter()
 
 def set_token_cookie(response: Response, token: str, token_type: TokenType):
@@ -44,12 +46,16 @@ async def authenticate(response: Response, auth_user: AuthUser, db: Session = De
 @router.post("/register")
 async def create_user(response: Response, new_user: CreateUser, db: Session = Depends(get_db)):
     try:
-        user_data = new_user.dict()
-        user = register_user(db, user_data)
-        user_uuid = str(user.user_uuid)
-        access_token = create_token(user_uuid, TokenType.ACCESS)
-        set_token_cookie(response, access_token, TokenType.ACCESS)
-        logger.info(f"New user registered: {user.username} - {user.email}")
+        if not new_user.email or not new_user.username or not new_user.password:
+            raise AuthError("Missing required fields")
+        else:
+            user_data = new_user.dict()
+            user = register_user(db, user_data)
+            user_uuid = str(user.user_uuid)
+            access_token = create_token(user_uuid, TokenType.ACCESS)
+            set_token_cookie(response, access_token, TokenType.ACCESS)
+            logger.info(f"New user registered: {user.username} - {user.email}")
+            send_mail(to=Settings().EMAIL_ADMIN, subject=MailSubject.NewUserRegistered, username=user.username, user_email=user.email)
         return {"isLoggedIn": True}
     except AuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
