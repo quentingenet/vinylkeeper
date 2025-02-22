@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import List
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from vinylkeeper_back.schemas.collection_schemas import CollectionBase, CollectionCreate, Collection
@@ -16,16 +17,13 @@ class CollectionService:
             description=new_collection.description,
             is_public=new_collection.is_public,
             user_id=user_id,
-            registered_at=datetime.now(),
+            registered_at=datetime.now(timezone.utc)
         )
-        return self.collection_repo.create_collection(collection_to_add)
-     
-    def get_collections(self, user_id: int) -> list[Collection]:
-        collections = self.collection_repo.get_collections(user_id)
-        if collections:
-            return collections
-        else:
-            return []
+        collection = self.collection_repo.create_collection(collection_to_add)
+        return collection is not None
+
+    def get_collections(self, user_id: int) -> List[Collection]:    
+        return self.collection_repo.get_collections(user_id) or []
 
     def switch_area_collection(self, collection_id: int, is_public: bool, user_id: int) -> bool:
         return self.collection_repo.switch_area_collection(collection_id, is_public, user_id)
