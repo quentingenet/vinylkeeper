@@ -5,9 +5,10 @@ from jose import jwt, JWTError
 from vinylkeeper_back.core.config_env import Settings   
 import os
 from fastapi import Request, Depends, status, Response
-from sqlalchemy.orm import Session
 from vinylkeeper_back.schemas.user_schemas import User
 from vinylkeeper_back.repositories.user_repository import UserRepository
+from vinylkeeper_back.db.session import get_db
+from sqlalchemy.orm import Session
 
 
 base_path = "./keys"
@@ -75,19 +76,23 @@ def verify_reset_token(token: str) -> str:
     except JWTError:
         raise ValueError("Invalid token")
 
-def user_finder(self, request: Request) -> User:
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> User:
+    user_repository = UserRepository(db)
     try:
         user_uuid = verify_token(request)
         if not user_uuid:
             raise ValueError("Invalid token")
-        else:
-            user = self.user_repository.get_user_by_uuid(user_uuid)
+        
+        user = user_repository.get_user_by_uuid(user_uuid)
         if not user:
             raise ValueError("Invalid token")
         return user
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-    
+
 def set_token_cookie(response: Response, token: str, token_type: TokenType, custom_max_age: int = None):
     max_age = custom_max_age if custom_max_age is not None else (
         Settings().ACCESS_TOKEN_EXPIRE_MINUTES if token_type == TokenType.ACCESS 
