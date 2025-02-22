@@ -31,7 +31,7 @@ class CollectionService:
         return self.collection_repo.switch_area_collection(collection_id, is_public, user_id)
    
     def delete_collection(self, collection_id: int, user_id: int) -> bool:
-        return self.collection_repo(collection_id, user_id)
+        return self.collection_repo.delete_collection(collection_id, user_id)
 
     def update_collection(self, collection_id: int, request_body: CollectionBase, user_id: int) -> bool:
         return self.collection_repo.update_collection(collection_id, request_body, user_id)

@@ -44,7 +44,7 @@ class CollectionRepository:
         
     def delete_collection(self, collection_id: int, user_id: int) -> bool:
         try:
-            collection = self.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user_id).first()
+            collection = self.db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user_id).first()
             if collection:
                 self.db.delete(collection)
                 self.db.commit()
