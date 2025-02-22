@@ -36,7 +36,7 @@ def get_template(subject: MailSubject, **kwargs) -> str:
         return template_function(**kwargs)
     raise ValueError("No template found for the given subject")
 
-def send_mail(to: str, subject: MailSubject, **kwargs):
+async def send_mail(to: str, subject: MailSubject, **kwargs):
     try:
         server = smtp_client()
         msg = MIMEMultipart()

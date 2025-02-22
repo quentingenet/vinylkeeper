@@ -4,11 +4,10 @@ from http.client import HTTPException
 from jose import jwt, JWTError
 from vinylkeeper_back.core.config_env import Settings   
 import os
-from fastapi import Request, Depends, status
+from fastapi import Request, Depends, status, Response
 from sqlalchemy.orm import Session
-from vinylkeeper_back.db.session import get_db
 from vinylkeeper_back.schemas.user_schemas import User
-from vinylkeeper_back.repositories.user_repository import get_user_by_uuid
+from vinylkeeper_back.repositories.user_repository import UserRepository
 
 
 base_path = "./keys"
@@ -28,6 +27,13 @@ REFRESH_TOKEN_EXPIRE_MINUTES = Settings().REFRESH_TOKEN_EXPIRE_MINUTES
 class TokenType(Enum):
     ACCESS = "access"
     REFRESH = "refresh"
+
+class AuthUtils:
+    def get_user_repository() -> UserRepository:
+        return UserRepository()
+
+    def __init__(self, user_repository: UserRepository = Depends(get_user_repository)):
+        self.user_repository = user_repository
 
 def create_token(user_uuid: str, token_type: TokenType) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=7)
@@ -68,16 +74,32 @@ def verify_reset_token(token: str) -> str:
         return user_uuid
     except JWTError:
         raise ValueError("Invalid token")
-    
-def user_finder(request: Request, db: Session = Depends(get_db)) -> User:
+
+def user_finder(self, request: Request) -> User:
     try:
         user_uuid = verify_token(request)
         if not user_uuid:
             raise ValueError("Invalid token")
         else:
-            user = get_user_by_uuid(db, user_uuid)
+            user = self.user_repository.get_user_by_uuid(user_uuid)
         if not user:
             raise ValueError("Invalid token")
         return user
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    
+def set_token_cookie(response: Response, token: str, token_type: TokenType, custom_max_age: int = None):
+    max_age = custom_max_age if custom_max_age is not None else (
+        Settings().ACCESS_TOKEN_EXPIRE_MINUTES if token_type == TokenType.ACCESS 
+        else Settings().REFRESH_TOKEN_EXPIRE_MINUTES) * 60
+    
+    response.set_cookie(
+        key=f"{token_type.value}_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="None",
+        max_age=max_age,
+        path="/",
+        domain=Settings().COOKIE_DOMAIN if Settings().APP_ENV != "development" else None
+    )
