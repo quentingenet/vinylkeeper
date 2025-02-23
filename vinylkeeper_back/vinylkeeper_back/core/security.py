@@ -10,8 +10,21 @@ def configure_cors(app: FastAPI):
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "Authorization"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Content-Type", 
+            "Authorization",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers"
+        ],
+        expose_headers=[
+            "Content-Type",
+            "Authorization"
+        ],
+        max_age=3600,
     )
 
 
