@@ -10,10 +10,11 @@ WORKDIR /vinylkeeper_back
 RUN pip install poetry
 
 COPY pyproject.toml poetry.lock ./
+
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi
 
-COPY vinylkeeper_back/ .
+COPY . .
 
 EXPOSE 8000
 
