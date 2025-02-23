@@ -36,7 +36,6 @@ export default function ModalCollection({
   onCollectionAdded,
   collection,
   isPublic,
-  setIsPublic,
 }: IModalCollectionCreateProps) {
   const userContext = useUserContext();
   const queryClient = useQueryClient();
