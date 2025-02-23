@@ -1,0 +1,39 @@
+services:
+  vinylkeeper-db:
+    image: postgres:16.2
+    container_name: vinylkeeper-db-container
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - vk_network
+    volumes:
+      - vinylkeeper_postgres_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  vinylkeeper-back:
+    build: 
+      context: ./vinylkeeper_back
+    container_name: vinylkeeper-back-container
+    ports:
+      - "8000:8000"
+    depends_on:
+      - vinylkeeper-db
+    networks:
+      - vk_network
+    volumes:
+      - ./vinylkeeper_back:/app
+    env_file:
+      - .env.production
+    command: sh -c "poetry run alembic upgrade head && poetry run uvicorn main:app --host 0.0.0.0 --port 8000"
+    restart: always
+
+networks:
+  vk_network:
+    driver: bridge
+
+volumes:
+  vinylkeeper_postgres_db:
