@@ -63,7 +63,15 @@ export default function Collections() {
 
   const handleOpenModalCollection = (isUpdating: boolean) => {
     setIsUpdatingCollection(isUpdating);
+    if (!isUpdating) {
+      setCollection(undefined);
+    }
     setOpenModal(true);
+  };
+
+  const handleCloseModalCollection = () => {
+    setOpenModal(false);
+    setIsUpdatingCollection(false);
   };
 
   const handleCollectionClick = (collectionId: number) => {
@@ -104,7 +112,7 @@ export default function Collections() {
       <ModalCollection
         collection={collection}
         openModal={openModal}
-        handleClose={() => setOpenModal(false)}
+        handleClose={handleCloseModalCollection}
         isUpdatingCollection={isUpdatingCollection}
         isPublic={isPublic}
         setIsPublic={setIsPublic}
@@ -164,7 +172,9 @@ export default function Collections() {
           ))
         ) : (
           <Box width="100%" textAlign="center">
-            <Typography variant="body1">Aucune collection trouvée.</Typography>
+            <Typography variant="body1">
+              No collection found. Create a new one!
+            </Typography>
           </Box>
         )}
       </Box>

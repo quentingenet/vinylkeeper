@@ -51,8 +51,8 @@ export default function ModalCollection({
     register,
   } = useForm<ICollectionForm>({
     defaultValues: {
-      name: collection?.name || "",
-      description: collection?.description || "",
+      name: isUpdatingCollection ? collection?.name : "",
+      description: isUpdatingCollection ? collection?.description : "",
       is_public: collection?.is_public ?? isPublic,
     },
     resolver: yupResolver(collectionValidationSchema),
@@ -181,6 +181,7 @@ export default function ModalCollection({
                   alignSelf: "center",
                 }}
                 error={!!errors.name?.message}
+                label="Name"
                 helperText={errors.name?.message}
                 {...register("name")}
               />
@@ -193,6 +194,7 @@ export default function ModalCollection({
                 error={!!errors.description?.message}
                 helperText={errors.description?.message}
                 multiline
+                label="Description"
                 rows={4}
                 {...register("description")}
               />
