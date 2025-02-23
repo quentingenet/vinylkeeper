@@ -15,8 +15,8 @@ services:
     restart: always
 
   vinylkeeper-back:
-    build: 
-      context: ./vinylkeeper_back
+    build:
+      context: .
     container_name: vinylkeeper-back-container
     ports:
       - "8000:8000"
