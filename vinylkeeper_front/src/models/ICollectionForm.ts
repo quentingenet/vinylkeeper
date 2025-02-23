@@ -14,5 +14,15 @@ export interface ICollection {
   name: string;
   description: string;
   is_public: boolean;
+  user_id: number;
   registered_at: string;
+  updated_at: string;
+}
+
+export interface ICollectionResponse {
+  items: ICollection[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }

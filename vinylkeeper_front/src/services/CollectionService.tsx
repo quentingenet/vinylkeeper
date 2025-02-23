@@ -1,5 +1,5 @@
 import requestService from "@utils/RequestService";
-import { API_VK_URL } from "@utils/GlobalUtils";
+import { API_VK_URL, ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { ICollection, ICollectionForm } from "@models/ICollectionForm";
 
 export const createCollection = async (
@@ -13,11 +13,22 @@ export const createCollection = async (
   });
 };
 
-export const getCollections = async (): Promise<ICollection[]> => {
-  return requestService<ICollection[]>({
+interface PaginatedCollectionResponse {
+  items: ICollection[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export const getCollections = async (
+  page: number = 1,
+  itemsPerPage: number = ITEMS_PER_PAGE
+): Promise<PaginatedCollectionResponse> => {
+  return requestService<PaginatedCollectionResponse>({
     apiTarget: API_VK_URL,
     method: "GET",
-    endpoint: "/collections/",
+    endpoint: `/collections?page=${page}&limit=${itemsPerPage}`,
   });
 };
 

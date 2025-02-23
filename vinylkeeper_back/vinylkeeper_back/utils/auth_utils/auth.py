@@ -5,9 +5,9 @@ from jose import jwt, JWTError
 from vinylkeeper_back.core.config_env import Settings   
 import os
 from fastapi import Request, Depends, status, Response
+from vinylkeeper_back.db.session import get_db
 from vinylkeeper_back.schemas.user_schemas import User
 from vinylkeeper_back.repositories.user_repository import UserRepository
-from vinylkeeper_back.db.session import get_db
 from sqlalchemy.orm import Session
 
 

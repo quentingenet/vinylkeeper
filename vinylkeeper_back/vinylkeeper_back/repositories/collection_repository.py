@@ -2,6 +2,7 @@ from requests import Session
 from vinylkeeper_back.models.collection_model import Collection
 from vinylkeeper_back.schemas.collection_schemas import CollectionBase, CollectionCreate
 from vinylkeeper_back.core.logging import logger
+from typing import Tuple, List
 
 class CollectionRepository:
     
@@ -20,9 +21,12 @@ class CollectionRepository:
             self.db.rollback()
             return None
 
-    def get_collections(self, user_id: int) -> list[Collection]:
+    def get_collections(self, user_id: int, skip: int = 0, limit: int = 10) -> Tuple[List[Collection], int]:
         try:
-            return self.db.query(Collection).filter(Collection.user_id == user_id).all()
+            query = self.db.query(Collection).filter(Collection.user_id == user_id)
+            total = query.count()
+            collections = query.offset(skip).limit(limit).all()
+            return collections, total
         except Exception as e:
             logger.error(f"Error getting collections for user {user_id}: {e}")
             raise

@@ -8,9 +8,15 @@ import {
   getCollections,
   switchAreaCollection,
 } from "@services/CollectionService";
-import { ICollection, ICollectionSwitchArea } from "@models/ICollectionForm";
+import {
+  ICollection,
+  ICollectionResponse,
+  ICollectionSwitchArea,
+} from "@models/ICollectionForm";
 import ModalCollection from "@components/Collections/ModalCollection";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Pagination } from "@mui/material";
+import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 
 export default function Collections() {
   const [openModal, setOpenModal] = useState(false);
@@ -19,6 +25,8 @@ export default function Collections() {
     undefined
   );
   const [isPublic, setIsPublic] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = ITEMS_PER_PAGE;
 
   const { isMobile } = useDetectMobile();
   const queryClient = useQueryClient();
@@ -27,12 +35,13 @@ export default function Collections() {
     data: collectionsData,
     isLoading: collectionsLoading,
     error,
-  } = useQuery({
-    queryKey: ["collections"],
-    queryFn: getCollections,
+  } = useQuery<ICollectionResponse>({
+    queryKey: ["collections", page],
+    queryFn: () => getCollections(page, itemsPerPage),
   });
 
-  const collections = collectionsData ?? [];
+  const collections = collectionsData?.items || [];
+  const totalPages = collectionsData?.total_pages || 0;
 
   const switchAreaMutation = useMutation({
     mutationFn: ({ collectionId, newIsPublic }: ICollectionSwitchArea) =>
@@ -59,16 +68,39 @@ export default function Collections() {
 
   const handleCollectionClick = (collectionId: number) => {
     const selectedCollection = collections.find(
-      (collection: ICollection) => collection.id === collectionId
+      (collection) => collection.id === collectionId
     );
     setCollection(selectedCollection);
   };
 
-  if (collectionsLoading) return <Typography>Loading...</Typography>;
-  if (error) return <Typography>Error loading collections</Typography>;
+  if (collectionsLoading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <Typography color="error">Error loading collections</Typography>
+      </Box>
+    );
+  }
 
   return (
-    <>
+    <Box>
       <ModalCollection
         collection={collection}
         openModal={openModal}
@@ -112,7 +144,7 @@ export default function Collections() {
         gap={4}
         marginY={isMobile ? 1 : 3}
       >
-        {collections.length > 0 ? (
+        {collections && collections.length > 0 ? (
           collections.map((collection: ICollection) => (
             <CollectionItem
               key={collection.id}
@@ -120,7 +152,10 @@ export default function Collections() {
               onSwitchArea={(newIsPublic) =>
                 handleSwitchAreaCollection(collection.id, newIsPublic)
               }
-              handleOpenModalCollection={() => handleOpenModalCollection(true)}
+              handleOpenModalCollection={() => {
+                setCollection(collection);
+                handleOpenModalCollection(true);
+              }}
               onCollectionClick={handleCollectionClick}
               refreshCollections={() => {
                 queryClient.invalidateQueries({ queryKey: ["collections"] });
@@ -128,9 +163,24 @@ export default function Collections() {
             />
           ))
         ) : (
-          <Typography>No collections found.</Typography>
+          <Box width="100%" textAlign="center">
+            <Typography variant="body1">Aucune collection trouvée.</Typography>
+          </Box>
         )}
       </Box>
-    </>
+
+      {totalPages > 1 && (
+        <Box display="flex" justifyContent="center" mt={4} mb={2}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_, newPage) => setPage(newPage)}
+            color="primary"
+            size={isMobile ? "medium" : "large"}
+            shape="circular"
+          />
+        </Box>
+      )}
+    </Box>
   );
 }

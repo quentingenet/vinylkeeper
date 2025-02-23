@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Tuple
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from vinylkeeper_back.schemas.collection_schemas import CollectionBase, CollectionCreate, Collection
@@ -22,8 +22,9 @@ class CollectionService:
         collection = self.collection_repo.create_collection(collection_to_add)
         return collection is not None
 
-    def get_collections(self, user_id: int) -> List[Collection]:    
-        return self.collection_repo.get_collections(user_id) or []
+    def get_collections(self, user_id: int, page: int, page_size: int) -> Tuple[List[Collection], int]:
+        offset = (page - 1) * page_size
+        return self.collection_repo.get_collections(user_id, offset, page_size)
 
     def switch_area_collection(self, collection_id: int, is_public: bool, user_id: int) -> bool:
         return self.collection_repo.switch_area_collection(collection_id, is_public, user_id)

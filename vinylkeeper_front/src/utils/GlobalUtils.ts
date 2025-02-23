@@ -4,6 +4,9 @@ export const API_VK_URL = import.meta.env.VITE_API_VK_URL;
 export const API_DEEZER_URL = import.meta.env.VITE_API_DEEZER_URL;
 export const API_MB_URL = import.meta.env.VITE_MB_API;
 
+// Items per page for collections pagination
+export const ITEMS_PER_PAGE = 3;
+
 export const getTimezone = () => {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return timezone;

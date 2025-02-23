@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Path, Query
 from sqlalchemy.orm import Session
 from typing import Annotated
 from vinylkeeper_back.schemas.collection_schemas import CollectionBase, CollectionResponse, SwitchAreaRequest
@@ -9,7 +9,7 @@ from vinylkeeper_back.services.collection_service import CollectionService
 from vinylkeeper_back.schemas.user_schemas import User
 
 router = APIRouter()
-    
+
 def get_collection_service(db: Session = Depends(get_db)) -> CollectionService:
     return CollectionService(db)
 
@@ -30,20 +30,28 @@ async def create_collection(
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_collections(
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[CollectionService, Depends(get_collection_service)]
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    page: int = Query(1, gt=0),
+    limit: int = Query(3, gt=0, le=100)
 ):
-    collections = service.get_collections(user.id)
-    if not collections:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No collections found")
+    collections, total = service.get_collections(user.id, page, limit)
+    if not collections and page > 1:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Page not found")
     
-    return [CollectionResponse.from_orm(collection).model_dump() for collection in collections]
+    return {
+        "items": [CollectionResponse.model_validate(collection).model_dump() for collection in collections],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total + limit - 1) // limit
+    }
 
 @router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK)
 async def switch_area_collection(
     user: Annotated[User, Depends(get_current_user)],
     request_body: SwitchAreaRequest,
-    collection_id: int,
-    service: Annotated[CollectionService, Depends(get_collection_service)]
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection to update")
 ):
     collection_updated = service.switch_area_collection(collection_id, request_body.is_public, user.id)
     if not collection_updated:
@@ -54,8 +62,8 @@ async def switch_area_collection(
 @router.delete("/delete/{collection_id}", status_code=status.HTTP_200_OK)
 async def delete_collection(
     user: Annotated[User, Depends(get_current_user)],
-    collection_id: int,
-    service: Annotated[CollectionService, Depends(get_collection_service)]
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection to delete"),
 ):
     collection_deleted = service.delete_collection(collection_id, user.id)
     if not collection_deleted:
@@ -67,8 +75,8 @@ async def delete_collection(
 async def update_collection(
     user: Annotated[User, Depends(get_current_user)],
     request_body: CollectionBase,
-    collection_id: int,
-    service: Annotated[CollectionService, Depends(get_collection_service)]
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection to update")
 ):
     collection_updated = service.update_collection(collection_id, request_body, user.id)
     if not collection_updated:
