@@ -81,19 +81,6 @@ export default function Collections() {
     setCollection(selectedCollection);
   };
 
-  if (collectionsLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <Typography>Loading...</Typography>
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box
