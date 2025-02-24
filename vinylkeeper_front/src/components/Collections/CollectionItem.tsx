@@ -60,6 +60,7 @@ export default function CollectionItem({
 }: CollectionItemProps) {
   const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const userContext = useUserContext();
 
@@ -82,7 +83,7 @@ export default function CollectionItem({
   const handleDelete = () => {
     deleteCollection(collection.id).then(() => {
       setIsDeleted(true);
-      userContext.setOpenDialog(false);
+      setOpenDeleteDialog(false);
     });
   };
 
@@ -156,7 +157,10 @@ export default function CollectionItem({
             <EditIcon fontSize="small" />
           </Box>
           <Box
-            onClick={() => userContext.setOpenDialog(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenDeleteDialog(true);
+            }}
             sx={{
               position: "absolute",
               cursor: "pointer",
@@ -226,6 +230,8 @@ export default function CollectionItem({
         onConfirm={handleDelete}
         textConfirm="Delete"
         textCancel="Cancel"
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
       />
     </>
   );

@@ -12,24 +12,22 @@ export default function VinylKeeperDialog({
   onConfirm,
   textConfirm,
   textCancel,
+  open,
+  onClose,
 }: {
   title: string;
   content: string;
   onConfirm: () => void;
   textConfirm: string;
   textCancel: string;
+  open: boolean;
+  onClose: () => void;
 }) {
-  const { openDialog, setOpenDialog } = useUserContext();
-
-  const handleClose = () => {
-    setOpenDialog(false);
-  };
-
   return (
     <>
       <Dialog
-        open={openDialog}
-        onClose={handleClose}
+        open={open}
+        onClose={onClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
@@ -43,7 +41,7 @@ export default function VinylKeeperDialog({
         </DialogContent>
         <DialogActions>
           <DialogActions>
-            <Button onClick={handleClose}>{textCancel}</Button>
+            <Button onClick={onClose}>{textCancel}</Button>
             <Button onClick={onConfirm} autoFocus>
               {textConfirm}
             </Button>
