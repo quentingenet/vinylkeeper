@@ -3,11 +3,7 @@ services:
     image: postgres:16.2
     container_name: vinylkeeper-db-container
     env_file:
-      - ./vinylkeeper_back/.env.production
-    environment:
-      - POSTGRES_DB=${DATABASE_NAME}
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - .env.db
     networks:
       - vk_network
     volumes:
@@ -29,7 +25,7 @@ services:
     volumes:
       - ./:/vinylkeeper_back
     env_file:
-      - .env.production
+      - vinylkeeper_back/.env.production
     working_dir: /vinylkeeper_back
     environment:
       - PYTHONPATH=/vinylkeeper_back
