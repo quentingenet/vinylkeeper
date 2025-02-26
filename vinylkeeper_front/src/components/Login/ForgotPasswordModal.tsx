@@ -38,6 +38,21 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
 
   const { isMobile } = useDetectMobile();
 
+  const handlePasswordRecovery = async () => {
+    if (emailRecovery.match(emailValidator)) {
+      try {
+        await forgotPasswordService(emailRecovery.toLowerCase());
+        setIsMailSended(true);
+        setErrorRecovery(false);
+      } catch (error) {
+        setErrorRecovery(true);
+        setIsMailSended(false);
+      }
+    } else {
+      setErrorRecovery(true);
+    }
+  };
+
   return (
     <Modal
       open={openForgotPassword}
@@ -88,15 +103,7 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
               variant="contained"
               color="primary"
               size="large"
-              onClick={() => {
-                if (emailRecovery.match(emailValidator)) {
-                  forgotPasswordService(emailRecovery.toLowerCase());
-                  setIsMailSended(true);
-                  setErrorRecovery(false);
-                } else {
-                  setErrorRecovery(true);
-                }
-              }}
+              onClick={handlePasswordRecovery}
             >
               Send
             </Button>
