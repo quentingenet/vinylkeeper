@@ -1,7 +1,7 @@
 services:
   vinylkeeper-db:
     image: postgres:16.2
-    container_name: vinylkeeper-db-container
+    container_name: vinylkeeper-db
     env_file:
       - .env.db
     networks:
@@ -15,7 +15,7 @@ services:
   vinylkeeper-back:
     build:
       context: .
-    container_name: vinylkeeper-back-container
+    container_name: vinylkeeper-api
     ports:
       - "8000:8000"
     depends_on:
@@ -23,13 +23,11 @@ services:
     networks:
       - vk_network
     volumes:
-      - ./:/vinylkeeper_back
+      - ./:/api
     env_file:
-      - vinylkeeper_back/.env.production
-    working_dir: /vinylkeeper_back
+      - .env.production
     environment:
-      - PYTHONPATH=/vinylkeeper_back
-    command: sh -c "poetry run alembic upgrade head && cd vinylkeeper_back && poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+      - PYTHONPATH=/api
     restart: always
 
 networks:

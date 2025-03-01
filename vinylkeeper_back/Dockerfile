@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /vinylkeeper_back
+WORKDIR /api
 
 RUN pip install poetry
 
@@ -18,5 +18,5 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "poetry run alembic upgrade head && poetry run uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"]
 
