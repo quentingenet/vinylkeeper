@@ -25,7 +25,7 @@ services:
     volumes:
       - ./:/api
     env_file:
-      - .env.production
+      - api/.env.production
     environment:
       - PYTHONPATH=/api
     restart: always
