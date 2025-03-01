@@ -24,7 +24,7 @@ services:
       - vk_network
     volumes:
       - ./:/api
-      - ./keys:/api/keys
+      - ./keys:/keys
     env_file:
       - api/.env.production
     command: sh -c "cd /api && poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"
