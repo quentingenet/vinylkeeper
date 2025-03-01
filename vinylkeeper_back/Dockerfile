@@ -5,18 +5,18 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /api
-
-RUN pip install poetry
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi
+RUN pip install poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi
 
 COPY . .
 
+WORKDIR /
+
 EXPOSE 8000
 
-CMD ["poetry", "run", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"]
 
