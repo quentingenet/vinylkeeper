@@ -23,11 +23,9 @@ services:
     networks:
       - vk_network
     volumes:
-      - ./:/api
+      - ./:/app
     env_file:
-      - api/.env.production
-    environment:
-      - PYTHONPATH=/api
+      - .env.production
     restart: always
 
 networks:
