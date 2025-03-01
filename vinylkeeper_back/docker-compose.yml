@@ -24,9 +24,12 @@ services:
       - vk_network
     volumes:
       - ./:/app
+      - ./keys:/api/keys
     env_file:
       - api/.env.production
-    command: sh -c "poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      - DATABASE_HOST=vinylkeeper-db
+    command: sh -c "cd /app && poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"
     restart: always
 
 networks:
