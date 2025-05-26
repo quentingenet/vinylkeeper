@@ -18,6 +18,7 @@ class User(Base):
     timezone = Column(String(100), nullable=False, server_default="UTC+1")
     role_id = Column(Integer, ForeignKey("roles.id"))
     user_uuid = Column(UUID(as_uuid=True), nullable=False, unique=True)
+    number_of_connections = Column(Integer, default=0)
 
     role = relationship("Role", back_populates="users") 
     collections = relationship("Collection", back_populates="owner")

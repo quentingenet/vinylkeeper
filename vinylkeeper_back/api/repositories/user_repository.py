@@ -30,6 +30,7 @@ class UserRepository:
         user = self.db.query(User).filter(User.id == user_id).first()
         if user:
             user.last_login = datetime.now()
+            user.number_of_connections += 1
             self.db.commit()
             self.db.refresh(user)
 
