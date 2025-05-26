@@ -10,7 +10,7 @@
 ![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
 
 **VinylKeeper** is a free and open-source application released under the Copyleft license.
-<br>Vinyl Keeper is your go-to solution for effortlessly managing your vinyl collection while respecting your data and privacy.
+<br>Vinyl Keeper is your go-to solution to effortlessly manage your vinyl collection, while fully respecting your privacy and data ownership.
 <br><br>Coming soon on [VinylKeeper here!](https://vinylkeeper.org/)
 
 <p align="center">
@@ -24,7 +24,7 @@
 
 **VinylKeeper** is developed using:
 - **[Python](https://www.python.org/)** with **[FastAPI](https://fastapi.tiangolo.com/)** for the main API.
-- **Rust** with **Rocket** and also **Java** with **SpringBoot** for alternative versions of the API, to explore possibilities for fun and learning.
+- **Rust** with **Rocket** and also **Java** with **SpringBoot** for alternative versions of the API — mostly for fun, learning, and prototyping purposes.
 - **[React](https://reactjs.org)** and **[TypeScript](https://www.typescriptlang.org/)** with **[Vite.js](https://vitejs.dev/)** for the frontend
 - **[PostgreSQL](https://www.postgresql.org/)** for the database
 
@@ -48,7 +48,7 @@ Ensure the following are installed on your machine:
 ```bash
 git clone https://github.com/quentingenet/vinylkeeper.git
 ```
-**Don't forget to create your own .env.development file for the environment variables used in the project (front and back), to do that you can use the .env.template.contributors template**
+**⚠️ Don't forget to create your own `.env.development` file using the provided `.env.template.contributors` as a reference.**
 
 ### Backend Setup
 Navigate to the backend folder, install dependencies, and run migrations:
@@ -82,7 +82,7 @@ We welcome contributions to improve Vinyl Keeper! To contribute:
 1. Fork this repository.
 2. Create a feature branch **from develop** (`git checkout -b feat/amazing-feature`).
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feat/AmazingFeature`).
+4. Push to the branch (`git push origin feat/amazing-feature`).
 5. Open a Pull Request.
 
 The project promotes the four essential freedoms:
