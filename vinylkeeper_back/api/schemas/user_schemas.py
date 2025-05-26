@@ -72,7 +72,7 @@ class UserInDBBase(UserBase):
     user_uuid: UUID
     registered_at: datetime
     last_login: Optional[datetime] = None
-    number_of_connections: int
+    number_of_connections: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
