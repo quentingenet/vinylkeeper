@@ -31,6 +31,7 @@ class UserService:
             user_data["password"] = hash_password(validated_data.password)
             user_data["user_uuid"] = str(uuid.uuid4())
             user_data["role_id"] = Settings().DEFAULT_ROLE_ID
+            user_data["number_of_connections"] = 1
             return self.user_repo.create_user(user_data)
         except Exception as e:
             raise AuthError(f"User registration failed: {str(e)}")
