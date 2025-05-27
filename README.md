@@ -43,9 +43,6 @@ Keep track of the vinyls you’d love to add to your collection someday.
 🔄 **Loans**  
 Manage borrowed vinyls—know what you lent, to whom, and when.
 
-👥 **Community**  
-(Coming soon) Explore others' collections, follow users, and share discoveries.
-
 ⚙️ **Settings**  
 Customize your profile, preferences, and account options.
 
@@ -53,7 +50,7 @@ Customize your profile, preferences, and account options.
 First step: English 🇬🇧 + French 🇫🇷
 
 👥 **Community**  
-See other users' collections, follow vinyl lovers, share discoveries.
+See other users' collections, follow vinyl lovers, share discoveries and messages.
 
 🔐 **Secure Authentication**  
 JWT-based login, with refresh token handling via secure HTTPOnly cookies.
