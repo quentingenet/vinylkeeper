@@ -9,6 +9,11 @@ export interface ICollectionSwitchArea {
   newIsPublic: boolean;
 }
 
+export interface IUserInfo {
+  id: number;
+  username: string;
+}
+
 export interface ICollection {
   id: number;
   name: string;
@@ -17,6 +22,7 @@ export interface ICollection {
   user_id: number;
   registered_at: string;
   updated_at: string;
+  owner: IUserInfo;
 }
 
 export interface ICollectionResponse {

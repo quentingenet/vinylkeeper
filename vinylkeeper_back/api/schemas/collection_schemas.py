@@ -2,6 +2,13 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+class UserInfo(BaseModel):
+    id: int
+    username: str
+    
+    class Config:
+        from_attributes = True
+
 class CollectionBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -9,7 +16,7 @@ class CollectionBase(BaseModel):
 
 class CollectionCreate(CollectionBase):
     user_id: int
-    pass
+    registered_at: datetime
 
 class SwitchAreaRequest(BaseModel):
     is_public: bool
@@ -22,11 +29,12 @@ class CollectionUpdate(CollectionBase):
 class CollectionResponse(BaseModel):
     id: int
     name: str
-    description: str
+    description: Optional[str] = None
     is_public: bool
     user_id: int
     registered_at: datetime
     updated_at: datetime
+    owner: UserInfo
     
     class Config:
         from_attributes = True

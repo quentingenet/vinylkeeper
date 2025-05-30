@@ -16,6 +16,7 @@ import Wishlist from "@pages/Wishlist/Wishlist";
 import Community from "@pages/Community/Community";
 import Loans from "@pages/Loans/Loans";
 import { EGlobalUrls } from "@utils/GlobalUrls";
+import CollectionDetails from "@pages/Collections/CollectionDetails";
 
 function App() {
   const userContext = useUserContext();
@@ -49,6 +50,14 @@ function App() {
               element={
                 <Protected>
                   <Collections />
+                </Protected>
+              }
+            />
+            <Route
+              path={EGlobalUrls.COLLECTION_DETAILS}
+              element={
+                <Protected>
+                  <CollectionDetails />
                 </Protected>
               }
             />

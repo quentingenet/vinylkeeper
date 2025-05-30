@@ -20,6 +20,7 @@ export enum EGlobalUrls {
   ROOT = "/",
   DASHBOARD = "/dashboard",
   COLLECTIONS = "/collections",
+  COLLECTION_DETAILS = "/collections/:id",
   ADD_VINYLS = "/add-vinyls",
   EXPLORE = "/explore",
   WISHLIST = "/wishlist",

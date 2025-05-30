@@ -32,6 +32,27 @@ export const getCollections = async (
   });
 };
 
+export const getCollectionById = async (
+  collectionId: number
+): Promise<ICollection> => {
+  return requestService<ICollection>({
+    apiTarget: API_VK_URL,
+    method: "GET",
+    endpoint: `/collections/${collectionId}`,
+  });
+};
+
+export const getPublicCollections = async (
+  page: number = 1,
+  itemsPerPage: number = ITEMS_PER_PAGE
+): Promise<PaginatedCollectionResponse> => {
+  return requestService<PaginatedCollectionResponse>({
+    apiTarget: API_VK_URL,
+    method: "GET",
+    endpoint: `/collections/public?page=${page}&limit=${itemsPerPage}`,
+  });
+};
+
 export const switchAreaCollection = async (
   collectionId: number,
   isPublic: boolean

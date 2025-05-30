@@ -26,6 +26,13 @@ class CollectionService:
         offset = (page - 1) * page_size
         return self.collection_repo.get_collections(user_id, offset, page_size)
 
+    def get_collection_by_id(self, collection_id: int, user_id: int) -> Collection | None:
+        return self.collection_repo.get_collection_by_id(collection_id, user_id)
+
+    def get_public_collections(self, page: int, page_size: int, exclude_user_id: int = None) -> Tuple[List[Collection], int]:
+        offset = (page - 1) * page_size
+        return self.collection_repo.get_public_collections(offset, page_size, exclude_user_id)
+
     def switch_area_collection(self, collection_id: int, is_public: bool, user_id: int) -> bool:
         return self.collection_repo.switch_area_collection(collection_id, is_public, user_id)
    

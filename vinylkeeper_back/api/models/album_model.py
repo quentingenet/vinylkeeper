@@ -30,7 +30,6 @@ class Album(Base):
     title = Column(String(255), index=True)
     artist_id = Column(Integer, ForeignKey("artists.id"))
     genre_id = Column(Integer, ForeignKey("genres.id"))
-    collection_id = Column(Integer, ForeignKey("collections.id"))
     release_year = Column(Integer, nullable=True)
     description = Column(Text, nullable=True)
     cover_condition = Column(Enum(ConditionEnum), nullable=True)
@@ -38,8 +37,8 @@ class Album(Base):
     mood = Column(Enum(MoodEnum), nullable=True)
 
     artist = relationship("Artist", back_populates="albums")
-    genre = relationship("Genre", back_populates="albums")
-    collection = relationship("Collection", back_populates="albums")
+    collections = relationship("Collection", secondary="collection_album", back_populates="albums")
     ratings = relationship("Rating", back_populates="album")
     loans = relationship("Loan", back_populates="album")
     wishlist_entries = relationship("Wishlist", back_populates="album")
+

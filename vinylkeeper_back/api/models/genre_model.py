@@ -8,4 +8,6 @@ class Genre(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), unique=True, index=True)
-    albums = relationship("Album", back_populates="genre")
+
+    collections = relationship("Collection", secondary="collection_genre", back_populates="genres")
+

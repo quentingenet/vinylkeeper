@@ -46,6 +46,35 @@ async def get_collections(
         "total_pages": (total + limit - 1) // limit
     }
 
+@router.get("/public", status_code=status.HTTP_200_OK)
+async def get_public_collections(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    page: int = Query(1, gt=0),
+    limit: int = Query(10, gt=0, le=100)
+):
+    collections, total = service.get_public_collections(page, limit, exclude_user_id=user.id)
+    
+    return {
+        "items": [CollectionResponse.model_validate(collection).model_dump() for collection in collections],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total + limit - 1) // limit
+    }
+
+@router.get("/{collection_id}", status_code=status.HTTP_200_OK)
+async def get_collection_by_id(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection to retrieve")
+):
+    collection = service.get_collection_by_id(collection_id, user.id)
+    if not collection:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found")
+    
+    return CollectionResponse.model_validate(collection).model_dump()
+
 @router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK)
 async def switch_area_collection(
     user: Annotated[User, Depends(get_current_user)],

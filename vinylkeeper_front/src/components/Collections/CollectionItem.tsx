@@ -15,6 +15,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import { zoomIn } from "@utils/Animations";
 import VinylKeeperDialog from "@components/UI/VinylKeeperDialog";
 import { useUserContext } from "@contexts/UserContext";
+import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useNavigate } from "react-router-dom";
 
 /**
  * CollectionItem Component
@@ -32,6 +34,8 @@ import { useUserContext } from "@contexts/UserContext";
  * @param {Function} props.refreshCollections - Callback to refresh the collections list
  * @param {Function} props.handleOpenModalCollection - Callback to open edit collection modal
  * @param {Function} props.onCollectionClick - Callback when collection card is clicked
+ * @param {boolean} props.isOwner - Whether the current user is the owner of the collection
+ * @param {boolean} props.showOwner - Whether to show the owner's name instead of the creation date
  *
  * @example
  * <CollectionItem
@@ -40,6 +44,8 @@ import { useUserContext } from "@contexts/UserContext";
  *   refreshCollections={refreshCollectionsList}
  *   handleOpenModalCollection={openEditModal}
  *   onCollectionClick={(id) => navigateToCollection(id)}
+ *   isOwner={isOwner}
+ *   showOwner={showOwner}
  * />
  */
 
@@ -49,6 +55,8 @@ interface CollectionItemProps {
   refreshCollections: () => void;
   handleOpenModalCollection: () => void;
   onCollectionClick: (collectionId: number) => void;
+  isOwner?: boolean;
+  showOwner?: boolean;
 }
 
 export default function CollectionItem({
@@ -57,12 +65,15 @@ export default function CollectionItem({
   refreshCollections,
   handleOpenModalCollection,
   onCollectionClick,
+  isOwner,
+  showOwner,
 }: CollectionItemProps) {
   const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
   const [isDeleted, setIsDeleted] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const userContext = useUserContext();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLocalIsPublic(collection.is_public);
@@ -133,53 +144,68 @@ export default function CollectionItem({
               },
             }}
           >
-            <VisibilityIcon fontSize="small" />
+            <VisibilityIcon
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(
+                  EGlobalUrls.COLLECTION_DETAILS.replace(
+                    ":id",
+                    collection.id.toString()
+                  )
+                );
+              }}
+              fontSize="small"
+            />
           </Box>
-          <Box
-            onClick={() => handleOpenModalCollection()}
-            sx={{
-              position: "absolute",
-              cursor: "pointer",
-              backgroundColor: "#1F1F1F",
-              borderRadius: "50%",
-              padding: 1,
-              top: 53,
-              right: 10,
-              opacity: 0.9,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              "&:hover": {
-                animation: `${zoomIn} 0.3s ease-in-out`,
-              },
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </Box>
-          <Box
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenDeleteDialog(true);
-            }}
-            sx={{
-              position: "absolute",
-              cursor: "pointer",
-              backgroundColor: "#1F1F1F",
-              borderRadius: "50%",
-              padding: 1,
-              top: 94,
-              right: 10,
-              opacity: 0.9,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              "&:hover": {
-                animation: `${zoomIn} 0.3s ease-in-out`,
-              },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </Box>
+          {(isOwner ?? true) && (
+            <>
+              <Box
+                onClick={() => handleOpenModalCollection()}
+                sx={{
+                  position: "absolute",
+                  cursor: "pointer",
+                  backgroundColor: "#1F1F1F",
+                  borderRadius: "50%",
+                  padding: 1,
+                  top: 53,
+                  right: 10,
+                  opacity: 0.9,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  "&:hover": {
+                    animation: `${zoomIn} 0.3s ease-in-out`,
+                  },
+                }}
+              >
+                <EditIcon fontSize="small" />
+              </Box>
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenDeleteDialog(true);
+                }}
+                sx={{
+                  position: "absolute",
+                  cursor: "pointer",
+                  backgroundColor: "#1F1F1F",
+                  borderRadius: "50%",
+                  padding: 1,
+                  top: 94,
+                  right: 10,
+                  opacity: 0.9,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  "&:hover": {
+                    animation: `${zoomIn} 0.3s ease-in-out`,
+                  },
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </Box>
+            </>
+          )}
         </Box>
         <CardActionArea>
           <CardContent>
@@ -205,21 +231,31 @@ export default function CollectionItem({
             alignItems={"flex-end"}
             gap={1}
           >
-            <FormControlLabel
-              sx={{ paddingX: 1 }}
-              control={
-                <Switch
-                  size="small"
-                  color="default"
-                  checked={localIsPublic}
-                  onChange={handleToggle}
-                />
-              }
-              label={localIsPublic ? "Public" : "Private"}
-            />
+            {(isOwner ?? true) && (
+              <FormControlLabel
+                sx={{ paddingX: 1 }}
+                control={
+                  <Switch
+                    size="small"
+                    color="default"
+                    checked={localIsPublic}
+                    onChange={handleToggle}
+                  />
+                }
+                label={localIsPublic ? "Public" : "Private"}
+              />
+            )}
             <Typography variant="body2" sx={{ position: "absolute", right: 8 }}>
-              Created at{" "}
-              {new Date(collection.registered_at).toLocaleDateString()}
+              {showOwner
+                ? `Created ${new Date(
+                    collection.registered_at
+                  ).toLocaleDateString()} by ${truncateText(
+                    collection.owner.username,
+                    10
+                  )}`
+                : `Created at ${new Date(
+                    collection.registered_at
+                  ).toLocaleDateString()}`}
             </Typography>
           </Box>
         </CardActions>

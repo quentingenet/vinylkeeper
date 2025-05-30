@@ -3,6 +3,7 @@ from api.models.collection_model import Collection
 from api.schemas.collection_schemas import CollectionBase, CollectionCreate
 from api.core.logging import logger
 from typing import Tuple, List
+from sqlalchemy.orm import joinedload
 
 class CollectionRepository:
     
@@ -29,6 +30,29 @@ class CollectionRepository:
             return collections, total
         except Exception as e:
             logger.error(f"Error getting collections for user {user_id}: {e}")
+            raise
+        
+    def get_collection_by_id(self, collection_id: int, user_id: int) -> Collection | None:
+        try:
+            collection = self.db.query(Collection).options(joinedload(Collection.owner)).filter(
+                Collection.id == collection_id,
+                (Collection.user_id == user_id) | (Collection.is_public == True)
+            ).first()
+            return collection
+        except Exception as e:
+            logger.error(f"Error getting collection {collection_id} for user {user_id}: {e}")
+            return None
+
+    def get_public_collections(self, skip: int = 0, limit: int = 10, exclude_user_id: int = None) -> Tuple[List[Collection], int]:
+        try:
+            query = self.db.query(Collection).options(joinedload(Collection.owner)).filter(Collection.is_public == True)
+            if exclude_user_id:
+                query = query.filter(Collection.user_id != exclude_user_id)
+            total = query.count()
+            collections = query.offset(skip).limit(limit).all()
+            return collections, total
+        except Exception as e:
+            logger.error(f"Error getting public collections: {e}")
             raise
         
     def switch_area_collection(self, collection_id: int, is_public: bool, user_id: int) -> bool:
