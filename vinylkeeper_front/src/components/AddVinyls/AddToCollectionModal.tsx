@@ -223,7 +223,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     }) => {
       return addToCollection(collectionId, itemData);
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       setSuccessMessage("Added successfully!");
       setTimeout(() => {
         setSuccessMessage("");
