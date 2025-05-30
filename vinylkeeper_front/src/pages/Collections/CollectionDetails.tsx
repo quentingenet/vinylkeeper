@@ -184,11 +184,6 @@ export default function CollectionDetails() {
                   <Typography variant="body2" sx={{ color: "#e4e4e4" }}>
                     {album.artist_name || "Unknown Artist"}
                   </Typography>
-                  <Chip
-                    label="Deezer"
-                    size="small"
-                    sx={{ mt: 1, backgroundColor: "#00D4FF", color: "#000" }}
-                  />
                 </CardContent>
               </Card>
             </Grid>
