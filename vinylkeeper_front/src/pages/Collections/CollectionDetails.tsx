@@ -103,8 +103,8 @@ export default function CollectionDetails() {
               >
                 <Box
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 150,
+                    height: 150,
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
@@ -150,8 +150,8 @@ export default function CollectionDetails() {
               >
                 <Box
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 150,
+                    height: 150,
                     flexShrink: 0,
                     margin: 1,
                     borderRadius: 1,
@@ -209,8 +209,8 @@ export default function CollectionDetails() {
               >
                 <Box
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 150,
+                    height: 150,
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
@@ -259,8 +259,8 @@ export default function CollectionDetails() {
               >
                 <Box
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 150,
+                    height: 150,
                     flexShrink: 0,
                     margin: 1,
                     borderRadius: 1,
@@ -290,11 +290,6 @@ export default function CollectionDetails() {
                   >
                     {artist.title}
                   </Typography>
-                  <Chip
-                    label="Deezer"
-                    size="small"
-                    sx={{ mt: 1, backgroundColor: "#00D4FF", color: "#000" }}
-                  />
                 </CardContent>
               </Card>
             </Grid>
