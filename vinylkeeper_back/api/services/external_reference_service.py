@@ -89,6 +89,27 @@ class ExternalReferenceService:
         except Exception as e:
             self.db.rollback()
             raise HTTPException(status_code=500, detail=f"Error adding to wishlist: {str(e)}")
+
+    def remove_from_wishlist(self, user_id: int, external_reference_id: int) -> bool:
+        """Remove external item from user's wishlist"""
+        try:
+            # Find the wishlist entry
+            wishlist_entry = self.db.query(Wishlist).filter(
+                Wishlist.user_id == user_id,
+                Wishlist.external_reference_id == external_reference_id
+            ).first()
+            
+            if not wishlist_entry:
+                return False  # Item not found in wishlist
+            
+            # Remove from wishlist
+            self.db.delete(wishlist_entry)
+            self.db.commit()
+            return True
+            
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error removing from wishlist: {str(e)}")
     
     def add_to_collection(
         self, 

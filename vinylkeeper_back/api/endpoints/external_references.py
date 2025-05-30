@@ -92,6 +92,28 @@ async def get_wishlist_external_items(
         logger.error(f"Error fetching wishlist items: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
+@router.delete("/wishlist/{item_id}", status_code=status.HTTP_200_OK)
+async def remove_from_wishlist(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)],
+    item_id: int = Path(..., gt=0, title="Item ID", description="The ID of the external reference to remove from wishlist")
+) -> AddExternalResponse:
+    """Remove external item from user's wishlist"""
+    try:
+        success = service.remove_from_wishlist(user.id, item_id)
+        
+        if success:
+            logger.info(f"Item {item_id} removed from wishlist for user {user.username}")
+            return AddExternalResponse(success=True, message="Item removed from wishlist successfully")
+        else:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found in wishlist")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing from wishlist: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
 @router.get("/collection/{collection_id}", status_code=status.HTTP_200_OK)
 async def get_collection_external_items(
     user: Annotated[User, Depends(get_current_user)],

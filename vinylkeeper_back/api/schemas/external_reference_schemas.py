@@ -10,6 +10,9 @@ class ExternalReferenceBase(BaseModel):
     item_type: ExternalItemTypeEnum
     title: Optional[str] = None
     artist_name: Optional[str] = None
+    picture_small: Optional[str] = None
+    picture_medium: Optional[str] = None
+    picture_big: Optional[str] = None
 
 
 class ExternalReferenceCreate(ExternalReferenceBase):

@@ -195,6 +195,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
       return addToWishlist(albumData);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wishlistItems"] });
       setSuccessMessage("Added successfully!");
       setTimeout(() => {
         setSuccessMessage("");
