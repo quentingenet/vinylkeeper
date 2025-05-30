@@ -194,7 +194,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     }) => {
       return addToWishlist(albumData);
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       setSuccessMessage("Added successfully!");
       setTimeout(() => {
         setSuccessMessage("");
