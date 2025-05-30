@@ -70,7 +70,7 @@ export interface IAlbumRequestResults {
   uuid: string;
   id: number;
   name?: string;
-  artist?: string;
+  artist?: Artist;
   cover_url?: string;
   title?: string;
   tracklist?: string;

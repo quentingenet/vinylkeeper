@@ -84,3 +84,37 @@ export const deleteCollection = async (collectionId: number): Promise<void> => {
     endpoint: `/collections/delete/${collectionId}`,
   });
 };
+
+interface CollectionDetails {
+  collection: ICollection;
+  local_albums: Array<{ id: number; title: string; artist: string }>;
+  local_artists: Array<{ id: number; name: string }>;
+  local_genres: Array<{ id: number; name: string }>;
+  external_albums: Array<{
+    id: number;
+    external_id: string;
+    title: string;
+    artist_name?: string;
+    external_source: string;
+    item_type: string;
+    picture_medium?: string;
+  }>;
+  external_artists: Array<{
+    id: number;
+    external_id: string;
+    title: string;
+    external_source: string;
+    item_type: string;
+    picture_medium?: string;
+  }>;
+}
+
+export const getCollectionDetails = async (
+  collectionId: number
+): Promise<CollectionDetails> => {
+  return requestService<CollectionDetails>({
+    apiTarget: API_VK_URL,
+    method: "GET",
+    endpoint: `/collections/${collectionId}/details`,
+  });
+};

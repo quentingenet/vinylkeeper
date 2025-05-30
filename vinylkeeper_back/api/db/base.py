@@ -11,4 +11,6 @@ import api.models.artist_model
 import api.models.album_model
 import api.models.genre_model
 import api.models.role_model
+import api.models.external_reference_model
+import api.models.collection_external_reference_model
 

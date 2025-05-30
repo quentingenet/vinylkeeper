@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import logging.handlers
 from api.core.security import configure_cors
-from api.endpoints import users, collections, request_proxy
+from api.endpoints import users, collections, request_proxy, external_references
 from api.core.config_env import Settings
 from api.db.init_role import insert_default_roles
 
@@ -18,5 +18,6 @@ async def startup_event():
 app.include_router(users.router, prefix="/api/users")
 app.include_router(collections.router, prefix="/api/collections")
 app.include_router(request_proxy.router, prefix="/api/request-proxy")
+app.include_router(external_references.router, prefix="/api/external")
 
 logger.info(f"VinylKeeper API is running in {Settings().APP_ENV.upper()} mode")
