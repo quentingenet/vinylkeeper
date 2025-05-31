@@ -1,6 +1,12 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getCollectionDetails } from "@services/CollectionService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getCollectionDetails,
+  removeAlbumFromCollection,
+  removeArtistFromCollection,
+  removeGenreFromCollection,
+  removeExternalItemFromCollection,
+} from "@services/CollectionService";
 import {
   Typography,
   Box,
@@ -9,13 +15,32 @@ import {
   CardContent,
   Chip,
 } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { useUserContext } from "@contexts/UserContext";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { zoomIn } from "@utils/Animations";
+import VinylKeeperDialog from "@components/UI/VinylKeeperDialog";
 
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
   const collectionId = id ? parseInt(id) : 0;
   const { isMobile } = useDetectMobile();
+  const { currentUser } = useUserContext();
+  const queryClient = useQueryClient();
+
+  // États pour la modal de confirmation
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{
+    id: number;
+    name: string;
+    type:
+      | "local_album"
+      | "external_album"
+      | "local_artist"
+      | "external_artist"
+      | "local_genre";
+  } | null>(null);
 
   const {
     data: collectionDetails,
@@ -26,6 +51,86 @@ export default function CollectionDetails() {
     queryFn: () => getCollectionDetails(collectionId),
     enabled: !!collectionId,
   });
+
+  // Mutations pour la suppression
+  const removeAlbumMutation = useMutation({
+    mutationFn: ({ albumId }: { albumId: number }) =>
+      removeAlbumFromCollection(collectionId, albumId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["collectionDetails", collectionId],
+      });
+    },
+  });
+
+  const removeArtistMutation = useMutation({
+    mutationFn: ({ artistId }: { artistId: number }) =>
+      removeArtistFromCollection(collectionId, artistId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["collectionDetails", collectionId],
+      });
+    },
+  });
+
+  const removeGenreMutation = useMutation({
+    mutationFn: ({ genreId }: { genreId: number }) =>
+      removeGenreFromCollection(collectionId, genreId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["collectionDetails", collectionId],
+      });
+    },
+  });
+
+  const removeExternalMutation = useMutation({
+    mutationFn: ({ externalId }: { externalId: number }) =>
+      removeExternalItemFromCollection(collectionId, externalId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["collectionDetails", collectionId],
+      });
+    },
+  });
+
+  // Fonctions pour ouvrir la modal de confirmation
+  const openDeleteConfirmation = (item: {
+    id: number;
+    name: string;
+    type:
+      | "local_album"
+      | "external_album"
+      | "local_artist"
+      | "external_artist"
+      | "local_genre";
+  }) => {
+    setSelectedItem(item);
+    setOpenDeleteDialog(true);
+  };
+
+  // Fonction de suppression finale après confirmation
+  const handleConfirmDelete = () => {
+    if (!selectedItem) return;
+
+    switch (selectedItem.type) {
+      case "local_album":
+        removeAlbumMutation.mutate({ albumId: selectedItem.id });
+        break;
+      case "external_album":
+      case "external_artist":
+        removeExternalMutation.mutate({ externalId: selectedItem.id });
+        break;
+      case "local_artist":
+        removeArtistMutation.mutate({ artistId: selectedItem.id });
+        break;
+      case "local_genre":
+        removeGenreMutation.mutate({ genreId: selectedItem.id });
+        break;
+    }
+
+    setOpenDeleteDialog(false);
+    setSelectedItem(null);
+  };
 
   useEffect(() => {
     if (collectionDetails) {
@@ -67,6 +172,8 @@ export default function CollectionDetails() {
     external_albums,
     external_artists,
   } = collectionDetails;
+
+  const isOwner = currentUser && collection.user_id === currentUser.id;
 
   return (
     <Box sx={{ padding: 3 }}>
@@ -128,6 +235,42 @@ export default function CollectionDetails() {
                   borderRadius: "8px",
                 }}
               >
+                <Box
+                  display={"flex"}
+                  flexDirection={"column"}
+                  alignItems={"flex-end"}
+                >
+                  {isOwner && (
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteConfirmation({
+                          id: album.id,
+                          name: album.title,
+                          type: "local_album",
+                        });
+                      }}
+                      sx={{
+                        position: "absolute",
+                        cursor: "pointer",
+                        backgroundColor: "#1F1F1F",
+                        borderRadius: "50%",
+                        padding: 1,
+                        top: 10,
+                        right: 10,
+                        opacity: 0.9,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        "&:hover": {
+                          animation: `${zoomIn} 0.3s ease-in-out`,
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </Box>
+                  )}
+                </Box>
                 <Box
                   sx={{
                     width: "100%",
@@ -200,6 +343,42 @@ export default function CollectionDetails() {
                   borderRadius: "8px",
                 }}
               >
+                <Box
+                  display={"flex"}
+                  flexDirection={"column"}
+                  alignItems={"flex-end"}
+                >
+                  {isOwner && (
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteConfirmation({
+                          id: album.id,
+                          name: album.title,
+                          type: "external_album",
+                        });
+                      }}
+                      sx={{
+                        position: "absolute",
+                        cursor: "pointer",
+                        backgroundColor: "#1F1F1F",
+                        borderRadius: "50%",
+                        padding: 1,
+                        top: 10,
+                        right: 10,
+                        opacity: 0.9,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        "&:hover": {
+                          animation: `${zoomIn} 0.3s ease-in-out`,
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </Box>
+                  )}
+                </Box>
                 <Box
                   sx={{
                     width: "100%",
@@ -315,6 +494,42 @@ export default function CollectionDetails() {
                 }}
               >
                 <Box
+                  display={"flex"}
+                  flexDirection={"column"}
+                  alignItems={"flex-end"}
+                >
+                  {isOwner && (
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteConfirmation({
+                          id: artist.id,
+                          name: artist.name,
+                          type: "local_artist",
+                        });
+                      }}
+                      sx={{
+                        position: "absolute",
+                        cursor: "pointer",
+                        backgroundColor: "#1F1F1F",
+                        borderRadius: "50%",
+                        padding: 1,
+                        top: 10,
+                        right: 10,
+                        opacity: 0.9,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        "&:hover": {
+                          animation: `${zoomIn} 0.3s ease-in-out`,
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </Box>
+                  )}
+                </Box>
+                <Box
                   sx={{
                     width: "100%",
                     height: 250,
@@ -373,6 +588,42 @@ export default function CollectionDetails() {
                   borderRadius: "8px",
                 }}
               >
+                <Box
+                  display={"flex"}
+                  flexDirection={"column"}
+                  alignItems={"flex-end"}
+                >
+                  {isOwner && (
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteConfirmation({
+                          id: artist.id,
+                          name: artist.title,
+                          type: "external_artist",
+                        });
+                      }}
+                      sx={{
+                        position: "absolute",
+                        cursor: "pointer",
+                        backgroundColor: "#1F1F1F",
+                        borderRadius: "50%",
+                        padding: 1,
+                        top: 10,
+                        right: 10,
+                        opacity: 0.9,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        "&:hover": {
+                          animation: `${zoomIn} 0.3s ease-in-out`,
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </Box>
+                  )}
+                </Box>
                 <Box
                   sx={{
                     width: "100%",
@@ -459,11 +710,42 @@ export default function CollectionDetails() {
                   color: "#000",
                   fontWeight: "bold",
                 }}
+                onDelete={
+                  isOwner
+                    ? () => {
+                        openDeleteConfirmation({
+                          id: genre.id,
+                          name: genre.name,
+                          type: "local_genre",
+                        });
+                      }
+                    : undefined
+                }
+                deleteIcon={
+                  isOwner ? (
+                    <DeleteIcon sx={{ color: "#000 !important" }} />
+                  ) : undefined
+                }
               />
             ))}
           </Box>
         )}
       </Box>
+
+      {/* Modal de confirmation de suppression */}
+      <VinylKeeperDialog
+        title="Remove from collection"
+        content={
+          selectedItem
+            ? `Are you sure you want to remove "${selectedItem.name}" from this collection?`
+            : "Are you sure you want to remove this item from the collection?"
+        }
+        onConfirm={handleConfirmDelete}
+        textConfirm="Remove"
+        textCancel="Cancel"
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      />
     </Box>
   );
 }

@@ -1,5 +1,6 @@
 import { API_VK_URL } from "@utils/GlobalUtils";
 import requestService from "@utils/RequestService";
+import { getCurrentUser, ICurrentUser } from "@services/UserService";
 import {
   createContext,
   useContext,
@@ -24,6 +25,8 @@ import { useNavigate } from "react-router-dom";
  * @property {function} setOpenDialog - Function to control dialog visibility
  * @property {function} refreshJwt - Async function to refresh JWT token
  * @property {function} logout - Function to handle user logout
+ * @property {ICurrentUser | null} currentUser - Current user information
+ * @property {function} setCurrentUser - Function to update current user information
  */
 interface IUserContext {
   isLoading: boolean;
@@ -35,6 +38,8 @@ interface IUserContext {
   openDialog: boolean;
   setOpenDialog: (openDialog: boolean) => void;
   logout: () => void;
+  currentUser: ICurrentUser | null;
+  setCurrentUser: (user: ICurrentUser | null) => void;
 }
 
 /**
@@ -52,6 +57,8 @@ export const UserContext = createContext<IUserContext>({
   openDialog: false,
   setOpenDialog: () => {},
   logout: () => {},
+  currentUser: null,
+  setCurrentUser: () => {},
 });
 
 export function useUserContext() {
@@ -68,6 +75,7 @@ export function UserContextProvider({
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<ICurrentUser | null>(null);
 
   const checkUserLoggedIn = useCallback(async () => {
     try {
@@ -77,9 +85,22 @@ export function UserContextProvider({
         endpoint: "/users/check-auth",
       });
       setIsUserLoggedIn(response.isLoggedIn);
+
+      if (response.isLoggedIn) {
+        try {
+          const user = await getCurrentUser();
+          setCurrentUser(user);
+        } catch (error) {
+          console.error("Error fetching current user:", error);
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
     } catch (error) {
       console.error("Error while checking user logged in:", error);
       setIsUserLoggedIn(false);
+      setCurrentUser(null);
     }
   }, []);
 
@@ -95,6 +116,7 @@ export function UserContextProvider({
       console.error("Error while logging out:", error);
     } finally {
       setIsUserLoggedIn(false);
+      setCurrentUser(null);
       navigate("/", { replace: true });
     }
   }, [navigate]);
@@ -115,6 +137,8 @@ export function UserContextProvider({
     openDialog,
     setOpenDialog,
     logout,
+    currentUser,
+    setCurrentUser,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

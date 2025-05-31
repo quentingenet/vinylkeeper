@@ -1,5 +1,8 @@
 from requests import Session
 from api.models.collection_model import Collection
+from api.models.album_model import Album
+from api.models.artist_model import Artist
+from api.models.genre_model import Genre
 from api.schemas.collection_schemas import CollectionBase, CollectionCreate
 from api.core.logging import logger
 from typing import Tuple, List
@@ -93,5 +96,65 @@ class CollectionRepository:
             return True
         except Exception as e:
             logger.error(f"Error updating collection {collection_id}: {e}")
+            self.db.rollback()
+            return False
+
+    def remove_album_from_collection(self, collection_id: int, album_id: int, user_id: int) -> bool:
+        try:
+            collection = self.db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user_id).first()
+            if not collection:
+                return False
+            
+            album = self.db.query(Album).filter(Album.id == album_id).first()
+            if not album:
+                return False
+            
+            if album in collection.albums:
+                collection.albums.remove(album)
+                self.db.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error removing album {album_id} from collection {collection_id}: {e}")
+            self.db.rollback()
+            return False
+
+    def remove_artist_from_collection(self, collection_id: int, artist_id: int, user_id: int) -> bool:
+        try:
+            collection = self.db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user_id).first()
+            if not collection:
+                return False
+            
+            artist = self.db.query(Artist).filter(Artist.id == artist_id).first()
+            if not artist:
+                return False
+            
+            if artist in collection.artists:
+                collection.artists.remove(artist)
+                self.db.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error removing artist {artist_id} from collection {collection_id}: {e}")
+            self.db.rollback()
+            return False
+
+    def remove_genre_from_collection(self, collection_id: int, genre_id: int, user_id: int) -> bool:
+        try:
+            collection = self.db.query(Collection).filter(Collection.id == collection_id, Collection.user_id == user_id).first()
+            if not collection:
+                return False
+            
+            genre = self.db.query(Genre).filter(Genre.id == genre_id).first()
+            if not genre:
+                return False
+            
+            if genre in collection.genres:
+                collection.genres.remove(genre)
+                self.db.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error removing genre {genre_id} from collection {collection_id}: {e}")
             self.db.rollback()
             return False

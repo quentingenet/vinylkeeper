@@ -146,3 +146,45 @@ async def get_collection_details(
         "external_albums": [{"id": item.id, "external_id": item.external_id, "title": item.title, "artist_name": item.artist_name, "picture_medium": item.picture_medium} for item in external_albums],
         "external_artists": [{"id": item.id, "external_id": item.external_id, "title": item.title, "picture_medium": item.picture_medium} for item in external_artists]
     }
+
+@router.delete("/{collection_id}/albums/{album_id}", status_code=status.HTTP_200_OK)
+async def remove_album_from_collection(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection"),
+    album_id: int = Path(..., gt=0, title="Album ID", description="The ID of the album to remove")
+):
+    """Remove an album from a collection"""
+    success = service.remove_album_from_collection(collection_id, album_id, user.id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to remove album from collection")
+    
+    return {"success": True, "message": "Album removed from collection successfully"}
+
+@router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_200_OK)
+async def remove_artist_from_collection(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection"),
+    artist_id: int = Path(..., gt=0, title="Artist ID", description="The ID of the artist to remove")
+):
+    """Remove an artist from a collection"""
+    success = service.remove_artist_from_collection(collection_id, artist_id, user.id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to remove artist from collection")
+    
+    return {"success": True, "message": "Artist removed from collection successfully"}
+
+@router.delete("/{collection_id}/genres/{genre_id}", status_code=status.HTTP_200_OK)
+async def remove_genre_from_collection(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CollectionService, Depends(get_collection_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection"),
+    genre_id: int = Path(..., gt=0, title="Genre ID", description="The ID of the genre to remove")
+):
+    """Remove a genre from a collection"""
+    success = service.remove_genre_from_collection(collection_id, genre_id, user.id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to remove genre from collection")
+    
+    return {"success": True, "message": "Genre removed from collection successfully"}

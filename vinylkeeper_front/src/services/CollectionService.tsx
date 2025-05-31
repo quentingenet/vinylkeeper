@@ -85,6 +85,50 @@ export const deleteCollection = async (collectionId: number): Promise<void> => {
   });
 };
 
+export const removeAlbumFromCollection = async (
+  collectionId: number,
+  albumId: number
+): Promise<{ success: boolean; message: string }> => {
+  return requestService<{ success: boolean; message: string }>({
+    apiTarget: API_VK_URL,
+    method: "DELETE",
+    endpoint: `/collections/${collectionId}/albums/${albumId}`,
+  });
+};
+
+export const removeArtistFromCollection = async (
+  collectionId: number,
+  artistId: number
+): Promise<{ success: boolean; message: string }> => {
+  return requestService<{ success: boolean; message: string }>({
+    apiTarget: API_VK_URL,
+    method: "DELETE",
+    endpoint: `/collections/${collectionId}/artists/${artistId}`,
+  });
+};
+
+export const removeGenreFromCollection = async (
+  collectionId: number,
+  genreId: number
+): Promise<{ success: boolean; message: string }> => {
+  return requestService<{ success: boolean; message: string }>({
+    apiTarget: API_VK_URL,
+    method: "DELETE",
+    endpoint: `/collections/${collectionId}/genres/${genreId}`,
+  });
+};
+
+export const removeExternalItemFromCollection = async (
+  collectionId: number,
+  externalReferenceId: number
+): Promise<{ success: boolean; message: string }> => {
+  return requestService<{ success: boolean; message: string }>({
+    apiTarget: API_VK_URL,
+    method: "DELETE",
+    endpoint: `/external/collection/${collectionId}/${externalReferenceId}`,
+  });
+};
+
 interface CollectionDetails {
   collection: ICollection;
   local_albums: Array<{ id: number; title: string; artist: string }>;

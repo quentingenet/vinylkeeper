@@ -192,4 +192,35 @@ class ExternalReferenceService:
         return self.db.query(ExternalReference).join(
             CollectionExternalReference, 
             CollectionExternalReference.external_reference_id == ExternalReference.id
-        ).filter(CollectionExternalReference.collection_id == collection_id).all() 
+        ).filter(CollectionExternalReference.collection_id == collection_id).all()
+
+    def remove_from_collection(self, user_id: int, collection_id: int, external_reference_id: int) -> bool:
+        """Remove external item from collection"""
+        try:
+            # Verify collection belongs to user
+            from api.models.collection_model import Collection
+            collection = self.db.query(Collection).filter(
+                Collection.id == collection_id,
+                Collection.user_id == user_id
+            ).first()
+            
+            if not collection:
+                return False
+            
+            # Find the collection entry
+            collection_entry = self.db.query(CollectionExternalReference).filter(
+                CollectionExternalReference.collection_id == collection_id,
+                CollectionExternalReference.external_reference_id == external_reference_id
+            ).first()
+            
+            if not collection_entry:
+                return False
+            
+            # Remove from collection
+            self.db.delete(collection_entry)
+            self.db.commit()
+            return True
+            
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error removing from collection: {str(e)}") 

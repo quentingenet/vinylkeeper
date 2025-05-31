@@ -128,4 +128,27 @@ async def get_collection_external_items(
         raise
     except Exception as e:
         logger.error(f"Error fetching collection items: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+@router.delete("/collection/{collection_id}/{external_reference_id}", status_code=status.HTTP_200_OK)
+async def remove_external_item_from_collection(
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)],
+    collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection"),
+    external_reference_id: int = Path(..., gt=0, title="External Reference ID", description="The ID of the external reference to remove")
+) -> AddExternalResponse:
+    """Remove external item from collection"""
+    try:
+        success = service.remove_from_collection(user.id, collection_id, external_reference_id)
+        
+        if success:
+            logger.info(f"External item {external_reference_id} removed from collection {collection_id} for user {user.username}")
+            return AddExternalResponse(success=True, message="Item removed from collection successfully")
+        else:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found in collection")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing from collection: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") 

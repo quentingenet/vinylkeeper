@@ -57,3 +57,18 @@ export const resetPasswordService = (dataReset: IResetPasswordToBackend) => {
     body: dataReset,
   });
 };
+
+export interface ICurrentUser {
+  id: number;
+  username: string;
+  email: string;
+  user_uuid: string;
+}
+
+export const getCurrentUser = async (): Promise<ICurrentUser> => {
+  return requestService<ICurrentUser>({
+    apiTarget: API_VK_URL,
+    method: "GET",
+    endpoint: "/users/me",
+  });
+};

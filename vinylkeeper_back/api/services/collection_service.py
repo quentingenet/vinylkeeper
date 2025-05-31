@@ -41,3 +41,12 @@ class CollectionService:
 
     def update_collection(self, collection_id: int, request_body: CollectionBase, user_id: int) -> bool:
         return self.collection_repo.update_collection(collection_id, request_body, user_id)
+
+    def remove_album_from_collection(self, collection_id: int, album_id: int, user_id: int) -> bool:
+        return self.collection_repo.remove_album_from_collection(collection_id, album_id, user_id)
+
+    def remove_artist_from_collection(self, collection_id: int, artist_id: int, user_id: int) -> bool:
+        return self.collection_repo.remove_artist_from_collection(collection_id, artist_id, user_id)
+
+    def remove_genre_from_collection(self, collection_id: int, genre_id: int, user_id: int) -> bool:
+        return self.collection_repo.remove_genre_from_collection(collection_id, genre_id, user_id)

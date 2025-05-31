@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Response, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from api.services.user_service import UserService, AuthError
-from api.utils.auth_utils.auth import TokenType, create_token
-from api.schemas.user_schemas import AuthUser, CreateUser, EmailUpdatePassword, ResetPassword
+from api.utils.auth_utils.auth import TokenType, create_token, get_current_user
+from api.schemas.user_schemas import AuthUser, CreateUser, EmailUpdatePassword, ResetPassword, User
 from jose import JWTError
 from api.core.config_env import Settings
 from api.db.session import get_db
@@ -10,6 +10,7 @@ from api.core.logging import logger
 from api.utils.auth_utils.auth import set_token_cookie
 from api.mails.client_mail import MailSubject, send_mail
 from api.middleware.auth_middleware import verify_auth_token
+from api.models.user_model import User
 
 router = APIRouter()
 
@@ -70,6 +71,18 @@ async def check_auth(response: Response, user_uuid: str = Depends(verify_auth_to
     except JWTError as e:
         logger.warning("Invalid or expired authentication token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+@router.get("/me", status_code=status.HTTP_200_OK)
+async def get_current_user_info(
+    user: User = Depends(get_current_user)
+):
+    """Get current user information"""
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "user_uuid": str(user.user_uuid)
+    }
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(response: Response):
