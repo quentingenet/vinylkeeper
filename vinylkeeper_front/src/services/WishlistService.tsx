@@ -1,21 +1,30 @@
-import requestService from "@utils/RequestService";
-import { API_VK_URL } from "@utils/GlobalUtils";
-import { IWishlistItem } from "@models/IWishlist";
+import { BaseApiService } from "./BaseApiService";
+import { WishlistItem } from "@models/IWishlist";
+import { transformBackendArrayToWishlist } from "@utils/DataTransformers";
 
-export const getWishlistItems = async (): Promise<IWishlistItem[]> => {
-  return requestService<IWishlistItem[]>({
-    apiTarget: API_VK_URL,
-    method: "GET",
-    endpoint: "/external/wishlist",
-  });
+class WishlistApiService extends BaseApiService {
+  async getWishlistItems(): Promise<WishlistItem[]> {
+    const backendData = await this.get<any[]>("/external/wishlist");
+    return transformBackendArrayToWishlist(backendData);
+  }
+
+  async removeFromWishlist(
+    externalReferenceId: number
+  ): Promise<{ success: boolean; message: string }> {
+    return this.delete<{ success: boolean; message: string }>(
+      `/external/wishlist/${externalReferenceId}`
+    );
+  }
+}
+
+const wishlistService = new WishlistApiService();
+
+export const getWishlistItems = async (): Promise<WishlistItem[]> => {
+  return wishlistService.getWishlistItems();
 };
 
 export const removeFromWishlist = async (
   externalReferenceId: number
 ): Promise<{ success: boolean; message: string }> => {
-  return requestService<{ success: boolean; message: string }>({
-    apiTarget: API_VK_URL,
-    method: "DELETE",
-    endpoint: `/external/wishlist/${externalReferenceId}`,
-  });
+  return wishlistService.removeFromWishlist(externalReferenceId);
 };

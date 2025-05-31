@@ -21,6 +21,7 @@ pydantic-settings = "^2.7.1"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 email-validator = "^2.2.0"
 requests = "^2.32.3"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

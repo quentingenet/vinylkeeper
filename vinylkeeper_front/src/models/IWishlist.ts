@@ -1,15 +1,14 @@
-export interface IWishlistItem {
-  id: number;
-  external_id: string;
-  title: string;
-  artist_name?: string;
-  picture_medium?: string;
-  external_source: string;
-  item_type: string;
-  created_at: string;
+import { ExternalItem, PaginatedResponse } from "./BaseTypes";
+
+export interface WishlistItem extends ExternalItem {
+  // Inherits all standardized fields from ExternalItem
 }
 
-export interface IWishlistResponse {
-  items: IWishlistItem[];
+export interface WishlistResponse {
+  items: WishlistItem[];
   total: number;
 }
+
+// Compatibility aliases (to be removed progressively)
+export interface IWishlistItem extends WishlistItem {}
+export interface IWishlistResponse extends WishlistResponse {}

@@ -7,7 +7,7 @@ import os
 from fastapi import Request, Depends, status, Response
 from api.db.session import get_db
 from api.schemas.user_schemas import User
-from api.repositories.user_repository import UserRepository
+from api.repositories.user_repository_solid import UserRepository
 from sqlalchemy.orm import Session
 
 

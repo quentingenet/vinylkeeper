@@ -9,24 +9,28 @@ from api.schemas.external_reference_schemas import (
 )
 from api.models.external_reference_model import ExternalItemTypeEnum
 from api.core.logging import logger
-from api.db.session import get_db
 from api.utils.auth_utils.auth import get_current_user
-from api.services.external_reference_service import ExternalReferenceService
 from api.schemas.user_schemas import User
+from api.core.dependencies_solid import (
+    get_external_reference_service_solid,
+    get_validation_service
+)
 
 router = APIRouter()
-
-def get_external_reference_service(db: Session = Depends(get_db)) -> ExternalReferenceService:
-    return ExternalReferenceService(db)
 
 @router.post("/wishlist/add", status_code=status.HTTP_201_CREATED)
 async def add_to_wishlist(
     request: AddToWishlistRequest,
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)]
+    service = Depends(get_external_reference_service_solid),
+    validation_service = Depends(get_validation_service)
 ) -> AddExternalResponse:
     """Add external album to user's wishlist"""
     try:
+        # Validate request using SOLID validation service
+        validation_service.validate_wishlist_request(request)
+        
+        # Use SOLID service
         success = service.add_to_wishlist(
             user_id=user.id,
             external_id=request.external_id,
@@ -51,11 +55,16 @@ async def add_to_wishlist(
 async def add_to_collection(
     request: AddToCollectionRequest,
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)],
+    service = Depends(get_external_reference_service_solid),
+    validation_service = Depends(get_validation_service),
     collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection")
 ) -> AddExternalResponse:
     """Add external item to collection"""
     try:
+        # Validate request using SOLID validation service
+        validation_service.validate_collection_request(request, collection_id, user.id)
+        
+        # Use SOLID service
         success = service.add_to_collection(
             user_id=user.id,
             collection_id=collection_id,
@@ -82,10 +91,11 @@ async def add_to_collection(
 @router.get("/wishlist", status_code=status.HTTP_200_OK)
 async def get_wishlist_external_items(
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)]
+    service = Depends(get_external_reference_service_solid)
 ) -> List[ExternalReference]:
     """Get user's external wishlist items"""
     try:
+        # Use SOLID service
         items = service.get_user_wishlist_external(user.id)
         return [ExternalReference.model_validate(item) for item in items]
     except Exception as e:
@@ -95,11 +105,16 @@ async def get_wishlist_external_items(
 @router.delete("/wishlist/{item_id}", status_code=status.HTTP_200_OK)
 async def remove_from_wishlist(
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)],
+    service = Depends(get_external_reference_service_solid),
+    validation_service = Depends(get_validation_service),
     item_id: int = Path(..., gt=0, title="Item ID", description="The ID of the external reference to remove from wishlist")
 ) -> AddExternalResponse:
     """Remove external item from user's wishlist"""
     try:
+        # Validate using SOLID validation service
+        validation_service.validate_wishlist_item_ownership(user.id, item_id)
+        
+        # Use SOLID service
         success = service.remove_from_wishlist(user.id, item_id)
         
         if success:
@@ -117,11 +132,16 @@ async def remove_from_wishlist(
 @router.get("/collection/{collection_id}", status_code=status.HTTP_200_OK)
 async def get_collection_external_items(
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)],
+    service = Depends(get_external_reference_service_solid),
+    validation_service = Depends(get_validation_service),
     collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection")
 ) -> List[ExternalReference]:
     """Get external items in a collection"""
     try:
+        # Validate collection access using SOLID validation service
+        validation_service.validate_collection_access(user.id, collection_id)
+        
+        # Use SOLID service
         items = service.get_collection_external_items(collection_id, user.id)
         return [ExternalReference.model_validate(item) for item in items]
     except HTTPException:
@@ -133,12 +153,17 @@ async def get_collection_external_items(
 @router.delete("/collection/{collection_id}/{external_reference_id}", status_code=status.HTTP_200_OK)
 async def remove_external_item_from_collection(
     user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ExternalReferenceService, Depends(get_external_reference_service)],
+    service = Depends(get_external_reference_service_solid),
+    validation_service = Depends(get_validation_service),
     collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection"),
     external_reference_id: int = Path(..., gt=0, title="External Reference ID", description="The ID of the external reference to remove")
 ) -> AddExternalResponse:
     """Remove external item from collection"""
     try:
+        # Validate using SOLID validation service
+        validation_service.validate_collection_item_ownership(user.id, collection_id, external_reference_id)
+        
+        # Use SOLID service
         success = service.remove_from_collection(user.id, collection_id, external_reference_id)
         
         if success:
