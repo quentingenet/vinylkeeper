@@ -4,11 +4,7 @@ from sqlalchemy import and_
 from api.repositories.interfaces import IUserRepository
 from api.models.user_model import User
 from api.core.logging import logger
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
-
-ph = PasswordHasher()
-
+from api.core.security import hash_password, verify_password
 
 class UserRepository(IUserRepository):
     """SOLID implementation of User Repository"""
@@ -20,7 +16,7 @@ class UserRepository(IUserRepository):
         """Create a new user"""
         try:
             # Hash password before storing
-            hashed_password = ph.hash(user_data["password"])
+            hashed_password = hash_password(user_data["password"])
             
             new_user = User(
                 username=user_data["username"],
@@ -85,12 +81,10 @@ class UserRepository(IUserRepository):
             if not user:
                 return None
             
-            # Verify password with Argon2
-            try:
-                ph.verify(user.password, password)
+            # Verify password using centralized function
+            if verify_password(user.password, password):
                 return user
-            except VerifyMismatchError:
-                return None
+            return None
             
         except Exception as e:
             logger.error(f"Error verifying credentials: {str(e)}")
