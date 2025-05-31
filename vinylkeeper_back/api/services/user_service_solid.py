@@ -4,7 +4,7 @@ from api.repositories.interfaces import IUserRepository
 from api.models.user_model import User
 from api.schemas.user_schemas import CreateUser
 from api.core.logging import logger
-from api.utils.auth_utils.auth import TokenType, create_token
+from api.utils.auth_utils.auth import TokenType, create_token, create_reset_token, verify_reset_token
 from api.mails.client_mail import MailSubject, send_mail
 from api.core.config_env import Settings
 from api.core.security import hash_password
@@ -119,16 +119,14 @@ class UserService:
             raise AuthError("Email not found")
         
         # Generate reset token
-        reset_token = create_token(str(user.user_uuid), TokenType.REFRESH)
+        reset_token = create_reset_token(str(user.user_uuid))
         
         # Send email (business logic: send in background)
         background_tasks.add_task(
             send_mail,
-            Settings().EMAIL_ADMIN,
+            user.email,
             MailSubject.PasswordReset,
-            username=user.username,
-            reset_token=reset_token,
-            user_email=user.email
+            token=reset_token
         )
         
         logger.info(f"Password reset email sent to {email}")
@@ -141,19 +139,32 @@ class UserService:
         if not self._validate_password(new_password):
             raise AuthError("Password must be at least 6 characters long")
         
-        # Business rule: Validate token (simplified - in real app, verify JWT)
+        # Business rule: Validate token
         if not token:
             raise AuthError("Invalid reset token")
+        
+        try:
+            # Verify and extract user UUID from reset token
+            user_uuid = verify_reset_token(token)
+            logger.info(f"Reset token validated for user UUID: {user_uuid}")
+        except ValueError as e:
+            logger.error(f"Token validation failed: {str(e)}")
+            raise AuthError("Invalid or expired reset token")
+        
+        # Get user by UUID
+        user = self.user_repo.get_user_by_uuid(user_uuid)
+        if not user:
+            logger.error(f"User not found with UUID: {user_uuid}")
+            raise AuthError("User not found")
         
         # Hash new password
         hashed_password = hash_password(new_password)
         
-        # Business rule: Update password (simplified - in real app, extract user from token)
-        # For now, this is a placeholder implementation
-        logger.info("Password reset functionality needs JWT token validation")
-        raise AuthError("Password reset functionality not fully implemented")
+        # Update password in database
+        success = self.user_repo.update_user_password(user.id, hashed_password)
+        if not success:
+            logger.error(f"Failed to update password for user {user.id}")
+            raise AuthError("Failed to update password")
         
-        # TODO: Implement proper JWT token validation and user identification
-        # user_uuid = verify_reset_token(token)
-        # user = self.user_repo.get_user_by_uuid(user_uuid)
-        # return self.user_repo.update_user_password(user.id, hashed_password) 
+        logger.info(f"Password successfully reset for user {user.username} (ID: {user.id})")
+        return True 

@@ -44,7 +44,7 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
         await userApiService.forgotPassword(emailRecovery.toLowerCase());
         setIsMailSended(true);
         setErrorRecovery(false);
-      } catch (error) {
+      } catch (error: any) {
         setErrorRecovery(true);
         setIsMailSended(false);
       }
