@@ -5,16 +5,17 @@ import {
   Typography,
   Box,
   CircularProgress,
-  Grid,
   Card,
   CardContent,
   Chip,
 } from "@mui/material";
 import { useEffect } from "react";
+import useDetectMobile from "@hooks/useDetectMobile";
 
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
   const collectionId = id ? parseInt(id) : 0;
+  const { isMobile } = useDetectMobile();
 
   const {
     data: collectionDetails,
@@ -90,72 +91,123 @@ export default function CollectionDetails() {
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
           Albums ({local_albums.length + external_albums.length})
         </Typography>
-        <Grid container spacing={2}>
-          {/* Local Albums */}
-          {local_albums.map((album) => (
-            <Grid item xs={12} sm={6} md={4} key={`local-album-${album.id}`}>
+
+        {local_albums.length + external_albums.length === 0 ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="100px"
+          >
+            <Typography variant="h6" sx={{ color: "#e4e4e4" }}>
+              No albums in this collection
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            display={isMobile ? "flex" : "grid"}
+            flexDirection={isMobile ? "column" : "row"}
+            flexWrap={isMobile ? "nowrap" : "wrap"}
+            gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
+            justifyContent={isMobile ? "center" : "flex-start"}
+            alignItems={isMobile ? "center" : "flex-start"}
+            gap={4}
+            marginY={isMobile ? 1 : 3}
+          >
+            {/* Local Albums */}
+            {local_albums.map((album) => (
               <Card
+                key={`local-album-${album.id}`}
                 sx={{
                   backgroundColor: "#3f3f41",
                   height: "100%",
                   display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  width: 250,
+                  borderRadius: "8px",
                 }}
               >
                 <Box
                   sx={{
-                    width: 150,
-                    height: 150,
-                    flexShrink: 0,
+                    width: "100%",
+                    height: 250,
+                    overflow: "hidden",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: "#2a2a2a",
-                    margin: 1,
-                    borderRadius: 1,
                   }}
                 >
-                  <Typography variant="h6" sx={{ color: "#C9A726" }}>
+                  <Typography variant="h1" sx={{ color: "#C9A726" }}>
                     ♪
                   </Typography>
                 </Box>
-                <CardContent sx={{ flex: 1 }}>
+                <CardContent
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    textAlign: "center",
+                    height: "100px",
+                    padding: "16px",
+                  }}
+                >
                   <Typography
                     variant="subtitle1"
-                    sx={{ color: "#fffbf9", fontWeight: "bold" }}
+                    sx={{
+                      color: "#C9A726",
+                      marginBottom: "4px",
+                      fontWeight: "bold",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
+                  >
+                    {album.artist}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "#fffbf9",
+                      marginBottom: "8px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
                   >
                     {album.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#e4e4e4" }}>
-                    {album.artist}
-                  </Typography>
-                  <Chip
-                    label="Local"
-                    size="small"
-                    sx={{ mt: 1, backgroundColor: "#C9A726", color: "#000" }}
-                  />
                 </CardContent>
               </Card>
-            </Grid>
-          ))}
+            ))}
 
-          {/* External Albums (Deezer) */}
-          {external_albums.map((album) => (
-            <Grid item xs={12} sm={6} md={4} key={`external-album-${album.id}`}>
+            {/* External Albums (Deezer) */}
+            {external_albums.map((album) => (
               <Card
+                key={`external-album-${album.id}`}
                 sx={{
                   backgroundColor: "#3f3f41",
                   height: "100%",
                   display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  width: 250,
+                  borderRadius: "8px",
                 }}
               >
                 <Box
                   sx={{
-                    width: 150,
-                    height: 150,
-                    flexShrink: 0,
-                    margin: 1,
-                    borderRadius: 1,
+                    width: "100%",
+                    height: 250,
                     overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   <img
@@ -164,7 +216,7 @@ export default function CollectionDetails() {
                     style={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
+                      objectFit: "contain",
                     }}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -174,21 +226,50 @@ export default function CollectionDetails() {
                     }}
                   />
                 </Box>
-                <CardContent sx={{ flex: 1 }}>
+                <CardContent
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    textAlign: "center",
+                    height: "100px",
+                    padding: "16px",
+                  }}
+                >
                   <Typography
                     variant="subtitle1"
-                    sx={{ color: "#fffbf9", fontWeight: "bold" }}
+                    sx={{
+                      color: "#C9A726",
+                      marginBottom: "4px",
+                      fontWeight: "bold",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
+                  >
+                    {album.artist_name || "Unknown Artist"}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "#fffbf9",
+                      marginBottom: "8px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
                   >
                     {album.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#e4e4e4" }}>
-                    {album.artist_name || "Unknown Artist"}
-                  </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-          ))}
-        </Grid>
+            ))}
+          </Box>
+        )}
       </Box>
 
       {/* Artists Section */}
@@ -196,75 +277,110 @@ export default function CollectionDetails() {
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
           Artists ({local_artists.length + external_artists.length})
         </Typography>
-        <Grid container spacing={2}>
-          {/* Local Artists */}
-          {local_artists.map((artist) => (
-            <Grid item xs={12} sm={6} md={4} key={`local-artist-${artist.id}`}>
+
+        {local_artists.length + external_artists.length === 0 ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="100px"
+          >
+            <Typography variant="h6" sx={{ color: "#e4e4e4" }}>
+              No artists in this collection
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            display={isMobile ? "flex" : "grid"}
+            flexDirection={isMobile ? "column" : "row"}
+            flexWrap={isMobile ? "nowrap" : "wrap"}
+            gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
+            justifyContent={isMobile ? "center" : "flex-start"}
+            alignItems={isMobile ? "center" : "flex-start"}
+            gap={4}
+            marginY={isMobile ? 1 : 3}
+          >
+            {/* Local Artists */}
+            {local_artists.map((artist) => (
               <Card
+                key={`local-artist-${artist.id}`}
                 sx={{
                   backgroundColor: "#3f3f41",
                   height: "100%",
                   display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  width: 250,
+                  borderRadius: "8px",
                 }}
               >
                 <Box
                   sx={{
-                    width: 150,
-                    height: 150,
-                    flexShrink: 0,
+                    width: "100%",
+                    height: 250,
+                    overflow: "hidden",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: "#2a2a2a",
-                    margin: 1,
-                    borderRadius: 1,
                   }}
                 >
-                  <Typography variant="h6" sx={{ color: "#C9A726" }}>
+                  <Typography variant="h1" sx={{ color: "#C9A726" }}>
                     ♫
                   </Typography>
                 </Box>
-                <CardContent sx={{ flex: 1 }}>
+                <CardContent
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    textAlign: "center",
+                    height: "100px",
+                    padding: "16px",
+                  }}
+                >
                   <Typography
                     variant="subtitle1"
-                    sx={{ color: "#fffbf9", fontWeight: "bold" }}
+                    sx={{
+                      color: "#C9A726",
+                      marginBottom: "8px",
+                      fontWeight: "bold",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
                   >
                     {artist.name}
                   </Typography>
-                  <Chip
-                    label="Local"
-                    size="small"
-                    sx={{ mt: 1, backgroundColor: "#C9A726", color: "#000" }}
-                  />
                 </CardContent>
               </Card>
-            </Grid>
-          ))}
+            ))}
 
-          {/* External Artists (Deezer) */}
-          {external_artists.map((artist) => (
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={4}
-              key={`external-artist-${artist.id}`}
-            >
+            {/* External Artists (Deezer) */}
+            {external_artists.map((artist) => (
               <Card
+                key={`external-artist-${artist.id}`}
                 sx={{
                   backgroundColor: "#3f3f41",
                   height: "100%",
                   display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  width: 250,
+                  borderRadius: "8px",
                 }}
               >
                 <Box
                   sx={{
-                    width: 150,
-                    height: 150,
-                    flexShrink: 0,
-                    margin: 1,
-                    borderRadius: 1,
+                    width: "100%",
+                    height: 250,
                     overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   <img
@@ -273,7 +389,7 @@ export default function CollectionDetails() {
                     style={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
+                      objectFit: "contain",
                     }}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -283,38 +399,70 @@ export default function CollectionDetails() {
                     }}
                   />
                 </Box>
-                <CardContent sx={{ flex: 1 }}>
+                <CardContent
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    textAlign: "center",
+                    height: "100px",
+                    padding: "16px",
+                  }}
+                >
                   <Typography
                     variant="subtitle1"
-                    sx={{ color: "#fffbf9", fontWeight: "bold" }}
+                    sx={{
+                      color: "#C9A726",
+                      marginBottom: "8px",
+                      fontWeight: "bold",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
                   >
                     {artist.title}
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-          ))}
-        </Grid>
+            ))}
+          </Box>
+        )}
       </Box>
 
       {/* Genres Section */}
-      <Box>
+      <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
           Genres ({local_genres.length})
         </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {local_genres.map((genre) => (
-            <Chip
-              key={`genre-${genre.id}`}
-              label={genre.name}
-              sx={{
-                backgroundColor: "#C9A726",
-                color: "#000",
-                fontWeight: "bold",
-              }}
-            />
-          ))}
-        </Box>
+        {local_genres.length === 0 ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="100px"
+          >
+            <Typography variant="h6" sx={{ color: "#e4e4e4" }}>
+              No genres in this collection
+            </Typography>
+          </Box>
+        ) : (
+          <Box display="flex" flexWrap="wrap" gap={1}>
+            {local_genres.map((genre) => (
+              <Chip
+                key={`genre-${genre.id}`}
+                label={genre.name}
+                sx={{
+                  backgroundColor: "#C9A726",
+                  color: "#000",
+                  fontWeight: "bold",
+                }}
+              />
+            ))}
+          </Box>
+        )}
       </Box>
     </Box>
   );

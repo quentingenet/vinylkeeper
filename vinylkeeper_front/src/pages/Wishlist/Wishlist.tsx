@@ -11,6 +11,10 @@ import {
   CardContent,
   Alert,
   Snackbar,
+  Modal,
+  Fade,
+  Backdrop,
+  Button,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useState } from "react";
@@ -19,6 +23,8 @@ import useDetectMobile from "@hooks/useDetectMobile";
 
 export default function Wishlist() {
   const [successMessage, setSuccessMessage] = useState<string>("");
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<IWishlistItem | null>(null);
   const queryClient = useQueryClient();
   const { isMobile } = useDetectMobile();
 
@@ -36,15 +42,31 @@ export default function Wishlist() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlistItems"] });
       setSuccessMessage("Item removed from wishlist!");
+      setConfirmationOpen(false);
+      setSelectedItem(null);
     },
     onError: (error) => {
       console.error("Error removing from wishlist:", error);
       setSuccessMessage("Error removing item from wishlist");
+      setConfirmationOpen(false);
+      setSelectedItem(null);
     },
   });
 
-  const handleRemoveItem = (externalReferenceId: number) => {
-    removeFromWishlistMutation.mutate(externalReferenceId);
+  const handleRemoveClick = (item: IWishlistItem) => {
+    setSelectedItem(item);
+    setConfirmationOpen(true);
+  };
+
+  const handleConfirmRemove = () => {
+    if (selectedItem) {
+      removeFromWishlistMutation.mutate(selectedItem.id);
+    }
+  };
+
+  const handleCancelRemove = () => {
+    setConfirmationOpen(false);
+    setSelectedItem(null);
   };
 
   if (isLoading) {
@@ -112,7 +134,7 @@ export default function Wishlist() {
               <Box
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleRemoveItem(item.id);
+                  handleRemoveClick(item);
                 }}
                 sx={{
                   position: "absolute",
@@ -209,6 +231,104 @@ export default function Wishlist() {
           ))}
         </Box>
       )}
+
+      {/* Confirmation Modal */}
+      <Modal
+        open={confirmationOpen}
+        onClose={handleCancelRemove}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+      >
+        <Fade in={confirmationOpen}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: isMobile ? "85%" : 400,
+              bgcolor: "#3f3f41",
+              borderRadius: 2,
+              boxShadow: 24,
+              p: 3,
+            }}
+          >
+            <Typography
+              variant="h6"
+              component="h2"
+              sx={{ color: "#C9A726", mb: 2 }}
+            >
+              Remove from Wishlist
+            </Typography>
+
+            {selectedItem && (
+              <>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  mb={3}
+                >
+                  <img
+                    src={selectedItem.picture_medium || "/default-album.png"}
+                    alt={selectedItem.title}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      objectFit: "contain",
+                      borderRadius: 4,
+                      marginRight: 16,
+                    }}
+                  />
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      sx={{ color: "#C9A726", marginBottom: "4px" }}
+                    >
+                      {selectedItem.artist_name || "Unknown Artist"}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#fffbf9" }}>
+                      {selectedItem.title}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Typography variant="body1" sx={{ color: "#fffbf9", mb: 3 }}>
+                  Are you sure you want to remove "{selectedItem.title}" from
+                  your wishlist?
+                </Typography>
+              </>
+            )}
+
+            <Box display="flex" justifyContent="space-between" gap={2}>
+              <Button
+                variant="text"
+                onClick={handleCancelRemove}
+                sx={{ color: "#fffbf9" }}
+                disabled={removeFromWishlistMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmRemove}
+                disabled={removeFromWishlistMutation.isPending}
+                sx={{
+                  backgroundColor: "#ff4444",
+                  "&:hover": { backgroundColor: "#cc3333" },
+                }}
+              >
+                {removeFromWishlistMutation.isPending ? (
+                  <CircularProgress size={20} sx={{ color: "#fff" }} />
+                ) : (
+                  "Remove"
+                )}
+              </Button>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
 
       <Snackbar
         open={!!successMessage}
