@@ -33,6 +33,16 @@ export interface RemoveItemResponse {
 }
 
 export class CollectionApiService extends BaseApiService {
+  constructor() {
+    super();
+    // Bind methods to preserve 'this' context
+    this.createCollection = this.createCollection.bind(this);
+    this.getCollections = this.getCollections.bind(this);
+    this.getCollectionById = this.getCollectionById.bind(this);
+    this.updateCollection = this.updateCollection.bind(this);
+    this.deleteCollection = this.deleteCollection.bind(this);
+  }
+
   async createCollection(data: ICollectionForm): Promise<ICollection> {
     return this.post<ICollection>("/collections/add", data);
   }

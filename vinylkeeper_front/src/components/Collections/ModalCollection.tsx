@@ -65,14 +65,17 @@ export default function ModalCollection({
 
   const createMutation = useMutation<ICollection, Error, ICollectionForm>({
     mutationFn: collectionApiService.createCollection,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("🔧 DEBUG: Collection created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       onCollectionAdded();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("🔧 DEBUG: Error creating collection:", error);
       userContext.setIsLoading(false);
     },
     onSettled: () => {
+      console.log("🔧 DEBUG: Create mutation settled");
       handleClose();
     },
   });
@@ -97,11 +100,19 @@ export default function ModalCollection({
   });
 
   const submitCollection = (data: ICollectionForm) => {
-    if (!isValid) return;
+    console.log("🔧 DEBUG: Submitting collection data:", data);
+    console.log("🔧 DEBUG: isValid:", isValid);
+
+    if (!isValid) {
+      console.log("🔧 DEBUG: Form is not valid, stopping submission");
+      return;
+    }
 
     if (isUpdatingCollection && collection?.id) {
+      console.log("🔧 DEBUG: Updating collection with ID:", collection.id);
       updateMutation.mutate({ id: collection.id, data });
     } else {
+      console.log("🔧 DEBUG: Creating new collection");
       createMutation.mutate(data);
     }
   };
@@ -159,7 +170,7 @@ export default function ModalCollection({
                   <Switch
                     checked={watch("is_public")}
                     color="default"
-                    onChange={(e) => setValue("is_public", e.target.checked)}
+                    {...register("is_public")}
                   />
                 }
                 label={watch("is_public") ? "Public" : "Private"}
