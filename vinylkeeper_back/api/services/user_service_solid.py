@@ -7,10 +7,10 @@ from api.core.logging import logger
 from api.utils.auth_utils.auth import TokenType, create_token
 from api.mails.client_mail import MailSubject, send_mail
 from api.core.config_env import Settings
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
 import re
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ph = PasswordHasher()
 
 
 class AuthError(Exception):
@@ -133,7 +133,7 @@ class UserService:
             raise AuthError("Invalid reset token")
         
         # Hash new password
-        hashed_password = pwd_context.hash(new_password)
+        hashed_password = ph.hash(new_password)
         
         # Business rule: Update password (simplified - in real app, extract user from token)
         # For now, this is a placeholder implementation
