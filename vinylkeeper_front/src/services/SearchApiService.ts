@@ -1,5 +1,5 @@
 import { BaseApiService } from "./BaseApiService";
-import { IRequestResults, IRequestToSend } from "@models/IRequestProxy";
+import { IRequestToSend, IRequestResults } from "@models/IRequestProxy";
 
 export interface SearchQuery {
   query: string;
@@ -22,5 +22,13 @@ export class SearchApiService extends BaseApiService {
   }
 }
 
-// Export singleton instance
-export const searchApiService = new SearchApiService();
+const searchApiServiceInstance = new SearchApiService();
+
+export const searchApiService = {
+  searchMusic: (requestToSend: IRequestToSend) =>
+    searchApiServiceInstance.searchMusic(requestToSend),
+  searchProxy: (requestToSend: IRequestToSend) =>
+    searchApiServiceInstance.searchProxy(requestToSend),
+};
+
+export default searchApiService;
