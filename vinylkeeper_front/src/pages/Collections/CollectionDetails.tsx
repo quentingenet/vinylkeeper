@@ -1,12 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  getCollectionDetails,
-  removeAlbumFromCollection,
-  removeArtistFromCollection,
-  removeGenreFromCollection,
-  removeExternalItemFromCollection,
-} from "@services/CollectionService";
+  collectionApiService,
+  type CollectionDetails,
+} from "@services/CollectionApiService";
 import {
   Typography,
   Box,
@@ -48,14 +45,14 @@ export default function CollectionDetails() {
     error,
   } = useQuery({
     queryKey: ["collectionDetails", collectionId],
-    queryFn: () => getCollectionDetails(collectionId),
+    queryFn: () => collectionApiService.getCollectionDetails(collectionId),
     enabled: !!collectionId,
   });
 
   // Mutations pour la suppression
   const removeAlbumMutation = useMutation({
     mutationFn: ({ albumId }: { albumId: number }) =>
-      removeAlbumFromCollection(collectionId, albumId),
+      collectionApiService.removeAlbumFromCollection(collectionId, albumId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["collectionDetails", collectionId],
@@ -65,7 +62,7 @@ export default function CollectionDetails() {
 
   const removeArtistMutation = useMutation({
     mutationFn: ({ artistId }: { artistId: number }) =>
-      removeArtistFromCollection(collectionId, artistId),
+      collectionApiService.removeArtistFromCollection(collectionId, artistId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["collectionDetails", collectionId],
@@ -75,7 +72,7 @@ export default function CollectionDetails() {
 
   const removeGenreMutation = useMutation({
     mutationFn: ({ genreId }: { genreId: number }) =>
-      removeGenreFromCollection(collectionId, genreId),
+      collectionApiService.removeGenreFromCollection(collectionId, genreId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["collectionDetails", collectionId],
@@ -85,7 +82,10 @@ export default function CollectionDetails() {
 
   const removeExternalMutation = useMutation({
     mutationFn: ({ externalId }: { externalId: number }) =>
-      removeExternalItemFromCollection(collectionId, externalId),
+      collectionApiService.removeExternalItemFromCollection(
+        collectionId,
+        externalId
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["collectionDetails", collectionId],
@@ -166,11 +166,11 @@ export default function CollectionDetails() {
 
   const {
     collection,
-    local_albums,
-    local_artists,
-    local_genres,
-    external_albums,
-    external_artists,
+    localAlbums,
+    localArtists,
+    localGenres,
+    externalAlbums,
+    externalArtists,
   } = collectionDetails;
 
   const isOwner = currentUser && collection.user_id === currentUser.id;
@@ -196,10 +196,10 @@ export default function CollectionDetails() {
       {/* Albums Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
-          Albums ({local_albums.length + external_albums.length})
+          Albums ({localAlbums.length + externalAlbums.length})
         </Typography>
 
-        {local_albums.length + external_albums.length === 0 ? (
+        {localAlbums.length + externalAlbums.length === 0 ? (
           <Box
             display="flex"
             justifyContent="center"
@@ -222,7 +222,7 @@ export default function CollectionDetails() {
             marginY={isMobile ? 1 : 3}
           >
             {/* Local Albums */}
-            {local_albums.map((album) => (
+            {localAlbums.map((album) => (
               <Card
                 key={`local-album-${album.id}`}
                 sx={{
@@ -330,7 +330,7 @@ export default function CollectionDetails() {
             ))}
 
             {/* External Albums (Deezer) */}
-            {external_albums.map((album) => (
+            {externalAlbums.map((album) => (
               <Card
                 key={`external-album-${album.id}`}
                 sx={{
@@ -390,18 +390,12 @@ export default function CollectionDetails() {
                   }}
                 >
                   <img
-                    src={album.picture_medium || "/default-album.png"}
+                    src={album.pictureMedium || "/default-album.png"}
                     alt={album.title}
                     style={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "contain",
-                    }}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      target.parentElement!.innerHTML =
-                        '<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #2a2a2a; color: #C9A726; font-size: 24px;">♪</div>';
+                      objectFit: "cover",
                     }}
                   />
                 </Box>
@@ -429,7 +423,7 @@ export default function CollectionDetails() {
                       width: "100%",
                     }}
                   >
-                    {album.artist_name || "Unknown Artist"}
+                    {album.artistName || "Unknown Artist"}
                   </Typography>
                   <Typography
                     variant="body1"
@@ -454,10 +448,10 @@ export default function CollectionDetails() {
       {/* Artists Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
-          Artists ({local_artists.length + external_artists.length})
+          Artists ({localArtists.length + externalArtists.length})
         </Typography>
 
-        {local_artists.length + external_artists.length === 0 ? (
+        {localArtists.length + externalArtists.length === 0 ? (
           <Box
             display="flex"
             justifyContent="center"
@@ -480,7 +474,7 @@ export default function CollectionDetails() {
             marginY={isMobile ? 1 : 3}
           >
             {/* Local Artists */}
-            {local_artists.map((artist) => (
+            {localArtists.map((artist) => (
               <Card
                 key={`local-artist-${artist.id}`}
                 sx={{
@@ -575,7 +569,7 @@ export default function CollectionDetails() {
             ))}
 
             {/* External Artists (Deezer) */}
-            {external_artists.map((artist) => (
+            {externalArtists.map((artist) => (
               <Card
                 key={`external-artist-${artist.id}`}
                 sx={{
@@ -635,7 +629,7 @@ export default function CollectionDetails() {
                   }}
                 >
                   <img
-                    src={artist.picture_medium || "/default-artist.png"}
+                    src={artist.pictureMedium || "/default-artist.png"}
                     alt={artist.title}
                     style={{
                       width: "100%",
@@ -686,9 +680,9 @@ export default function CollectionDetails() {
       {/* Genres Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
-          Genres ({local_genres.length})
+          Genres ({localGenres.length})
         </Typography>
-        {local_genres.length === 0 ? (
+        {localGenres.length === 0 ? (
           <Box
             display="flex"
             justifyContent="center"
@@ -701,7 +695,7 @@ export default function CollectionDetails() {
           </Box>
         ) : (
           <Box display="flex" flexWrap="wrap" gap={1}>
-            {local_genres.map((genre) => (
+            {localGenres.map((genre) => (
               <Chip
                 key={`genre-${genre.id}`}
                 label={genre.name}

@@ -14,7 +14,7 @@ import { useState } from "react";
 import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { register as registerService } from "@services/UserService";
+import { userApiService } from "@services/UserApiService";
 import { useUserContext } from "../../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -30,6 +30,7 @@ interface RegisterProps {
   open: boolean;
   setOpenTermsModal: (value: boolean) => void;
   openTermsModal: boolean;
+  setOpenSnackBar: (value: boolean) => void;
 }
 
 const Register = ({
@@ -38,6 +39,7 @@ const Register = ({
   setOpen,
   open,
   setOpenTermsModal,
+  setOpenSnackBar,
 }: RegisterProps) => {
   const userContext = useUserContext();
   const navigate = useNavigate();
@@ -64,18 +66,24 @@ const Register = ({
     setLogin(false);
   };
 
-  const submitRegister = () => {
+  const submitRegister = async () => {
     if (!isValid) return;
-    userContext.setIsLoading(true);
 
-    registerService(watch())
-      .then(() => {
-        userContext.setIsFirstConnection(true);
+    userContext.setIsLoading(true);
+    try {
+      const response = await userApiService.register(watch());
+      if (response.isLoggedIn) {
         userContext.setIsUserLoggedIn(true);
         navigate("/dashboard");
-      })
-      .catch((error) => console.error("Erreur lors de l'inscription :", error))
-      .finally(() => userContext.setIsLoading(false));
+      } else {
+        setOpenSnackBar(true);
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'inscription :", error);
+      setOpenSnackBar(true);
+    } finally {
+      userContext.setIsLoading(false);
+    }
   };
 
   return (

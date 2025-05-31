@@ -2,7 +2,7 @@ import { BaseApiService } from "./BaseApiService";
 import { WishlistItem } from "@models/IWishlist";
 import { transformBackendArrayToWishlist } from "@utils/DataTransformers";
 
-class WishlistApiService extends BaseApiService {
+export class WishlistApiService extends BaseApiService {
   async getWishlistItems(): Promise<WishlistItem[]> {
     const backendData = await this.get<any[]>("/external/wishlist");
     return transformBackendArrayToWishlist(backendData);
@@ -17,14 +17,16 @@ class WishlistApiService extends BaseApiService {
   }
 }
 
-const wishlistService = new WishlistApiService();
+// Export singleton instance
+export const wishlistApiService = new WishlistApiService();
 
+// Backward compatibility exports
 export const getWishlistItems = async (): Promise<WishlistItem[]> => {
-  return wishlistService.getWishlistItems();
+  return wishlistApiService.getWishlistItems();
 };
 
 export const removeFromWishlist = async (
   externalReferenceId: number
 ): Promise<{ success: boolean; message: string }> => {
-  return wishlistService.removeFromWishlist(externalReferenceId);
+  return wishlistApiService.removeFromWishlist(externalReferenceId);
 };

@@ -15,7 +15,7 @@ import {
 import { emailValidator } from "@utils/Regex";
 import { useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
-import { forgotPasswordService } from "@services/UserService";
+import { userApiService } from "@services/UserApiService";
 
 type ForgotPasswordProps = {
   openForgotPassword: boolean;
@@ -41,7 +41,7 @@ export default function ForgotPasswordModal(props: ForgotPasswordProps) {
   const handlePasswordRecovery = async () => {
     if (emailRecovery.match(emailValidator)) {
       try {
-        await forgotPasswordService(emailRecovery.toLowerCase());
+        await userApiService.forgotPassword(emailRecovery.toLowerCase());
         setIsMailSended(true);
         setErrorRecovery(false);
       } catch (error) {

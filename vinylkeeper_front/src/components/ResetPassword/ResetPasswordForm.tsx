@@ -21,7 +21,7 @@ import {
   IResetPassword,
   IResetPasswordToBackend,
 } from "@models/IResetPassword";
-import { resetPasswordService } from "@services/UserService";
+import { userApiService } from "@services/UserApiService";
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate();
@@ -84,7 +84,8 @@ export default function ResetPasswordForm() {
     };
     setIsLoading(true);
 
-    resetPasswordService(resetData)
+    userApiService
+      .resetPassword(resetData)
       .then(() => navigate("/"))
       .catch((error) => {
         console.error("Error while resetting password:", error);

@@ -5,9 +5,10 @@ import CollectionItem from "@components/Collections/CollectionItem";
 import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
+  collectionApiService,
   getCollections,
   switchAreaCollection,
-} from "@services/CollectionService";
+} from "@services/CollectionApiService";
 import {
   ICollection,
   ICollectionResponse,
@@ -37,15 +38,18 @@ export default function Collections() {
     error,
   } = useQuery<ICollectionResponse>({
     queryKey: ["collections", page],
-    queryFn: () => getCollections(page, itemsPerPage),
+    queryFn: () => collectionApiService.getCollections(page, itemsPerPage),
   });
 
   const collections = collectionsData?.items || [];
-  const totalPages = collectionsData?.total_pages || 0;
+  const totalPages = collectionsData?.totalPages || 0;
 
   const switchAreaMutation = useMutation({
     mutationFn: ({ collectionId, newIsPublic }: ICollectionSwitchArea) =>
-      switchAreaCollection(collectionId, newIsPublic),
+      collectionApiService.switchCollectionVisibility(
+        collectionId,
+        newIsPublic
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
     },

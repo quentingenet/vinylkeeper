@@ -8,7 +8,7 @@ import { Box, FormControlLabel, Switch } from "@mui/material";
 import { truncateText } from "@utils/GlobalUtils";
 import { useState, useEffect, useRef } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { deleteCollection } from "@services/CollectionService";
+import { collectionApiService } from "@services/CollectionApiService";
 import { ICollection } from "@models/ICollectionForm";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
@@ -92,7 +92,7 @@ export default function CollectionItem({
   };
 
   const handleDelete = () => {
-    deleteCollection(collection.id).then(() => {
+    collectionApiService.deleteCollection(collection.id).then(() => {
       setIsDeleted(true);
       setOpenDeleteDialog(false);
     });

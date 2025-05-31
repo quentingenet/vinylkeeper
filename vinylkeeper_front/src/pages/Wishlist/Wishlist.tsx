@@ -168,7 +168,7 @@ export default function Wishlist() {
                 }}
               >
                 <img
-                  src={item.picture_medium || "/default-album.png"}
+                  src={item.pictureMedium || "/default-album.png"}
                   alt={item.title}
                   style={{
                     width: "100%",
@@ -208,7 +208,7 @@ export default function Wishlist() {
                     width: "100%",
                   }}
                 >
-                  {item.artist_name || "Unknown Artist"}
+                  {item.artistName || "Unknown Artist"}
                 </Typography>
                 <Typography
                   variant="body1"
@@ -224,7 +224,10 @@ export default function Wishlist() {
                   {item.title}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "#888" }}>
-                  Added {new Date(item.created_at).toLocaleDateString()}
+                  Added{" "}
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleDateString()
+                    : "Unknown date"}
                 </Typography>
               </CardContent>
             </Card>
@@ -270,7 +273,7 @@ export default function Wishlist() {
                   mb={3}
                 >
                   <img
-                    src={selectedItem.picture_medium || "/default-album.png"}
+                    src={selectedItem.pictureMedium || "/default-album.png"}
                     alt={selectedItem.title}
                     style={{
                       width: 80,
@@ -286,7 +289,7 @@ export default function Wishlist() {
                       fontWeight="bold"
                       sx={{ color: "#C9A726", marginBottom: "4px" }}
                     >
-                      {selectedItem.artist_name || "Unknown Artist"}
+                      {selectedItem.artistName || "Unknown Artist"}
                     </Typography>
                     <Typography variant="body2" sx={{ color: "#fffbf9" }}>
                       {selectedItem.title}

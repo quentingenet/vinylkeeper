@@ -5,8 +5,11 @@ from api.repositories.interfaces import IUserRepository
 from api.models.user_model import User
 from api.core.logging import logger
 from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+argon2_ph = PasswordHasher()
 
 
 class UserRepository(IUserRepository):
@@ -77,18 +80,33 @@ class UserRepository(IUserRepository):
             return False
     
     def verify_user_credentials(self, email: str, password: str) -> Optional[User]:
-        """Verify user credentials"""
+        """Verify user credentials with backward compatibility for Argon2 hashes"""
         try:
             user = self.db.query(User).filter(User.email == email).first()
             
             if not user:
                 return None
             
-            # Verify password
-            if not pwd_context.verify(password, user.password):
-                return None
+            # Try bcrypt first (new format)
+            try:
+                if pwd_context.verify(password, user.password):
+                    return user
+            except Exception:
+                pass
             
-            return user
+            # Try Argon2 for backward compatibility (old format)
+            try:
+                argon2_ph.verify(user.password, password)
+                # If successful, optionally migrate to bcrypt
+                new_hash = pwd_context.hash(password)
+                user.password = new_hash
+                self.db.commit()
+                logger.info(f"Migrated password hash for user {user.email} from Argon2 to bcrypt")
+                return user
+            except (VerifyMismatchError, Exception):
+                pass
+            
+            return None
             
         except Exception as e:
             logger.error(f"Error verifying credentials: {str(e)}")

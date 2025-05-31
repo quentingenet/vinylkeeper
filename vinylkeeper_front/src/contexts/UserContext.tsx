@@ -1,6 +1,6 @@
 import { API_VK_URL } from "@utils/GlobalUtils";
 import requestService from "@utils/RequestService";
-import { getCurrentUser, ICurrentUser } from "@services/UserService";
+import { userApiService, type ICurrentUser } from "@services/UserApiService";
 import {
   createContext,
   useContext,
@@ -88,7 +88,7 @@ export function UserContextProvider({
 
       if (response.isLoggedIn) {
         try {
-          const user = await getCurrentUser();
+          const user = await userApiService.getCurrentUser();
           setCurrentUser(user);
         } catch (error) {
           console.error("Error fetching current user:", error);

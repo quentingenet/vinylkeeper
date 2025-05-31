@@ -85,16 +85,18 @@ async def switch_area_collection(
     
     return {"message": "Collection updated successfully"}
 
-@router.delete("/delete/{collection_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{collection_id}", status_code=status.HTTP_200_OK)
 async def delete_collection(
     user: Annotated[User, Depends(get_current_user)],
     service = Depends(get_collection_service_solid),
     collection_id: int = Path(..., gt=0, title="Collection ID", description="The ID of the collection to delete"),
 ):
+    """Delete a collection (REST-compliant endpoint)"""
     collection_deleted = service.delete_collection(collection_id, user.id)
     if not collection_deleted:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to delete collection")
     
+    logger.info(f"Collection {collection_id} deleted successfully for user {user.username}")
     return {"message": "Collection deleted successfully"}
 
 @router.patch("/update/{collection_id}", status_code=status.HTTP_200_OK)

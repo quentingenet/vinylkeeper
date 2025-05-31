@@ -1,8 +1,9 @@
 import { Box, Typography, Pagination } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { getPublicCollections } from "@services/CollectionService";
+import { collectionApiService } from "@services/CollectionApiService";
 import CollectionItem from "@components/Collections/CollectionItem";
-import { ICollectionResponse } from "@models/ICollectionForm";
+import { PaginatedResponse } from "@models/BaseTypes";
+import { ICollection } from "@models/ICollectionForm";
 import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 
@@ -15,13 +16,14 @@ export default function Explore() {
     data: publicCollectionsData,
     isLoading,
     error,
-  } = useQuery<ICollectionResponse>({
+  } = useQuery<PaginatedResponse<ICollection>>({
     queryKey: ["publicCollections", page],
-    queryFn: () => getPublicCollections(page, itemsPerPage),
+    queryFn: () =>
+      collectionApiService.getPublicCollections(page, itemsPerPage),
   });
 
   const publicCollections = publicCollectionsData?.items || [];
-  const totalPages = publicCollectionsData?.total_pages || 0;
+  const totalPages = publicCollectionsData?.totalPages || 0;
 
   if (isLoading) {
     return (

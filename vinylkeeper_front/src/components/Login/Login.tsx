@@ -13,7 +13,7 @@ import { useState } from "react";
 import { Person2, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { login as loginService } from "@services/UserService";
+import { userApiService } from "@services/UserApiService";
 import { useUserContext } from "../../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import Modal from "@mui/material/Modal";
@@ -63,17 +63,23 @@ export default function Login({
     resolver: yupResolver(loginValidationSchema),
   });
 
-  const submitLogin = () => {
+  const submitLogin = async () => {
     if (!isValid) return;
 
     userContext.setIsLoading(true);
-    loginService(watch())
-      .then(() => {
+    try {
+      const response = await userApiService.login(watch());
+      if (response.isLoggedIn) {
         userContext.setIsUserLoggedIn(true);
         navigate("/dashboard");
-      })
-      .catch(() => setOpenSnackBar(true))
-      .finally(() => userContext.setIsLoading(false));
+      } else {
+        setOpenSnackBar(true);
+      }
+    } catch (error) {
+      setOpenSnackBar(true);
+    } finally {
+      userContext.setIsLoading(false);
+    }
   };
 
   return (

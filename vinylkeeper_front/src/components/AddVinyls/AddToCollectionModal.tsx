@@ -22,7 +22,7 @@ import {
   IArtistRequestResults,
 } from "@models/IRequestProxy";
 import { ICollection } from "@models/ICollectionForm";
-import { getCollections } from "@services/CollectionService";
+import { collectionApiService } from "@services/CollectionApiService";
 import {
   addToWishlist,
   addToCollection,
@@ -179,7 +179,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 
   const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
     queryKey: ["collections"],
-    queryFn: () => getCollections(1, 100),
+    queryFn: () => collectionApiService.getCollections(1, 100),
     enabled: open,
   });
 

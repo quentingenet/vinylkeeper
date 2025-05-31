@@ -11,10 +11,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { collectionValidationSchema } from "@utils/validators/collectionValidationSchema";
 import { useUserContext } from "@contexts/UserContext";
 import { ICollection, ICollectionForm } from "@models/ICollectionForm";
-import {
-  createCollection,
-  updateCollection,
-} from "@services/CollectionService";
+import { collectionApiService } from "@services/CollectionApiService";
 import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -67,7 +64,7 @@ export default function ModalCollection({
   }, [openModal, collection, setValue]);
 
   const createMutation = useMutation<ICollection, Error, ICollectionForm>({
-    mutationFn: createCollection,
+    mutationFn: collectionApiService.createCollection,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       onCollectionAdded();
@@ -85,7 +82,8 @@ export default function ModalCollection({
     Error,
     { id: number; data: ICollectionForm }
   >({
-    mutationFn: ({ id, data }) => updateCollection(id, data),
+    mutationFn: ({ id, data }) =>
+      collectionApiService.updateCollection(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       onCollectionAdded();

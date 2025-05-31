@@ -12,7 +12,7 @@ import {
   Typography,
   InputAdornment,
 } from "@mui/material";
-import { searchProxy } from "@services/RequestProxyService";
+import { searchApiService } from "@services/SearchApiService";
 import { useState, useCallback, useMemo } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
@@ -43,7 +43,7 @@ export default function RequestsMaker({
   const queryClient = useQueryClient();
 
   const mutation = useMutation<IRequestResults, Error, IRequestToSend>({
-    mutationFn: searchProxy,
+    mutationFn: searchApiService.searchProxy,
     onSuccess: (response) => {
       setRequestResults([
         {

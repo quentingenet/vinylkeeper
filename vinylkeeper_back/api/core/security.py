@@ -1,8 +1,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from api.core.config_env import Settings
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from passlib.context import CryptContext
 
 def configure_cors(app: FastAPI):
     origins = Settings().ALLOWED_ORIGINS.split(",")
@@ -28,14 +27,13 @@ def configure_cors(app: FastAPI):
     )
 
 
-ph = PasswordHasher()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
-    return ph.hash(password)
+    return pwd_context.hash(password)
 
 def verify_password(hashed_password: str, plain_password: str) -> bool:
     try:
-        ph.verify(hashed_password, plain_password)
-        return True
-    except VerifyMismatchError:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
         return False

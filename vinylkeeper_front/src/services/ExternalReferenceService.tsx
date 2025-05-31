@@ -1,5 +1,4 @@
-import requestService from "@utils/RequestService";
-import { API_VK_URL } from "@utils/GlobalUtils";
+import { BaseApiService } from "./BaseApiService";
 
 interface AddToWishlistRequest {
   external_id: string;
@@ -21,25 +20,37 @@ interface AddExternalResponse {
   message: string;
 }
 
+export class ExternalReferenceApiService extends BaseApiService {
+  async addToWishlist(
+    data: AddToWishlistRequest
+  ): Promise<AddExternalResponse> {
+    return this.post<AddExternalResponse>("/external/wishlist/add", data);
+  }
+
+  async addToCollection(
+    collectionId: number,
+    data: AddToCollectionRequest
+  ): Promise<AddExternalResponse> {
+    return this.post<AddExternalResponse>(
+      `/external/collection/${collectionId}/add`,
+      data
+    );
+  }
+}
+
+// Export singleton instance
+export const externalReferenceApiService = new ExternalReferenceApiService();
+
+// Backward compatibility exports
 export const addToWishlist = async (
   data: AddToWishlistRequest
 ): Promise<AddExternalResponse> => {
-  return requestService<AddExternalResponse>({
-    apiTarget: API_VK_URL,
-    method: "POST",
-    endpoint: "/external/wishlist/add",
-    body: data,
-  });
+  return externalReferenceApiService.addToWishlist(data);
 };
 
 export const addToCollection = async (
   collectionId: number,
   data: AddToCollectionRequest
 ): Promise<AddExternalResponse> => {
-  return requestService<AddExternalResponse>({
-    apiTarget: API_VK_URL,
-    method: "POST",
-    endpoint: `/external/collection/${collectionId}/add`,
-    body: data,
-  });
+  return externalReferenceApiService.addToCollection(collectionId, data);
 };

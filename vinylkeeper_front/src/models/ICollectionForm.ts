@@ -30,5 +30,5 @@ export interface ICollectionResponse {
   total: number;
   page: number;
   limit: number;
-  total_pages: number;
+  totalPages: number;
 }

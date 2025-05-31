@@ -15,6 +15,7 @@ export default function Landpage() {
   const [open, setOpen] = useState<boolean>(false);
   const [openForgotPassword, setOpenForgotPassword] = useState<boolean>(false);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
+  const [openSnackBar, setOpenSnackBar] = useState<boolean>(false);
 
   const handleLoginOpen = useCallback(() => {
     setLogin(true);
@@ -74,6 +75,7 @@ export default function Landpage() {
                   setOpen={setOpen}
                   setOpenTermsModal={setOpenTermsModal}
                   openTermsModal={openTermsModal}
+                  setOpenSnackBar={setOpenSnackBar}
                 />
               )}
             </div>

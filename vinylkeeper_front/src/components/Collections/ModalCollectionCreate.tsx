@@ -12,10 +12,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { collectionValidationSchema } from "@utils/validators/collectionValidationSchema";
 import { useUserContext } from "@contexts/UserContext";
 import { ICollection, ICollectionForm } from "@models/ICollectionForm";
-import {
-  createCollection,
-  updateCollection,
-} from "@services/CollectionService";
+import { collectionApiService } from "@services/CollectionApiService";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
@@ -67,7 +64,8 @@ export default function ModalCollectionCreate({
     if (!isValid) return;
 
     if (isUpdatingCollection && collection?.id) {
-      updateCollection(collection?.id, watch())
+      collectionApiService
+        .updateCollection(collection?.id, watch())
         .then(() => {
           onCollectionAdded();
         })
@@ -76,7 +74,8 @@ export default function ModalCollectionCreate({
           handleClose();
         });
     } else {
-      createCollection(watch())
+      collectionApiService
+        .createCollection(watch())
         .then(() => {
           onCollectionAdded();
         })
