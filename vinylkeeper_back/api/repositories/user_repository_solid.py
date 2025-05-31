@@ -4,7 +4,10 @@ from sqlalchemy import and_
 from api.repositories.interfaces import IUserRepository
 from api.models.user_model import User
 from api.core.logging import logger
-from api.core.security import hash_password, verify_password
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+
+ph = PasswordHasher()
 
 class UserRepository(IUserRepository):
     """SOLID implementation of User Repository"""
@@ -15,15 +18,26 @@ class UserRepository(IUserRepository):
     def create_user(self, user_data: dict) -> Optional[User]:
         """Create a new user"""
         try:
+            logger.info(f"🔧 REPO DEBUG: Received user_data: {user_data}")
+            
             # Hash password before storing
-            hashed_password = hash_password(user_data["password"])
+            hashed_password = ph.hash(user_data["password"])
+            
+            logger.info(f"🔧 REPO DEBUG: After password hash, user_data: {user_data}")
             
             new_user = User(
                 username=user_data["username"],
                 email=user_data["email"],
                 password=hashed_password,
-                role_id=user_data.get("role_id", 1)  # Default role
+                user_uuid=user_data.get("user_uuid"),
+                is_accepted_terms=user_data.get("is_accepted_terms", False),
+                is_active=user_data.get("is_active", True),
+                is_superuser=user_data.get("is_superuser", False),
+                timezone=user_data.get("timezone", "UTC+1"),
+                role_id=user_data.get("role_id", 2)  # Default role
             )
+            
+            logger.info(f"🔧 REPO DEBUG: Created new_user object: {new_user.__dict__}")
             
             self.db.add(new_user)
             self.db.commit()
@@ -81,10 +95,12 @@ class UserRepository(IUserRepository):
             if not user:
                 return None
             
-            # Verify password using centralized function
-            if verify_password(user.password, password):
+            # Verify password directly with Argon2
+            try:
+                ph.verify(user.password, password)
                 return user
-            return None
+            except VerifyMismatchError:
+                return None
             
         except Exception as e:
             logger.error(f"Error verifying credentials: {str(e)}")

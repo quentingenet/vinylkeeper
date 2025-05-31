@@ -37,7 +37,7 @@ async def create_user(
     service = Depends(get_user_service_solid)
 ):
     try:
-        user = service.register_user(new_user.dict())
+        user = service.register_user(new_user.model_dump())
         access_token = create_token(str(user.user_uuid), TokenType.ACCESS)
         set_token_cookie(response, access_token, TokenType.ACCESS)
 

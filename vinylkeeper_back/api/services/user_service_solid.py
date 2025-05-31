@@ -9,6 +9,7 @@ from api.mails.client_mail import MailSubject, send_mail
 from api.core.config_env import Settings
 from api.core.security import hash_password
 import re
+import uuid
 
 
 class AuthError(Exception):
@@ -42,6 +43,9 @@ class UserService:
     def register_user(self, user_data: dict) -> User:
         """Register a new user with business validation"""
         
+        logger.info(f"🔧 DEBUG: Starting registration for {user_data.get('email')}")
+        logger.info(f"🔧 DEBUG: Input data: {user_data}")
+        
         # Business rule: Validate email format
         if not self._validate_email(user_data.get("email", "")):
             raise AuthError("Invalid email format")
@@ -58,6 +62,17 @@ class UserService:
         existing_user = self.user_repo.get_user_by_email(user_data["email"])
         if existing_user:
             raise AuthError("Email already registered")
+        
+        # Generate UUID for new user (as UUID object, not string)
+        generated_uuid = uuid.uuid4()
+        user_data["user_uuid"] = generated_uuid
+        logger.info(f"🔧 DEBUG: Generated UUID: {generated_uuid}")
+        
+        # Set default role if not provided
+        if "role_id" not in user_data:
+            user_data["role_id"] = Settings().DEFAULT_ROLE_ID
+        
+        logger.info(f"🔧 DEBUG: Final data before repository: {user_data}")
         
         # Create user
         user = self.user_repo.create_user(user_data)

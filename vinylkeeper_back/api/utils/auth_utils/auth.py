@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from http.client import HTTPException
+from fastapi import HTTPException
 from jose import jwt, JWTError
 from api.core.config_env import Settings
 import os
