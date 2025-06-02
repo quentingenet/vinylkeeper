@@ -13,11 +13,25 @@ class EncryptionService:
     
     def _load_existing_keys(self):
         """Load existing RSA keys from the keys directory"""
-        private_key_path = "./keys/private_key.pem"
-        public_key_path = "./keys/public_key.pem"
+        # Try production path first, then development path
+        key_paths = [
+            ("/home/kent1/keys/private_key.pem", "/home/kent1/keys/public_key.pem"),
+            ("./keys/private_key.pem", "./keys/public_key.pem"),
+            ("../keys/private_key.pem", "../keys/public_key.pem")
+        ]
         
-        if not os.path.exists(private_key_path) or not os.path.exists(public_key_path):
-            raise FileNotFoundError("RSA keys not found. Please ensure keys exist in ./keys/ directory")
+        private_key_path = None
+        public_key_path = None
+        
+        for priv_path, pub_path in key_paths:
+            if os.path.exists(priv_path) and os.path.exists(pub_path):
+                private_key_path = priv_path
+                public_key_path = pub_path
+                logger.info(f"Found RSA keys at: {priv_path}")
+                break
+        
+        if not private_key_path or not public_key_path:
+            raise FileNotFoundError("RSA keys not found. Checked paths: /home/kent1/keys/, ./keys/, ../keys/")
         
         try:
             # Load private key
