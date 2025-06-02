@@ -18,12 +18,8 @@ class UserRepository(IUserRepository):
     def create_user(self, user_data: dict) -> Optional[User]:
         """Create a new user"""
         try:
-            logger.info(f"🔧 REPO DEBUG: Received user_data: {user_data}")
-            
             # Hash password before storing
             hashed_password = ph.hash(user_data["password"])
-            
-            logger.info(f"🔧 REPO DEBUG: After password hash, user_data: {user_data}")
             
             new_user = User(
                 username=user_data["username"],
@@ -36,8 +32,6 @@ class UserRepository(IUserRepository):
                 timezone=user_data.get("timezone", "UTC+1"),
                 role_id=user_data.get("role_id", 2)  # Default role
             )
-            
-            logger.info(f"🔧 REPO DEBUG: Created new_user object: {new_user.__dict__}")
             
             self.db.add(new_user)
             self.db.commit()

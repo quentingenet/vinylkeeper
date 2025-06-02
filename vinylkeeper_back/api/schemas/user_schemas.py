@@ -23,26 +23,23 @@ class ResetPassword(BaseModel):
     token: str
     new_password: str = Field(
         min_length=4,
-        max_length=64,
-        pattern=r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:,.<>?]{4,64}$',
-        description="Password must be between 4 and 64 characters, and can contain letters, numbers and special characters."
+        max_length=1024,
+        description="Encrypted password (base64 encoded)"
     )
 
 class CreateUser(UserBase):
     password: str = Field(
         min_length=4,
-        max_length=64,
-        pattern=r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:,.<>?]{4,64}$',
-        description="Password must be between 4 and 64 characters, and can contain letters, numbers and special characters."
+        max_length=1024,
+        description="Encrypted password (base64 encoded)"
     )
 
 class AuthUser(BaseModel):
     email: EmailStr
     password: str = Field(
         min_length=4,
-        max_length=64,
-        pattern=r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:,.<>?]{4,64}$',
-        description="Password must be between 4 and 64 characters, and can contain letters, numbers and special characters."
+        max_length=1024,
+        description="Encrypted password (base64 encoded)"
     )
 
 class UserUpdate(BaseModel):
@@ -57,9 +54,8 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(
         default=None,
         min_length=4,
-        max_length=64,
-        pattern=r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:,.<>?]{4,64}$',
-        description="Password must be between 4 and 64 characters, and can contain letters, numbers and special characters."
+        max_length=1024,
+        description="Encrypted password (base64 encoded)"
     )
     is_accepted_terms: Optional[bool] = None
     is_active: Optional[bool] = None

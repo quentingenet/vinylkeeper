@@ -8,6 +8,7 @@ from api.utils.auth_utils.auth import TokenType, create_token, create_reset_toke
 from api.mails.client_mail import MailSubject, send_mail
 from api.core.config_env import Settings
 from api.core.security import hash_password
+from api.services.encryption_service import encryption_service
 import re
 import uuid
 
@@ -22,6 +23,14 @@ class UserService:
     
     def __init__(self, user_repo: IUserRepository):
         self.user_repo = user_repo
+    
+    def _decrypt_password(self, encrypted_password: str) -> str:
+        """Decrypt password using RSA private key"""
+        try:
+            return encryption_service.decrypt_password(encrypted_password)
+        except ValueError as e:
+            logger.error(f"Password decryption failed: {str(e)}")
+            raise AuthError("Invalid password format")
     
     def _validate_email(self, email: str) -> bool:
         """Validate email format"""
@@ -43,8 +52,19 @@ class UserService:
     def register_user(self, user_data: dict) -> User:
         """Register a new user with business validation"""
         
-        logger.info(f"🔧 DEBUG: Starting registration for {user_data.get('email')}")
-        logger.info(f"🔧 DEBUG: Input data: {user_data}")
+        # Decrypt password first
+        encrypted_password = user_data.get("password", "")
+        if not encrypted_password:
+            raise AuthError("Password is required")
+        
+        try:
+            decrypted_password = self._decrypt_password(encrypted_password)
+            user_data["password"] = decrypted_password
+        except AuthError:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during password decryption: {str(e)}")
+            raise AuthError("Password processing failed")
         
         # Business rule: Validate email format
         if not self._validate_email(user_data.get("email", "")):
@@ -66,13 +86,10 @@ class UserService:
         # Generate UUID for new user (as UUID object, not string)
         generated_uuid = uuid.uuid4()
         user_data["user_uuid"] = generated_uuid
-        logger.info(f"🔧 DEBUG: Generated UUID: {generated_uuid}")
         
         # Set default role if not provided
         if "role_id" not in user_data:
             user_data["role_id"] = Settings().DEFAULT_ROLE_ID
-        
-        logger.info(f"🔧 DEBUG: Final data before repository: {user_data}")
         
         # Create user
         user = self.user_repo.create_user(user_data)
@@ -81,16 +98,25 @@ class UserService:
         
         return user
     
-    def authenticate_user(self, email: str, password: str) -> User:
+    def authenticate_user(self, email: str, encrypted_password: str) -> User:
         """Authenticate user with business validation"""
         
         # Business rule: Validate input
-        if not email or not password:
+        if not email or not encrypted_password:
             raise AuthError("Email and password are required")
         
         # Business rule: Validate email format
         if not self._validate_email(email):
             raise AuthError("Invalid email format")
+        
+        # Decrypt password
+        try:
+            password = self._decrypt_password(encrypted_password)
+        except AuthError:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during password decryption: {str(e)}")
+            raise AuthError("Password processing failed")
         
         # Verify credentials
         user = self.user_repo.verify_user_credentials(email, password)
@@ -132,8 +158,17 @@ class UserService:
         logger.info(f"Password reset email sent to {email}")
         return True
     
-    def reset_password(self, token: str, new_password: str) -> bool:
+    def reset_password(self, token: str, encrypted_new_password: str) -> bool:
         """Reset user password with token validation"""
+        
+        # Decrypt password first
+        try:
+            new_password = self._decrypt_password(encrypted_new_password)
+        except AuthError:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during password decryption: {str(e)}")
+            raise AuthError("Password processing failed")
         
         # Business rule: Validate new password
         if not self._validate_password(new_password):
@@ -146,7 +181,6 @@ class UserService:
         try:
             # Verify and extract user UUID from reset token
             user_uuid = verify_reset_token(token)
-            logger.info(f"Reset token validated for user UUID: {user_uuid}")
         except ValueError as e:
             logger.error(f"Token validation failed: {str(e)}")
             raise AuthError("Invalid or expired reset token")

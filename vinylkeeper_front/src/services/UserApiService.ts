@@ -2,6 +2,7 @@ import { BaseApiService } from "./BaseApiService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
+import { encryptionService } from "./EncryptionService";
 
 export interface ICurrentUser {
   id: number;
@@ -12,8 +13,8 @@ export interface ICurrentUser {
 
 export interface LoginResponse {
   isLoggedIn: boolean;
-  status?: number;
-  data?: any;
+  status: number;
+  data: any;
 }
 
 export interface RegisterResponse {
@@ -23,44 +24,63 @@ export interface RegisterResponse {
 
 export interface ForgotPasswordResponse {
   message: string;
-  success: boolean;
 }
 
 export interface ResetPasswordResponse {
   message: string;
-  success: boolean;
 }
 
 export class UserApiService extends BaseApiService {
   async login(data: ILoginForm): Promise<LoginResponse> {
-    const requestDataLogin = {
-      email: data.email,
-      password: data.password,
-    };
+    try {
+      const encryptedPassword = await encryptionService.encryptPassword(
+        data.password
+      );
 
-    const responseData = await this.post("/users/auth", requestDataLogin);
+      const requestDataLogin = {
+        email: data.email,
+        password: encryptedPassword,
+      };
 
-    if (!responseData) {
-      throw new Error("Access token missing in response");
+      const responseData = await this.post("/users/auth", requestDataLogin);
+
+      if (!responseData) {
+        throw new Error("Access token missing in response");
+      }
+
+      return {
+        isLoggedIn: true,
+        status: 200,
+        data: responseData,
+      };
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
     }
-
-    return {
-      isLoggedIn: true,
-      status: 200,
-      data: responseData,
-    };
   }
 
   async register(dataRegister: IRegisterForm): Promise<RegisterResponse> {
-    const requestDataRegister = {
-      username: dataRegister.username,
-      email: dataRegister.email,
-      password: dataRegister.password,
-      is_accepted_terms: dataRegister.isAcceptedTerms,
-      timezone: dataRegister.timezone,
-    };
+    try {
+      const encryptedPassword = await encryptionService.encryptPassword(
+        dataRegister.password
+      );
 
-    return this.post<RegisterResponse>("/users/register", requestDataRegister);
+      const requestDataRegister = {
+        username: dataRegister.username,
+        email: dataRegister.email,
+        password: encryptedPassword,
+        is_accepted_terms: dataRegister.isAcceptedTerms,
+        timezone: dataRegister.timezone,
+      };
+
+      return this.post<RegisterResponse>(
+        "/users/register",
+        requestDataRegister
+      );
+    } catch (error) {
+      console.error("Registration failed:", error);
+      throw error;
+    }
   }
 
   async forgotPassword(emailRecovery: string): Promise<ForgotPasswordResponse> {
@@ -72,7 +92,24 @@ export class UserApiService extends BaseApiService {
   async resetPassword(
     dataReset: IResetPasswordToBackend
   ): Promise<ResetPasswordResponse> {
-    return this.post<ResetPasswordResponse>("/users/reset-password", dataReset);
+    try {
+      const encryptedPassword = await encryptionService.encryptPassword(
+        dataReset.new_password
+      );
+
+      const encryptedDataReset = {
+        ...dataReset,
+        new_password: encryptedPassword,
+      };
+
+      return this.post<ResetPasswordResponse>(
+        "/users/reset-password",
+        encryptedDataReset
+      );
+    } catch (error) {
+      console.error("Password reset failed:", error);
+      throw error;
+    }
   }
 
   async getCurrentUser(): Promise<ICurrentUser> {
