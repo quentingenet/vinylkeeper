@@ -11,6 +11,7 @@ from api.core.security import hash_password
 from api.services.encryption_service import encryption_service
 import re
 import uuid
+import base64
 
 
 class AuthError(Exception):
@@ -24,10 +25,27 @@ class UserService:
     def __init__(self, user_repo: IUserRepository):
         self.user_repo = user_repo
     
-    def _decrypt_password(self, encrypted_password: str) -> str:
-        """Decrypt password using RSA private key"""
+    def _is_encrypted_password(self, password: str) -> bool:
+        """Check if password is encrypted (base64) or plain text"""
+        # Encrypted passwords are base64 and much longer than typical passwords
         try:
-            return encryption_service.decrypt_password(encrypted_password)
+            if len(password) > 100:  # Encrypted passwords are much longer
+                base64.b64decode(password)  # Test if valid base64
+                return True
+        except:
+            pass
+        return False
+    
+    def _decrypt_password(self, password: str) -> str:
+        """Decrypt password if encrypted, or return as-is if plain text"""
+        if not self._is_encrypted_password(password):
+            logger.info("🔐 Password received in plain text (fallback mode)")
+            return password
+        
+        try:
+            decrypted = encryption_service.decrypt_password(password)
+            logger.info("🔐 Password successfully decrypted")
+            return decrypted
         except ValueError as e:
             logger.error(f"Password decryption failed: {str(e)}")
             raise AuthError("Invalid password format")
@@ -52,18 +70,18 @@ class UserService:
     def register_user(self, user_data: dict) -> User:
         """Register a new user with business validation"""
         
-        # Decrypt password first
-        encrypted_password = user_data.get("password", "")
-        if not encrypted_password:
+        # Decrypt password first (or keep as-is if plain text)
+        password_input = user_data.get("password", "")
+        if not password_input:
             raise AuthError("Password is required")
         
         try:
-            decrypted_password = self._decrypt_password(encrypted_password)
+            decrypted_password = self._decrypt_password(password_input)
             user_data["password"] = decrypted_password
         except AuthError:
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during password decryption: {str(e)}")
+            logger.error(f"Unexpected error during password processing: {str(e)}")
             raise AuthError("Password processing failed")
         
         # Business rule: Validate email format
@@ -98,24 +116,24 @@ class UserService:
         
         return user
     
-    def authenticate_user(self, email: str, encrypted_password: str) -> User:
+    def authenticate_user(self, email: str, password_input: str) -> User:
         """Authenticate user with business validation"""
         
         # Business rule: Validate input
-        if not email or not encrypted_password:
+        if not email or not password_input:
             raise AuthError("Email and password are required")
         
         # Business rule: Validate email format
         if not self._validate_email(email):
             raise AuthError("Invalid email format")
         
-        # Decrypt password
+        # Decrypt password (or keep as-is if plain text)
         try:
-            password = self._decrypt_password(encrypted_password)
+            password = self._decrypt_password(password_input)
         except AuthError:
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during password decryption: {str(e)}")
+            logger.error(f"Unexpected error during password processing: {str(e)}")
             raise AuthError("Password processing failed")
         
         # Verify credentials
@@ -158,16 +176,16 @@ class UserService:
         logger.info(f"Password reset email sent to {email}")
         return True
     
-    def reset_password(self, token: str, encrypted_new_password: str) -> bool:
+    def reset_password(self, token: str, password_input: str) -> bool:
         """Reset user password with token validation"""
         
-        # Decrypt password first
+        # Decrypt password first (or keep as-is if plain text)
         try:
-            new_password = self._decrypt_password(encrypted_new_password)
+            new_password = self._decrypt_password(password_input)
         except AuthError:
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during password decryption: {str(e)}")
+            logger.error(f"Unexpected error during password processing: {str(e)}")
             raise AuthError("Password processing failed")
         
         # Business rule: Validate new password

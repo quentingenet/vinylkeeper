@@ -2,6 +2,23 @@ import { BaseApiService } from "./BaseApiService";
 
 class EncryptionService extends BaseApiService {
   private publicKey: CryptoKey | null = null;
+  private encryptionAvailable: boolean | null = null;
+
+  async isEncryptionAvailable(): Promise<boolean> {
+    if (this.encryptionAvailable !== null) {
+      return this.encryptionAvailable;
+    }
+
+    try {
+      await this.get<{ public_key: string }>("/encryption/public-key");
+      this.encryptionAvailable = true;
+      return true;
+    } catch (error) {
+      console.info("🔐 Encryption service not available, using fallback mode");
+      this.encryptionAvailable = false;
+      return false;
+    }
+  }
 
   async getPublicKey(): Promise<CryptoKey> {
     if (this.publicKey) {
@@ -38,6 +55,15 @@ class EncryptionService extends BaseApiService {
 
   async encryptPassword(password: string): Promise<string> {
     try {
+      // Check if encryption is available
+      const isAvailable = await this.isEncryptionAvailable();
+
+      if (!isAvailable) {
+        // Fallback: return password as-is for backward compatibility
+        console.info("🔐 Using fallback mode - encryption not available");
+        return password;
+      }
+
       const publicKey = await this.getPublicKey();
 
       // Convert password to ArrayBuffer
@@ -58,7 +84,9 @@ class EncryptionService extends BaseApiService {
       return btoa(String.fromCharCode.apply(null, Array.from(encryptedArray)));
     } catch (error) {
       console.error("Failed to encrypt password:", error);
-      throw new Error("Failed to encrypt password");
+      // Fallback: return password as-is
+      console.info("🔐 Falling back to unencrypted password");
+      return password;
     }
   }
 
