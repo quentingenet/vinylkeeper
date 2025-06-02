@@ -13,34 +13,11 @@ class EncryptionService:
     
     def _load_existing_keys(self):
         """Load existing RSA keys from the keys directory"""
-        # Check if production keys exist first
-        prod_private_path = "/home/kent1/keys/private_key.pem"
-        prod_public_path = "/home/kent1/keys/public_key.pem"
+        private_key_path = "./keys/private_key.pem"
+        public_key_path = "./keys/public_key.pem"
         
-        if os.path.exists(prod_private_path) and os.path.exists(prod_public_path):
-            private_key_path = prod_private_path
-            public_key_path = prod_public_path
-            logger.info(f"Using production RSA keys at: {prod_private_path}")
-        else:
-            logger.warning(f"Production keys not found at {prod_private_path}")
-            # Fallback to other locations
-            key_paths = [
-                ("./keys/private_key.pem", "./keys/public_key.pem"),
-                ("../keys/private_key.pem", "../keys/public_key.pem")
-            ]
-            
-            private_key_path = None
-            public_key_path = None
-            
-            for priv_path, pub_path in key_paths:
-                if os.path.exists(priv_path) and os.path.exists(pub_path):
-                    private_key_path = priv_path
-                    public_key_path = pub_path
-                    logger.warning(f"Using fallback RSA keys at: {priv_path} - THESE MAY NOT BE THE PRODUCTION KEYS!")
-                    break
-            
-            if not private_key_path or not public_key_path:
-                raise FileNotFoundError("RSA keys not found. Production keys should be at /home/kent1/keys/")
+        if not os.path.exists(private_key_path) or not os.path.exists(public_key_path):
+            raise FileNotFoundError("RSA keys not found in ./keys/ directory")
         
         try:
             # Load private key
@@ -61,7 +38,7 @@ class EncryptionService:
             logger.info("Encryption keys loaded successfully")
             
         except Exception as e:
-            logger.error(f"Failed to load existing RSA keys from {private_key_path}: {str(e)}")
+            logger.error(f"Failed to load RSA keys: {str(e)}")
             raise
     
     def get_public_key_pem(self) -> str:
