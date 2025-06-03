@@ -18,6 +18,8 @@ import { useUserContext } from "@contexts/UserContext";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { zoomIn } from "@utils/Animations";
 import VinylKeeperDialog from "@components/UI/VinylKeeperDialog";
+import PlayButton from "@components/UI/PlayButton";
+import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +40,14 @@ export default function CollectionDetails() {
       | "external_artist"
       | "local_genre";
   } | null>(null);
+
+  // États pour le modal de lecture
+  const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
+  const [selectedPlaybackItem, setSelectedPlaybackItem] =
+    useState<PlaybackItem | null>(null);
+  const [playbackItemType, setPlaybackItemType] = useState<"album" | "artist">(
+    "album"
+  );
 
   const {
     data: collectionDetails,
@@ -130,6 +140,40 @@ export default function CollectionDetails() {
 
     setOpenDeleteDialog(false);
     setSelectedItem(null);
+  };
+
+  // Fonctions pour gérer le modal de lecture
+  const handlePlayClick = (item: any, type: "album" | "artist") => {
+    let playbackItem: PlaybackItem;
+    if (item.externalId) {
+      playbackItem = {
+        id: item.id,
+        title: item.title || "Unknown Album",
+        artist: item.artistName || "Unknown Artist",
+        source: "deezer",
+        deezerId: String(item.externalId),
+        pictureMedium: item.pictureMedium || "",
+        releaseYear: item.releaseYear,
+      };
+    } else {
+      playbackItem = {
+        id: item.id,
+        title: item.title || item.name || "Unknown Album",
+        artist: item.artist || item.artistName || "Unknown Artist",
+        source: "musicbrainz",
+        musicbrainzId: item.musicbrainzId ? String(item.musicbrainzId) : "",
+        pictureMedium: item.pictureMedium || "",
+        releaseYear: item.releaseYear,
+      };
+    }
+    setSelectedPlaybackItem(playbackItem);
+    setPlaybackItemType(type);
+    setPlaybackModalOpen(true);
+  };
+
+  const handleClosePlaybackModal = () => {
+    setPlaybackModalOpen(false);
+    setSelectedPlaybackItem(null);
   };
 
   useEffect(() => {
@@ -240,6 +284,13 @@ export default function CollectionDetails() {
                   flexDirection={"column"}
                   alignItems={"flex-end"}
                 >
+                  <PlayButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayClick(album, "album");
+                    }}
+                    position={{ top: 10, right: 10 }}
+                  />
                   {isOwner && (
                     <Box
                       onClick={(e) => {
@@ -256,7 +307,7 @@ export default function CollectionDetails() {
                         backgroundColor: "#1F1F1F",
                         borderRadius: "50%",
                         padding: 1,
-                        top: 10,
+                        top: 50,
                         right: 10,
                         opacity: 0.9,
                         display: "flex",
@@ -348,6 +399,13 @@ export default function CollectionDetails() {
                   flexDirection={"column"}
                   alignItems={"flex-end"}
                 >
+                  <PlayButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayClick(album, "album");
+                    }}
+                    position={{ top: 10, right: 10 }}
+                  />
                   {isOwner && (
                     <Box
                       onClick={(e) => {
@@ -364,7 +422,7 @@ export default function CollectionDetails() {
                         backgroundColor: "#1F1F1F",
                         borderRadius: "50%",
                         padding: 1,
-                        top: 10,
+                        top: 50,
                         right: 10,
                         opacity: 0.9,
                         display: "flex",
@@ -492,6 +550,13 @@ export default function CollectionDetails() {
                   flexDirection={"column"}
                   alignItems={"flex-end"}
                 >
+                  <PlayButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayClick(artist, "artist");
+                    }}
+                    position={{ top: 10, right: 10 }}
+                  />
                   {isOwner && (
                     <Box
                       onClick={(e) => {
@@ -508,7 +573,7 @@ export default function CollectionDetails() {
                         backgroundColor: "#1F1F1F",
                         borderRadius: "50%",
                         padding: 1,
-                        top: 10,
+                        top: 50,
                         right: 10,
                         opacity: 0.9,
                         display: "flex",
@@ -587,6 +652,13 @@ export default function CollectionDetails() {
                   flexDirection={"column"}
                   alignItems={"flex-end"}
                 >
+                  <PlayButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayClick(artist, "artist");
+                    }}
+                    position={{ top: 10, right: 10 }}
+                  />
                   {isOwner && (
                     <Box
                       onClick={(e) => {
@@ -603,7 +675,7 @@ export default function CollectionDetails() {
                         backgroundColor: "#1F1F1F",
                         borderRadius: "50%",
                         padding: 1,
-                        top: 10,
+                        top: 50,
                         right: 10,
                         opacity: 0.9,
                         display: "flex",
@@ -739,6 +811,14 @@ export default function CollectionDetails() {
         textCancel="Cancel"
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
+      />
+
+      {/* Modal de lecture */}
+      <PlaybackModal
+        isOpen={playbackModalOpen}
+        onClose={handleClosePlaybackModal}
+        item={selectedPlaybackItem}
+        itemType={playbackItemType}
       />
     </Box>
   );

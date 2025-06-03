@@ -142,4 +142,20 @@ class ISearchRepository(ABC):
     
     @abstractmethod
     def search_deezer_api(self, search_query: SearchQuery) -> List[DeezerData]:
+        pass
+
+
+class IMusicMetadataRepository(ABC):
+    """Interface for Music Metadata repository operations"""
+    
+    @abstractmethod
+    def fetch_deezer_album_metadata(self, album_id: str) -> Optional[dict]:
+        pass
+    
+    @abstractmethod
+    def fetch_musicbrainz_album_metadata(self, artist_name: str, album_title: str) -> Optional[dict]:
+        pass
+    
+    @abstractmethod
+    def fetch_musicbrainz_artist_metadata(self, artist_name: str) -> Optional[dict]:
         pass 

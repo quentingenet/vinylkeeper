@@ -7,18 +7,21 @@ from api.repositories.collection_external_reference_repository_solid import Coll
 from api.repositories.collection_repository_solid import CollectionRepository
 from api.repositories.user_repository_solid import UserRepository
 from api.repositories.search_repository_solid import SearchRepository
+from api.repositories.music_metadata_repository_solid import MusicMetadataRepository
 from api.services.external_reference_service_solid import ExternalReferenceService
 from api.services.validation_service import ValidationService
 from api.services.collection_service_solid import CollectionService
 from api.services.user_service_solid import UserService
 from api.services.search_service_solid import SearchService
+from api.services.music_metadata_service_solid import MusicMetadataService
 from api.repositories.interfaces import (
     IExternalReferenceRepository, 
     IWishlistRepository, 
     ICollectionExternalReferenceRepository,
     ICollectionRepository,
     IUserRepository,
-    ISearchRepository
+    ISearchRepository,
+    IMusicMetadataRepository
 )
 
 
@@ -40,6 +43,9 @@ def get_user_repository(db: Session = Depends(get_db)) -> IUserRepository:
 
 def get_search_repository() -> ISearchRepository:
     return SearchRepository()
+
+def get_music_metadata_repository() -> IMusicMetadataRepository:
+    return MusicMetadataRepository()
 
 
 # Service Dependencies
@@ -67,4 +73,9 @@ def get_user_service_solid(
 def get_search_service_solid(
     search_repo: ISearchRepository = Depends(get_search_repository)
 ) -> SearchService:
-    return SearchService(search_repo) 
+    return SearchService(search_repo)
+
+def get_music_metadata_service_solid(
+    music_metadata_repo: IMusicMetadataRepository = Depends(get_music_metadata_repository)
+) -> MusicMetadataService:
+    return MusicMetadataService(music_metadata_repo) 

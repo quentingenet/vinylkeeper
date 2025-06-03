@@ -20,11 +20,16 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useState } from "react";
 import { IWishlistItem } from "@models/IWishlist";
 import useDetectMobile from "@hooks/useDetectMobile";
+import PlayButton from "@components/UI/PlayButton";
+import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 
 export default function Wishlist() {
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<IWishlistItem | null>(null);
+  const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
+  const [selectedPlaybackItem, setSelectedPlaybackItem] =
+    useState<PlaybackItem | null>(null);
   const queryClient = useQueryClient();
   const { isMobile } = useDetectMobile();
 
@@ -67,6 +72,24 @@ export default function Wishlist() {
   const handleCancelRemove = () => {
     setConfirmationOpen(false);
     setSelectedItem(null);
+  };
+
+  const handlePlayClick = (item: IWishlistItem) => {
+    const playbackItem: PlaybackItem = {
+      id: item.id,
+      title: item.title || "Unknown Album",
+      artist: item.artistName || "Unknown Artist",
+      source: "deezer",
+      deezerId: item.externalId ? String(item.externalId) : "",
+      pictureMedium: item.pictureMedium || "",
+    };
+    setSelectedPlaybackItem(playbackItem);
+    setPlaybackModalOpen(true);
+  };
+
+  const handleClosePlaybackModal = () => {
+    setPlaybackModalOpen(false);
+    setSelectedPlaybackItem(null);
   };
 
   if (isLoading) {
@@ -131,6 +154,13 @@ export default function Wishlist() {
                 borderRadius: "8px",
               }}
             >
+              <PlayButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePlayClick(item);
+                }}
+                position={{ top: 10, right: 50 }}
+              />
               <Box
                 onClick={(e) => {
                   e.stopPropagation();
@@ -332,6 +362,13 @@ export default function Wishlist() {
           </Box>
         </Fade>
       </Modal>
+
+      <PlaybackModal
+        isOpen={playbackModalOpen}
+        onClose={handleClosePlaybackModal}
+        item={selectedPlaybackItem}
+        itemType="album"
+      />
 
       <Snackbar
         open={!!successMessage}
