@@ -17,7 +17,7 @@ services:
       context: .
     container_name: vinylkeeper-api
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       - vinylkeeper-db
     networks:
