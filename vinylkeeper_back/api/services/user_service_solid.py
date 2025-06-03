@@ -141,6 +141,9 @@ class UserService:
         if not user:
             raise AuthError("Invalid email or password")
         
+        # Increment number of connections
+        self.user_repo.increment_number_of_connections(user.id)
+        
         return user
     
     def get_user_by_uuid(self, user_uuid: str) -> Optional[User]:

@@ -98,4 +98,22 @@ class UserRepository(IUserRepository):
             
         except Exception as e:
             logger.error(f"Error verifying credentials: {str(e)}")
-            return None 
+            return None
+    
+    def increment_number_of_connections(self, user_id: int) -> bool:
+        """Increment the number of connections for a user"""
+        try:
+            user = self.db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return False
+            
+            user.number_of_connections += 1
+            self.db.commit()
+            
+            logger.info(f"Number of connections incremented for user {user_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error incrementing number of connections: {str(e)}")
+            self.db.rollback()
+            return False 
