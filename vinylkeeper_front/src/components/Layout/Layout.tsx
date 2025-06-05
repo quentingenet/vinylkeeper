@@ -3,7 +3,6 @@ import Box from "@mui/material/Box";
 import NavBar from "@components/NavBar/NavBar";
 import MobileNavBar from "@components/NavBar/MobileNavBar";
 import { useTheme } from "@mui/material/styles";
-import Footer from "@components/Footer/Footer";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { Typography } from "@mui/material";
 
@@ -71,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          maxWidth: "1000px",
+          maxWidth: "1600px",
           marginX: "auto",
           display: "flex",
           flexDirection: "column",
@@ -112,12 +111,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             justifyContent: "center",
             alignItems: "center",
           }}
-        >
-          <Footer
-            setOpenTermsModal={setOpenTermsModal}
-            openTermsModal={openTermsModal}
-          />
-        </Box>
+        ></Box>
       </Box>
     </Box>
   );

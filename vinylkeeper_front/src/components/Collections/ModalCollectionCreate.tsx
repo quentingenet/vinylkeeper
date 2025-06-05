@@ -7,12 +7,13 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import TextField from "@mui/material/TextField";
 import { Button, FormControlLabel, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Resolver, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { collectionValidationSchema } from "@utils/validators/collectionValidationSchema";
+import { collectionValidationSchema } from "@utils/validationSchemas";
 import { useUserContext } from "@contexts/UserContext";
 import { ICollection, ICollectionForm } from "@models/ICollectionForm";
 import { collectionApiService } from "@services/CollectionApiService";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
@@ -45,8 +46,11 @@ export default function ModalCollectionCreate({
       description: "",
       is_public: true,
     },
-    resolver: yupResolver(collectionValidationSchema),
+    resolver: yupResolver(
+      collectionValidationSchema
+    ) as Resolver<ICollectionForm>,
   });
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (isUpdatingCollection) {
@@ -68,6 +72,7 @@ export default function ModalCollectionCreate({
         .updateCollection(collection?.id, watch())
         .then(() => {
           onCollectionAdded();
+          queryClient.invalidateQueries({ queryKey: ["collections"] });
         })
         .catch(() => setOpenSnackBar(true))
         .finally(() => {
@@ -78,6 +83,7 @@ export default function ModalCollectionCreate({
         .createCollection(watch())
         .then(() => {
           onCollectionAdded();
+          queryClient.invalidateQueries({ queryKey: ["collections"] });
         })
         .catch(() => setOpenSnackBar(true))
         .finally(() => {

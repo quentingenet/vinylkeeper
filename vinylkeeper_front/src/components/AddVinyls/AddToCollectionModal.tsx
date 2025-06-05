@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, memo } from "react";
 import {
   Modal,
   Box,
@@ -14,6 +14,7 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -22,13 +23,17 @@ import {
   IArtistRequestResults,
 } from "@models/IRequestProxy";
 import { ICollection } from "@models/ICollectionForm";
-import { collectionApiService } from "@services/CollectionApiService";
 import {
-  addToWishlist,
-  addToCollection,
-} from "@services/ExternalReferenceService";
+  collectionApiService,
+  type CollectionResponse,
+} from "@services/CollectionApiService";
+import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import useDetectMobile from "@hooks/useDetectMobile";
+import {
+  AddToWishlistRequest,
+  AddToCollectionRequest,
+} from "@models/IExternalReference";
 
 interface AddToCollectionModalProps {
   open: boolean;
@@ -43,121 +48,169 @@ interface CollectionSelectionModalProps {
   onBack: () => void;
   item: IAlbumRequestResults | IArtistRequestResults;
   itemType: "album" | "artist";
-  collections: ICollection[];
+  collections: CollectionResponse[];
   onAddToCollection: (collectionId: number) => void;
   successMessage?: string;
+  isLoading?: boolean;
 }
 
-const CollectionSelectionModal: React.FC<CollectionSelectionModalProps> = ({
-  open,
-  onClose,
-  onBack,
-  item,
-  itemType,
-  collections,
-  onAddToCollection,
-  successMessage,
-}) => {
-  const { isMobile } = useDetectMobile();
+const modalStyle = (isMobile: boolean) => ({
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: isMobile ? "90%" : 350,
+  maxWidth: "90vw",
+  bgcolor: "#3f3f41",
+  borderRadius: 2,
+  boxShadow: 24,
+  p: 2,
+  maxHeight: "80vh",
+  overflow: "auto",
+  "& .MuiListItemText-primary": {
+    wordBreak: "break-word",
+  },
+  "& .MuiListItemText-secondary": {
+    wordBreak: "break-word",
+  },
+});
 
-  const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: isMobile ? "85%" : 400,
-    bgcolor: "#3f3f41",
-    borderRadius: 2,
-    boxShadow: 24,
-    p: 3,
-    maxHeight: "80vh",
-    overflow: "auto",
-  };
+const alertStyle = (isError: boolean = false) => ({
+  width: "auto",
+  maxWidth: "100%",
+  mb: 2,
+  backgroundColor: isError
+    ? "rgba(211, 47, 47, 0.1)"
+    : "rgba(46, 125, 50, 0.1)",
+  color: isError ? "#ff6b6b" : "#4caf50",
+  wordBreak: "break-word",
+  whiteSpace: "normal",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
 
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      closeAfterTransition
-      slots={{ backdrop: Backdrop }}
-    >
-      <Fade in={open}>
-        <Box sx={style}>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={2}
-          >
-            <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
-              Select Collection
-            </Typography>
-            <IconButton onClick={onClose} size="small">
-              <CloseIcon sx={{ color: "#fffbf9" }} />
-            </IconButton>
-          </Box>
-
-          {successMessage && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {successMessage}
-            </Alert>
-          )}
-
-          <Typography variant="body2" sx={{ color: "#fffbf9" }} mb={2}>
-            Add "
-            {itemType === "album"
-              ? (item as IAlbumRequestResults).title
-              : (item as IArtistRequestResults).name}
-            " to a collection:
-          </Typography>
-
-          {collections.length === 0 ? (
-            <Typography
-              variant="body2"
-              sx={{ color: "#fffbf9" }}
-              textAlign="center"
-              py={4}
-            >
-              No collections found. Create a collection first.
-            </Typography>
-          ) : (
-            <List dense>
-              {collections.map((collection) => (
-                <React.Fragment key={collection.id}>
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      onClick={() => onAddToCollection(collection.id)}
-                      sx={{ borderRadius: 1 }}
-                    >
-                      <ListItemText
-                        primary={collection.name}
-                        secondary={collection.description || "No description"}
-                        sx={{
-                          "& .MuiListItemText-primary": { color: "#fffbf9" },
-                          "& .MuiListItemText-secondary": { color: "#e4e4e4" },
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                  <Divider sx={{ bgcolor: "#666" }} />
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-
-          <Box display="flex" justifyContent="space-between" mt={3}>
-            <Button variant="text" onClick={onBack} sx={{ color: "#fffbf9" }}>
-              Back
-            </Button>
-            <Button variant="text" onClick={onClose} sx={{ color: "#fffbf9" }}>
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      </Fade>
-    </Modal>
-  );
+const buttonStyle = {
+  color: "#fffbf9",
+  "&:hover": { color: "#C9A726" },
 };
+
+const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
+  ({
+    open,
+    onClose,
+    onBack,
+    item,
+    itemType,
+    collections,
+    onAddToCollection,
+    successMessage,
+    isLoading = false,
+  }) => {
+    const { isMobile } = useDetectMobile();
+    const isError = successMessage?.includes("Error");
+
+    return (
+      <Modal
+        open={open}
+        onClose={onClose}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+      >
+        <Fade in={open}>
+          <Box sx={modalStyle(isMobile)}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+            >
+              <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
+                Select a collection
+              </Typography>
+              <IconButton onClick={onClose} size="small">
+                <CloseIcon sx={{ color: "#fffbf9" }} />
+              </IconButton>
+            </Box>
+
+            {successMessage && (
+              <Alert
+                severity={isError ? "error" : "success"}
+                sx={alertStyle(isError)}
+              >
+                {successMessage}
+              </Alert>
+            )}
+
+            <Typography variant="body2" sx={{ color: "#fffbf9" }} mb={2}>
+              Add "
+              {itemType === "album"
+                ? (item as IAlbumRequestResults).title
+                : (item as IArtistRequestResults).name}
+              " to a collection:
+            </Typography>
+
+            {isLoading ? (
+              <Box display="flex" justifyContent="center" py={4}>
+                <CircularProgress sx={{ color: "#C9A726" }} />
+              </Box>
+            ) : collections.length === 0 ? (
+              <Typography
+                variant="body2"
+                sx={{ color: "#fffbf9" }}
+                textAlign="center"
+                py={4}
+              >
+                No collections found. Create a collection first.
+              </Typography>
+            ) : (
+              <List dense>
+                {collections.map((collection) => (
+                  <React.Fragment key={collection.id}>
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        onClick={() => onAddToCollection(collection.id)}
+                        sx={{
+                          borderRadius: 1,
+                          transition: "background-color 0.2s",
+                          "&:hover": {
+                            backgroundColor: "rgba(201, 167, 38, 0.1)",
+                          },
+                        }}
+                      >
+                        <ListItemText
+                          primary={collection.name}
+                          secondary={collection.description || "No description"}
+                          sx={{
+                            "& .MuiListItemText-primary": { color: "#fffbf9" },
+                            "& .MuiListItemText-secondary": {
+                              color: "#e4e4e4",
+                            },
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                    <Divider sx={{ bgcolor: "#666" }} />
+                  </React.Fragment>
+                ))}
+              </List>
+            )}
+
+            <Box display="flex" justifyContent="space-between" mt={3}>
+              <Button variant="text" onClick={onBack} sx={buttonStyle}>
+                Back
+              </Button>
+              <Button variant="text" onClick={onClose} sx={buttonStyle}>
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
+    );
+  }
+);
+
+CollectionSelectionModal.displayName = "CollectionSelectionModal";
 
 const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
   open,
@@ -167,162 +220,100 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 }) => {
   const [showCollectionSelection, setShowCollectionSelection] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [confirmationType, setConfirmationType] = useState<
-    "wishlist" | "collection" | null
-  >(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<
     number | null
   >(null);
   const { isMobile } = useDetectMobile();
   const queryClient = useQueryClient();
+  const isError = successMessage?.includes("Error");
 
   const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
     queryKey: ["collections"],
     queryFn: () => collectionApiService.getCollections(1, 100),
     enabled: open,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const collections = collectionsData?.items || [];
 
+  const handleMutationSuccess = (queryKey: string) => {
+    queryClient.invalidateQueries({ queryKey: [queryKey] });
+    setSuccessMessage("Successfully added!");
+    setTimeout(() => {
+      setSuccessMessage("");
+      onClose();
+    }, 2000);
+  };
+
+  const handleMutationError = (error: Error) => {
+    const errorMessage = error.message.includes("Error adding to")
+      ? error.message
+      : "An error occurred while adding to collection";
+    setSuccessMessage(errorMessage);
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
   const addToWishlistMutation = useMutation({
-    mutationFn: async (albumData: {
-      external_id: string;
-      title: string;
-      artist_name?: string;
-      picture_medium?: string;
-    }) => {
-      return addToWishlist(albumData);
+    mutationFn: (albumData: AddToWishlistRequest) => {
+      return externalReferenceApiService.addToWishlist(albumData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wishlistItems"] });
-      setSuccessMessage("Added successfully!");
-      setTimeout(() => {
-        setSuccessMessage("");
-        onClose();
-      }, 2000);
-    },
-    onError: (error) => {
-      console.error("Error adding to wishlist:", error);
-      setSuccessMessage("Error adding to wishlist");
-    },
+    onSuccess: () => handleMutationSuccess("wishlist"),
+    onError: handleMutationError,
   });
 
   const addToCollectionMutation = useMutation({
-    mutationFn: async ({
-      collectionId,
-      itemData,
-    }: {
+    mutationFn: (data: {
       collectionId: number;
-      itemData: {
-        external_id: string;
-        item_type: "album" | "artist";
-        title: string;
-        artist_name?: string;
-        picture_medium?: string;
-      };
+      item: AddToCollectionRequest;
     }) => {
-      return addToCollection(collectionId, itemData);
+      return externalReferenceApiService.addToCollection(
+        data.collectionId,
+        data.item
+      );
     },
-    onSuccess: () => {
-      setSuccessMessage("Added successfully!");
-      setTimeout(() => {
-        setSuccessMessage("");
-        setShowCollectionSelection(false);
-        onClose();
-      }, 2000);
-    },
-    onError: (error) => {
-      console.error("Error adding to collection:", error);
-      setSuccessMessage("Error adding to collection");
-    },
+    onSuccess: () => handleMutationSuccess("collections"),
+    onError: handleMutationError,
   });
 
   const handleAddToWishlist = () => {
-    setConfirmationType("wishlist");
-    setConfirmationOpen(true);
+    if (!item) return;
+    addToWishlistMutation.mutate({
+      external_id: item.id.toString(),
+      entity_type: itemType.toUpperCase() as "ALBUM" | "ARTIST",
+      title:
+        itemType === "album"
+          ? (item as IAlbumRequestResults).title || item.id.toString()
+          : (item as IArtistRequestResults).name || item.id.toString(),
+      image_url: item.picture || "",
+      source: "DISCOGS",
+    });
   };
 
   const handleAddToCollection = (collectionId: number) => {
+    if (!item) return;
     setSelectedCollectionId(collectionId);
-    setConfirmationType("collection");
-    setConfirmationOpen(true);
+    addToCollectionMutation.mutate({
+      collectionId,
+      item: {
+        external_id: item.id.toString(),
+        entity_type: itemType.toUpperCase() as "ALBUM" | "ARTIST",
+        title:
+          itemType === "album"
+            ? (item as IAlbumRequestResults).title || item.id.toString()
+            : (item as IArtistRequestResults).name || item.id.toString(),
+        image_url: item.picture || "",
+        source: "DISCOGS",
+      },
+    });
   };
 
-  const confirmAction = () => {
-    if (confirmationType === "wishlist" && item && itemType === "album") {
-      const albumItem = item as IAlbumRequestResults;
-      addToWishlistMutation.mutate({
-        external_id: item.uuid,
-        title: albumItem.title || "",
-        artist_name:
-          typeof albumItem.artist === "object"
-            ? albumItem.artist?.name || undefined
-            : albumItem.artist || undefined,
-        picture_medium: item.picture_medium || undefined,
-      });
-    } else if (
-      confirmationType === "collection" &&
-      item &&
-      selectedCollectionId
-    ) {
-      const getTitle = () => {
-        if (itemType === "album") {
-          return (item as IAlbumRequestResults).title || "";
-        } else {
-          return (item as IArtistRequestResults).name || "";
-        }
-      };
-
-      const getArtistName = () => {
-        if (itemType === "album") {
-          const albumItem = item as IAlbumRequestResults;
-          return typeof albumItem.artist === "object"
-            ? albumItem.artist?.name || undefined
-            : albumItem.artist || undefined;
-        }
-        return undefined;
-      };
-
-      addToCollectionMutation.mutate({
-        collectionId: selectedCollectionId,
-        itemData: {
-          external_id: item.uuid,
-          item_type: itemType,
-          title: getTitle(),
-          artist_name: getArtistName(),
-          picture_medium: item.picture_medium,
-        },
-      });
-    }
-    setConfirmationOpen(false);
-    setConfirmationType(null);
-    setSelectedCollectionId(null);
-  };
-
-  const cancelConfirmation = () => {
-    setConfirmationOpen(false);
-    setConfirmationType(null);
-    setSelectedCollectionId(null);
-  };
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setShowCollectionSelection(false);
     setSuccessMessage("");
+    setSelectedCollectionId(null);
     onClose();
-  };
-
-  const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: isMobile ? "85%" : 400,
-    bgcolor: "#3f3f41",
-    borderRadius: 2,
-    boxShadow: 24,
-    p: 3,
-  };
+  }, [onClose]);
 
   if (!item) return null;
 
@@ -335,7 +326,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         slots={{ backdrop: Backdrop }}
       >
         <Fade in={open && !showCollectionSelection}>
-          <Box sx={style}>
+          <Box sx={modalStyle(isMobile)}>
             <Box
               display="flex"
               justifyContent="space-between"
@@ -343,7 +334,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
               mb={2}
             >
               <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
-                Add to collection or wishlist
+                Add to collection
               </Typography>
               <IconButton onClick={handleClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
@@ -351,184 +342,76 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
             </Box>
 
             {successMessage && (
-              <Alert severity="success" sx={{ mb: 2 }}>
+              <Alert
+                severity={isError ? "error" : "success"}
+                sx={alertStyle(isError)}
+              >
                 {successMessage}
               </Alert>
             )}
 
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              mb={3}
-            >
-              <img
-                src={item.picture_medium}
-                alt={
-                  itemType === "album"
-                    ? (item as IAlbumRequestResults).title
-                    : (item as IArtistRequestResults).name
-                }
-                style={{
-                  width: 150,
-                  height: 150,
-                  objectFit: "contain",
-                  borderRadius: 4,
-                  marginRight: 16,
-                }}
-              />
-              <Box>
-                {itemType === "album" &&
-                  (item as IAlbumRequestResults).artist?.name && (
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight="bold"
-                      sx={{ color: "#C9A726", marginBottom: "4px" }}
-                    >
-                      {(item as IAlbumRequestResults).artist?.name}
-                    </Typography>
-                  )}
-                <Typography variant="body2" sx={{ color: "#fffbf9" }}>
-                  {itemType === "album"
-                    ? (item as IAlbumRequestResults).title
-                    : (item as IArtistRequestResults).name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#e4e4e4" }}>
-                  {itemType === "album" ? "Album" : "Artist"}
-                </Typography>
-              </Box>
-            </Box>
-
             <Box display="flex" flexDirection="column" gap={2}>
-              {itemType === "album" && (
+              <Tooltip title="Add to wishlist">
                 <Button
-                  variant="text"
+                  variant="contained"
                   startIcon={<FavoriteIcon />}
                   onClick={handleAddToWishlist}
                   disabled={addToWishlistMutation.isPending}
-                  fullWidth
                   sx={{
-                    justifyContent: "flex-start",
-                    color: "#C9A726",
-                    "&:hover": {
-                      backgroundColor: "rgba(201, 167, 38, 0.1)",
-                    },
+                    bgcolor: "#C9A726",
+                    "&:hover": { bgcolor: "#b08c1f" },
+                    "&:disabled": { bgcolor: "#666" },
                   }}
                 >
                   {addToWishlistMutation.isPending ? (
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                  ) : null}
-                  Add to Wishlist
+                    <CircularProgress size={24} sx={{ color: "#fff" }} />
+                  ) : (
+                    "Add to wishlist"
+                  )}
                 </Button>
-              )}
+              </Tooltip>
 
-              <Button
-                variant="contained"
-                onClick={() => setShowCollectionSelection(true)}
-                disabled={
-                  collectionsLoading || addToCollectionMutation.isPending
-                }
-                fullWidth
-                sx={{
-                  justifyContent: "flex-start",
-                  backgroundColor: "#C9A726",
-                  "&:hover": {
-                    backgroundColor: "#b8961f",
-                  },
-                }}
-              >
-                {collectionsLoading || addToCollectionMutation.isPending ? (
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                ) : null}
-                Add to My Collections
-              </Button>
-            </Box>
-
-            <Box display="flex" justifyContent="center" mt={3}>
-              <Button
-                variant="text"
-                onClick={handleClose}
-                sx={{ color: "#fffbf9" }}
-              >
-                Cancel
-              </Button>
+              <Tooltip title="Add to existing collection">
+                <Button
+                  variant="outlined"
+                  onClick={() => setShowCollectionSelection(true)}
+                  disabled={collectionsLoading}
+                  sx={{
+                    color: "#C9A726",
+                    "&:hover": {
+                      borderColor: "#C9A726",
+                      bgcolor: "#C9A726",
+                      color: "#1F1F1F",
+                    },
+                    "&:disabled": {
+                      borderColor: "#666",
+                      color: "#666",
+                    },
+                  }}
+                >
+                  {collectionsLoading ? (
+                    <CircularProgress size={24} sx={{ color: "#C9A726" }} />
+                  ) : (
+                    "Add to collection"
+                  )}
+                </Button>
+              </Tooltip>
             </Box>
           </Box>
         </Fade>
       </Modal>
 
-      {item && (
-        <CollectionSelectionModal
-          open={showCollectionSelection}
-          onClose={handleClose}
-          onBack={() => setShowCollectionSelection(false)}
-          item={item}
-          itemType={itemType}
-          collections={collections}
-          onAddToCollection={handleAddToCollection}
-          successMessage={successMessage}
-        />
-      )}
-
-      {/* Confirmation Modal */}
-      <Modal
-        open={confirmationOpen}
-        onClose={cancelConfirmation}
-        closeAfterTransition
-        slots={{ backdrop: Backdrop }}
-      >
-        <Fade in={confirmationOpen}>
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: isMobile ? "80%" : 350,
-              bgcolor: "#3f3f41",
-              borderRadius: 2,
-              boxShadow: 24,
-              p: 3,
-            }}
-          >
-            <Typography
-              variant="h6"
-              component="h2"
-              sx={{ color: "#C9A726", mb: 2 }}
-            >
-              Confirm Action
-            </Typography>
-
-            <Typography variant="body1" sx={{ color: "#fffbf9", mb: 3 }}>
-              Are you sure you want to add "
-              {itemType === "album"
-                ? (item as IAlbumRequestResults).title
-                : (item as IArtistRequestResults).name}
-              " ?
-            </Typography>
-
-            <Box display="flex" justifyContent="space-between" gap={2}>
-              <Button
-                variant="text"
-                onClick={cancelConfirmation}
-                sx={{ color: "#fffbf9" }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={confirmAction}
-                sx={{
-                  backgroundColor: "#C9A726",
-                  "&:hover": { backgroundColor: "#b8961f" },
-                }}
-              >
-                Confirm
-              </Button>
-            </Box>
-          </Box>
-        </Fade>
-      </Modal>
+      <CollectionSelectionModal
+        open={showCollectionSelection}
+        onClose={() => setShowCollectionSelection(false)}
+        onBack={() => setShowCollectionSelection(false)}
+        item={item}
+        itemType={itemType}
+        collections={collections}
+        onAddToCollection={handleAddToCollection}
+        successMessage={successMessage}
+        isLoading={addToCollectionMutation.isPending}
+      />
     </>
   );
 };

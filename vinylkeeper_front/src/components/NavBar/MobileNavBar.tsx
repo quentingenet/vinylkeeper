@@ -80,24 +80,15 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       linkTo: EGlobalUrls.WISHLIST,
     },
     {
-      text: "Loans",
+      text: "Places",
       icon: <SwapHorizIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.LOANS,
+      linkTo: EGlobalUrls.PLACES,
     },
-    {
-      text: "Community",
-      icon: <GroupIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.COMMUNITY,
-    },
+
     {
       text: "Settings",
       icon: <SettingsIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SETTINGS,
-    },
-    {
-      text: "Contact",
-      icon: <ContactMailIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.CONTACT,
     },
     {
       text: "Logout",

@@ -22,6 +22,11 @@ import {
   IResetPasswordToBackend,
 } from "@models/IResetPassword";
 import { userApiService } from "@services/UserApiService";
+import {
+  passwordAtLeast4,
+  passwordWithLetter,
+  passwordWithNumber,
+} from "@utils/Regex";
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate();
@@ -58,8 +63,13 @@ export default function ResetPasswordForm() {
   const validationSchema = yup.object({
     password: yup
       .string()
-      .min(4, "Password must contain at least 4 characters.")
-      .required("You must enter your password."),
+      .required("You must enter your password.")
+      .matches(passwordWithLetter, "Your password must contain a letter")
+      .matches(passwordWithNumber, "Your password must contain a number")
+      .matches(
+        passwordAtLeast4,
+        "Your password must contain at least 4 characters"
+      ),
     passwordBis: yup
       .string()
       .oneOf([yup.ref("password"), undefined], "Passwords must match.")
@@ -103,7 +113,7 @@ export default function ResetPasswordForm() {
         className={styles.globalForm}
       >
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid>
             <Controller
               name="password"
               control={control}
@@ -134,7 +144,7 @@ export default function ResetPasswordForm() {
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid>
             <Controller
               name="passwordBis"
               control={control}
@@ -173,7 +183,7 @@ export default function ResetPasswordForm() {
           spacing={2}
           mt={2}
         >
-          <Grid item>
+          <Grid>
             {isLoading ? (
               <CircularProgress color="primary" />
             ) : (

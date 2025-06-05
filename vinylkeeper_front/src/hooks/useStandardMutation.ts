@@ -31,10 +31,6 @@ export const useStandardMutation = <TData = any, TVariables = void>({
         queryClient.invalidateQueries({ queryKey: [queryKey] });
       });
 
-      if (showSuccessToast && successMessage) {
-        console.log("Success:", successMessage);
-      }
-
       onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {

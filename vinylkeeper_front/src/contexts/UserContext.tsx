@@ -1,6 +1,6 @@
 import { API_VK_URL } from "@utils/GlobalUtils";
 import requestService from "@utils/RequestService";
-import { userApiService, type ICurrentUser } from "@services/UserApiService";
+import { userApiService, type UserResponse } from "@services/UserApiService";
 import {
   createContext,
   useContext,
@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
  * @property {function} setOpenDialog - Function to control dialog visibility
  * @property {function} refreshJwt - Async function to refresh JWT token
  * @property {function} logout - Function to handle user logout
- * @property {ICurrentUser | null} currentUser - Current user information
+ * @property {UserResponse | null} currentUser - Current user information
  * @property {function} setCurrentUser - Function to update current user information
  */
 interface IUserContext {
@@ -38,8 +38,8 @@ interface IUserContext {
   openDialog: boolean;
   setOpenDialog: (openDialog: boolean) => void;
   logout: () => void;
-  currentUser: ICurrentUser | null;
-  setCurrentUser: (user: ICurrentUser | null) => void;
+  currentUser: UserResponse | null;
+  setCurrentUser: (user: UserResponse | null) => void;
 }
 
 /**
@@ -75,16 +75,24 @@ export function UserContextProvider({
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<ICurrentUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState<boolean>(false);
 
   const checkUserLoggedIn = useCallback(async () => {
+    // Only check once on initial load, then only if user is logged in
+    if (hasCheckedAuth && !isUserLoggedIn) {
+      return;
+    }
+
     try {
       const response = await requestService<{ isLoggedIn: boolean }>({
         apiTarget: API_VK_URL,
-        method: "GET",
-        endpoint: "/users/check-auth",
+        method: "POST",
+        endpoint: "/users/refresh-token",
+        skipRefresh: true,
       });
       setIsUserLoggedIn(response.isLoggedIn);
+      setHasCheckedAuth(true);
 
       if (response.isLoggedIn) {
         try {
@@ -92,6 +100,8 @@ export function UserContextProvider({
           setCurrentUser(user);
         } catch (error) {
           console.error("Error fetching current user:", error);
+          // If we can't fetch user data, assume user is not logged in
+          setIsUserLoggedIn(false);
           setCurrentUser(null);
         }
       } else {
@@ -101,8 +111,9 @@ export function UserContextProvider({
       console.error("Error while checking user logged in:", error);
       setIsUserLoggedIn(false);
       setCurrentUser(null);
+      setHasCheckedAuth(true);
     }
-  }, []);
+  }, [hasCheckedAuth, isUserLoggedIn]);
 
   const logout = useCallback(async () => {
     try {
@@ -123,9 +134,14 @@ export function UserContextProvider({
 
   useEffect(() => {
     checkUserLoggedIn();
-    const intervalId = setInterval(checkUserLoggedIn, 25 * 60 * 1000);
+    // Only set up interval if user is logged in
+    const intervalId = setInterval(() => {
+      if (isUserLoggedIn) {
+        checkUserLoggedIn();
+      }
+    }, 25 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, [checkUserLoggedIn]);
+  }, [checkUserLoggedIn, isUserLoggedIn]);
 
   const value: IUserContext = {
     isLoading,

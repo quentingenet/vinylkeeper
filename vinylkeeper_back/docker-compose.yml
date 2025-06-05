@@ -1,6 +1,6 @@
 services:
   vinylkeeper-db:
-    image: postgres:16.2
+    image: postgres:16.3
     container_name: vinylkeeper-db
     env_file:
       - .env.db
@@ -23,11 +23,16 @@ services:
     networks:
       - vk_network
     volumes:
-      - ./:/api
-      - ./api/keys:/api/keys
+      - ./:/app
+      - ./app/keys:/app/keys
     env_file:
-      - api/.env.production
-    command: sh -c "cd /api && poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"
+      - app/.env.production
+    environment:
+      - TZ=Europe/Paris
+    working_dir: /app
+    command: >
+      sh -c "poetry run alembic upgrade head &&
+             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000"
     restart: always
 
 networks:

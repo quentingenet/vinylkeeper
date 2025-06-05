@@ -1,7 +1,18 @@
 .dashboard {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
+    justify-items: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+
+    @media (max-width: 900px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 600px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
 
     .textTitleShadow {
         color: #c9a726;
@@ -9,13 +20,10 @@
     }
 
     .stat {
-        flex: 1 1 calc(25% - 16px);
-        min-width: 200px;
-
-        @media (max-width: 600px) {
-            flex: 1 1 calc(50% - 16px);
-            min-width: 150px;
-        }
+        width: 100%;
+        min-width: 120px;
+        display: flex;
+        justify-content: center;
     }
 
     .card {
@@ -24,18 +32,55 @@
         box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         text-align: center;
         color: #e4e4e4;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .statCard {
+        height: 130px;
+        max-height: 130px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+        @media (max-width: 600px) {
+            height: 130px;
+            max-height: 130px;
+        }
     }
 
     .rowCenter {
+        grid-column: 1 / -1;
         display: flex;
         justify-content: center;
-        gap: 16px;
+        align-items: center;
         width: 100%;
-        flex-wrap: wrap;
+        margin-top: 8px;
+        box-sizing: border-box;
+
+        @media (max-width: 600px) {
+            grid-column: 1 / 3;
+        }
     }
 
     .chart {
-        flex: 1 1 48%;
-        max-width: 400px;
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+        box-sizing: border-box;
+
+        @media (max-width: 1200px) {
+            max-width: 800px;
+        }
+        @media (max-width: 900px) {
+            max-width: 600px;
+        }
+        @media (max-width: 600px) {
+            max-width: 100%;
+            width: 100%;
+        }
     }
 }

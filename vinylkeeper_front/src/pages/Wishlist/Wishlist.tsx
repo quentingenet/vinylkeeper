@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getWishlistItems,
-  removeFromWishlist,
-} from "@services/WishlistService";
+import { WishlistItemResponse } from "@models/IExternalReference";
+import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import {
   Typography,
   Box,
@@ -18,7 +16,6 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useState } from "react";
-import { IWishlistItem } from "@models/IWishlist";
 import useDetectMobile from "@hooks/useDetectMobile";
 import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
@@ -26,7 +23,9 @@ import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 export default function Wishlist() {
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<IWishlistItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<WishlistItemResponse | null>(
+    null
+  );
   const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
   const [selectedPlaybackItem, setSelectedPlaybackItem] =
     useState<PlaybackItem | null>(null);
@@ -39,11 +38,12 @@ export default function Wishlist() {
     error,
   } = useQuery({
     queryKey: ["wishlistItems"],
-    queryFn: getWishlistItems,
+    queryFn: externalReferenceApiService.getUserWishlist,
   });
 
   const removeFromWishlistMutation = useMutation({
-    mutationFn: removeFromWishlist,
+    mutationFn: (id: number) =>
+      externalReferenceApiService.removeFromWishlist(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlistItems"] });
       setSuccessMessage("Item removed from wishlist!");
@@ -58,7 +58,7 @@ export default function Wishlist() {
     },
   });
 
-  const handleRemoveClick = (item: IWishlistItem) => {
+  const handleRemoveClick = (item: WishlistItemResponse) => {
     setSelectedItem(item);
     setConfirmationOpen(true);
   };
@@ -74,14 +74,13 @@ export default function Wishlist() {
     setSelectedItem(null);
   };
 
-  const handlePlayClick = (item: IWishlistItem) => {
+  const handlePlayClick = (item: WishlistItemResponse) => {
     const playbackItem: PlaybackItem = {
-      id: item.id,
-      title: item.title || "Unknown Album",
-      artist: item.artistName || "Unknown Artist",
-      source: "deezer",
-      deezerId: item.externalId ? String(item.externalId) : "",
-      pictureMedium: item.pictureMedium || "",
+      id: item.external_id,
+      title: item.title,
+      artist: "",
+      image_url: item.image_url,
+      itemType: item.entity_type === "ALBUM" ? "album" : "artist",
     };
     setSelectedPlaybackItem(playbackItem);
     setPlaybackModalOpen(true);
@@ -108,7 +107,7 @@ export default function Wishlist() {
   if (error) {
     return (
       <Box sx={{ padding: 3 }}>
-        <Typography variant="h6" color="error">
+        <Typography variant="h6" color="white">
           Error loading wishlist
         </Typography>
       </Box>
@@ -141,7 +140,7 @@ export default function Wishlist() {
           gap={4}
           marginY={isMobile ? 1 : 3}
         >
-          {items.map((item: IWishlistItem) => (
+          {items.map((item: WishlistItemResponse) => (
             <Card
               key={`wishlist-item-${item.id}`}
               sx={{
@@ -198,7 +197,7 @@ export default function Wishlist() {
                 }}
               >
                 <img
-                  src={item.pictureMedium || "/default-album.png"}
+                  src={item.image_url || "/default-album.png"}
                   alt={item.title}
                   style={{
                     width: "100%",
@@ -226,37 +225,63 @@ export default function Wishlist() {
                   padding: "16px",
                 }}
               >
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    color: "#C9A726",
-                    marginBottom: "4px",
-                    fontWeight: "bold",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    width: "100%",
-                  }}
-                >
-                  {item.artistName || "Unknown Artist"}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "#fffbf9",
-                    marginBottom: "8px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    width: "100%",
-                  }}
-                >
-                  {item.title}
-                </Typography>
+                {item.entity_type === "ALBUM" ? (
+                  <>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: "#C9A726",
+                        marginBottom: "4px",
+                        fontWeight: "bold",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        width: "100%",
+                      }}
+                    >
+                      {item.title || "Unknown Album"}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "#fffbf9",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Album
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: "#C9A726",
+                        marginBottom: "4px",
+                        fontWeight: "bold",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        width: "100%",
+                      }}
+                    >
+                      {item.title || "Unknown Artist"}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "#fffbf9",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Artist
+                    </Typography>
+                  </>
+                )}
                 <Typography variant="caption" sx={{ color: "#888" }}>
                   Added{" "}
-                  {item.createdAt
-                    ? new Date(item.createdAt).toLocaleDateString()
+                  {item.created_at
+                    ? new Date(item.created_at).toLocaleDateString()
                     : "Unknown date"}
                 </Typography>
               </CardContent>
@@ -265,7 +290,6 @@ export default function Wishlist() {
         </Box>
       )}
 
-      {/* Confirmation Modal */}
       <Modal
         open={confirmationOpen}
         onClose={handleCancelRemove}
@@ -303,7 +327,7 @@ export default function Wishlist() {
                   mb={3}
                 >
                   <img
-                    src={selectedItem.pictureMedium || "/default-album.png"}
+                    src={selectedItem.image_url || "/default-album.png"}
                     alt={selectedItem.title}
                     style={{
                       width: 80,
@@ -314,22 +338,37 @@ export default function Wishlist() {
                     }}
                   />
                   <Box>
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight="bold"
-                      sx={{ color: "#C9A726", marginBottom: "4px" }}
-                    >
-                      {selectedItem.artistName || "Unknown Artist"}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "#fffbf9" }}>
-                      {selectedItem.title}
-                    </Typography>
+                    {selectedItem.entity_type === "ALBUM" ? (
+                      <>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight="bold"
+                          sx={{ color: "#C9A726", marginBottom: "4px" }}
+                        >
+                          {selectedItem.title || "Unknown Artist"}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "#fffbf9" }}>
+                          {selectedItem.title}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="bold"
+                        sx={{ color: "#C9A726" }}
+                      >
+                        {selectedItem.title}
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
 
                 <Typography variant="body1" sx={{ color: "#fffbf9", mb: 3 }}>
-                  Are you sure you want to remove "{selectedItem.title}" from
-                  your wishlist?
+                  Are you sure you want to remove{" "}
+                  {selectedItem.entity_type === "ALBUM"
+                    ? `"${selectedItem.title}" by ${"Unknown Artist"}`
+                    : `"${selectedItem.title}"`}{" "}
+                  from your wishlist?
                 </Typography>
               </>
             )}
@@ -367,7 +406,6 @@ export default function Wishlist() {
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        itemType="album"
       />
 
       <Snackbar
