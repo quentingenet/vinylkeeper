@@ -15,7 +15,6 @@ export default function Footer(props: FooterProps) {
       <span onClick={() => setOpenTermsModal(true)}>
         Terms and conditions&nbsp;
       </span>
-      <span>Contact&nbsp;</span>
       <span>
         <Link
           to={"https://github.com/quentingenet/vinylkeeper"}

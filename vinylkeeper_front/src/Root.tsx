@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { enUS } from "date-fns/locale";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { UserContextProvider, useUserContext } from "@contexts/UserContext";
 import App from "./App";
@@ -29,7 +32,9 @@ const RootContent: React.FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <App />
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={enUS}>
+        <App />
+      </LocalizationProvider>
     </ThemeProvider>
   );
 };

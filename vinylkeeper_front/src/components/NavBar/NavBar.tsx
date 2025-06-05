@@ -21,8 +21,8 @@ import {
   Search as SearchIcon,
   Group as GroupIcon,
   Favorite as FavoriteIcon,
-  SwapHoriz as SwapHorizIcon,
   Settings as SettingsIcon,
+  Place as PlaceIcon,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
@@ -76,34 +76,25 @@ const NavBar: React.FC<NavBarProps> = ({
       linkTo: EGlobalUrls.DASHBOARD,
     },
     {
-      text: "Collections",
-      icon: <AlbumIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.COLLECTIONS,
-    },
-    {
       text: "Add vinyls",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ADD_VINYLS,
     },
+    {
+      text: "Collections",
+      icon: <AlbumIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.COLLECTIONS,
+    },
+
     {
       text: "Explore",
       icon: <SearchIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.EXPLORE,
     },
     {
-      text: "Wishlist",
-      icon: <FavoriteIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.WISHLIST,
-    },
-    {
-      text: "Loans",
-      icon: <SwapHorizIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.LOANS,
-    },
-    {
-      text: "Community",
-      icon: <GroupIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.COMMUNITY,
+      text: "Places",
+      icon: <PlaceIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.PLACES,
     },
     {
       text: "Settings",

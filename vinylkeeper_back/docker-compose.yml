@@ -1,9 +1,9 @@
 services:
   vinylkeeper-db:
-    image: postgres:16.2
+    image: postgres:16.3
     container_name: vinylkeeper-db
     env_file:
-      - .env.db
+      - .env
     networks:
       - vk_network
     volumes:
@@ -11,6 +11,11 @@ services:
     ports:
       - "5432:5432"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   vinylkeeper-back:
     build:
@@ -19,15 +24,21 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
-      - vinylkeeper-db
+      vinylkeeper-db:
+        condition: service_healthy
     networks:
       - vk_network
     volumes:
-      - ./:/api
-      - ./api/keys:/api/keys
+      - ./:/app
+      - ./app/keys:/app/keys
     env_file:
-      - api/.env.production
-    command: sh -c "cd /api && poetry run alembic upgrade head && poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000"
+      - app/.env.production
+    environment:
+      - TZ=Europe/Paris
+    working_dir: /app
+    command: >
+      sh -c "poetry run alembic upgrade head &&
+             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000"
     restart: always
 
 networks:

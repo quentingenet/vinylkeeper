@@ -8,20 +8,21 @@ import { Button, FormControlLabel, IconButton, Switch } from "@mui/material";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { collectionValidationSchema } from "@utils/validators/collectionValidationSchema";
+import { collectionValidationSchema } from "@utils/validators/collection";
 import { useUserContext } from "@contexts/UserContext";
-import { ICollection, ICollectionForm } from "@models/ICollectionForm";
+import { ICollectionForm } from "@models/ICollectionForm";
 import { collectionApiService } from "@services/CollectionApiService";
 import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { CollectionResponse } from "@services/CollectionApiService";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
   isUpdatingCollection: boolean;
   handleClose: () => void;
   onCollectionAdded: () => void;
-  collection?: ICollection;
+  collection?: CollectionResponse;
   isPublic: boolean;
   setIsPublic: (isPublic: boolean) => void;
 }
@@ -39,16 +40,17 @@ export default function ModalCollection({
   const { isMobile } = useDetectMobile();
 
   const {
-    handleSubmit,
-    control,
-    formState: { errors, isValid },
-    watch,
-    setValue,
     register,
+    handleSubmit,
+    formState: { errors, isValid },
+    setValue,
+    watch,
   } = useForm<ICollectionForm>({
     defaultValues: {
-      name: isUpdatingCollection ? collection?.name : "",
-      description: isUpdatingCollection ? collection?.description : "",
+      name: collection?.name ?? "",
+      description: collection?.description ?? "",
+      album_ids: collection?.albums?.map((album) => album.id) ?? [],
+      artist_ids: collection?.artists?.map((artist) => artist.id) ?? [],
       is_public: collection?.is_public ?? isPublic,
     },
     resolver: yupResolver(collectionValidationSchema),
@@ -63,25 +65,27 @@ export default function ModalCollection({
     }
   }, [openModal, collection, setValue]);
 
-  const createMutation = useMutation<ICollection, Error, ICollectionForm>({
+  const createMutation = useMutation<
+    { message: string },
+    Error,
+    ICollectionForm
+  >({
     mutationFn: collectionApiService.createCollection,
-    onSuccess: (data) => {
-      console.log("🔧 DEBUG: Collection created successfully:", data);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       onCollectionAdded();
     },
     onError: (error) => {
-      console.error("🔧 DEBUG: Error creating collection:", error);
+      console.error("Error creating collection:", error);
       userContext.setIsLoading(false);
     },
     onSettled: () => {
-      console.log("🔧 DEBUG: Create mutation settled");
       handleClose();
     },
   });
 
   const updateMutation = useMutation<
-    ICollection,
+    { message: string },
     Error,
     { id: number; data: ICollectionForm }
   >({
@@ -100,19 +104,13 @@ export default function ModalCollection({
   });
 
   const submitCollection = (data: ICollectionForm) => {
-    console.log("🔧 DEBUG: Submitting collection data:", data);
-    console.log("🔧 DEBUG: isValid:", isValid);
-
     if (!isValid) {
-      console.log("🔧 DEBUG: Form is not valid, stopping submission");
       return;
     }
 
     if (isUpdatingCollection && collection?.id) {
-      console.log("🔧 DEBUG: Updating collection with ID:", collection.id);
       updateMutation.mutate({ id: collection.id, data });
     } else {
-      console.log("🔧 DEBUG: Creating new collection");
       createMutation.mutate(data);
     }
   };

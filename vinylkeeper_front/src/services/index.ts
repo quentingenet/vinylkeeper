@@ -1,26 +1,28 @@
 // New API Services - BaseApiService Architecture
-export { UserApiService, userApiService } from "./UserApiService";
 export {
   CollectionApiService,
   collectionApiService,
-  getCollections,
-  switchAreaCollection,
 } from "./CollectionApiService";
-export { SearchApiService, searchApiService } from "./SearchApiService";
-
-// Existing Services (migrated to BaseApiService)
-export { WishlistApiService, wishlistApiService } from "./WishlistService";
 export {
-  ExternalReferenceApiService,
+  DashboardApiService,
+  dashboardApiService,
+} from "./DashboardApiService";
+export {
+  ExternalReferenceService,
   externalReferenceApiService,
 } from "./ExternalReferenceService";
+export { MusicMetadataService } from "./MusicMetadataService";
+export { SearchApiService, searchApiService } from "./SearchApiService";
+export { UserApiService, userApiService } from "./UserApiService";
+export { musicStreamingService } from "./MusicStreamingService";
 
 // Base Service
 export { BaseApiService } from "./BaseApiService";
 
 // Type Exports
 export type {
-  ICurrentUser,
+  UserMini,
+  UserResponse,
   LoginResponse,
   RegisterResponse,
   ForgotPasswordResponse,
@@ -28,8 +30,7 @@ export type {
 } from "./UserApiService";
 
 export type {
-  CollectionDetails,
-  RemoveItemResponse,
+  CollectionCreate,
+  CollectionUpdate,
+  AlbumInCollection,
 } from "./CollectionApiService";
-
-export type { SearchQuery, SearchResults } from "./SearchApiService";

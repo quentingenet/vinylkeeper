@@ -1,3 +1,4 @@
+from app.models.base import Base
 import os
 import sys
 from logging.config import fileConfig
@@ -5,10 +6,13 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 from dotenv import load_dotenv
+from app.models import *
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../api/.env.development"))
+load_dotenv(dotenv_path=os.path.join(
+    os.path.dirname(__file__), "../app/.env.development"))
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../api')))
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../app')))
 
 config = context.config
 
@@ -24,7 +28,6 @@ DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{D
 
 config.set_main_option('sqlalchemy.url', DATABASE_URL)
 
-from api.db.base import Base
 
 target_metadata = Base.metadata
 
@@ -49,7 +52,8 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(connection=connection,
+                          target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

@@ -75,29 +75,15 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       linkTo: EGlobalUrls.EXPLORE,
     },
     {
-      text: "Wishlist",
-      icon: <FavoriteIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.WISHLIST,
-    },
-    {
-      text: "Loans",
+      text: "Places",
       icon: <SwapHorizIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.LOANS,
+      linkTo: EGlobalUrls.PLACES,
     },
-    {
-      text: "Community",
-      icon: <GroupIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.COMMUNITY,
-    },
+
     {
       text: "Settings",
       icon: <SettingsIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SETTINGS,
-    },
-    {
-      text: "Contact",
-      icon: <ContactMailIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.CONTACT,
     },
     {
       text: "Logout",
@@ -204,13 +190,17 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             paddingY: 5,
           }}
         >
-          {menuItems.map(({ text, icon, linkTo }) => (
+          {menuItems.map(({ text, icon, linkTo }, index) => (
             <Box
               key={text}
               sx={{
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
+                gridColumn:
+                  index === menuItems.length - 1 && menuItems.length % 2 === 1
+                    ? "1 / -1"
+                    : "auto",
               }}
             >
               <ListItemButton
@@ -222,6 +212,14 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
                   alignItems: "center",
                   justifyContent: "center",
                   py: 2,
+                  width:
+                    index === menuItems.length - 1 && menuItems.length % 2 === 1
+                      ? "50%"
+                      : "100%",
+                  marginX:
+                    index === menuItems.length - 1 && menuItems.length % 2 === 1
+                      ? "auto"
+                      : 0,
                 }}
               >
                 <ListItemIcon

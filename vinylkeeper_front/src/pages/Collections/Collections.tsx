@@ -2,90 +2,61 @@ import { Box, Typography } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
+import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
-import {
-  collectionApiService,
-  getCollections,
-  switchAreaCollection,
-} from "@services/CollectionApiService";
-import {
-  ICollection,
-  ICollectionResponse,
-  ICollectionSwitchArea,
-} from "@models/ICollectionForm";
+import { CollectionResponse } from "@services/CollectionApiService";
 import ModalCollection from "@components/Collections/ModalCollection";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pagination } from "@mui/material";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
+import { useCollections } from "@hooks/useCollections";
+import { useNavigate } from "react-router-dom";
+import { EGlobalUrls } from "@utils/GlobalUrls";
 
 export default function Collections() {
-  const [openModal, setOpenModal] = useState(false);
-  const [isUpdatingCollection, setIsUpdatingCollection] = useState(false);
-  const [collection, setCollection] = useState<ICollection | undefined>(
-    undefined
-  );
-  const [isPublic, setIsPublic] = useState(false);
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    isUpdating: false,
+    collection: undefined as CollectionResponse | undefined,
+    isPublic: false,
+  });
   const [page, setPage] = useState(1);
   const itemsPerPage = ITEMS_PER_PAGE;
+  const navigate = useNavigate();
 
   const { isMobile } = useDetectMobile();
-  const queryClient = useQueryClient();
-
   const {
-    data: collectionsData,
-    isLoading: collectionsLoading,
+    collections,
+    totalPages,
+    collectionsLoading,
     error,
-  } = useQuery<ICollectionResponse>({
-    queryKey: ["collections", page],
-    queryFn: () => collectionApiService.getCollections(page, itemsPerPage),
-  });
+    isError,
+    handleSwitchVisibility,
+    refreshCollections,
+  } = useCollections(page, itemsPerPage);
 
-  const collections = collectionsData?.items || [];
-  const totalPages = collectionsData?.totalPages || 0;
-
-  const switchAreaMutation = useMutation({
-    mutationFn: ({ collectionId, newIsPublic }: ICollectionSwitchArea) =>
-      collectionApiService.switchCollectionVisibility(
-        collectionId,
-        newIsPublic
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
-    },
-    onError: (error: Error) => {
-      console.error("Error updating collection area status:", error);
-    },
-  });
-
-  const handleSwitchAreaCollection = (
-    collectionId: number,
-    newIsPublic: boolean
+  const handleOpenModalCollection = (
+    isUpdating: boolean,
+    collection?: CollectionResponse
   ) => {
-    switchAreaMutation.mutate({ collectionId, newIsPublic });
-  };
-
-  const handleOpenModalCollection = (isUpdating: boolean) => {
-    setIsUpdatingCollection(isUpdating);
-    if (!isUpdating) {
-      setCollection(undefined);
-    }
-    setOpenModal(true);
+    setModalState({
+      isOpen: true,
+      isUpdating,
+      collection,
+      isPublic: false,
+    });
   };
 
   const handleCloseModalCollection = () => {
-    setOpenModal(false);
-    setIsUpdatingCollection(false);
+    setModalState((prev) => ({ ...prev, isOpen: false, isUpdating: false }));
   };
 
-  const handleCollectionClick = (collectionId: number) => {
-    const selectedCollection = collections.find(
-      (collection) => collection.id === collectionId
+  const handleCollectionClick = (collection: CollectionResponse) => {
+    navigate(
+      EGlobalUrls.COLLECTION_DETAILS.replace(":id", collection.id.toString())
     );
-    setCollection(selectedCollection);
   };
 
-  if (error) {
+  if (isError) {
     return (
       <Box
         display="flex"
@@ -93,7 +64,22 @@ export default function Collections() {
         alignItems="center"
         minHeight="200px"
       >
-        <Typography color="error">Error loading collections</Typography>
+        <Typography color="error">
+          {error instanceof Error ? error.message : "Error loading collections"}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (collectionsLoading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <Typography>Loading collections...</Typography>
       </Box>
     );
   }
@@ -101,23 +87,23 @@ export default function Collections() {
   return (
     <Box>
       <ModalCollection
-        collection={collection}
-        openModal={openModal}
+        collection={modalState.collection}
+        openModal={modalState.isOpen}
         handleClose={handleCloseModalCollection}
-        isUpdatingCollection={isUpdatingCollection}
-        isPublic={isPublic}
-        setIsPublic={setIsPublic}
-        onCollectionAdded={() => {
-          queryClient.invalidateQueries({ queryKey: ["collections"] });
-        }}
+        isUpdatingCollection={modalState.isUpdating}
+        isPublic={modalState.isPublic}
+        setIsPublic={(isPublic) =>
+          setModalState((prev) => ({ ...prev, isPublic }))
+        }
+        onCollectionAdded={refreshCollections}
       />
 
       <Box
-        display={"flex"}
+        display="flex"
         gap={1}
-        flexDirection={"row"}
-        justifyContent={"center"}
-        alignItems={"center"}
+        flexDirection="row"
+        justifyContent="center"
+        alignItems="center"
         sx={{ cursor: "pointer" }}
         onClick={() => handleOpenModalCollection(false)}
       >
@@ -133,52 +119,61 @@ export default function Collections() {
         </Box>
       </Box>
 
-      <Box
-        display={isMobile ? "flex" : "grid"}
-        flexDirection={isMobile ? "column" : "row"}
-        flexWrap={isMobile ? "nowrap" : "wrap"}
-        gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
-        justifyContent={isMobile ? "center" : "flex-start"}
-        alignItems={isMobile ? "center" : "flex-start"}
-        gap={4}
-        marginY={isMobile ? 1 : 3}
-      >
-        {collections && collections.length > 0 ? (
-          collections.map((collection: ICollection) => (
+      {collections && collections.length > 0 ? (
+        <Box
+          display={isMobile ? "flex" : "grid"}
+          flexDirection={isMobile ? "column" : "row"}
+          flexWrap={isMobile ? "nowrap" : "wrap"}
+          gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
+          justifyContent={isMobile ? "center" : "flex-start"}
+          alignItems={isMobile ? "center" : "flex-start"}
+          gap={4}
+          marginY={isMobile ? 1 : 3}
+          sx={{
+            cursor: "pointer",
+            transition: "transform 0.2s ease-in-out",
+            "&:hover": {
+              transform: "scale(1.005)",
+            },
+          }}
+        >
+          {collections.map((collection: CollectionResponse) => (
             <CollectionItem
               key={collection.id}
               collection={collection}
-              onSwitchArea={(newIsPublic) =>
-                handleSwitchAreaCollection(collection.id, newIsPublic)
-              }
-              handleOpenModalCollection={() => {
-                setCollection(collection);
-                handleOpenModalCollection(true);
+              onSwitchArea={(newIsPublic) => {
+                handleSwitchVisibility(collection.id, newIsPublic);
+              }}
+              handleOpenModalCollection={(collection) => {
+                handleOpenModalCollection(true, collection);
               }}
               onCollectionClick={handleCollectionClick}
-              refreshCollections={() => {
-                queryClient.invalidateQueries({ queryKey: ["collections"] });
-              }}
+              isOwner={true}
+              showOwner={false}
             />
-          ))
-        ) : (
-          <Box width="100%" textAlign="center">
-            <Typography variant="body1">
-              No collection found. Create a new one!
-            </Typography>
-          </Box>
-        )}
-      </Box>
+          ))}
+        </Box>
+      ) : (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          marginY={4}
+        >
+          <Typography variant="body1" color="text.secondary">
+            No collection found. Create a new one!
+          </Typography>
+        </Box>
+      )}
 
       {totalPages > 1 && (
         <Box display="flex" justifyContent="center" mt={4} mb={2}>
-          <Pagination
+          <PaginationWithEllipsis
             count={totalPages}
             page={page}
-            onChange={(_, newPage) => setPage(newPage)}
+            onChange={(newPage) => setPage(newPage)}
             color="primary"
             size={isMobile ? "medium" : "large"}
-            shape="circular"
           />
         </Box>
       )}

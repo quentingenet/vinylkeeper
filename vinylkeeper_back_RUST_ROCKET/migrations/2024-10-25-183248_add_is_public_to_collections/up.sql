@@ -1,2 +1,0 @@
-ALTER TABLE collections
-ADD COLUMN is_public BOOLEAN DEFAULT FALSE;

@@ -1,5 +1,14 @@
-import { Box, Typography, Paper } from "@mui/material";
-import { Line, Doughnut } from "react-chartjs-2";
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  CircularProgress,
+  Card,
+  CardContent,
+  Avatar,
+} from "@mui/material";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   LineElement,
@@ -9,9 +18,16 @@ import {
   ArcElement,
   Tooltip,
   Legend,
+  ChartOptions,
 } from "chart.js";
+import { Album, Person } from "@mui/icons-material";
 import styles from "../../styles/pages/Dashboard.module.scss";
 import Counter from "@utils/Counter";
+import { useQuery } from "@tanstack/react-query";
+import { dashboardApiService } from "@services/DashboardApiService";
+import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
+import useDetectMobile from "@hooks/useDetectMobile";
+import { truncateText } from "@utils/GlobalUtils";
 
 ChartJS.register(
   LineElement,
@@ -23,36 +39,125 @@ ChartJS.register(
   Legend
 );
 
+const LatestAdditionCard = ({
+  title,
+  data,
+  icon,
+  color,
+}: {
+  title: string;
+  data?: LatestAddition;
+  icon: React.ReactNode;
+  color: string;
+}) => {
+  const { isMobile } = useDetectMobile();
+
+  return (
+    <Card
+      sx={{
+        backgroundColor: "#2c2c2e",
+        color: "#e4e4e4",
+        height: "100%",
+        boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+      }}
+    >
+      <CardContent>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Avatar sx={{ bgcolor: color, mr: 1 }}>{icon}</Avatar>
+          <Typography variant="h6" sx={{ color: color }}>
+            {title}
+          </Typography>
+        </Box>
+        {data ? (
+          <Box
+            display="flex"
+            flexDirection={isMobile ? "column" : "row"}
+            alignItems={isMobile ? "center" : "flex-start"}
+            gap={2}
+          >
+            {data.image_url && (
+              <img
+                src={data.image_url}
+                alt={data.name}
+                style={{
+                  width: isMobile ? "150px" : "100px",
+                  height: isMobile ? "150px" : "100px",
+                  objectFit: "cover",
+                  borderRadius: "4px",
+                }}
+              />
+            )}
+            <Box flex={1} textAlign={isMobile ? "center" : "left"}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
+                {truncateText(data.name, 55)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Added by{" "}
+                <span style={{ color: color, fontWeight: "bold" }}>
+                  {data.username}
+                </span>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {new Date(data.created_at).toLocaleDateString()}
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No recent additions
+          </Typography>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function Dashboard() {
-  const lineChartData = {
-    labels: ["January", "February", "March", "April", "May", "June", "July"],
-    datasets: [
-      {
-        label: "Albums Added",
-        data: [5, 10, 8, 15, 20, 25, 30],
-        borderColor: "#c9a726",
-        tension: 0.1,
-      },
-    ],
+  const { isMobile } = useDetectMobile();
+  const { data, isLoading, isError } = useQuery<IDashboardStats>({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => dashboardApiService.getStats(),
+    refetchOnMount: true,
+    staleTime: 0, // Always consider data stale to refetch on mount
+  });
+
+  if (isLoading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="300px"
+      >
+        <CircularProgress color="inherit" />
+      </Box>
+    );
+  }
+  if (isError || !data) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="300px"
+      >
+        <Typography color="error">Failed to load dashboard data.</Typography>
+      </Box>
+    );
+  }
+
+  const chartData = {
+    labels: data.labels,
+    datasets: data.datasets.map((ds, idx) => ({
+      label: ds.label,
+      data: ds.data,
+      borderColor: idx === 0 ? "#c9a726" : "#b0b0b0",
+      backgroundColor: "transparent",
+      tension: 0.1,
+    })),
   };
 
-  const doughnutChartData = {
-    labels: ["Rock", "Pop", "Jazz", "Hip-Hop", "Classical"],
-    datasets: [
-      {
-        data: [25, 15, 20, 10, 30],
-        backgroundColor: [
-          "#c9a726",
-          "#b0b0b0",
-          "#353538",
-          "#4a4a4c",
-          "#5c5c5c",
-        ],
-      },
-    ],
-  };
-
-  const chartOptions = {
+  const chartOptions: ChartOptions<"line"> = {
     responsive: true,
     plugins: {
       legend: { display: true, labels: { color: "#FFFFFF" } },
@@ -64,11 +169,21 @@ export default function Dashboard() {
         grid: { color: "rgba(255, 255, 255, 0.1)" },
       },
       y: {
-        ticks: { color: "#FFFFFF" },
+        type: "linear",
+        beginAtZero: true,
+        suggestedMin: 0,
+        ticks: {
+          color: "#FFFFFF",
+          stepSize: 1,
+          callback: function (value: any) {
+            return Number.isInteger(Number(value)) ? value : null;
+          },
+        },
         grid: { color: "rgba(255, 255, 255, 0.1)" },
       },
     },
   };
+
   const renderStatCard = (
     title: string,
     value: number,
@@ -76,56 +191,78 @@ export default function Dashboard() {
     unit: string = ""
   ) => (
     <div className={styles.stat}>
-      <Paper className={styles.card}>
+      <Paper className={`${styles.card} ${styles.statCard}`}>
         <Typography className={styles.textTitleShadow} variant="h6">
           {title}
         </Typography>
         <Typography variant="h4">
-          <Counter target={value} duration={duration} /> {unit}
+          {value === 0 ? "-" : <Counter target={value} duration={duration} />}{" "}
+          {unit}
         </Typography>
       </Paper>
     </div>
   );
+
   return (
-    <>
-      <Box p={3} sx={{ backgroundColor: "#313132", color: "#e4e4e4" }}>
-        <div className={styles.dashboard}>
-          {renderStatCard("Total albums", 120, 2000)}
-          {renderStatCard("Genres", 8, 1500)}
-          {renderStatCard("Recently added", 5, 1500)}
-          {renderStatCard("My collections", 4, 1500)}
-          {renderStatCard("Loans", 4, 1500)}
-          {renderStatCard("Value", 1958, 1500, "$")}
+    <Box p={3} sx={{ backgroundColor: "#313132", color: "#e4e4e4" }}>
+      <div className={styles.dashboard}>
+        {renderStatCard("My albums", data?.user_albums_total ?? 0, 1000)}
+        {renderStatCard("My artists", data?.user_artists_total ?? 0, 1200)}
+        {renderStatCard(
+          "My collections",
+          data?.user_collections_total ?? 0,
+          1500
+        )}
+        {renderStatCard(
+          "Community places",
+          data?.global_places_total ?? 0,
+          900
+        )}
 
-          <div className={styles.rowCenter}>
-            <div className={styles.chart}>
-              <Paper className={styles.card}>
-                <Typography
-                  className={styles.textTitleShadow}
-                  variant="h6"
-                  gutterBottom
-                >
-                  Albums Added Over Time
-                </Typography>
-                <Line data={lineChartData} options={chartOptions} />
-              </Paper>
+        <div className={styles.rowCenter}>
+          <div className={styles.chart}>
+            <Paper className={styles.card}>
+              <Typography
+                className={styles.textTitleShadow}
+                variant="h6"
+                gutterBottom
+              >
+                Global added on {new Date().getFullYear()}
+              </Typography>
+              <Line data={chartData} options={chartOptions} />
+            </Paper>
+          </div>
+        </div>
+
+        <div className={styles.rowCenter}>
+          <div
+            style={{
+              display: "flex",
+              gap: "16px",
+              width: "100%",
+              maxWidth: "800px",
+              flexDirection: isMobile ? "column" : "row",
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <LatestAdditionCard
+                title="Latest Album"
+                data={data.latest_album}
+                icon={<Album />}
+                color="#c9a726"
+              />
             </div>
-
-            <div className={styles.chart}>
-              <Paper className={styles.card}>
-                <Typography
-                  className={styles.textTitleShadow}
-                  variant="h6"
-                  gutterBottom
-                >
-                  Collection by Genre
-                </Typography>
-                <Doughnut data={doughnutChartData} options={chartOptions} />
-              </Paper>
+            <div style={{ flex: 1 }}>
+              <LatestAdditionCard
+                title="Latest Artist"
+                data={data.latest_artist}
+                icon={<Person />}
+                color="#b0b0b0"
+              />
             </div>
           </div>
         </div>
-      </Box>
-    </>
+      </div>
+    </Box>
   );
 }

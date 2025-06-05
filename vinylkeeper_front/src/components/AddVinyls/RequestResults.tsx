@@ -13,7 +13,14 @@ interface IRequestResultsProps {
 
 export default function RequestResults({ results }: IRequestResultsProps) {
   return (
-    <div className={styles.resultsContainer}>
+    <div
+      className={styles.resultsContainer}
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        width: "100%",
+      }}
+    >
       {results.length > 0 &&
       results.find((result: IRequestResults) => result.type === "artist") ? (
         <ResultArtist

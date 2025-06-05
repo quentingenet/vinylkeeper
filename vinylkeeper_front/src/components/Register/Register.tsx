@@ -1,14 +1,17 @@
 import {
+  Box,
   Button,
-  Checkbox,
+  Container,
+  Grid,
+  TextField,
+  Typography,
+  Alert,
   CircularProgress,
+  Checkbox,
   FormControlLabel,
   IconButton,
   InputAdornment,
   Modal,
-  TextField,
-  Typography,
-  Grid2,
 } from "@mui/material";
 import { useState } from "react";
 import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
@@ -48,7 +51,7 @@ const Register = ({
   const { isMobile } = useDetectMobile();
   const {
     handleSubmit,
-    control,
+    register,
     watch,
     formState: { errors, isValid },
   } = useForm<IRegisterForm>({
@@ -72,12 +75,13 @@ const Register = ({
     userContext.setIsLoading(true);
     try {
       const response = await userApiService.register(watch());
-      if (response.isLoggedIn) {
-        userContext.setIsUserLoggedIn(true);
-        navigate("/dashboard");
-      } else {
-        setOpenSnackBar(true);
-      }
+      userContext.setIsUserLoggedIn(response.isLoggedIn);
+
+      // Récupérer les données utilisateur via /me
+      const userData = await userApiService.getCurrentUser();
+      userContext.setCurrentUser(userData);
+
+      navigate("/dashboard");
     } catch (error) {
       console.error("Erreur lors de l'inscription :", error);
       setOpenSnackBar(true);
@@ -90,27 +94,40 @@ const Register = ({
     <Modal
       open={open}
       onClose={handleClose}
-      aria-labelledby="child-modal-title"
-      aria-describedby="child-modal-description"
       sx={{
-        position: "relative",
         display: "flex",
-        alignItems: "center",
+        alignItems: isMobile ? "flex-start" : "center",
         justifyContent: "center",
         margin: "auto",
-        width: isMobile ? "80%" : "20%",
-        bgcolor: "#fffbf9",
         border: "none",
-        borderRadius: "5px",
+        height: isMobile ? "100dvh" : "100vh",
       }}
-      className={styles.formContainer}
     >
-      <Grid2 container spacing={2} justifyContent="center">
+      <Grid
+        container
+        spacing={2}
+        justifyContent="center"
+        sx={{
+          bgcolor: "#fffbf9",
+          borderRadius: "5px",
+          width: isMobile ? "90dvw" : "24vw",
+          minWidth: isMobile ? "280px" : 350,
+          maxWidth: isMobile ? "400px" : 460,
+          maxHeight: isMobile ? "80dvh" : "90vh",
+          overflowY: "auto",
+          boxShadow: 6,
+          mt: isMobile ? "5dvh" : 0,
+          mb: isMobile ? "5dvh" : 0,
+          p: isMobile ? 2 : 4,
+          opacity: isMobile ? 0.9 : 0.7,
+        }}
+      >
         <form
           onSubmit={handleSubmit(submitRegister)}
           className={styles.globalForm}
+          style={{ width: "100%" }}
         >
-          <Grid2 sx={{ width: "100%" }}>
+          <Grid sx={{ width: "100%", mb: 2 }}>
             <TextField
               fullWidth
               label="Username"
@@ -118,23 +135,21 @@ const Register = ({
               variant="outlined"
               error={!!errors.username}
               helperText={errors.username?.message}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Person2 />
-                    </InputAdornment>
-                  ),
-                  style: { textTransform: "lowercase" },
-                },
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Person2 />
+                  </InputAdornment>
+                ),
+                style: { textTransform: "lowercase" },
               }}
-              {...control.register("username", {
+              {...register("username", {
                 setValueAs: (value) => value.toLowerCase(),
               })}
             />
-          </Grid2>
+          </Grid>
 
-          <Grid2 sx={{ width: "100%" }}>
+          <Grid sx={{ width: "100%", mb: 2 }}>
             <TextField
               fullWidth
               label="Email"
@@ -142,23 +157,21 @@ const Register = ({
               variant="outlined"
               error={!!errors.email}
               helperText={errors.email?.message}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Email />
-                    </InputAdornment>
-                  ),
-                  style: { textTransform: "lowercase" },
-                },
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Email />
+                  </InputAdornment>
+                ),
+                style: { textTransform: "lowercase" },
               }}
-              {...control.register("email", {
+              {...register("email", {
                 setValueAs: (value) => value.toLowerCase(),
               })}
             />
-          </Grid2>
+          </Grid>
 
-          <Grid2 sx={{ width: "100%" }}>
+          <Grid sx={{ width: "100%", mb: 2 }}>
             <TextField
               fullWidth
               label="Password"
@@ -166,26 +179,24 @@ const Register = ({
               variant="outlined"
               error={!!errors.password}
               helperText={errors.password?.message}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={handleClickShowPassword}
-                        onMouseDown={handleMouseDownPassword}
-                        sx={{ marginRight: "-8px" }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={handleClickShowPassword}
+                      onMouseDown={handleMouseDownPassword}
+                      sx={{ marginRight: "-8px" }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
               }}
-              {...control.register("password")}
+              {...register("password")}
             />
-          </Grid2>
+          </Grid>
 
-          <Grid2 sx={{ width: "100%" }}>
+          <Grid sx={{ width: "100%", mb: 2 }}>
             <TextField
               fullWidth
               label="Password confirmation"
@@ -193,27 +204,25 @@ const Register = ({
               variant="outlined"
               error={!!errors.passwordBis}
               helperText={errors.passwordBis?.message}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={handleClickShowPassword}
-                        onMouseDown={handleMouseDownPassword}
-                        sx={{ marginRight: "-8px" }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={handleClickShowPassword}
+                      onMouseDown={handleMouseDownPassword}
+                      sx={{ marginRight: "-8px" }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
               }}
-              {...control.register("passwordBis")}
+              {...register("passwordBis")}
             />
-          </Grid2>
+          </Grid>
 
-          <Grid2 sx={{ textAlign: "center" }}>
-            <Typography color="black" variant="caption">
+          <Grid sx={{ textAlign: "center" }}>
+            <Typography color="black" variant="caption" mb={2}>
               I confirm that I have read, and accepted{" "}
               <span
                 style={{ fontWeight: "bold", cursor: "pointer" }}
@@ -223,16 +232,16 @@ const Register = ({
                 Terms and conditions
               </span>
             </Typography>
-          </Grid2>
-          <Grid2>
+          </Grid>
+          <Grid sx={{ display: "flex", justifyContent: "center" }}>
             <FormControlLabel
               label="I agree"
-              control={<Checkbox {...control.register("isAcceptedTerms")} />}
+              control={<Checkbox {...register("isAcceptedTerms")} />}
               sx={{ color: "black" }}
             />
-          </Grid2>
+          </Grid>
 
-          <Grid2 display="flex" alignItems={"center"} justifyContent="center">
+          <Grid display="flex" alignItems={"center"} justifyContent="center">
             {userContext.isLoading ? (
               <CircularProgress color="primary" sx={{ mb: 2 }} />
             ) : (
@@ -244,9 +253,9 @@ const Register = ({
                 Join now
               </Button>
             )}
-          </Grid2>
+          </Grid>
         </form>
-      </Grid2>
+      </Grid>
     </Modal>
   );
 };

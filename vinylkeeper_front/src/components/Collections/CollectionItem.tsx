@@ -1,22 +1,39 @@
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardMedia from "@mui/material/CardMedia";
-import Typography from "@mui/material/Typography";
-import CardActionArea from "@mui/material/CardActionArea";
-import CardActions from "@mui/material/CardActions";
-import { Box, FormControlLabel, Switch } from "@mui/material";
-import { truncateText } from "@utils/GlobalUtils";
-import { useState, useEffect, useRef } from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { collectionApiService } from "@services/CollectionApiService";
-import { ICollection } from "@models/ICollectionForm";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import EditIcon from "@mui/icons-material/Edit";
-import { zoomIn } from "@utils/Animations";
-import VinylKeeperDialog from "@components/UI/VinylKeeperDialog";
-import { useUserContext } from "@contexts/UserContext";
-import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUserContext } from "@contexts/UserContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  collectionApiService,
+  type CollectionResponse,
+} from "@services/CollectionApiService";
+import { ICollection } from "@models/ICollectionForm";
+import vinylKeeperImg from "@assets/vinylKeeper.svg";
+import {
+  Card,
+  CardContent,
+  Typography,
+  IconButton,
+  Box,
+  Switch,
+  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Tooltip,
+  Stack,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import PersonIcon from "@mui/icons-material/Person";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import { truncateText } from "@utils/GlobalUtils";
+import { useCollectionLike } from "@hooks/useCollectionLike";
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString();
+};
 
 /**
  * CollectionItem Component
@@ -31,7 +48,6 @@ import { useNavigate } from "react-router-dom";
  * @param {Object} props
  * @param {ICollection} props.collection - The collection object containing id, name, description etc
  * @param {Function} props.onSwitchArea - Callback when public/private toggle is switched
- * @param {Function} props.refreshCollections - Callback to refresh the collections list
  * @param {Function} props.handleOpenModalCollection - Callback to open edit collection modal
  * @param {Function} props.onCollectionClick - Callback when collection card is clicked
  * @param {boolean} props.isOwner - Whether the current user is the owner of the collection
@@ -41,7 +57,6 @@ import { useNavigate } from "react-router-dom";
  * <CollectionItem
  *   collection={collectionData}
  *   onSwitchArea={(isPublic) => handleAreaSwitch(isPublic)}
- *   refreshCollections={refreshCollectionsList}
  *   handleOpenModalCollection={openEditModal}
  *   onCollectionClick={(id) => navigateToCollection(id)}
  *   isOwner={isOwner}
@@ -50,225 +65,323 @@ import { useNavigate } from "react-router-dom";
  */
 
 interface CollectionItemProps {
-  collection: ICollection;
-  onSwitchArea: (newIsPublic: boolean) => void;
-  refreshCollections: () => void;
-  handleOpenModalCollection: () => void;
-  onCollectionClick: (collectionId: number) => void;
-  isOwner?: boolean;
-  showOwner?: boolean;
+  collection: CollectionResponse;
+  onSwitchArea: (isPublic: boolean) => void;
+  handleOpenModalCollection: (collection: CollectionResponse) => void;
+  onCollectionClick: (collection: CollectionResponse) => void;
+  isOwner: boolean;
+  showOwner: boolean;
 }
 
 export default function CollectionItem({
   collection,
   onSwitchArea,
-  refreshCollections,
   handleOpenModalCollection,
   onCollectionClick,
   isOwner,
   showOwner,
 }: CollectionItemProps) {
   const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
-  const [isDeleted, setIsDeleted] = useState(false);
+  const [localIsLiked, setLocalIsLiked] = useState(collection.is_liked_by_user);
+  const [localLikesCount, setLocalLikesCount] = useState(
+    collection.likes_count
+  );
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const userContext = useUserContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { like, unlike, isLiking, isUnliking } = useCollectionLike(
+    collection.id
+  );
+  const [likeBounce, setLikeBounce] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => collectionApiService.deleteCollection(collection.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      setOpenDeleteDialog(false);
+    },
+    onError: (error) => {
+      console.error("Error deleting collection:", error);
+    },
+  });
 
   useEffect(() => {
     setLocalIsPublic(collection.is_public);
   }, [collection.is_public]);
 
   useEffect(() => {
-    if (isDeleted) {
-      refreshCollections();
-    }
-  }, [isDeleted, refreshCollections]);
+    setLocalIsLiked(collection.is_liked_by_user);
+    setLocalLikesCount(collection.likes_count);
+  }, [collection.id, collection.is_liked_by_user, collection.likes_count]);
+
+  // Force reset local states when collection ID changes
+  useEffect(() => {
+    setLocalIsLiked(collection.is_liked_by_user);
+    setLocalLikesCount(collection.likes_count);
+  }, [collection.id]);
+
+  useEffect(() => {
+    if (likeBounce) return;
+    setLikeBounce(true);
+    const timeout = setTimeout(() => setLikeBounce(false), 350);
+    return () => clearTimeout(timeout);
+  }, [localLikesCount]);
 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     const newValue = e.target.checked;
     setLocalIsPublic(newValue);
     onSwitchArea(newValue);
   };
 
   const handleDelete = () => {
-    collectionApiService.deleteCollection(collection.id).then(() => {
-      setIsDeleted(true);
-      setOpenDeleteDialog(false);
-    });
+    deleteMutation.mutate();
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleOpenModalCollection(collection);
+  };
+
+  const handleCardClick = () => {
+    onCollectionClick(collection);
+  };
+
+  const handleLikeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (localIsLiked) {
+      setLocalIsLiked(false);
+      setLocalLikesCount((prev) => Math.max(0, prev - 1));
+      unlike();
+    } else {
+      setLocalIsLiked(true);
+      setLocalLikesCount((prev) => prev + 1);
+      like();
+    }
   };
 
   return (
-    <>
-      <Card
-        ref={cardRef}
+    <Card
+      ref={cardRef}
+      sx={{
+        position: "relative",
+        cursor: "pointer",
+        "&:hover": {
+          boxShadow: 6,
+        },
+        width: 320,
+        height: 380,
+        p: 0,
+        m: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <IconButton
+        onClick={handleLikeClick}
+        disabled={isLiking || isUnliking}
         sx={{
-          width: 320,
-          position: "relative",
-          boxShadow: "0px 0px 3px 0px #000000",
-          transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+          color: localIsLiked ? "#FFD700" : "grey.400",
+          position: "absolute",
+          top: 12,
+          right: 12,
+          zIndex: 2,
+          background: "rgba(30,30,30,0.5)",
+          transition: "transform 0.15s, color 0.15s, background 0.15s",
           "&:hover": {
-            boxShadow: "0px 0px 6px 0px #000000",
+            background: "rgba(30,30,30,0.7)",
+            transform: "scale(1.15)",
+            color: "#FFD700",
+          },
+          "&:active": {
+            transform: "scale(0.95)",
           },
         }}
-        onClick={() => onCollectionClick(collection.id)}
       >
-        <CardMedia
-          component="img"
-          height="140"
+        <FavoriteIcon sx={{ fontSize: "30px" }} />
+      </IconButton>
+      <Box
+        onClick={handleCardClick}
+        component="img"
+        src={vinylKeeperImg}
+        alt="vinyl disc"
+        sx={{
+          width: "100%",
+          height: 220,
+          objectFit: "cover",
+          borderTopLeftRadius: 4,
+          borderTopRightRadius: 4,
+          background: "#C9A726",
+          opacity: 0.8,
+        }}
+      />
+      <CardContent
+        sx={{
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+          p: 2,
+          minHeight: 0,
+        }}
+      >
+        <Box
           sx={{
-            objectFit: "cover",
-            backgroundColor: "#C9A726",
-            opacity: 0.8,
-            height: 200,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            mb: 1,
           }}
-          image="/images/vinylKeeper.svg"
-          alt="VinylKeeper"
-        ></CardMedia>
-        <Box display={"flex"} flexDirection={"column"} alignItems={"flex-end"}>
-          <Box
+        >
+          <Typography
+            variant="h6"
+            component="div"
             sx={{
-              position: "absolute",
-              cursor: "pointer",
-              backgroundColor: "#1F1F1F",
-              borderRadius: "50%",
-              padding: 1,
-              top: 10,
-              right: 10,
-              opacity: 0.9,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              "&:hover": {
-                animation: `${zoomIn} 0.3s ease-in-out`,
-              },
+              fontWeight: 700,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: 200,
             }}
           >
-            <VisibilityIcon
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(
-                  EGlobalUrls.COLLECTION_DETAILS.replace(
-                    ":id",
-                    collection.id.toString()
-                  )
-                );
-              }}
-              fontSize="small"
-            />
-          </Box>
-          {(isOwner ?? true) && (
-            <>
-              <Box
-                onClick={() => handleOpenModalCollection()}
-                sx={{
-                  position: "absolute",
-                  cursor: "pointer",
-                  backgroundColor: "#1F1F1F",
-                  borderRadius: "50%",
-                  padding: 1,
-                  top: 53,
-                  right: 10,
-                  opacity: 0.9,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  "&:hover": {
-                    animation: `${zoomIn} 0.3s ease-in-out`,
-                  },
-                }}
-              >
-                <EditIcon fontSize="small" />
-              </Box>
-              <Box
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenDeleteDialog(true);
-                }}
-                sx={{
-                  position: "absolute",
-                  cursor: "pointer",
-                  backgroundColor: "#1F1F1F",
-                  borderRadius: "50%",
-                  padding: 1,
-                  top: 94,
-                  right: 10,
-                  opacity: 0.9,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  "&:hover": {
-                    animation: `${zoomIn} 0.3s ease-in-out`,
-                  },
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </Box>
-            </>
-          )}
+            {collection.name}
+          </Typography>
         </Box>
-        <CardActionArea>
-          <CardContent>
-            <Typography
-              gutterBottom
-              variant="h5"
-              component="div"
-              sx={{ textShadow: "0px 0px 3px #000000", height: 50 }}
-            >
-              {truncateText(collection.name, 25)}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {truncateText(collection.description, 50)}
-            </Typography>
-          </CardContent>
-        </CardActionArea>
 
-        <CardActions>
-          <Box
-            display={"flex"}
-            flexDirection={"row"}
-            justifyContent={"center"}
-            alignItems={"flex-end"}
-            gap={1}
-          >
-            {(isOwner ?? true) && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          gutterBottom
+          sx={{
+            flexShrink: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: "100%",
+          }}
+        >
+          {collection.description}
+        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: "auto",
+            pt: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {showOwner && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <PersonIcon fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {collection.owner?.username || "Unknown"}
+                </Typography>
+              </Box>
+            )}
+            {isOwner && (
               <FormControlLabel
-                sx={{ paddingX: 1 }}
                 control={
                   <Switch
-                    size="small"
-                    color="default"
                     checked={localIsPublic}
                     onChange={handleToggle}
+                    size="small"
                   />
                 }
                 label={localIsPublic ? "Public" : "Private"}
+                sx={{ m: 0 }}
               />
             )}
-            <Typography variant="body2" sx={{ position: "absolute", right: 8 }}>
-              {showOwner
-                ? `Created ${new Date(
-                    collection.registered_at
-                  ).toLocaleDateString()} by ${truncateText(
-                    collection.owner.username,
-                    10
-                  )}`
-                : `Created at ${new Date(
-                    collection.registered_at
-                  ).toLocaleDateString()}`}
-            </Typography>
           </Box>
-        </CardActions>
-      </Card>
-      <VinylKeeperDialog
-        title="Delete collection"
-        content="Are you sure you want to delete this collection ?"
-        onConfirm={handleDelete}
-        textConfirm="Delete"
-        textCancel="Cancel"
+          {isOwner && (
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Tooltip title="Edit collection">
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    onClick={handleEdit}
+                    sx={{ color: "primary.main" }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Delete collection">
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDeleteDialog(true);
+                    }}
+                    sx={{ color: "primary.main" }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          )}
+        </Box>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 1, display: "block" }}
+          >
+            Created on {formatDate(collection.created_at)} by{" "}
+            {truncateText(collection.owner?.username || "Unknown", 10)}
+          </Typography>
+          {localLikesCount > 0 && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                color: "#fffbf9",
+                fontWeight: 600,
+                transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",
+                transform: likeBounce ? "scale(1.35)" : "scale(1)",
+                display: "inline-block",
+              }}
+            >
+              +{localLikesCount} {localLikesCount === 1 ? "like" : "likes"}
+            </Typography>
+          )}
+        </Stack>
+      </CardContent>
+      <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
-      />
-    </>
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogTitle>Delete Collection</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this collection? This action cannot
+            be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            variant="contained"
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Card>
   );
 }

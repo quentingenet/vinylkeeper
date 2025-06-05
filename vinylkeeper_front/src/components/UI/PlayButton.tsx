@@ -16,7 +16,7 @@ interface PlayButtonProps {
 export default function PlayButton({
   onClick,
   size = "small",
-  position = { top: 10, right: 50 },
+  position = { top: 15, right: 25 },
 }: PlayButtonProps) {
   return (
     <Box

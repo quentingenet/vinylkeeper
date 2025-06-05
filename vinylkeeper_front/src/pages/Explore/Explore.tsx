@@ -1,29 +1,73 @@
-import { Box, Typography, Pagination } from "@mui/material";
+import {
+  Box,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+} from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { collectionApiService } from "@services/CollectionApiService";
+import {
+  collectionApiService,
+  type PaginatedCollectionResponse,
+  type CollectionResponse,
+} from "@services/CollectionApiService";
 import CollectionItem from "@components/Collections/CollectionItem";
-import { PaginatedResponse } from "@models/BaseTypes";
-import { ICollection } from "@models/ICollectionForm";
-import { useState } from "react";
+import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import { useState, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { useNavigate } from "react-router-dom";
+
+type SortOption = "updated_at" | "likes_count" | "created_at";
 
 export default function Explore() {
   const [page, setPage] = useState(1);
-  const itemsPerPage = 12;
+  const [sortBy, setSortBy] = useState<SortOption>("likes_count");
+  const itemsPerPage = 6;
   const { isMobile } = useDetectMobile();
+  const navigate = useNavigate();
 
   const {
     data: publicCollectionsData,
     isLoading,
     error,
-  } = useQuery<PaginatedResponse<ICollection>>({
+  } = useQuery<PaginatedCollectionResponse>({
     queryKey: ["publicCollections", page],
     queryFn: () =>
       collectionApiService.getPublicCollections(page, itemsPerPage),
+    refetchOnWindowFocus: true,
   });
 
-  const publicCollections = publicCollectionsData?.items || [];
-  const totalPages = publicCollectionsData?.totalPages || 0;
+  const publicCollections: CollectionResponse[] =
+    publicCollectionsData?.items || [];
+  const totalPages = publicCollectionsData?.total_pages || 0;
+
+  // Sort collections based on selected option
+  const sortedCollections = useMemo(() => {
+    if (!publicCollections.length) return [];
+
+    return [...publicCollections].sort((a, b) => {
+      switch (sortBy) {
+        case "likes_count":
+          return b.likes_count - a.likes_count; // Most likes first
+        case "created_at":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          ); // Newest first
+        case "updated_at":
+        default:
+          return (
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          ); // Recently updated first
+      }
+    });
+  }, [publicCollections, sortBy]);
+
+  const handleSortChange = (event: SelectChangeEvent<SortOption>) => {
+    setSortBy(event.target.value as SortOption);
+    setPage(1);
+  };
 
   if (isLoading) {
     return (
@@ -41,7 +85,7 @@ export default function Explore() {
   if (error) {
     return (
       <Box>
-        <Typography variant="h6" color="error">
+        <Typography variant="h6" color="white">
           Error loading public collections
         </Typography>
       </Box>
@@ -50,17 +94,49 @@ export default function Explore() {
 
   return (
     <Box>
-      <Typography
-        variant="h4"
-        component="h1"
-        gutterBottom
-        sx={{ color: "white", mb: 3 }}
+      <Box
+        display="flex"
+        flexDirection={isMobile ? "column" : "row"}
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+        gap={4}
       >
-        Explore public shared collections
-      </Typography>
+        <Typography variant="h4" component="h1" sx={{ color: "white" }}>
+          Explore public shared collections
+        </Typography>
+
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel sx={{ color: "white" }}>Sort by</InputLabel>
+          <Select
+            value={sortBy}
+            label="Sort by"
+            onChange={handleSortChange}
+            sx={{
+              color: "white",
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(255, 255, 255, 0.3)",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(255, 255, 255, 0.5)",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#C9A726",
+              },
+              "& .MuiSvgIcon-root": {
+                color: "white",
+              },
+            }}
+          >
+            <MenuItem value="updated_at">Recently Updated</MenuItem>
+            <MenuItem value="likes_count">Most Liked</MenuItem>
+            <MenuItem value="created_at">Newest</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
       <Box mb={4}>
-        {publicCollections.length > 0 ? (
+        {sortedCollections.length > 0 ? (
           <Box
             display={isMobile ? "flex" : "grid"}
             flexDirection={isMobile ? "column" : "row"}
@@ -71,15 +147,16 @@ export default function Explore() {
             gap={4}
             marginY={isMobile ? 1 : 3}
           >
-            {publicCollections.map((collection) => (
+            {sortedCollections.map((collection: CollectionResponse) => (
               <CollectionItem
-                key={collection.id}
+                key={`${collection.id}-${page}-${sortBy}`}
                 collection={collection}
                 onSwitchArea={() => {}}
-                refreshCollections={() => {}}
                 handleOpenModalCollection={() => {}}
-                onCollectionClick={(id) => {
-                  window.location.href = `/collections/${id}`;
+                onCollectionClick={(collection) => {
+                  navigate(`/collections/${collection.id}`, {
+                    state: { from: "explore" },
+                  });
                 }}
                 isOwner={false}
                 showOwner={true}
@@ -97,33 +174,15 @@ export default function Explore() {
 
       {totalPages > 1 && (
         <Box display="flex" justifyContent="center" mt={4} mb={2}>
-          <Pagination
+          <PaginationWithEllipsis
             count={totalPages}
             page={page}
-            onChange={(_, newPage) => setPage(newPage)}
+            onChange={(newPage) => setPage(newPage)}
             color="primary"
             size={isMobile ? "medium" : "large"}
-            shape="circular"
           />
         </Box>
       )}
-
-      <Box mt={6}>
-        <Typography variant="h5" sx={{ color: "white", mb: 2 }}>
-          Coming soon...
-        </Typography>
-        <Box sx={{ color: "text.secondary" }}>
-          <Typography variant="body1" mb={1}>
-            🎵 Personalized album recommendations
-          </Typography>
-          <Typography variant="body1" mb={1}>
-            🎤 Personalized artist recommendations
-          </Typography>
-          <Typography variant="body1">
-            🤖 Recommendations based on your musical tastes
-          </Typography>
-        </Box>
-      </Box>
     </Box>
   );
 }

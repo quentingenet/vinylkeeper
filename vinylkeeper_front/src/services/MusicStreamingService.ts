@@ -73,8 +73,6 @@ class MusicStreamingService {
     const searchQuery = this.buildSearchQuery(query);
     const url = this.buildUrl(platform, searchQuery);
 
-    this.logRedirection(platformName, query);
-
     if (this.isMobile() && platform.mobileUrl) {
       this.attemptMobileRedirect(url, platform, searchQuery);
     } else {
@@ -98,10 +96,6 @@ class MusicStreamingService {
       document.body.removeChild(iframe);
       window.open(webFallback, "_blank", "noopener,noreferrer");
     }, 1000);
-  }
-
-  private logRedirection(platformName: string, query: StreamingQuery): void {
-    console.log(`Redirecting to ${platformName}:`, query);
   }
 
   public getPlatforms(): StreamingPlatform[] {

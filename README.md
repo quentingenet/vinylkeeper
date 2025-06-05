@@ -10,8 +10,8 @@
 ![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
 
 **VinylKeeper** is a free and open-source application released under the Copyleft license.
-<br>Vinyl Keeper is your go-to solution to effortlessly manage your vinyl collection, while fully respecting your privacy and data ownership.
-<br><br>Coming soon on [VinylKeeper here!](https://vinylkeeper.org/)
+<br>This is your go-to solution to effortlessly manage your vinyl collection, while fully respecting your privacy and data ownership.
+<br><br> [VinylKeeper.org](https://vinylkeeper.org/)
 
 <p align="center">
   <a href="https://vinylkeeper.org/">
@@ -46,8 +46,8 @@ Manage borrowed vinyls—know what you lent, to whom, and when.
 ⚙️ **Settings**  
 Customize your profile, preferences, and account options.
 
-🌍 **Multilingual support**  
-First step: English 🇬🇧 + French 🇫🇷
+🌍 **Interactive map**  
+Discover & share vinyl places around the world with the community.
 
 👥 **Community**  
 See other users' collections, follow vinyl lovers, share discoveries and messages.
@@ -65,12 +65,11 @@ React + TypeScript frontend (Vite), FastAPI backend (Python), PostgreSQL databas
 
 **VinylKeeper** is developed using:
 - **[Python](https://www.python.org/)** with **[FastAPI](https://fastapi.tiangolo.com/)** for the main API.
-- **Rust** with **Rocket** and also **Java** with **SpringBoot** for alternative versions of the API — mostly for fun, learning, and prototyping purposes.
 - **[React](https://reactjs.org)** and **[TypeScript](https://www.typescriptlang.org/)** with **[Vite.js](https://vitejs.dev/)** for the frontend
 - **[PostgreSQL](https://www.postgresql.org/)** for the database
 
 
-## How to run the project? (For the main API Python & FastAPI)
+## How to run the project? (API Python & FastAPI)
 
 ### Prerequisites
 
@@ -100,7 +99,7 @@ poetry install
 # Run database migrations
 poetry run alembic upgrade head
 # Start the server
-poetry run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 The backend server runs at **http://localhost:8000**
 - API documentation: **http://localhost:8000/docs**
@@ -122,7 +121,7 @@ We welcome contributions to improve Vinyl Keeper! To contribute:
 
 1. Fork this repository.
 2. Create a feature branch **from develop** (`git checkout -b feat/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+3. Commit your changes (`git commit -m 'Add some amazing feature'`).
 4. Push to the branch (`git push origin feat/amazing-feature`).
 5. Open a Pull Request.
 
