@@ -3,17 +3,12 @@ import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { API_VK_URL } from "@utils/GlobalUtils";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
-import { encryptionService } from "../EncryptionService";
 
 export const login = async (data: ILoginForm) => {
   try {
-    const encryptedPassword = await encryptionService.encryptPassword(
-      data.password
-    );
-
     const requestDataLogin = {
       email: data.email,
-      password: encryptedPassword,
+      password: data.password,
     };
 
     return requestService({
@@ -35,14 +30,10 @@ export const login = async (data: ILoginForm) => {
 
 export const register = async (dataRegister: IRegisterForm) => {
   try {
-    const encryptedPassword = await encryptionService.encryptPassword(
-      dataRegister.password
-    );
-
     const requestDataRegister = {
       username: dataRegister.username,
       email: dataRegister.email,
-      password: encryptedPassword,
+      password: dataRegister.password,
       is_accepted_terms: dataRegister.isAcceptedTerms,
       timezone: dataRegister.timezone,
     };
@@ -72,13 +63,9 @@ export const resetPasswordService = async (
   dataReset: IResetPasswordToBackend
 ) => {
   try {
-    const encryptedPassword = await encryptionService.encryptPassword(
-      dataReset.new_password
-    );
-
     const encryptedDataReset = {
       ...dataReset,
-      new_password: encryptedPassword,
+      new_password: dataReset.new_password,
     };
 
     return requestService({

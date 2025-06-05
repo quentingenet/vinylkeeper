@@ -1,13 +1,7 @@
-import ky from "ky";
+import ky, { HTTPError } from "ky";
 
 /**
  * Request options interface
- * @interface RequestOptions
- * @property {string} apiTarget - The target API URL
- * @property {"GET" | "POST" | "PUT" | "PATCH" | "DELETE"} method - The HTTP method to use
- * @property {string} endpoint - The endpoint to request
- * @property {any} body - The request body
- * @property {HeadersInit} headers - The request headers
  */
 interface RequestOptions {
   apiTarget: string;
@@ -15,13 +9,12 @@ interface RequestOptions {
   endpoint: string;
   body?: any;
   headers?: HeadersInit;
+  retrying?: boolean; // internal flag to avoid infinite loop
+  skipRefresh?: boolean; // flag to skip automatic refresh
 }
 
 /**
- * Request service function
- * @function requestService
- * @param {RequestOptions} options - The request options
- * @returns {Promise<T>} The response data
+ * Generic request service with automatic retry on 401 Unauthorized
  */
 const requestService = async <T = any>({
   apiTarget,
@@ -29,6 +22,8 @@ const requestService = async <T = any>({
   endpoint,
   body,
   headers = {},
+  retrying = false, // internal use
+  skipRefresh = false, // skip automatic refresh
 }: RequestOptions): Promise<T> => {
   if (!apiTarget || !endpoint) {
     throw new Error("API target or endpoint is missing.");
@@ -43,24 +38,51 @@ const requestService = async <T = any>({
       ...headers,
     },
     json: body,
-    credentials: "include" as RequestCredentials,
+    credentials: "include" as RequestCredentials, // send cookies
   };
 
   try {
     const response = await ky(urlToFetch, options);
-
     const contentType = response.headers.get("content-type");
-    if (!contentType) {
-      return null as T;
-    }
-    if (contentType?.includes("application/json")) {
+
+    if (!contentType) return null as T;
+
+    if (contentType.includes("application/json")) {
       return await response.json<T>();
-    } else if (contentType?.includes("text/")) {
+    } else if (contentType.includes("text/")) {
       return (await response.text()) as T;
     } else {
       throw new Error(`Unexpected content-type: ${contentType}`);
     }
   } catch (error: any) {
+    if (
+      error instanceof HTTPError &&
+      error.response?.status === 401 &&
+      !retrying &&
+      !skipRefresh
+    ) {
+      console.warn("401 Unauthorized — trying token refresh...");
+      try {
+        // attempt to refresh tokens
+        await ky.post(`${apiTarget}/users/refresh-token`, {
+          credentials: "include",
+        });
+
+        // retry original request
+        return await requestService<T>({
+          apiTarget,
+          method,
+          endpoint,
+          body,
+          headers,
+          retrying: true,
+        });
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        throw new Error("Unauthorized and token refresh failed");
+      }
+    }
+
     throw new Error(`Request error: ${error.message || error}`);
   }
 };

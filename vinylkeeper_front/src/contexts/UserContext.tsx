@@ -81,8 +81,9 @@ export function UserContextProvider({
     try {
       const response = await requestService<{ isLoggedIn: boolean }>({
         apiTarget: API_VK_URL,
-        method: "GET",
-        endpoint: "/users/check-auth",
+        method: "POST",
+        endpoint: "/users/refresh-token",
+        skipRefresh: true,
       });
       setIsUserLoggedIn(response.isLoggedIn);
 

@@ -2,7 +2,6 @@ import { BaseApiService } from "./BaseApiService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
-import { encryptionService } from "./EncryptionService";
 
 export interface ICurrentUser {
   id: number;
@@ -33,13 +32,9 @@ export interface ResetPasswordResponse {
 export class UserApiService extends BaseApiService {
   async login(data: ILoginForm): Promise<LoginResponse> {
     try {
-      const encryptedPassword = await encryptionService.encryptPassword(
-        data.password
-      );
-
       const requestDataLogin = {
         email: data.email,
-        password: encryptedPassword,
+        password: data.password,
       };
 
       const responseData = await this.post("/users/auth", requestDataLogin);
@@ -61,14 +56,10 @@ export class UserApiService extends BaseApiService {
 
   async register(dataRegister: IRegisterForm): Promise<RegisterResponse> {
     try {
-      const encryptedPassword = await encryptionService.encryptPassword(
-        dataRegister.password
-      );
-
       const requestDataRegister = {
         username: dataRegister.username,
         email: dataRegister.email,
-        password: encryptedPassword,
+        password: dataRegister.password,
         is_accepted_terms: dataRegister.isAcceptedTerms,
         timezone: dataRegister.timezone,
       };
@@ -93,18 +84,9 @@ export class UserApiService extends BaseApiService {
     dataReset: IResetPasswordToBackend
   ): Promise<ResetPasswordResponse> {
     try {
-      const encryptedPassword = await encryptionService.encryptPassword(
-        dataReset.new_password
-      );
-
-      const encryptedDataReset = {
-        ...dataReset,
-        new_password: encryptedPassword,
-      };
-
       return this.post<ResetPasswordResponse>(
         "/users/reset-password",
-        encryptedDataReset
+        dataReset
       );
     } catch (error) {
       console.error("Password reset failed:", error);
