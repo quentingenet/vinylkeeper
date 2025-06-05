@@ -13,7 +13,7 @@ alembic = "^1.14.1"
 sqlalchemy = "^2.0.37"
 asyncpg = "^0.30.0"
 pydantic = "^2.10.6"
-argon2-cffi = "^25.1.0"
+argon2-cffi = "^23.1.0"
 python-dotenv = "^1.0.1"
 psycopg2-binary = "^2.9.10"
 pydantic-settings = "^2.7.1"
@@ -25,10 +25,9 @@ bcrypt = "<4.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
-black = "^25.1.0"
-isort = "^6.0.0"
+black = "^24.0.0"
+isort = "^5.13.0"
 flake8 = "^7.0.0"
-mypy = "^1.13.0"
 
 [build-system]
 requires = ["poetry-core"]

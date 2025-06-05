@@ -6,9 +6,9 @@ from sqlalchemy import pool
 from alembic import context
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../app/.env.development"))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../api/.env.development"))
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../app')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../api')))
 
 config = context.config
 
@@ -24,7 +24,7 @@ DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{D
 
 config.set_main_option('sqlalchemy.url', DATABASE_URL)
 
-from app.db.base import Base
+from api.db.base import Base
 
 target_metadata = Base.metadata
 
