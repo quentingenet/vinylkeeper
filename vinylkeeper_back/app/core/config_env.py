@@ -38,5 +38,5 @@ class Settings(BaseSettings):
     class Config:
         env_file = f"../api/.env.{os.getenv('APP_ENV', 'development')}"
 
-# Initialiser les paramètres
+# Initialize settings
 settings = Settings()

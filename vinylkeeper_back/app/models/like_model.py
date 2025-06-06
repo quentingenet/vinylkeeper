@@ -35,12 +35,12 @@ class CollectionLike(Base):
     user = relationship(
         "User",
         back_populates="liked_collections",
-        lazy="selectin"  # Optimise le chargement des likes
+        lazy="selectin"  # Optimize like loading
     )
     collection = relationship(
         "Collection",
         back_populates="liked_by",
-        lazy="selectin"  # Optimise le chargement des likes
+        lazy="selectin"  # Optimize like loading
     )
 
     # Ensure a user can only like a collection once

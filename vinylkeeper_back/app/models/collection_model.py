@@ -37,7 +37,7 @@ class Collection(Base):
         lazy="selectin"
     )
 
-    # Relations many-to-many optimisées
+    # Optimized many-to-many relationships
     albums = relationship(
         "Album",
         secondary=collection_album,
@@ -51,7 +51,7 @@ class Collection(Base):
         lazy="selectin"
     )
 
-    # Relation many-to-many pour les likes
+    # Many-to-many relation for likes
     liked_by = relationship(
         "User",
         secondary="collection_likes",
@@ -62,7 +62,7 @@ class Collection(Base):
     registered_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    # Contraintes de validation
+    # Validation constraints
     __table_args__ = (
         CheckConstraint(
             "length(name) >= 1",

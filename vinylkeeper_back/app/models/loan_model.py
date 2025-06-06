@@ -53,7 +53,7 @@ class Loan(Base):
         nullable=False
     )
 
-    # Relations optimisées
+    # Optimized relationships
     user = relationship(
         "User",
         back_populates="loans",
@@ -65,7 +65,7 @@ class Loan(Base):
         lazy="selectin"
     )
 
-    # Contraintes de validation
+    # Validation constraints
     __table_args__ = (
         CheckConstraint(
             "length(borrower_name) >= 1",

@@ -43,7 +43,7 @@ class Wishlist(Base):
         nullable=False
     )
 
-    # Relations optimisées
+    # Optimized relationships
     user = relationship(
         "User",
         back_populates="wishlist_items",
@@ -60,7 +60,7 @@ class Wishlist(Base):
         lazy="selectin"
     )
 
-    # Contraintes de validation
+    # Validation constraints
     __table_args__ = (
         CheckConstraint(
             "(album_id IS NOT NULL AND artist_id IS NULL) OR (album_id IS NULL AND artist_id IS NOT NULL)",

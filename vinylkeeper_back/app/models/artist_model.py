@@ -32,7 +32,7 @@ class Artist(Base):
         index=True
     )  # MBID
 
-    # Relations optimisées
+    # Optimized relationships
     albums = relationship(
         "Album",
         back_populates="artist",
@@ -52,7 +52,7 @@ class Artist(Base):
         cascade="all, delete-orphan"
     )
 
-    # Contraintes de validation
+    # Validation constraints
     __table_args__ = (
         CheckConstraint(
             "length(name) >= 1",

@@ -74,7 +74,7 @@ class Place(Base):
         nullable=False
     )
 
-    # Relations optimisées
+    # Optimized relationships
     submitted_by = relationship(
         "User",
         back_populates="submitted_places",
@@ -87,7 +87,7 @@ class Place(Base):
         cascade="all, delete-orphan"
     )
 
-    # Contraintes de validation
+    # Validation constraints
     __table_args__ = (
         CheckConstraint(
             "length(name) >= 1",

@@ -50,7 +50,7 @@ class Album(Base):
         lazy="selectin"
     )
 
-    # Relations many-to-many optimisées
+    # Optimized many-to-many relationships
     collections = relationship(
         "Collection",
         secondary="collection_album",
@@ -70,7 +70,7 @@ class Album(Base):
         cascade="all, delete-orphan"
     )
 
-    # Contraintes de validation
+    # Validation constraints
     __table_args__ = (
         CheckConstraint(
             "length(title) >= 1",

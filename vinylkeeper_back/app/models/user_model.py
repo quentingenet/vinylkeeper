@@ -84,11 +84,11 @@ class User(Base):
         nullable=False
     )
 
-    # Relations optimisées avec lazy loading approprié
+    # Optimized relationships with proper lazy loading
     role = relationship(
         "Role",
         back_populates="users",
-        lazy="selectin"  # Charge le rôle immédiatement avec l'utilisateur
+        lazy="selectin"  # Eagerly load role with user
     )
     collections = relationship(
         "Collection",
@@ -133,7 +133,7 @@ class User(Base):
         """Validate timezone format."""
         if value is None:
             raise ValueError("Timezone cannot be null")
-        # Vérification basique du format timezone
+        # Basic timezone format check
         if not value or '/' not in value:
             raise ValueError("Invalid timezone format")
         return value
