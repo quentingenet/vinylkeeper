@@ -5,3 +5,8 @@ class ModerationStatusEnum(str, Enum):
     accepted = "accepted"
     rejected = "rejected"
 
+
+class RoleEnum(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+    MODERATOR = "moderator"

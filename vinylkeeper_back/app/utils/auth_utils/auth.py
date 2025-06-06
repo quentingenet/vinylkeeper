@@ -6,7 +6,7 @@ from app.core.config_env import Settings
 import os
 from fastapi import Request, Depends, status, Response
 from app.db.session import get_db
-from app.schemas.user_schemas import User
+from app.schemas.user_schema import User
 from app.repositories.user_repository import UserRepository
 from sqlalchemy.orm import Session
 

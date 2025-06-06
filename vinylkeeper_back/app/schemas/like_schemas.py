@@ -6,8 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class LikeBase(BaseModel):
     """Base schema for like data."""
-    user_id: int = Field(..., gt=0)
-    collection_id: int = Field(..., gt=0)
+    user_id: int = Field(gt=0)
+    collection_id: int = Field(gt=0)
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LikeCreate(LikeBase):
@@ -17,10 +19,8 @@ class LikeCreate(LikeBase):
 
 class LikeInDB(LikeBase):
     """Schema for like data as stored in database."""
-    id: int = Field(..., gt=0)
+    id: int = Field(gt=0)
     created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class LikeResponse(LikeInDB):
@@ -30,9 +30,9 @@ class LikeResponse(LikeInDB):
 
 class LikeStatusResponse(BaseModel):
     """Schema for like status response."""
-    collection_id: int = Field(..., gt=0)
+    collection_id: int = Field(gt=0)
     liked: bool
-    likes_count: int = Field(..., ge=0)
+    likes_count: int = Field(ge=0)
     last_liked_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

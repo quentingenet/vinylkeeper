@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
@@ -8,10 +7,12 @@ from sqlalchemy import (
     Integer,
     String,
     Boolean,
-    DateTime
+    DateTime,
+    event,
+    func
 )
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship, validates
+from sqlalchemy.exc import IntegrityError
 
 from app.db.base import Base
 
@@ -65,7 +66,7 @@ class User(Base):
     timezone = Column(
         String(100),
         nullable=False,
-        server_default="UTC+1"
+        server_default="Europe/Paris"
     )
     role_id = Column(
         Integer,
@@ -83,14 +84,76 @@ class User(Base):
         nullable=False
     )
 
-    role = relationship("Role", back_populates="users") 
-    collections = relationship("Collection", back_populates="owner")
-    ratings = relationship("Rating", back_populates="user")
-    loans = relationship("Loan", back_populates="user")
-    wishlist_items = relationship("Wishlist", back_populates="user")
+    # Relations optimisées avec lazy loading approprié
+    role = relationship(
+        "Role",
+        back_populates="users",
+        lazy="selectin"  # Charge le rôle immédiatement avec l'utilisateur
+    )
+    collections = relationship(
+        "Collection",
+        back_populates="owner",
+        lazy="selectin",
+        cascade="all, delete-orphan"
+    )
+    loans = relationship(
+        "Loan",
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan"
+    )
+    wishlist_items = relationship(
+        "Wishlist",
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan"
+    )
     liked_collections = relationship(
         "Collection",
         secondary="collection_likes",
-        back_populates="liked_by"
+        back_populates="liked_by",
+        lazy="selectin"
     )
-    submitted_places = relationship("Place", back_populates="submitted_by")
+    submitted_places = relationship(
+        "Place",
+        back_populates="submitted_by",
+        lazy="selectin",
+        cascade="all, delete-orphan"
+    )
+
+    @validates('username', 'email')
+    def validate_unique_fields(self, key, value):
+        """Validate unique fields."""
+        if value is None:
+            raise ValueError(f"{key} cannot be null")
+        return value
+
+    @validates('timezone')
+    def validate_timezone(self, key, value):
+        """Validate timezone format."""
+        if value is None:
+            raise ValueError("Timezone cannot be null")
+        # Vérification basique du format timezone
+        if not value or '/' not in value:
+            raise ValueError("Invalid timezone format")
+        return value
+
+    def __repr__(self):
+        """String representation of the user."""
+        return f"<User(username={self.username}, email={self.email})>"
+
+
+# Event listeners
+@event.listens_for(User, 'before_insert')
+def set_defaults(mapper, connection, target):
+    """Set default values before insertion."""
+    if not target.user_uuid:
+        target.user_uuid = UUID.uuid4()
+
+
+@event.listens_for(User, 'before_update')
+def update_last_login(mapper, connection, target):
+    """Update last_login and number_of_connections before update."""
+    if hasattr(target, 'last_login') and target.last_login is None:
+        target.last_login = func.now()
+        target.number_of_connections += 1
