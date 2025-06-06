@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from app.core.enums import PlaceTypeEnum
 
 from pydantic import (
     BaseModel,
@@ -42,6 +43,10 @@ class PlaceBase(BaseModel):
         le=180,
         description="Longitude coordinate (-180 to 180)"
     )
+    type: PlaceTypeEnum = Field(
+        default=PlaceTypeEnum.other,
+        description="Type of place (shop, venue, record_store, brocant, other)"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,6 +64,14 @@ class PlaceBase(BaseModel):
         """Validate coordinate values."""
         if not isinstance(v, (int, float)):
             raise ValueError("Coordinates must be numeric values")
+        return v
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: PlaceTypeEnum) -> PlaceTypeEnum:
+        """Validate place type."""
+        if v not in PlaceTypeEnum:
+            raise ValueError(f"Invalid place type: {v}")
         return v
 
 
@@ -99,6 +112,10 @@ class PlaceUpdate(BaseModel):
         None,
         ge=-180,
         le=180
+    )
+    type: Optional[PlaceTypeEnum] = Field(
+        None,
+        description="Type of place (shop, venue, record_store, brocant, other)"
     )
     is_verified: Optional[bool] = None
 

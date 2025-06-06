@@ -8,12 +8,14 @@ from sqlalchemy import (
     ForeignKey,
     func,
     event,
-    CheckConstraint
+    CheckConstraint,
+    Enum as SQLEnum
 )
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.exc import IntegrityError
 
 from app.db.base import Base
+from app.core.enums import PlaceTypeEnum
 
 
 class Place(Base):
@@ -48,6 +50,12 @@ class Place(Base):
     longitude = Column(
         Float,
         nullable=False
+    )
+    type = Column(
+        SQLEnum(PlaceTypeEnum, name="place_type_enum"),
+        nullable=False,
+        default=PlaceTypeEnum.other.value,
+        server_default=PlaceTypeEnum.other.value
     )
     submitted_by_id = Column(
         Integer,
@@ -113,9 +121,16 @@ class Place(Base):
             raise ValueError("Longitude must be between -180 and 180")
         return value
 
+    @validates('type')
+    def validate_type(self, key, value):
+        """Validate place type."""
+        if value not in PlaceTypeEnum.__members__.values() and value not in PlaceTypeEnum._value2member_map_:
+            raise ValueError(f"Invalid place type: {value}")
+        return value
+
     def __repr__(self):
         """String representation of the place."""
-        return f"<Place(name={self.name}, city={self.city}, country={self.country})>"
+        return f"<Place(name={self.name}, city={self.city}, country={self.country}, type={self.type})>"
 
 
 # Event listeners
@@ -126,3 +141,5 @@ def validate_required_fields(mapper, connection, target):
         raise ValueError("Place name is required")
     if target.latitude is None or target.longitude is None:
         raise ValueError("Both latitude and longitude are required")
+    if not target.type:
+        target.type = PlaceTypeEnum.other.value
