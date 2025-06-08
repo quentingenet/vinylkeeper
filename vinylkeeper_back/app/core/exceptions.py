@@ -188,3 +188,13 @@ class DuplicateUsernameError(DuplicateFieldError):
             field="Username",
             value=username
         )
+
+
+class ForbiddenError(AppException):
+    def __init__(self, message: str = "You are not allowed to access this resource", details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            error_code=ErrorCode.INVALID_RESOURCE_STATE,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details
+        )

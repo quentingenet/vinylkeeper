@@ -9,6 +9,8 @@ from pydantic import (
     model_validator
 )
 
+from app.schemas.user_schema import UserMiniResponse
+
 
 class CollectionBase(BaseModel):
     """Base schema for collection data."""
@@ -26,10 +28,6 @@ class CollectionBase(BaseModel):
         default=False,
         description="Whether the collection is visible to other users"
     )
-    owner_id: int = Field(
-        gt=0,
-        description="ID of the collection owner"
-    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,7 +44,8 @@ class CollectionBase(BaseModel):
     def validate_description(cls, v: Optional[str]) -> Optional[str]:
         """Validate collection description."""
         if v is not None and len(v) > 255:
-            raise ValueError("Description cannot be longer than 255 characters")
+            raise ValueError(
+                "Description cannot be longer than 255 characters")
         return v
 
 
@@ -60,13 +59,6 @@ class CollectionCreate(CollectionBase):
         default_factory=list,
         description="List of artist IDs to include in the collection"
     )
-
-    @model_validator(mode='after')
-    def validate_content(self) -> 'CollectionCreate':
-        """Validate that the collection has at least one album or artist."""
-        if not self.album_ids and not self.artist_ids:
-            raise ValueError("Collection must contain at least one album or artist")
-        return self
 
 
 class CollectionUpdate(BaseModel):
@@ -97,13 +89,17 @@ class CollectionUpdate(BaseModel):
 class CollectionInDB(CollectionBase):
     """Schema for collection data as stored in database."""
     id: int = Field(gt=0)
+    owner_id: int = Field(
+        gt=0,
+        description="ID of the collection owner"
+    )
     registered_at: datetime
     updated_at: datetime
 
 
 class CollectionResponse(CollectionInDB):
     """Schema for collection data in API responses."""
-    owner: Optional[dict] = None  # Will be populated with user data
+    owner: Optional[UserMiniResponse] = None  # Will be populated with user data
     # Will be populated with album data
     albums: List[dict] = Field(default_factory=list)
     # Will be populated with artist data

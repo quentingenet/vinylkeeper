@@ -5,6 +5,7 @@ from app.core.lifespan import lifespan
 from app.core.security import configure_cors
 from app.core.handlers import register_exception_handlers
 from app.endpoints import users
+from app.endpoints import collections
 
 logger = logging.getLogger("app")
 
@@ -19,6 +20,7 @@ configure_cors(app)
 register_exception_handlers(app)
 
 app.include_router(users.router, prefix="/api/users")
+app.include_router(collections.router, prefix="/api/collections")
 
 
 @app.get("/")
