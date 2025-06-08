@@ -48,8 +48,7 @@ class Place(Base):
     type = Column(
         SQLEnum(PlaceTypeEnum, name="place_type_enum"),
         nullable=False,
-        default=PlaceTypeEnum.other.value,
-        server_default=PlaceTypeEnum.other.value
+        server_default=PlaceTypeEnum.OTHER.value
     )
     submitted_by_id = Column(
         Integer,
@@ -140,7 +139,7 @@ def validate_required_fields(mapper, connection, target):
     if target.latitude is None or target.longitude is None:
         raise ValueError("Both latitude and longitude are required")
     if not target.type:
-        target.type = PlaceTypeEnum.other.value
+        target.type = PlaceTypeEnum.OTHER.value
 
     now = func.now()
     target.created_at = now

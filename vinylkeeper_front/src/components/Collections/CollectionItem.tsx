@@ -86,6 +86,7 @@ export default function CollectionItem({
   }, [isDeleted, refreshCollections]);
 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     const newValue = e.target.checked;
     setLocalIsPublic(newValue);
     onSwitchArea(newValue);
@@ -124,7 +125,7 @@ export default function CollectionItem({
           }}
           image="/images/vinylKeeper.svg"
           alt="VinylKeeper"
-        ></CardMedia>
+        />
         <Box display={"flex"} flexDirection={"column"} alignItems={"flex-end"}>
           <Box
             sx={{
@@ -160,7 +161,10 @@ export default function CollectionItem({
           {(isOwner ?? true) && (
             <>
               <Box
-                onClick={() => handleOpenModalCollection()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenModalCollection();
+                }}
                 sx={{
                   position: "absolute",
                   cursor: "pointer",
@@ -230,6 +234,7 @@ export default function CollectionItem({
             justifyContent={"center"}
             alignItems={"flex-end"}
             gap={1}
+            onClick={(e) => e.stopPropagation()}
           >
             {(isOwner ?? true) && (
               <FormControlLabel
@@ -251,7 +256,7 @@ export default function CollectionItem({
                     collection.registered_at
                   ).toLocaleDateString()} by ${truncateText(
                     collection.owner.username,
-                    10
+                    5
                   )}`
                 : `Created at ${new Date(
                     collection.registered_at
@@ -260,9 +265,10 @@ export default function CollectionItem({
           </Box>
         </CardActions>
       </Card>
+
       <VinylKeeperDialog
-        title="Delete collection"
-        content="Are you sure you want to delete this collection ?"
+        title="Delete Collection"
+        content={`Are you sure you want to delete "${collection.name}"?`}
         onConfirm={handleDelete}
         textConfirm="Delete"
         textCancel="Cancel"

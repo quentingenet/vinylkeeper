@@ -1,49 +1,75 @@
 import { useQuery } from "@tanstack/react-query";
 
+export interface Track {
+  position: string;
+  title: string;
+  duration: string;
+}
+
 export interface AlbumMetadata {
+  id: string;
   title: string;
   artist: string;
-  releaseYear?: number;
+  year?: string;
+  image_url?: string;
+  external_id?: string;
+  external_url?: string;
+  source: string;
+  genres?: string[];
+  styles?: string[];
   tracklist?: Track[];
-  coverArt?: string;
-  description?: string;
 }
 
 export interface ArtistMetadata {
+  id: string;
   name: string;
+  image_url?: string;
+  external_id?: string;
+  external_url?: string;
+  source: string;
   biography?: string;
-  image?: string;
   genres?: string[];
   country?: string;
   wikipedia_url?: string;
-}
-
-export interface Track {
-  position: number;
-  title: string;
-  duration?: string;
+  members?: string[];
+  active_years?: string;
+  aliases?: string[];
 }
 
 interface AlbumMetadataResponse {
-  title?: string;
-  artist?: string;
-  release_year?: number;
-  tracklist?: Track[];
-  cover_art?: string;
-  message?: string;
+  id: string;
+  title: string;
+  artist: string;
+  year?: string;
+  image_url?: string;
+  genres: string[];
+  styles: string[];
+  tracklist: Array<{
+    position: string;
+    title: string;
+    duration: string;
+  }>;
+  source: string;
 }
 
 interface ArtistMetadataResponse {
-  name?: string;
+  id: string;
+  name: string;
+  image_url?: string;
   biography?: string;
+  genres: string[];
   country?: string;
-  genres?: string[];
-  message?: string;
+  wikipedia_url?: string;
+  external_id?: string;
+  external_url?: string;
+  members: string[];
+  active_years?: string;
+  aliases: string[];
+  source: string;
 }
 
 export interface AlbumMetadataParams {
   id: string;
-  source: "deezer" | "musicbrainz";
   artist: string;
   title: string;
 }
@@ -51,39 +77,75 @@ export interface AlbumMetadataParams {
 export const fetchAlbumMetadata = async (
   params: AlbumMetadataParams
 ): Promise<AlbumMetadata> => {
-  const searchParams = new URLSearchParams();
-  searchParams.append("source", params.source);
-  searchParams.append("artist_name", params.artist);
-  searchParams.append("album_title", params.title);
   const response = await fetch(
-    `${import.meta.env.VITE_API_VK_URL}/music-metadata/album/${
-      params.id
-    }?${searchParams.toString()}`
+    `${
+      import.meta.env.VITE_API_VK_URL
+    }/request-proxy/music-metadata/album?album_id=${params.id}`
   );
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Album with ID ${params.id} not found on Discogs`);
+    }
     throw new Error("Failed to fetch album metadata");
   }
   const data: AlbumMetadataResponse = await response.json();
   return {
-    title: data.title || params.title || "Unknown Album",
-    artist: data.artist || params.artist || "Unknown Artist",
-    releaseYear: data.release_year,
+    id: data.id,
+    title: data.title,
+    artist: data.artist,
+    year: data.year,
+    image_url: data.image_url,
+    external_id: undefined,
+    external_url: undefined,
+    source: data.source,
+    genres: data.genres,
+    styles: data.styles,
     tracklist: data.tracklist,
-    coverArt: data.cover_art,
   };
 };
 
+async function fetchWikipediaContent(url: string): Promise<string> {
+  if (!url) return "";
+  try {
+    // Extraire le titre de la page depuis l'URL
+    const title = url.split("/").pop()?.replace(/_/g, " ") || "";
+    const apiUrl = `https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(
+      title
+    )}&origin=*`;
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error("Failed to fetch Wikipedia content");
+    }
+
+    const data = await response.json();
+    const pages = data.query.pages;
+    const pageId = Object.keys(pages)[0];
+    return pages[pageId].extract || "";
+  } catch (error) {
+    console.error("Error fetching Wikipedia content:", error);
+    return "";
+  }
+}
+
 export const fetchArtistMetadata = async (
-  artistId: string,
-  artistName: string
+  artistId: string
 ): Promise<ArtistMetadata> => {
-  const params = new URLSearchParams();
-  params.append("artist_name", artistName);
+  if (!artistId || artistId === "Unknown Artist") {
+    return {
+      id: "",
+      name: "",
+      image_url: undefined,
+      external_id: undefined,
+      external_url: undefined,
+      source: "",
+    };
+  }
 
   const response = await fetch(
     `${
       import.meta.env.VITE_API_VK_URL
-    }/music-metadata/artist/${artistId}?${params.toString()}`
+    }/request-proxy/music-metadata/artist?artist_id=${artistId}`
   );
 
   if (!response.ok) {
@@ -93,36 +155,119 @@ export const fetchArtistMetadata = async (
   const data: ArtistMetadataResponse = await response.json();
 
   return {
-    name: data.name || artistName,
+    id: data.id,
+    name: data.name,
+    image_url: data.image_url,
     biography: data.biography,
-    country: data.country,
     genres: data.genres,
+    country: data.country,
+    wikipedia_url: data.wikipedia_url,
+    external_id: data.external_id,
+    external_url: data.external_url,
+    members: data.members,
+    active_years: data.active_years,
+    aliases: data.aliases,
+    source: data.source,
   };
 };
 
 export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
   return useQuery({
-    queryKey: [
-      "albumMetadata",
-      params?.id,
-      params?.source,
-      params?.artist,
-      params?.title,
-    ],
+    queryKey: ["albumMetadata", params?.id],
     queryFn: () => fetchAlbumMetadata(params!),
-    enabled:
-      !!params?.id && !!params?.source && !!params?.artist && !!params?.title,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    enabled: !!params?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
-export const useArtistMetadata = (artistId?: string, artistName?: string) => {
+export const useArtistMetadata = (artistId?: string) => {
   return useQuery({
-    queryKey: ["artistMetadata", artistId, artistName],
-    queryFn: () => fetchArtistMetadata(artistId!, artistName!),
-    enabled: !!artistId && !!artistName,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    queryKey: ["artistMetadata", artistId],
+    queryFn: () => fetchArtistMetadata(artistId!),
+    enabled: !!artistId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
+
+export class MusicMetadataService {
+  private static instance: MusicMetadataService;
+  private apiUrl: string;
+
+  private constructor() {
+    this.apiUrl = import.meta.env.VITE_API_VK_URL;
+  }
+
+  public static getInstance(): MusicMetadataService {
+    if (!MusicMetadataService.instance) {
+      MusicMetadataService.instance = new MusicMetadataService();
+    }
+    return MusicMetadataService.instance;
+  }
+
+  async searchMusic(query: string): Promise<AlbumMetadata[]> {
+    try {
+      const response = await fetch(`${this.apiUrl}/search-music`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Album with ID ${query} not found`);
+      }
+
+      const data = await response.json();
+      return data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        artist: item.artist,
+        year: item.year,
+        image_url: item.image_url,
+        external_id: undefined,
+        external_url: undefined,
+        source: item.source,
+        genres: item.genres,
+        styles: item.styles,
+        tracklist: item.tracklist,
+      }));
+    } catch (error) {
+      console.error("Error searching music:", error);
+      throw error;
+    }
+  }
+
+  async getAlbumMetadata(id: string): Promise<AlbumMetadata> {
+    try {
+      const response = await fetch(`${this.apiUrl}/album/${id}`);
+      if (!response.ok) {
+        throw new Error(`Album with ID ${id} not found`);
+      }
+
+      const data = await response.json();
+      return {
+        id: data.id.toString(),
+        title: data.title,
+        artist: data.artist,
+        year: data.year,
+        image_url: data.image_url,
+        external_id: data.external_id,
+        external_url: data.external_url,
+        source: data.source,
+        genres: data.genres,
+        styles: data.styles,
+        tracklist: data.tracklist,
+      };
+    } catch (error) {
+      console.error("Error fetching album metadata:", error);
+      throw error;
+    }
+  }
+}

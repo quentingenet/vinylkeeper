@@ -1,18 +1,18 @@
 import { BaseApiService } from "./BaseApiService";
 import { WishlistItem } from "@models/IWishlist";
-import { transformBackendArrayToWishlist } from "@utils/DataTransformers";
+import { transformBackendToWishlistItem } from "@utils/DataTransformers";
 
 export class WishlistApiService extends BaseApiService {
   async getWishlistItems(): Promise<WishlistItem[]> {
-    const backendData = await this.get<any[]>("/external/wishlist");
-    return transformBackendArrayToWishlist(backendData);
+    const backendData = await this.get<any[]>("/external-references/wishlist");
+    return backendData.map(transformBackendToWishlistItem);
   }
 
   async removeFromWishlist(
     externalReferenceId: number
   ): Promise<{ success: boolean; message: string }> {
     return this.delete<{ success: boolean; message: string }>(
-      `/external/wishlist/${externalReferenceId}`
+      `/external-references/wishlist/${externalReferenceId}`
     );
   }
 }

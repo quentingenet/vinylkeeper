@@ -12,38 +12,18 @@ from pydantic import (
 
 class ArtistBase(BaseModel):
     """Base schema for artist data."""
-    name: str = Field(
-        min_length=1,
-        max_length=255,
-        description="Artist name must be between 1 and 255 characters"
+    external_artist_id: str = Field(
+        ...,
+        pattern=r"^\d+$",
+        description="External artist ID (numeric string)"
     )
-    musicbrainz_id: str = Field(
-        min_length=36,
-        max_length=36,
-        description="MusicBrainz Artist ID (36 characters)"
-    )
+    title: str = Field(..., description="Name of the artist")
+    image_url: Optional[str] = Field(
+        None, description="URL of the artist image")
+    source: str = Field(...,
+                        description="Source of the artist data (e.g., 'DISCOGS')")
 
     model_config = ConfigDict(from_attributes=True)
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        """Validate artist name."""
-        if not v or len(v.strip()) == 0:
-            raise ValueError("Artist name cannot be empty")
-        return v.strip()
-
-    @field_validator("musicbrainz_id")
-    @classmethod
-    def validate_musicbrainz_id(cls, v: str) -> str:
-        """Validate MusicBrainz Artist ID format."""
-        if len(v) != 36:
-            raise ValueError(
-                "MusicBrainz ID must be exactly 36 characters long")
-        if not all(c in "0123456789abcdef-" for c in v.lower()):
-            raise ValueError(
-                "MusicBrainz ID must contain only hexadecimal characters and hyphens")
-        return v
 
 
 class ArtistCreate(ArtistBase):
@@ -53,18 +33,13 @@ class ArtistCreate(ArtistBase):
 
 class ArtistUpdate(BaseModel):
     """Schema for updating an artist."""
-    name: Optional[str] = Field(
+    external_artist_id: Optional[str] = Field(
         None,
-        min_length=1,
-        max_length=255
-    )
-    musicbrainz_id: Optional[str] = Field(
-        None,
-        min_length=36,
-        max_length=36
+        pattern=r"^\d+$",
+        description="External artist ID (numeric string)"
     )
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     @model_validator(mode='after')
     def validate_fields(self) -> 'ArtistUpdate':
@@ -77,16 +52,15 @@ class ArtistUpdate(BaseModel):
 class ArtistInDB(ArtistBase):
     """Schema for artist data as stored in database."""
     id: int = Field(gt=0)
+    owner_id: int = Field(gt=0, description="ID of the artist owner")
     registered_at: datetime
     updated_at: datetime
 
 
 class ArtistResponse(ArtistInDB):
     """Schema for artist data in API responses."""
-    albums: List[dict] = Field(
-        default_factory=list)  # Will be populated with album data
+    albums: Optional[List[dict]] = None
     collections_count: int = Field(default=0)
-    wishlist_count: int = Field(default=0)
 
 
 class ArtistDetailResponse(ArtistResponse):

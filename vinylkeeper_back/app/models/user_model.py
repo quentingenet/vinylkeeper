@@ -19,7 +19,11 @@ from app.models.association_tables import collection_likes
 
 
 class User(Base):
-    """User model."""
+    """User model representing a user in the system.
+
+    This model stores user information and manages relationships with other entities
+    such as albums, artists, collections, and wishlist items.
+    """
 
     __tablename__ = "users"
 
@@ -85,42 +89,47 @@ class User(Base):
         nullable=False
     )
 
+    # Relationships
     role = relationship(
         "Role",
         back_populates="users",
         lazy="selectin"
     )
+
     collections = relationship(
         "Collection",
         back_populates="owner",
         lazy="selectin",
         cascade="all, delete-orphan"
     )
+
     loans = relationship(
         "Loan",
         back_populates="user",
         lazy="selectin",
         cascade="all, delete-orphan"
     )
+
     wishlist_items = relationship(
         "Wishlist",
         back_populates="user",
         lazy="selectin",
         cascade="all, delete-orphan"
     )
+
     liked_collections = relationship(
         "Collection",
         secondary="collection_likes",
         back_populates="liked_by",
         lazy="selectin"
     )
+
     submitted_places = relationship(
         "Place",
         back_populates="submitted_by",
         lazy="selectin",
         cascade="all, delete-orphan"
     )
-    albums = relationship("Album", back_populates="owner")
 
     @validates('username', 'email')
     def validate_unique_fields(self, key, value):

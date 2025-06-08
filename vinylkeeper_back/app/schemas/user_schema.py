@@ -163,7 +163,13 @@ class ResetPasswordSchema(BaseModel):
 
 class UserMeResponse(BaseModel):
     username: str
-    email: EmailStr
     user_uuid: UUID
 
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserMiniResponse(BaseModel):
+    id: int = Field(gt=0)
+    username: str
+    user_uuid: UUID
     model_config = ConfigDict(from_attributes=True)

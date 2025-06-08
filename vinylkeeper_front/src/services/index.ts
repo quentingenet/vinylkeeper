@@ -3,15 +3,13 @@ export { UserApiService, userApiService } from "./UserApiService";
 export {
   CollectionApiService,
   collectionApiService,
-  getCollections,
-  switchAreaCollection,
 } from "./CollectionApiService";
 export { SearchApiService, searchApiService } from "./SearchApiService";
 
 // Existing Services (migrated to BaseApiService)
 export { WishlistApiService, wishlistApiService } from "./WishlistService";
 export {
-  ExternalReferenceApiService,
+  ExternalReferenceService,
   externalReferenceApiService,
 } from "./ExternalReferenceService";
 
@@ -27,9 +25,6 @@ export type {
   ResetPasswordResponse,
 } from "./UserApiService";
 
-export type {
-  CollectionDetails,
-  RemoveItemResponse,
-} from "./CollectionApiService";
+export type { CollectionDetails } from "./CollectionApiService";
 
 export type { SearchQuery, SearchResults } from "./SearchApiService";

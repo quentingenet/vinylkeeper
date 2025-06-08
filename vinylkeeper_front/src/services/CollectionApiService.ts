@@ -1,35 +1,32 @@
 import { BaseApiService } from "./BaseApiService";
-import { PaginatedResponse } from "@models/BaseTypes";
 import { ICollection, ICollectionForm } from "@models/ICollectionForm";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 
-export interface CollectionDetails {
-  collection: ICollection;
-  localAlbums: Array<{ id: number; title: string; artist: string }>;
-  localArtists: Array<{ id: number; name: string }>;
-  localGenres: Array<{ id: number; name: string }>;
-  externalAlbums: Array<{
-    id: number;
-    externalId: string;
-    title: string;
-    artistName?: string;
-    externalSource: string;
-    itemType: string;
-    pictureMedium?: string;
-  }>;
-  externalArtists: Array<{
-    id: number;
-    externalId: string;
-    title: string;
-    externalSource: string;
-    itemType: string;
-    pictureMedium?: string;
-  }>;
+interface PaginatedCollectionResponse {
+  items: ICollection[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }
 
-export interface RemoveItemResponse {
-  success: boolean;
-  message: string;
+export interface CollectionDetails {
+  id: number;
+  name: string;
+  description: string;
+  is_public: boolean;
+  owner_id: number;
+  registered_at: string;
+  updated_at: string;
+  owner: {
+    id: number;
+    username: string;
+    user_uuid: string;
+  };
+  albums: any[];
+  artists: any[];
+  likes_count: number;
+  is_liked_by_user: boolean;
 }
 
 export class CollectionApiService extends BaseApiService {
@@ -39,8 +36,18 @@ export class CollectionApiService extends BaseApiService {
     this.createCollection = this.createCollection.bind(this);
     this.getCollections = this.getCollections.bind(this);
     this.getCollectionById = this.getCollectionById.bind(this);
+    this.getPublicCollections = this.getPublicCollections.bind(this);
+    this.switchCollectionVisibility =
+      this.switchCollectionVisibility.bind(this);
     this.updateCollection = this.updateCollection.bind(this);
     this.deleteCollection = this.deleteCollection.bind(this);
+    this.removeAlbumFromCollection = this.removeAlbumFromCollection.bind(this);
+    this.removeArtistFromCollection =
+      this.removeArtistFromCollection.bind(this);
+    this.removeGenreFromCollection = this.removeGenreFromCollection.bind(this);
+    this.removeExternalItemFromCollection =
+      this.removeExternalItemFromCollection.bind(this);
+    this.getCollectionDetails = this.getCollectionDetails.bind(this);
   }
 
   async createCollection(data: ICollectionForm): Promise<ICollection> {
@@ -50,22 +57,10 @@ export class CollectionApiService extends BaseApiService {
   async getCollections(
     page: number = 1,
     itemsPerPage: number = ITEMS_PER_PAGE
-  ): Promise<PaginatedResponse<ICollection>> {
-    const endpoint = this.buildPaginatedEndpoint(
-      "/collections",
-      page,
-      itemsPerPage
+  ): Promise<PaginatedCollectionResponse> {
+    return this.get<PaginatedCollectionResponse>(
+      this.buildPaginatedEndpoint("/collections", page, itemsPerPage)
     );
-    const backendResponse = await this.get<any>(endpoint);
-
-    // Transform backend response (snake_case) to frontend format (camelCase)
-    return {
-      items: backendResponse.items || [],
-      total: backendResponse.total || 0,
-      page: backendResponse.page || 1,
-      limit: backendResponse.limit || itemsPerPage,
-      totalPages: backendResponse.total_pages || 0, // Convert snake_case to camelCase
-    };
   }
 
   async getCollectionById(collectionId: number): Promise<ICollection> {
@@ -75,22 +70,10 @@ export class CollectionApiService extends BaseApiService {
   async getPublicCollections(
     page: number = 1,
     itemsPerPage: number = ITEMS_PER_PAGE
-  ): Promise<PaginatedResponse<ICollection>> {
-    const endpoint = this.buildPaginatedEndpoint(
-      "/collections/public",
-      page,
-      itemsPerPage
+  ): Promise<PaginatedCollectionResponse> {
+    return this.get<PaginatedCollectionResponse>(
+      this.buildPaginatedEndpoint("/collections/public", page, itemsPerPage)
     );
-    const backendResponse = await this.get<any>(endpoint);
-
-    // Transform backend response (snake_case) to frontend format (camelCase)
-    return {
-      items: backendResponse.items || [],
-      total: backendResponse.total || 0,
-      page: backendResponse.page || 1,
-      limit: backendResponse.limit || itemsPerPage,
-      totalPages: backendResponse.total_pages || 0, // Convert snake_case to camelCase
-    };
   }
 
   async switchCollectionVisibility(
@@ -109,7 +92,6 @@ export class CollectionApiService extends BaseApiService {
     return this.patch<ICollection>(`/collections/update/${collectionId}`, data);
   }
 
-  // REST-compliant endpoint (updated to match backend)
   async deleteCollection(collectionId: number): Promise<void> {
     return this.delete<void>(`/collections/${collectionId}`);
   }
@@ -117,8 +99,8 @@ export class CollectionApiService extends BaseApiService {
   async removeAlbumFromCollection(
     collectionId: number,
     albumId: number
-  ): Promise<RemoveItemResponse> {
-    return this.delete<RemoveItemResponse>(
+  ): Promise<{ success: boolean; message: string }> {
+    return this.delete<{ success: boolean; message: string }>(
       `/collections/${collectionId}/albums/${albumId}`
     );
   }
@@ -126,8 +108,8 @@ export class CollectionApiService extends BaseApiService {
   async removeArtistFromCollection(
     collectionId: number,
     artistId: number
-  ): Promise<RemoveItemResponse> {
-    return this.delete<RemoveItemResponse>(
+  ): Promise<{ success: boolean; message: string }> {
+    return this.delete<{ success: boolean; message: string }>(
       `/collections/${collectionId}/artists/${artistId}`
     );
   }
@@ -135,8 +117,8 @@ export class CollectionApiService extends BaseApiService {
   async removeGenreFromCollection(
     collectionId: number,
     genreId: number
-  ): Promise<RemoveItemResponse> {
-    return this.delete<RemoveItemResponse>(
+  ): Promise<{ success: boolean; message: string }> {
+    return this.delete<{ success: boolean; message: string }>(
       `/collections/${collectionId}/genres/${genreId}`
     );
   }
@@ -144,59 +126,16 @@ export class CollectionApiService extends BaseApiService {
   async removeExternalItemFromCollection(
     collectionId: number,
     externalReferenceId: number
-  ): Promise<RemoveItemResponse> {
-    return this.delete<RemoveItemResponse>(
-      `/external/collection/${collectionId}/${externalReferenceId}`
+  ): Promise<{ success: boolean; message: string }> {
+    return this.delete<{ success: boolean; message: string }>(
+      `/collections/${collectionId}/remove/${externalReferenceId}`
     );
   }
 
   async getCollectionDetails(collectionId: number): Promise<CollectionDetails> {
-    // Transform backend response to frontend format
-    const backendResponse = await this.get<any>(
-      `/collections/${collectionId}/details`
-    );
-
-    // Convert snake_case to camelCase
-    return {
-      collection: backendResponse.collection,
-      localAlbums: backendResponse.local_albums || [],
-      localArtists: backendResponse.local_artists || [],
-      localGenres: backendResponse.local_genres || [],
-      externalAlbums: (backendResponse.external_albums || []).map(
-        (item: any) => ({
-          id: item.id,
-          externalId: item.external_id,
-          title: item.title,
-          artistName: item.artist_name,
-          externalSource: item.external_source,
-          itemType: item.item_type,
-          pictureMedium: item.picture_medium,
-        })
-      ),
-      externalArtists: (backendResponse.external_artists || []).map(
-        (item: any) => ({
-          id: item.id,
-          externalId: item.external_id,
-          title: item.title,
-          externalSource: item.external_source,
-          itemType: item.item_type,
-          pictureMedium: item.picture_medium,
-        })
-      ),
-    };
+    return this.get<CollectionDetails>(`/collections/${collectionId}/details`);
   }
 }
 
 // Export singleton instance
 export const collectionApiService = new CollectionApiService();
-
-// Export individual functions for backward compatibility
-export const getCollections = (
-  page: number = 1,
-  itemsPerPage: number = ITEMS_PER_PAGE
-) => collectionApiService.getCollections(page, itemsPerPage);
-
-export const switchAreaCollection = (
-  collectionId: number,
-  newIsPublic: boolean
-) => collectionApiService.switchCollectionVisibility(collectionId, newIsPublic);

@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, event, func
 from sqlalchemy.orm import relationship
 from app.models.base import Base
+
+from app.core.enums import ModerationStatusEnum
+
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, func, Enum
 
 
 class ModerationRequest(Base):
@@ -19,21 +22,19 @@ class ModerationRequest(Base):
                         server_default=func.now(), nullable=False)
     place_id = Column(Integer, ForeignKey(
         "places.id", ondelete="CASCADE"), nullable=False, index=True)
-    status = Column(String(20), nullable=False, default="pending")
+
+    status = Column(
+        Enum(ModerationStatusEnum, name="moderationstatusenum", create_type=False),
+        nullable=False,
+        default=ModerationStatusEnum.PENDING,
+    )
+
     submitted_at = Column(DateTime(timezone=True),
                           server_default=func.now(), nullable=False)
 
     user = relationship("User", lazy="selectin")
     place = relationship(
-        "Place",
-        back_populates="moderation_requests",
-        lazy="selectin"
-    )
+        "Place", back_populates="moderation_requests", lazy="selectin")
 
     def __repr__(self):
         return f"<ModerationRequest(user_id={self.user_id}, target_type={self.target_type}, target_id={self.target_id})>"
-
-
-@event.listens_for(ModerationRequest, 'before_insert')
-def set_created_at(mapper, connection, target):
-    target.created_at = func.now()

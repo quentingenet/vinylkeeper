@@ -45,10 +45,6 @@ export interface IArtistRequestResults {
   uuid: string;
   id: number;
   name?: string;
-  artist?: string;
-  album?: string;
-  cover_url?: string;
-  link?: string;
   picture?: string;
   picture_small?: string;
   picture_medium?: string;
@@ -57,13 +53,9 @@ export interface IArtistRequestResults {
   nb_album?: number;
   nb_fan?: number;
   radio?: boolean;
-  tracklist?: string;
   md5_image?: string;
-  genre_id?: number;
-  nb_tracks?: number;
-  record_type?: string;
-  explicit_lyrics?: boolean;
   type?: string;
+  source: string;
 }
 
 export interface IAlbumRequestResults {
@@ -89,9 +81,42 @@ export interface IAlbumRequestResults {
   record_type?: string;
   explicit_lyrics?: boolean;
   type?: string;
+  source: string;
 }
 
 export interface IRequestResults {
   type: string;
   data: IArtistRequestResults[] | IAlbumRequestResults[];
+}
+
+export interface ArtistMetadata {
+  name: string;
+  biography?: string;
+  image?: string;
+  genres?: string[];
+  country?: string;
+  wikipedia_url?: string;
+  discogs_id?: string;
+  discogs_url?: string;
+  members?: string[];
+  active_years?: string;
+  aliases?: string[];
+}
+
+export interface IRequestProxy {
+  id: string;
+  title: string;
+  artist: string;
+  year?: string;
+  image_url?: string;
+  external_url?: string;
+  source: string;
+}
+
+export interface IRequestProxyResponse {
+  items: IRequestProxy[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }

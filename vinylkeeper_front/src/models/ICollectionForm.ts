@@ -12,6 +12,7 @@ export interface ICollectionSwitchArea {
 export interface IUserInfo {
   id: number;
   username: string;
+  user_uuid: string;
 }
 
 export interface ICollection {
@@ -19,10 +20,27 @@ export interface ICollection {
   name: string;
   description: string;
   is_public: boolean;
-  user_id: number;
+  mood: string | null;
+  owner_id: number;
   registered_at: string;
   updated_at: string;
-  owner: IUserInfo;
+  owner: {
+    id: number;
+    username: string;
+    user_uuid: string;
+  };
+  albums: any[];
+  artists: any[];
+  likes_count: number;
+  is_liked_by_user: boolean;
+}
+
+export interface ICollectionDetails extends ICollection {
+  liked_by: Array<{
+    id: number;
+    username: string;
+    user_uuid: string;
+  }>;
 }
 
 export interface ICollectionResponse {
@@ -30,5 +48,13 @@ export interface ICollectionResponse {
   total: number;
   page: number;
   limit: number;
-  totalPages: number;
+  total_pages: number;
+}
+
+export interface BackendResponse<T> {
+  data: {
+    data: T;
+    message?: string;
+    status: string;
+  };
 }

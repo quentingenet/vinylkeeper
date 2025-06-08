@@ -10,58 +10,43 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Chip,
+  CardMedia,
+  IconButton,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { zoomIn } from "@utils/Animations";
-import VinylKeeperDialog from "@components/UI/VinylKeeperDialog";
-import PlayButton from "@components/UI/PlayButton";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
+import { Album } from "@mui/icons-material";
+import { truncateText } from "@utils/GlobalUtils";
+import styles from "../../styles/pages/AddVinyls.module.scss";
 
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
   const collectionId = id ? parseInt(id) : 0;
   const { isMobile } = useDetectMobile();
-  const { currentUser } = useUserContext();
+  const { currentUser, isUserLoggedIn } = useUserContext();
   const queryClient = useQueryClient();
-
-  // États pour la modal de confirmation
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<{
-    id: number;
-    name: string;
-    type:
-      | "local_album"
-      | "external_album"
-      | "local_artist"
-      | "external_artist"
-      | "local_genre";
-  } | null>(null);
-
-  // États pour le modal de lecture
   const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
   const [selectedPlaybackItem, setSelectedPlaybackItem] =
     useState<PlaybackItem | null>(null);
-  const [playbackItemType, setPlaybackItemType] = useState<"album" | "artist">(
-    "album"
-  );
 
   const {
     data: collectionDetails,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<CollectionDetails>({
     queryKey: ["collectionDetails", collectionId],
     queryFn: () => collectionApiService.getCollectionDetails(collectionId),
     enabled: !!collectionId,
   });
 
-  // Mutations pour la suppression
   const removeAlbumMutation = useMutation({
-    mutationFn: ({ albumId }: { albumId: number }) =>
+    mutationFn: (albumId: number) =>
       collectionApiService.removeAlbumFromCollection(collectionId, albumId),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -71,7 +56,7 @@ export default function CollectionDetails() {
   });
 
   const removeArtistMutation = useMutation({
-    mutationFn: ({ artistId }: { artistId: number }) =>
+    mutationFn: (artistId: number) =>
       collectionApiService.removeArtistFromCollection(collectionId, artistId),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -80,94 +65,23 @@ export default function CollectionDetails() {
     },
   });
 
-  const removeGenreMutation = useMutation({
-    mutationFn: ({ genreId }: { genreId: number }) =>
-      collectionApiService.removeGenreFromCollection(collectionId, genreId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-    },
-  });
-
-  const removeExternalMutation = useMutation({
-    mutationFn: ({ externalId }: { externalId: number }) =>
-      collectionApiService.removeExternalItemFromCollection(
-        collectionId,
-        externalId
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-    },
-  });
-
-  // Fonctions pour ouvrir la modal de confirmation
-  const openDeleteConfirmation = (item: {
-    id: number;
-    name: string;
-    type:
-      | "local_album"
-      | "external_album"
-      | "local_artist"
-      | "external_artist"
-      | "local_genre";
-  }) => {
-    setSelectedItem(item);
-    setOpenDeleteDialog(true);
+  const handleOpenModalCollection = (isOpen: boolean, collection: any) => {
+    // TODO: Implement collection edit modal
+    console.log("Open edit modal for collection:", collection);
   };
 
-  // Fonction de suppression finale après confirmation
-  const handleConfirmDelete = () => {
-    if (!selectedItem) return;
-
-    switch (selectedItem.type) {
-      case "local_album":
-        removeAlbumMutation.mutate({ albumId: selectedItem.id });
-        break;
-      case "external_album":
-      case "external_artist":
-        removeExternalMutation.mutate({ externalId: selectedItem.id });
-        break;
-      case "local_artist":
-        removeArtistMutation.mutate({ artistId: selectedItem.id });
-        break;
-      case "local_genre":
-        removeGenreMutation.mutate({ genreId: selectedItem.id });
-        break;
-    }
-
-    setOpenDeleteDialog(false);
-    setSelectedItem(null);
-  };
-
-  // Fonctions pour gérer le modal de lecture
   const handlePlayClick = (item: any, type: "album" | "artist") => {
-    let playbackItem: PlaybackItem;
-    if (item.externalId) {
-      playbackItem = {
-        id: item.id,
-        title: item.title || "Unknown Album",
-        artist: item.artistName || "Unknown Artist",
-        source: "deezer",
-        deezerId: String(item.externalId),
-        pictureMedium: item.pictureMedium || "",
-        releaseYear: item.releaseYear,
-      };
-    } else {
-      playbackItem = {
-        id: item.id,
-        title: item.title || item.name || "Unknown Album",
-        artist: item.artist || item.artistName || "Unknown Artist",
-        source: "musicbrainz",
-        musicbrainzId: item.musicbrainzId ? String(item.musicbrainzId) : "",
-        pictureMedium: item.pictureMedium || "",
-        releaseYear: item.releaseYear,
-      };
-    }
+    const playbackItem: PlaybackItem = {
+      id:
+        type === "album"
+          ? (item.external_album_id || item.id).toString()
+          : (item.external_artist_id || item.id).toString(),
+      title: item.title || item.name,
+      artist: type === "album" ? item.artist_name || "" : "",
+      image_url: item.image_url || "",
+      itemType: type,
+    };
     setSelectedPlaybackItem(playbackItem);
-    setPlaybackItemType(type);
     setPlaybackModalOpen(true);
   };
 
@@ -177,8 +91,8 @@ export default function CollectionDetails() {
   };
 
   useEffect(() => {
-    if (collectionDetails) {
-      document.title = `${collectionDetails.collection.name} - VinylKeeper`;
+    if (collectionDetails?.name) {
+      document.title = `${collectionDetails.name} - VinylKeeper`;
     }
     return () => {
       document.title = "VinylKeeper";
@@ -208,617 +122,351 @@ export default function CollectionDetails() {
     );
   }
 
-  const {
-    collection,
-    localAlbums,
-    localArtists,
-    localGenres,
-    externalAlbums,
-    externalArtists,
-  } = collectionDetails;
+  const allAlbums = collectionDetails.albums || [];
+  const allArtists = collectionDetails.artists || [];
 
-  const isOwner = currentUser && collection.user_id === currentUser.id;
+  const isOwner =
+    isUserLoggedIn &&
+    currentUser?.user_uuid === collectionDetails?.owner?.user_uuid;
 
   return (
     <Box sx={{ padding: 3 }}>
-      {/* Collection Header */}
-      <Typography
-        variant="h4"
-        component="h1"
-        gutterBottom
-        sx={{ color: "#C9A726" }}
-      >
-        {collection.name}
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ color: "#C9A726" }}
+        >
+          {collectionDetails.name || "Collection"}
+        </Typography>
+      </Box>
       <Typography variant="body1" color="text.secondary" paragraph>
-        {collection.description}
+        {collectionDetails.description || "No description available"}
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Created on {new Date(collection.registered_at).toLocaleDateString()}
-      </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+          Created on{" "}
+          {collectionDetails.registered_at
+            ? new Date(collectionDetails.registered_at).toLocaleDateString()
+            : "Unknown date"}
+          {collectionDetails.owner && ` by ${collectionDetails.owner.username}`}
+        </Typography>
+      </Box>
 
-      {/* Albums Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
-          Albums ({localAlbums.length + externalAlbums.length})
+          Albums ({allAlbums.length})
         </Typography>
-
-        {localAlbums.length + externalAlbums.length === 0 ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="100px"
-          >
-            <Typography variant="h6" sx={{ color: "#e4e4e4" }}>
-              No albums in this collection
-            </Typography>
-          </Box>
+        {allAlbums.length === 0 ? (
+          <Typography variant="body1" color="text.secondary">
+            No albums in this collection yet.
+          </Typography>
         ) : (
-          <Box
-            display={isMobile ? "flex" : "grid"}
-            flexDirection={isMobile ? "column" : "row"}
-            flexWrap={isMobile ? "nowrap" : "wrap"}
-            gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
-            justifyContent={isMobile ? "center" : "flex-start"}
-            alignItems={isMobile ? "center" : "flex-start"}
-            gap={4}
-            marginY={isMobile ? 1 : 3}
-          >
-            {/* Local Albums */}
-            {localAlbums.map((album) => (
+          <div className={styles.resultsContainer}>
+            {allAlbums.map((album) => (
               <Card
-                key={`local-album-${album.id}`}
+                onClick={() => handlePlayClick(album, "album")}
+                key={album.id}
+                className={styles.resultCard}
                 sx={{
-                  backgroundColor: "#3f3f41",
-                  height: "100%",
+                  width: 250,
+                  height: 350,
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "transform 0.2s ease-in-out",
                   display: "flex",
                   flexDirection: "column",
-                  position: "relative",
-                  width: 250,
-                  borderRadius: "8px",
+                  alignItems: "center",
                 }}
               >
                 <Box
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-end"}
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 1,
+                    zIndex: 2,
+                  }}
                 >
-                  <PlayButton
+                  <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePlayClick(album, "album");
                     }}
-                    position={{ top: 10, right: 10 }}
-                  />
+                    sx={{
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      width: "32px",
+                      height: "32px",
+                      p: 0,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.7)",
+                      },
+                    }}
+                  >
+                    <PlayArrowIcon sx={{ color: "white", fontSize: "20px" }} />
+                  </IconButton>
                   {isOwner && (
-                    <Box
+                    <IconButton
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDeleteConfirmation({
-                          id: album.id,
-                          name: album.title,
-                          type: "local_album",
-                        });
+                        removeAlbumMutation.mutate(album.id);
                       }}
                       sx={{
-                        position: "absolute",
-                        cursor: "pointer",
-                        backgroundColor: "#1F1F1F",
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        width: "32px",
+                        height: "32px",
+                        p: 0,
                         borderRadius: "50%",
-                        padding: 1,
-                        top: 50,
-                        right: 10,
-                        opacity: 0.9,
                         display: "flex",
-                        justifyContent: "center",
                         alignItems: "center",
+                        justifyContent: "center",
                         "&:hover": {
-                          animation: `${zoomIn} 0.3s ease-in-out`,
+                          backgroundColor: "rgba(0, 0, 0, 0.7)",
                         },
                       }}
                     >
-                      <DeleteIcon fontSize="small" />
-                    </Box>
+                      <DeleteIcon sx={{ color: "white", fontSize: "20px" }} />
+                    </IconButton>
                   )}
                 </Box>
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: 250,
-                    overflow: "hidden",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#2a2a2a",
-                  }}
-                >
-                  <Typography variant="h1" sx={{ color: "#C9A726" }}>
-                    ♪
-                  </Typography>
-                </Box>
-                <CardContent
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    textAlign: "center",
-                    height: "100px",
-                    padding: "16px",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      color: "#C9A726",
-                      marginBottom: "4px",
-                      fontWeight: "bold",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      width: "100%",
-                    }}
-                  >
-                    {album.artist}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: "#fffbf9",
-                      marginBottom: "8px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      width: "100%",
-                    }}
-                  >
-                    {album.title}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* External Albums (Deezer) */}
-            {externalAlbums.map((album) => (
-              <Card
-                key={`external-album-${album.id}`}
-                sx={{
-                  backgroundColor: "#3f3f41",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                  width: 250,
-                  borderRadius: "8px",
-                }}
-              >
-                <Box
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-end"}
-                >
-                  <PlayButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlayClick(album, "album");
-                    }}
-                    position={{ top: 10, right: 10 }}
-                  />
-                  {isOwner && (
-                    <Box
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDeleteConfirmation({
-                          id: album.id,
-                          name: album.title,
-                          type: "external_album",
-                        });
-                      }}
-                      sx={{
-                        position: "absolute",
-                        cursor: "pointer",
-                        backgroundColor: "#1F1F1F",
-                        borderRadius: "50%",
-                        padding: 1,
-                        top: 50,
-                        right: 10,
-                        opacity: 0.9,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        "&:hover": {
-                          animation: `${zoomIn} 0.3s ease-in-out`,
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </Box>
-                  )}
-                </Box>
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: 250,
-                    overflow: "hidden",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img
-                    src={album.pictureMedium || "/default-album.png"}
+                {album.image_url ? (
+                  <CardMedia
+                    component="img"
+                    height={250}
+                    sx={{ objectFit: "contain" }}
+                    image={album.image_url}
                     alt={album.title}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
                   />
-                </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      height: 250,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Album
+                      sx={{
+                        opacity: 0.7,
+                        width: 150,
+                        height: 150,
+                        color: "#C9A726",
+                      }}
+                    />
+                  </Box>
+                )}
                 <CardContent
                   sx={{
-                    flex: 1,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
-                    textAlign: "center",
-                    height: "100px",
-                    padding: "16px",
+                    height: "60px",
+                    gap: 0.5,
                   }}
                 >
                   <Typography
-                    variant="subtitle1"
                     sx={{
+                      fontSize: "1.4rem",
+                      textAlign: "center",
                       color: "#C9A726",
-                      marginBottom: "4px",
                       fontWeight: "bold",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      lineHeight: 1.2,
+                      height: "2.4em",
                       width: "100%",
                     }}
                   >
-                    {album.artistName || "Unknown Artist"}
+                    {truncateText(album.title?.split(" - ")[0] || "", 20)}
                   </Typography>
                   <Typography
-                    variant="body1"
                     sx={{
-                      color: "#fffbf9",
-                      marginBottom: "8px",
+                      fontSize: "1rem",
+                      textAlign: "center",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      lineHeight: 1.2,
+                      height: "2.4em",
                       width: "100%",
                     }}
+                    variant="h6"
                   >
-                    {album.title}
+                    {truncateText(
+                      album.title?.split(" - ")[1] || album.title || "",
+                      20
+                    )}
                   </Typography>
                 </CardContent>
               </Card>
             ))}
-          </Box>
+          </div>
         )}
       </Box>
-
-      {/* Artists Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
-          Artists ({localArtists.length + externalArtists.length})
+          Artists ({allArtists.length})
         </Typography>
-
-        {localArtists.length + externalArtists.length === 0 ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="100px"
-          >
-            <Typography variant="h6" sx={{ color: "#e4e4e4" }}>
-              No artists in this collection
-            </Typography>
-          </Box>
+        {allArtists.length === 0 ? (
+          <Typography variant="body1" color="text.secondary">
+            No artists in this collection yet.
+          </Typography>
         ) : (
-          <Box
-            display={isMobile ? "flex" : "grid"}
-            flexDirection={isMobile ? "column" : "row"}
-            flexWrap={isMobile ? "nowrap" : "wrap"}
-            gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
-            justifyContent={isMobile ? "center" : "flex-start"}
-            alignItems={isMobile ? "center" : "flex-start"}
-            gap={4}
-            marginY={isMobile ? 1 : 3}
-          >
-            {/* Local Artists */}
-            {localArtists.map((artist) => (
+          <div className={styles.resultsContainer}>
+            {allArtists.map((artist) => (
               <Card
-                key={`local-artist-${artist.id}`}
+                onClick={() => handlePlayClick(artist, "artist")}
+                key={artist.id}
+                className={styles.resultCard}
                 sx={{
-                  backgroundColor: "#3f3f41",
-                  height: "100%",
+                  width: 250,
+                  height: 350,
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "transform 0.2s ease-in-out",
                   display: "flex",
                   flexDirection: "column",
-                  position: "relative",
-                  width: 250,
-                  borderRadius: "8px",
+                  alignItems: "center",
                 }}
               >
                 <Box
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-end"}
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 1,
+                    zIndex: 2,
+                  }}
                 >
-                  <PlayButton
+                  <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePlayClick(artist, "artist");
                     }}
-                    position={{ top: 10, right: 10 }}
-                  />
+                    sx={{
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      width: "32px",
+                      height: "32px",
+                      p: 0,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.7)",
+                      },
+                    }}
+                  >
+                    <PlayArrowIcon sx={{ color: "white", fontSize: "20px" }} />
+                  </IconButton>
                   {isOwner && (
-                    <Box
+                    <IconButton
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDeleteConfirmation({
-                          id: artist.id,
-                          name: artist.name,
-                          type: "local_artist",
-                        });
+                        removeArtistMutation.mutate(artist.id);
                       }}
                       sx={{
-                        position: "absolute",
-                        cursor: "pointer",
-                        backgroundColor: "#1F1F1F",
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        width: "32px",
+                        height: "32px",
+                        p: 0,
                         borderRadius: "50%",
-                        padding: 1,
-                        top: 50,
-                        right: 10,
-                        opacity: 0.9,
                         display: "flex",
-                        justifyContent: "center",
                         alignItems: "center",
+                        justifyContent: "center",
                         "&:hover": {
-                          animation: `${zoomIn} 0.3s ease-in-out`,
+                          backgroundColor: "rgba(0, 0, 0, 0.7)",
                         },
                       }}
                     >
-                      <DeleteIcon fontSize="small" />
-                    </Box>
+                      <DeleteIcon sx={{ color: "white", fontSize: "20px" }} />
+                    </IconButton>
                   )}
                 </Box>
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: 250,
-                    overflow: "hidden",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#2a2a2a",
-                  }}
-                >
-                  <Typography variant="h1" sx={{ color: "#C9A726" }}>
-                    ♫
-                  </Typography>
-                </Box>
+                {artist.image_url ? (
+                  <CardMedia
+                    component="img"
+                    height={250}
+                    sx={{ objectFit: "contain" }}
+                    image={artist.image_url}
+                    alt={artist.title || artist.name}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      height: 250,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Album
+                      sx={{
+                        opacity: 0.7,
+                        width: 150,
+                        height: 150,
+                        color: "#C9A726",
+                      }}
+                    />
+                  </Box>
+                )}
                 <CardContent
                   sx={{
-                    flex: 1,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
-                    textAlign: "center",
-                    height: "100px",
-                    padding: "16px",
+                    height: "60px",
+                    gap: 0.5,
                   }}
                 >
                   <Typography
-                    variant="subtitle1"
                     sx={{
+                      fontSize: "1.4rem",
+                      textAlign: "center",
                       color: "#C9A726",
-                      marginBottom: "8px",
                       fontWeight: "bold",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      lineHeight: 1.2,
+                      height: "2.4em",
                       width: "100%",
                     }}
                   >
-                    {artist.name}
+                    {truncateText(artist.title || artist.name || "", 20)}
                   </Typography>
                 </CardContent>
               </Card>
             ))}
-
-            {/* External Artists (Deezer) */}
-            {externalArtists.map((artist) => (
-              <Card
-                key={`external-artist-${artist.id}`}
-                sx={{
-                  backgroundColor: "#3f3f41",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                  width: 250,
-                  borderRadius: "8px",
-                }}
-              >
-                <Box
-                  display={"flex"}
-                  flexDirection={"column"}
-                  alignItems={"flex-end"}
-                >
-                  <PlayButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlayClick(artist, "artist");
-                    }}
-                    position={{ top: 10, right: 10 }}
-                  />
-                  {isOwner && (
-                    <Box
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDeleteConfirmation({
-                          id: artist.id,
-                          name: artist.title,
-                          type: "external_artist",
-                        });
-                      }}
-                      sx={{
-                        position: "absolute",
-                        cursor: "pointer",
-                        backgroundColor: "#1F1F1F",
-                        borderRadius: "50%",
-                        padding: 1,
-                        top: 50,
-                        right: 10,
-                        opacity: 0.9,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        "&:hover": {
-                          animation: `${zoomIn} 0.3s ease-in-out`,
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </Box>
-                  )}
-                </Box>
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: 250,
-                    overflow: "hidden",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img
-                    src={artist.pictureMedium || "/default-artist.png"}
-                    alt={artist.title}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                    }}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      target.parentElement!.innerHTML =
-                        '<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #2a2a2a; color: #C9A726; font-size: 24px;">♫</div>';
-                    }}
-                  />
-                </Box>
-                <CardContent
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    textAlign: "center",
-                    height: "100px",
-                    padding: "16px",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      color: "#C9A726",
-                      marginBottom: "8px",
-                      fontWeight: "bold",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      width: "100%",
-                    }}
-                  >
-                    {artist.title}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
+          </div>
         )}
       </Box>
 
-      {/* Genres Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
-          Genres ({localGenres.length})
-        </Typography>
-        {localGenres.length === 0 ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="100px"
-          >
-            <Typography variant="h6" sx={{ color: "#e4e4e4" }}>
-              No genres in this collection
-            </Typography>
-          </Box>
-        ) : (
-          <Box display="flex" flexWrap="wrap" gap={1}>
-            {localGenres.map((genre) => (
-              <Chip
-                key={`genre-${genre.id}`}
-                label={genre.name}
-                sx={{
-                  backgroundColor: "#C9A726",
-                  color: "#000",
-                  fontWeight: "bold",
-                }}
-                onDelete={
-                  isOwner
-                    ? () => {
-                        openDeleteConfirmation({
-                          id: genre.id,
-                          name: genre.name,
-                          type: "local_genre",
-                        });
-                      }
-                    : undefined
-                }
-                deleteIcon={
-                  isOwner ? (
-                    <DeleteIcon sx={{ color: "#000 !important" }} />
-                  ) : undefined
-                }
-              />
-            ))}
-          </Box>
-        )}
-      </Box>
-
-      {/* Modal de confirmation de suppression */}
-      <VinylKeeperDialog
-        title="Remove from collection"
-        content={
-          selectedItem
-            ? `Are you sure you want to remove "${selectedItem.name}" from this collection?`
-            : "Are you sure you want to remove this item from the collection?"
-        }
-        onConfirm={handleConfirmDelete}
-        textConfirm="Remove"
-        textCancel="Cancel"
-        open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
-      />
-
-      {/* Modal de lecture */}
       <PlaybackModal
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        itemType={playbackItemType}
       />
     </Box>
   );

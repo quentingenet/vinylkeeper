@@ -9,6 +9,33 @@ from pydantic import (
     model_validator
 )
 
+from app.schemas.user_schema import UserMiniResponse
+from app.schemas.album_schema import AlbumBase
+from app.schemas.artist_schema import ArtistBase
+from app.core.enums import MoodEnum
+
+
+class CollectionAlbumResponse(AlbumBase):
+    """Schema for album data in collection responses."""
+    id: int = Field(gt=0)
+    registered_at: datetime
+    updated_at: datetime
+    collections_count: int = Field(default=0)
+    loans_count: int = Field(default=0)
+    wishlist_count: int = Field(default=0)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CollectionArtistResponse(ArtistBase):
+    """Schema for artist data in collection responses."""
+    id: int = Field(gt=0)
+    registered_at: datetime
+    updated_at: datetime
+    collections_count: int = Field(default=0)
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class CollectionBase(BaseModel):
     """Base schema for collection data."""
@@ -26,9 +53,9 @@ class CollectionBase(BaseModel):
         default=False,
         description="Whether the collection is visible to other users"
     )
-    owner_id: int = Field(
-        gt=0,
-        description="ID of the collection owner"
+    mood: Optional[MoodEnum] = Field(
+        None,
+        description="Mood of the collection"
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -46,7 +73,8 @@ class CollectionBase(BaseModel):
     def validate_description(cls, v: Optional[str]) -> Optional[str]:
         """Validate collection description."""
         if v is not None and len(v) > 255:
-            raise ValueError("Description cannot be longer than 255 characters")
+            raise ValueError(
+                "Description cannot be longer than 255 characters")
         return v
 
 
@@ -61,12 +89,13 @@ class CollectionCreate(CollectionBase):
         description="List of artist IDs to include in the collection"
     )
 
-    @model_validator(mode='after')
-    def validate_content(self) -> 'CollectionCreate':
-        """Validate that the collection has at least one album or artist."""
-        if not self.album_ids and not self.artist_ids:
-            raise ValueError("Collection must contain at least one album or artist")
-        return self
+
+class CollectionVisibilityUpdate(BaseModel):
+    """Schema for updating a collection area."""
+    is_public: bool = Field(
+        default=False,
+        description="Whether the collection is visible to other users"
+    )
 
 
 class CollectionUpdate(BaseModel):
@@ -81,10 +110,14 @@ class CollectionUpdate(BaseModel):
         max_length=255
     )
     is_public: Optional[bool] = None
+    mood: Optional[MoodEnum] = Field(
+        None,
+        description="Mood of the collection"
+    )
     album_ids: Optional[List[int]] = None
     artist_ids: Optional[List[int]] = None
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     @model_validator(mode='after')
     def validate_fields(self) -> 'CollectionUpdate':
@@ -97,22 +130,27 @@ class CollectionUpdate(BaseModel):
 class CollectionInDB(CollectionBase):
     """Schema for collection data as stored in database."""
     id: int = Field(gt=0)
+    owner_id: int = Field(
+        gt=0,
+        description="ID of the collection owner"
+    )
     registered_at: datetime
     updated_at: datetime
 
 
 class CollectionResponse(CollectionInDB):
     """Schema for collection data in API responses."""
-    owner: Optional[dict] = None  # Will be populated with user data
-    # Will be populated with album data
-    albums: List[dict] = Field(default_factory=list)
-    # Will be populated with artist data
-    artists: List[dict] = Field(default_factory=list)
+    owner: Optional[UserMiniResponse] = None
+    albums: List[CollectionAlbumResponse] = Field(default_factory=list)
+    artists: List[CollectionArtistResponse] = Field(default_factory=list)
     likes_count: int = Field(default=0)
     is_liked_by_user: bool = Field(default=False)
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CollectionDetailResponse(CollectionResponse):
     """Detailed collection response including all related data."""
-    liked_by: List[dict] = Field(
-        default_factory=list)  # Will be populated with user data
+    liked_by: List[UserMiniResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)

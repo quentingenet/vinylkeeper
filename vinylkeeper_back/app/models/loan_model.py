@@ -66,7 +66,9 @@ class Loan(Base):
     album = relationship(
         "Album",
         back_populates="loans",
-        lazy="selectin"
+        lazy="selectin",
+        primaryjoin="and_(Loan.album_id == Album.id, exists().where(and_(collection_album.c.album_id == Album.id, collection_album.c.owner_id == Loan.user_id)))",
+        viewonly=True
     )
 
     # Contraintes de validation

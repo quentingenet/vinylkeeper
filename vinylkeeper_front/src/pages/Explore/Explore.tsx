@@ -23,7 +23,7 @@ export default function Explore() {
   });
 
   const publicCollections = publicCollectionsData?.items || [];
-  const totalPages = publicCollectionsData?.totalPages || 0;
+  const totalPages = publicCollectionsData?.total_pages || 0;
 
   if (isLoading) {
     return (
@@ -41,7 +41,7 @@ export default function Explore() {
   if (error) {
     return (
       <Box>
-        <Typography variant="h6" color="error">
+        <Typography variant="h6" color="white">
           Error loading public collections
         </Typography>
       </Box>
@@ -95,20 +95,7 @@ export default function Explore() {
         )}
       </Box>
 
-      {totalPages > 1 && (
-        <Box display="flex" justifyContent="center" mt={4} mb={2}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, newPage) => setPage(newPage)}
-            color="primary"
-            size={isMobile ? "medium" : "large"}
-            shape="circular"
-          />
-        </Box>
-      )}
-
-      <Box mt={6}>
+      <Box mt={6} display="flex" flexDirection="column" alignItems="center">
         <Typography variant="h5" sx={{ color: "white", mb: 2 }}>
           Coming soon...
         </Typography>
