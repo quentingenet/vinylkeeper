@@ -61,6 +61,14 @@ class CollectionCreate(CollectionBase):
     )
 
 
+class CollectionVisibilityUpdate(BaseModel):
+    """Schema for updating a collection area."""
+    is_public: bool = Field(
+        default=False,
+        description="Whether the collection is visible to other users"
+    )
+
+
 class CollectionUpdate(BaseModel):
     """Schema for updating a collection."""
     name: Optional[str] = Field(

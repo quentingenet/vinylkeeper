@@ -12,6 +12,7 @@ from app.core.exceptions import (
     DuplicateFieldError,
     AppException,
 )
+from datetime import datetime
 
 
 class CollectionService:
@@ -84,6 +85,25 @@ class CollectionService:
         except NoResultFound:
             raise ResourceNotFoundError("Collection", collection_id)
 
+    def update_collection_area(self, collection_id: int, is_public: bool, user_id: int) -> bool:
+        try:
+            collection = self.repository.get_by_id(collection_id)
+            if collection.owner_id != user_id:
+                raise ForbiddenError(
+                    "You do not have permission to update this collection")
+            collection.is_public = is_public
+            self.repository.update(collection)
+            return True
+        except NoResultFound:
+            raise ResourceNotFoundError("Collection", collection_id)
+        except Exception as e:
+            raise AppException(
+                error_code=5003,
+                message="Failed to update collection",
+                status_code=500,
+                details={"error": str(e)},
+            )
+
     def update_collection(self, collection_id: int, data: CollectionUpdate, user_id: int) -> Collection:
         try:
             collection = self.repository.get_by_id(collection_id)
@@ -147,33 +167,57 @@ class CollectionService:
         except NoResultFound:
             raise ResourceNotFoundError("Collection", collection_id)
 
-    def like_collection(self, collection_id: int, user_id: int):
-        collection = self.repository.get_by_id(collection_id)
-        if not collection.is_public and collection.owner_id != user_id:
-            raise ForbiddenError("You cannot like this collection")
-        existing_like = self.like_repository.get(user_id, collection_id)
-        if existing_like:
-            return False  # Already liked
-        self.like_repository.add(user_id, collection_id)
-        return True
 
-    def unlike_collection(self, collection_id: int, user_id: int):
-        collection = self.repository.get_by_id(collection_id)
-        if not collection.is_public and collection.owner_id != user_id:
-            raise ForbiddenError("You cannot unlike this collection")
-        existing_like = self.like_repository.get(user_id, collection_id)
-        if not existing_like:
-            return False  # Was not liked
-        self.like_repository.remove(user_id, collection_id)
-        return True
+def like_collection(self, collection_id: int, user_id: int) -> dict:
+    collection = self.repository.get_by_id(collection_id)
+    if not collection.is_public and collection.owner_id != user_id:
+        raise ForbiddenError("You cannot like this collection")
 
-    def get_like_status(self, collection_id: int, user_id: int) -> LikeStatusResponse:
-        existing_like = self.like_repository.get(user_id, collection_id)
-        likes_count = self.like_repository.count(collection_id)
-        last_liked_at = getattr(existing_like, 'created_at', None)
-        return LikeStatusResponse(
-            collection_id=collection_id,
-            liked=bool(existing_like),
-            likes_count=likes_count,
-            last_liked_at=last_liked_at
-        )
+    existing_like = self.like_repository.get(user_id, collection_id)
+    if existing_like:
+        # Already liked, do nothing, but return current status
+        likes_count = self.like_repository.count_likes(collection_id)
+        last_liked_at = existing_like.created_at if existing_like else None
+        return {
+            "collection_id": collection_id,
+            "liked": True,
+            "likes_count": likes_count,
+            "last_liked_at": last_liked_at,
+        }
+
+    # Add the like
+    new_like = self.like_repository.add(user_id, collection_id)
+    likes_count = self.like_repository.count_likes(collection_id)
+    last_liked_at = new_like.created_at if new_like else datetime.utcnow()
+    return {
+        "collection_id": collection_id,
+        "liked": True,
+        "likes_count": likes_count,
+        "last_liked_at": last_liked_at,
+    }
+
+
+def unlike_collection(self, collection_id: int, user_id: int) -> dict:
+    collection = self.repository.get_by_id(collection_id)
+    if not collection.is_public and collection.owner_id != user_id:
+        raise ForbiddenError("You cannot unlike this collection")
+    # Not liked, return current status
+    existing_like = self.like_repository.get(user_id, collection_id)
+    if not existing_like:
+        # Not liked, return current status
+        likes_count = self.like_repository.count_likes(collection_id)
+        return {
+            "collection_id": collection_id,
+            "liked": False,
+            "likes_count": likes_count,
+            "last_liked_at": None,
+        }
+    # Remove the like
+    self.like_repository.remove(user_id, collection_id)
+    likes_count = self.like_repository.count_likes(collection_id)
+    return {
+        "collection_id": collection_id,
+        "liked": False,
+        "likes_count": likes_count,
+        "last_liked_at": None,
+    }

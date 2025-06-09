@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status, Path, Query
+from fastapi import APIRouter, Depends, status, Path, Query, Body
 from app.schemas.collection_schema import (
     CollectionCreate,
     CollectionDetailResponse,
     CollectionUpdate,
     CollectionResponse,
+    CollectionVisibilityUpdate,
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -91,11 +92,12 @@ def get_collection_by_id(
 @router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK)
 def switch_area_collection(
     collection_id: int = Path(..., gt=0),
-    is_public: bool = Query(...),
+    data: CollectionVisibilityUpdate = Body(...),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    updated = service.update_collection_area(collection_id, is_public, user.id)
+    updated = service.update_collection_area(
+        collection_id, data.is_public, user.id)
     if not updated:
         return {"message": "Failed to update collection area"}
     return {"message": "Collection updated successfully"}
@@ -104,7 +106,7 @@ def switch_area_collection(
 @router.patch("/update/{collection_id}", status_code=status.HTTP_200_OK)
 def update_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
-    data: CollectionUpdate = None,
+    data: CollectionUpdate = Body(...),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
@@ -168,31 +170,21 @@ def remove_artist_from_collection(
     return {"success": success, "message": "Artist removed from collection successfully"}
 
 
-@router.post("/{collection_id}/like", status_code=status.HTTP_200_OK)
+@router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
 def like_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    result = service.like_collection(collection_id, user.id)
-    return {"liked": result}
+    status = service.like_collection(collection_id, user.id)
+    return LikeStatusResponse(**status)
 
 
-@router.delete("/{collection_id}/like", status_code=status.HTTP_200_OK)
+@router.delete("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
 def unlike_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    result = service.unlike_collection(collection_id, user.id)
-    return {"unliked": result}
-
-
-@router.get("/{collection_id}/like-status", response_model=LikeStatusResponse)
-def get_like_status(
-    collection_id: int = Path(..., gt=0, title="Collection ID"),
-    user=Depends(get_current_user),
-    service: CollectionService = Depends(get_collection_service),
-):
-    status = service.get_like_status(collection_id, user.id)
+    status = service.unlike_collection(collection_id, user.id)
     return LikeStatusResponse(**status)
