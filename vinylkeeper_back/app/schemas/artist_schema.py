@@ -17,10 +17,10 @@ class ArtistBase(BaseModel):
         max_length=255,
         description="Artist name must be between 1 and 255 characters"
     )
-    musicbrainz_id: str = Field(
-        min_length=36,
-        max_length=36,
-        description="MusicBrainz Artist ID (36 characters)"
+    discogs_artist_id: str = Field(
+        min_length=1,
+        max_length=255,
+        description="Discogs Artist ID (1-255 characters)"
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -33,16 +33,16 @@ class ArtistBase(BaseModel):
             raise ValueError("Artist name cannot be empty")
         return v.strip()
 
-    @field_validator("musicbrainz_id")
+    @field_validator("discogs_artist_id")
     @classmethod
-    def validate_musicbrainz_id(cls, v: str) -> str:
+    def validate_discogs_artist_id(cls, v: str) -> str:
         """Validate MusicBrainz Artist ID format."""
-        if len(v) != 36:
+        if len(v) < 1 or len(v) > 255:
             raise ValueError(
-                "MusicBrainz ID must be exactly 36 characters long")
+                "Discogs Artist ID must be between 1 and 255 characters long")
         if not all(c in "0123456789abcdef-" for c in v.lower()):
             raise ValueError(
-                "MusicBrainz ID must contain only hexadecimal characters and hyphens")
+                "Discogs Artist ID must contain only hexadecimal characters and hyphens")
         return v
 
 
@@ -58,10 +58,10 @@ class ArtistUpdate(BaseModel):
         min_length=1,
         max_length=255
     )
-    musicbrainz_id: Optional[str] = Field(
+    discogs_artist_id: Optional[str] = Field(
         None,
-        min_length=36,
-        max_length=36
+        min_length=1,
+        max_length=255
     )
 
     model_config = ConfigDict(extra="forbid")

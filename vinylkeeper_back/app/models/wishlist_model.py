@@ -1,22 +1,38 @@
+# app/models/wishlist.py
+
 from sqlalchemy import (
     Column,
     Integer,
+    String,
     DateTime,
+    Enum as SQLEnum,
     ForeignKey,
+    UniqueConstraint,
+    CheckConstraint,
     event,
     func,
-    CheckConstraint
 )
-from sqlalchemy.orm import relationship, validates
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import relationship
 
 from app.models.base import Base
+from app.core.enums import EntityTypeEnum
 
 
 class Wishlist(Base):
-    """Model representing a user's wishlist item (album or artist)."""
-
+    """Wishlist items keyed by Discogs ID and entity type (artist or album)."""
     __tablename__ = "wishlists"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "discogs_id",
+            "entity_type",
+            name="uq_user_discogs_entity"
+        ),
+        CheckConstraint(
+            "discogs_id ~ '^[0-9]+$'",
+            name="ck_wishlist_discogs_id_numeric"
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(
@@ -25,16 +41,10 @@ class Wishlist(Base):
         nullable=False,
         index=True
     )
-    album_id = Column(
-        Integer,
-        ForeignKey("albums.id", ondelete="CASCADE"),
-        nullable=True,
-        index=True
-    )
-    artist_id = Column(
-        Integer,
-        ForeignKey("artists.id", ondelete="CASCADE"),
-        nullable=True,
+    discogs_id = Column(String(255), nullable=False, index=True)
+    entity_type = Column(
+        SQLEnum(EntityTypeEnum, name="entitytypeenum"),
+        nullable=False,
         index=True
     )
     added_at = Column(
@@ -42,55 +52,21 @@ class Wishlist(Base):
         server_default=func.now(),
         nullable=False
     )
+
     user = relationship(
         "User",
         back_populates="wishlist_items",
         lazy="selectin"
     )
-    album = relationship(
-        "Album",
-        back_populates="wishlist_items",
-        lazy="selectin"
-    )
-    artist = relationship(
-        "Artist",
-        back_populates="wishlist_items",
-        lazy="selectin"
-    )
-
-    __table_args__ = (
-        CheckConstraint(
-            "(album_id IS NOT NULL AND artist_id IS NULL) OR (album_id IS NULL AND artist_id IS NOT NULL)",
-            name="check_wishlist_item_type"
-        ),
-    )
-
-    @validates('album_id', 'artist_id')
-    def validate_item_type(self, key, value):
-        """Validate that either album_id or artist_id is set, but not both."""
-        if key == 'album_id' and value is not None and self.artist_id is not None:
-            raise ValueError("Cannot set both album_id and artist_id")
-        if key == 'artist_id' and value is not None and self.album_id is not None:
-            raise ValueError("Cannot set both album_id and artist_id")
-        return value
 
     def __repr__(self):
-        """String representation of the wishlist item."""
-        item_type = "Album" if self.album_id else "Artist"
-        item_id = self.album_id or self.artist_id
-        return f"<Wishlist(user_id={self.user_id}, {item_type}_id={item_id})>"
+        return (
+            f"<Wishlist(user_id={self.user_id}, "
+            f"discogs_id={self.discogs_id}, entity_type={self.entity_type})>"
+        )
 
 
-# Event listeners
-@event.listens_for(Wishlist, 'before_insert')
-def validate_wishlist_item(mapper, connection, target):
-    """Validate wishlist item before insertion."""
-    if target.album_id is None and target.artist_id is None:
-        raise ValueError("Either album_id or artist_id must be set")
-    if target.album_id is not None and target.artist_id is not None:
-        raise ValueError("Cannot set both album_id and artist_id")
-
-
-@event.listens_for(Wishlist, 'before_insert')
+@event.listens_for(Wishlist, "before_insert")
 def set_added_at(mapper, connection, target):
+    """Initialise added_at at the time of insertion."""
     target.added_at = func.now()

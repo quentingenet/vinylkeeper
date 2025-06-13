@@ -1,78 +1,109 @@
 from sqlalchemy import (
     Column,
     Integer,
+    Enum as SQLEnum,
     String,
     DateTime,
     ForeignKey,
-    Boolean,
+    UniqueConstraint,
     event,
     func,
-    CheckConstraint
 )
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import relationship
 
 from app.models.base import Base
+from app.core.enums import StateEnum, MoodEnum
+from app.models.association_tables import album_artist
 
 
 class Album(Base):
-    """Album model."""
+    __table_args__ = (
+        UniqueConstraint(
+            "discogs_album_id",
+            name="uq_discogs_album_id",
+        ),
+    )
 
     __tablename__ = "albums"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False, index=True)
-    release_year = Column(Integer, nullable=True)
-    genre = Column(String(100), nullable=True)
-    label = Column(String(100), nullable=True)
-    cover_url = Column(String(255), nullable=True)
-    owner_id = Column(Integer, ForeignKey(
-        "users.id", ondelete="CASCADE"), nullable=False, index=True)
-    registered_at = Column(DateTime(timezone=True),
-                           server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(
-    ), onupdate=func.now(), nullable=False)
-    is_public = Column(Boolean, default=False, nullable=False)
-    release_id = Column(String(36), unique=True, nullable=False, index=True)
-    __table_args__ = (
-        CheckConstraint("length(title) >= 1", name="check_album_title_length"),
+
+    discogs_album_id = Column(
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+        comment="Discogs Album ID as string",
     )
 
+    owner_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    state_record = Column(
+        SQLEnum(StateEnum, name="stateenum"),
+        nullable=True,
+    )
+    state_cover = Column(
+        SQLEnum(StateEnum, name="stateenum"),
+        nullable=True,
+    )
+    mood = Column(
+        SQLEnum(MoodEnum, name="moodenum"),
+        nullable=True,
+    )
+
+    acquisition_date = Column(DateTime, nullable=True)
+    purchase_price = Column(Integer, nullable=True)
+
+    registered_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    # relationships
     owner = relationship("User", back_populates="albums")
     collections = relationship(
-        "Collection", secondary="collection_album", back_populates="albums", lazy="selectin")
-    artists = relationship("Artist", secondary="album_artist",
-                           back_populates="albums", lazy="selectin")
-    wishlist_items = relationship(
-        "Wishlist",
-        back_populates="album",
+        "Collection",
+        secondary="collection_album",
+        back_populates="albums",
         lazy="selectin",
-        cascade="all, delete-orphan"
+    )
+    artists = relationship(
+        "Artist",
+        secondary=album_artist,
+        back_populates="albums",
+        lazy="selectin",
     )
     loans = relationship(
         "Loan",
         back_populates="album",
         lazy="selectin",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
-    @validates('title')
-    def validate_title(self, key, title):
-        if not title or len(title.strip()) == 0:
-            raise ValueError("Album title cannot be empty")
-        return title.strip()
-
     def __repr__(self):
-        return f"<Album(title={self.title}, owner_id={self.owner_id})>"
+        return f"<Album(discogs_album_id={self.discogs_album_id!r}, owner_id={self.owner_id})>"
 
 
-# Event listeners
-@event.listens_for(Album, 'before_insert')
+# event listeners for timestamps
+@event.listens_for(Album, "before_insert")
 def set_timestamps(mapper, connection, target):
     now = func.now()
     target.registered_at = now
     target.updated_at = now
 
 
-@event.listens_for(Album, 'before_update')
+@event.listens_for(Album, "before_update")
 def update_timestamp(mapper, connection, target):
     target.updated_at = func.now()

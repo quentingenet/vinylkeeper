@@ -60,7 +60,7 @@ export default function ResultAlbums({ data }: IResultAlbumsProps) {
               className={styles.resultCard}
               sx={{
                 width: 250,
-                height: 300,
+                height: 350,
                 borderRadius: "8px",
                 cursor: "pointer",
                 position: "relative",
@@ -76,19 +76,30 @@ export default function ResultAlbums({ data }: IResultAlbumsProps) {
               />
               <CardMedia
                 component="img"
-                height="250"
+                width={250}
                 sx={{ objectFit: "contain" }}
-                image={album.picture_medium}
+                image={album.picture}
                 alt={album.title}
               />
               <CardContent
                 sx={{
                   display: "flex",
+                  flexDirection: "column",
                   justifyContent: "center",
                   alignItems: "center",
-                  height: "50px",
+                  height: "60px",
                 }}
               >
+                <Typography
+                  sx={{
+                    fontSize: "1.4rem",
+                    textAlign: "center",
+                    color: "#C9A726",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {album.title?.split(" - ")[0] || ""}
+                </Typography>
                 <Typography
                   sx={{
                     fontSize: "1rem",
@@ -96,7 +107,7 @@ export default function ResultAlbums({ data }: IResultAlbumsProps) {
                   }}
                   variant="h6"
                 >
-                  {album.title ? truncateText(album.title, 25) : ""}
+                  {album.title?.split(" - ")[1] || album.title || ""}
                 </Typography>
               </CardContent>
             </Card>

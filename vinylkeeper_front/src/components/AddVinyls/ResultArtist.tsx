@@ -6,6 +6,7 @@ import AddToCollectionModal from "./AddToCollectionModal";
 import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { useState } from "react";
+import { Person } from "@mui/icons-material";
 
 interface IResultArtistProps {
   data: IArtistRequestResults[];
@@ -60,7 +61,7 @@ export default function ResultArtist({ data }: IResultArtistProps) {
               className={styles.resultCard}
               sx={{
                 width: 250,
-                height: 300,
+                height: 350,
                 borderRadius: "8px",
                 cursor: "pointer",
                 position: "relative",
@@ -74,13 +75,33 @@ export default function ResultArtist({ data }: IResultArtistProps) {
                 }}
                 position={{ top: 10, right: 10 }}
               />
-              <CardMedia
-                component="img"
-                height="250"
-                sx={{ objectFit: "contain" }}
-                image={artist.picture_medium}
-                alt={artist.name}
-              />
+              {artist.picture ? (
+                <CardMedia
+                  component="img"
+                  height="250"
+                  sx={{ objectFit: "contain" }}
+                  image={artist.picture}
+                  alt={artist.name}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    height: 250,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Person
+                    sx={{
+                      opacity: 0.7,
+                      width: 150,
+                      height: 150,
+                      color: "#C9A726",
+                    }}
+                  />
+                </Box>
+              )}
               <CardContent
                 sx={{
                   display: "flex",
@@ -90,13 +111,14 @@ export default function ResultArtist({ data }: IResultArtistProps) {
                 }}
               >
                 <Typography
-                  sx={{
-                    fontSize: "1rem",
-                    textAlign: "center",
-                  }}
                   variant="h6"
+                  component="div"
+                  sx={{
+                    textAlign: "center",
+                    fontSize: "1.4rem",
+                  }}
                 >
-                  {artist.name ? truncateText(artist.name, 25) : ""}
+                  {artist.name?.split(" - ")[0] || artist.name}
                 </Typography>
               </CardContent>
             </Card>

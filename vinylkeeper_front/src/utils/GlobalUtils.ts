@@ -15,3 +15,7 @@ export const getTimezone = () => {
 export const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
+
+export const toFilePathUrl = (path: string) => {
+  return `https://upload.wikimedia.org/wikipedia/commons/${path}`;
+};

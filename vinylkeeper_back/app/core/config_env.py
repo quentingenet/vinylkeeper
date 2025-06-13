@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     # Default role id
     DEFAULT_ROLE_ID: int
 
+    # external API
+    DISCOGS_API_URL: str
+    COVER_ART_API: str
+    DISCOGS_API_KEY: str
+
+    # User-Agent
+    USER_AGENT: str
+
     class Config:
         env_file = f"./app/.env.{os.getenv('APP_ENV', 'development')}"
 

@@ -10,6 +10,7 @@ from pydantic import (
 )
 
 from app.schemas.user_schema import UserMiniResponse
+from app.core.enums import MoodEnum
 
 
 class CollectionBase(BaseModel):
@@ -27,6 +28,10 @@ class CollectionBase(BaseModel):
     is_public: bool = Field(
         default=False,
         description="Whether the collection is visible to other users"
+    )
+    mood: Optional[MoodEnum] = Field(
+        None,
+        description="Mood of the collection"
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -81,6 +86,10 @@ class CollectionUpdate(BaseModel):
         max_length=255
     )
     is_public: Optional[bool] = None
+    mood: Optional[MoodEnum] = Field(
+        None,
+        description="Mood of the collection"
+    )
     album_ids: Optional[List[int]] = None
     artist_ids: Optional[List[int]] = None
 

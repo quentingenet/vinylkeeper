@@ -4,8 +4,7 @@ from fastapi import FastAPI
 from app.core.lifespan import lifespan
 from app.core.security import configure_cors
 from app.core.handlers import register_exception_handlers
-from app.endpoints import users
-from app.endpoints import collections
+from app.endpoints import users, collections, request_proxy
 
 logger = logging.getLogger("app")
 
@@ -21,6 +20,7 @@ register_exception_handlers(app)
 
 app.include_router(users.router, prefix="/api/users")
 app.include_router(collections.router, prefix="/api/collections")
+app.include_router(request_proxy.router, prefix="/api/request-proxy")
 
 
 @app.get("/")

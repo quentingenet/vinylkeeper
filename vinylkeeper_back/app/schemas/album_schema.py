@@ -1,64 +1,29 @@
-from datetime import datetime
 from typing import Optional, List
-
 from pydantic import (
     BaseModel,
-    ConfigDict,
     Field,
+    ConfigDict,
     field_validator,
-    model_validator
+    model_validator,
 )
 
 
 class AlbumBase(BaseModel):
     """Base schema for album data."""
-    title: str = Field(
-        min_length=1,
-        max_length=255,
-        description="Album title must be between 1 and 255 characters"
-    )
-    release_id: str = Field(
-        min_length=36,
-        max_length=36,
-        description="MusicBrainz Release ID (36 characters)"
-    )
-    release_year: Optional[int] = Field(
-        None,
-        ge=1900,
-        le=2100,
-        description="Year of release (between 1900 and 2100)"
+    discogs_album_id: str = Field(
+        ...,
+        regex=r"^\d+$",
+        description="Discogs Album ID (numeric string)"
     )
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator("title")
+    @field_validator("discogs_album_id")
     @classmethod
-    def validate_title(cls, v: str) -> str:
-        """Validate album title."""
-        if not v or len(v.strip()) == 0:
-            raise ValueError("Album title cannot be empty")
-        return v.strip()
-
-    @field_validator("release_id")
-    @classmethod
-    def validate_release_id(cls, v: str) -> str:
-        """Validate MusicBrainz Release ID format."""
-        if len(v) != 36:
-            raise ValueError("Release ID must be exactly 36 characters long")
-        if not all(c in "0123456789abcdef-" for c in v.lower()):
-            raise ValueError(
-                "Release ID must contain only hexadecimal characters and hyphens")
-        return v
-
-    @field_validator("release_year")
-    @classmethod
-    def validate_release_year(cls, v: Optional[int]) -> Optional[int]:
-        """Validate release year."""
-        if v is not None:
-            if not isinstance(v, int):
-                raise ValueError("Release year must be an integer")
-            if v < 1900 or v > 2100:
-                raise ValueError("Release year must be between 1900 and 2100")
+    def validate_discogs_album_id(cls, v: str) -> str:
+        """Ensure the ID is a non-empty numeric string."""
+        if not v.isdigit():
+            raise ValueError("Discogs Album ID must be numeric")
         return v
 
 
@@ -69,51 +34,37 @@ class AlbumCreate(AlbumBase):
 
 class AlbumUpdate(BaseModel):
     """Schema for updating an album."""
-    title: Optional[str] = Field(
+    discogs_album_id: Optional[str] = Field(
         None,
-        min_length=1,
-        max_length=255
+        regex=r"^\d+$",
+        description="Optional new Discogs Album ID"
     )
-    release_id: Optional[str] = Field(
-        None,
-        min_length=36,
-        max_length=36
-    )
-    release_year: Optional[int] = Field(
-        None,
-        ge=1900,
-        le=2100
-    )
-    # artist_id supprimé car la relation est many-to-many
 
     model_config = ConfigDict(extra="forbid")
 
-    @model_validator(mode='after')
-    def validate_fields(self) -> 'AlbumUpdate':
-        """Validate that at least one field is provided for update."""
-        if not any(v is not None for v in self.model_dump().values()):
-            raise ValueError("At least one field must be provided for update")
+    @model_validator(mode="after")
+    def check_at_least_one_field(self) -> "AlbumUpdate":
+        """Require at least one field to update."""
+        if not any(self.model_dump().values()):
+            raise ValueError("At least one field must be provided")
         return self
 
 
 class AlbumInDB(AlbumBase):
-    """Schema for album data as stored in database."""
+    """Schema for album data as stored in DB."""
     id: int = Field(gt=0)
 
 
 class AlbumResponse(AlbumInDB):
-    """Schema for album data in API responses."""
-    artist: Optional[dict] = None  # Will be populated with artist data
+    """Basic album response schema."""
+    artists: Optional[List[dict]] = None
     collections_count: int = Field(default=0)
     loans_count: int = Field(default=0)
     wishlist_count: int = Field(default=0)
 
 
 class AlbumDetailResponse(AlbumResponse):
-    """Detailed album response including all related data."""
-    collections: List[dict] = Field(
-        default_factory=list)  # Will be populated with collection data
-    # Will be populated with loan data
-    loans: List[dict] = Field(default_factory=list)
-    # Will be populated with wishlist data
+    """Detailed album response including related lists."""
+    collections: List[dict] = Field(default_factory=list)
+    loans:       List[dict] = Field(default_factory=list)
     wishlist_items: List[dict] = Field(default_factory=list)

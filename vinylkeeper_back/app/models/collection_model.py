@@ -6,17 +6,18 @@ from sqlalchemy import (
     ForeignKey,
     Boolean,
     event,
+    Enum as SQLEnum,
     func,
     CheckConstraint
 )
 from sqlalchemy.orm import relationship, validates
-from sqlalchemy.exc import IntegrityError
 
 from app.models.base import Base
 from app.models.association_tables import (
     collection_album,
     collection_artist,
 )
+from app.core.enums import MoodEnum
 
 
 class Collection(Base):
@@ -28,6 +29,12 @@ class Collection(Base):
     name = Column(String(255), index=True, nullable=False)
     description = Column(String(255), nullable=True)
     is_public = Column(Boolean, default=False, nullable=False)
+
+    mood = Column(
+        SQLEnum(MoodEnum, name="moodenum"),
+        nullable=True,
+        comment="Mood of this collection"
+    )
 
     owner_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False, index=True)
