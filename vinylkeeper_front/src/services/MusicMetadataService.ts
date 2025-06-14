@@ -140,8 +140,10 @@ export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
     queryKey: ["albumMetadata", params?.id],
     queryFn: () => fetchAlbumMetadata(params!),
     enabled: !!params?.id,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -150,7 +152,9 @@ export const useArtistMetadata = (artistId?: string) => {
     queryKey: ["artistMetadata", artistId],
     queryFn: () => fetchArtistMetadata(artistId!),
     enabled: !!artistId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };

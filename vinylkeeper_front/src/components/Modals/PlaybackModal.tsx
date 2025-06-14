@@ -46,7 +46,11 @@ export default function PlaybackModal({
 }: PlaybackModalProps) {
   const { isMobile } = useDetectMobile();
 
-  const { data: albumMetadata } = useAlbumMetadata(
+  const {
+    data: albumMetadata,
+    isLoading: isAlbumLoading,
+    error: albumError,
+  } = useAlbumMetadata(
     item?.itemType === "album"
       ? {
           id: item.id.toString(),
@@ -56,11 +60,18 @@ export default function PlaybackModal({
       : undefined
   );
 
-  const { data: artistMetadata } = useArtistMetadata(
+  const {
+    data: artistMetadata,
+    isLoading: isArtistLoading,
+    error: artistError,
+  } = useArtistMetadata(
     item?.itemType === "artist" ? item.id.toString() : undefined
   );
 
   const metadata = item?.itemType === "album" ? albumMetadata : artistMetadata;
+  const isLoading =
+    item?.itemType === "album" ? isAlbumLoading : isArtistLoading;
+  const error = item?.itemType === "album" ? albumError : artistError;
 
   const loading = item?.itemType === "album" ? !albumMetadata : !artistMetadata;
   if (!item) return null;
@@ -152,9 +163,17 @@ export default function PlaybackModal({
             </IconButton>
           </Box>
 
-          {loading ? (
+          {isLoading ? (
             <Box display="flex" justifyContent="center" my={4}>
               <CircularProgress sx={{ color: "#C9A726" }} />
+            </Box>
+          ) : error ? (
+            <Box display="flex" justifyContent="center" my={4}>
+              <Typography sx={{ color: "#e4e4e4" }}>
+                {error instanceof Error
+                  ? error.message
+                  : "Une erreur est survenue"}
+              </Typography>
             </Box>
           ) : (
             <>
