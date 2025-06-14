@@ -50,6 +50,46 @@ interface CollectionSelectionModalProps {
   isLoading?: boolean;
 }
 
+const modalStyle = (isMobile: boolean) => ({
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: isMobile ? "90%" : 350,
+  maxWidth: "90vw",
+  bgcolor: "#3f3f41",
+  borderRadius: 2,
+  boxShadow: 24,
+  p: 2,
+  maxHeight: "80vh",
+  overflow: "auto",
+  "& .MuiListItemText-primary": {
+    wordBreak: "break-word",
+  },
+  "& .MuiListItemText-secondary": {
+    wordBreak: "break-word",
+  },
+});
+
+const alertStyle = (isError: boolean = false) => ({
+  width: "auto",
+  maxWidth: "100%",
+  mb: 2,
+  backgroundColor: isError
+    ? "rgba(211, 47, 47, 0.1)"
+    : "rgba(46, 125, 50, 0.1)",
+  color: isError ? "#ff6b6b" : "#4caf50",
+  wordBreak: "break-word",
+  whiteSpace: "normal",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
+
+const buttonStyle = {
+  color: "#fffbf9",
+  "&:hover": { color: "#C9A726" },
+};
+
 const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
   ({
     open,
@@ -63,20 +103,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
     isLoading = false,
   }) => {
     const { isMobile } = useDetectMobile();
-
-    const style = {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: isMobile ? "85%" : 400,
-      bgcolor: "#3f3f41",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 3,
-      maxHeight: "80vh",
-      overflow: "auto",
-    };
+    const isError = successMessage?.includes("Error");
 
     return (
       <Modal
@@ -86,7 +113,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
         slots={{ backdrop: Backdrop }}
       >
         <Fade in={open}>
-          <Box sx={style}>
+          <Box sx={modalStyle(isMobile)}>
             <Box
               display="flex"
               justifyContent="space-between"
@@ -103,18 +130,8 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
 
             {successMessage && (
               <Alert
-                severity={
-                  successMessage.includes("Error") ? "error" : "success"
-                }
-                sx={{
-                  mb: 2,
-                  backgroundColor: successMessage.includes("Error")
-                    ? "rgba(211, 47, 47, 0.1)"
-                    : "rgba(46, 125, 50, 0.1)",
-                  color: successMessage.includes("Error")
-                    ? "#ff6b6b"
-                    : "#4caf50",
-                }}
+                severity={isError ? "error" : "success"}
+                sx={alertStyle(isError)}
               >
                 {successMessage}
               </Alert>
@@ -175,24 +192,10 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
             )}
 
             <Box display="flex" justifyContent="space-between" mt={3}>
-              <Button
-                variant="text"
-                onClick={onBack}
-                sx={{
-                  color: "#fffbf9",
-                  "&:hover": { color: "#C9A726" },
-                }}
-              >
+              <Button variant="text" onClick={onBack} sx={buttonStyle}>
                 Back
               </Button>
-              <Button
-                variant="text"
-                onClick={onClose}
-                sx={{
-                  color: "#fffbf9",
-                  "&:hover": { color: "#C9A726" },
-                }}
-              >
+              <Button variant="text" onClick={onClose} sx={buttonStyle}>
                 Cancel
               </Button>
             </Box>
@@ -213,25 +216,39 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 }) => {
   const [showCollectionSelection, setShowCollectionSelection] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [confirmationType, setConfirmationType] = useState<
-    "wishlist" | "collection" | null
-  >(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<
     number | null
   >(null);
   const { isMobile } = useDetectMobile();
   const queryClient = useQueryClient();
+  const isError = successMessage?.includes("Error");
 
   const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
     queryKey: ["collections"],
     queryFn: () => collectionApiService.getCollections(1, 100),
     enabled: open,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const collections = collectionsData?.items || [];
+
+  const handleMutationSuccess = (queryKey: string) => {
+    queryClient.invalidateQueries({ queryKey: [queryKey] });
+    setSuccessMessage("Successfully added!");
+    setTimeout(() => {
+      setSuccessMessage("");
+      onClose();
+    }, 2000);
+  };
+
+  const handleMutationError = (error: Error) => {
+    const errorMessage = error.message.includes("Error adding to")
+      ? error.message
+      : "An error occurred while adding to collection";
+    setSuccessMessage(errorMessage);
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
 
   const addToWishlistMutation = useMutation({
     mutationFn: async (albumData: {
@@ -242,15 +259,8 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     }) => {
       return addToWishlist(albumData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wishlistItems"] });
-      setSuccessMessage("Successfully added!");
-      setTimeout(() => {
-        setSuccessMessage("");
-        onClose();
-      }, 2000);
-    },
-    onError: (error) => {
+    onSuccess: () => handleMutationSuccess("wishlistItems"),
+    onError: (error: Error) => {
       setSuccessMessage("Error adding to wishlist");
       setTimeout(() => setSuccessMessage(""), 3000);
     },
@@ -272,15 +282,8 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         picture_medium: data.pictureMedium,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
-      setSuccessMessage("Successfully added!");
-      setTimeout(() => {
-        setSuccessMessage("");
-        onClose();
-      }, 2000);
-    },
-    onError: (error) => {
+    onSuccess: () => handleMutationSuccess("collections"),
+    onError: (error: Error) => {
       setSuccessMessage("Error adding to collection");
       setTimeout(() => setSuccessMessage(""), 3000);
     },
@@ -323,8 +326,6 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
   const handleClose = useCallback(() => {
     setShowCollectionSelection(false);
     setSuccessMessage("");
-    setConfirmationOpen(false);
-    setConfirmationType(null);
     setSelectedCollectionId(null);
     onClose();
   }, [onClose]);
@@ -340,19 +341,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         slots={{ backdrop: Backdrop }}
       >
         <Fade in={open && !showCollectionSelection}>
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: isMobile ? "85%" : 400,
-              bgcolor: "#3f3f41",
-              borderRadius: 2,
-              boxShadow: 24,
-              p: 3,
-            }}
-          >
+          <Box sx={modalStyle(isMobile)}>
             <Box
               display="flex"
               justifyContent="space-between"
@@ -370,19 +359,8 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
             <div className="flex flex-col items-center gap-4">
               {successMessage && (
                 <Alert
-                  severity={
-                    successMessage.includes("Error") ? "error" : "success"
-                  }
-                  sx={{
-                    width: "100%",
-                    mb: 2,
-                    backgroundColor: successMessage.includes("Error")
-                      ? "rgba(211, 47, 47, 0.1)"
-                      : "rgba(46, 125, 50, 0.1)",
-                    color: successMessage.includes("Error")
-                      ? "#ff6b6b"
-                      : "#4caf50",
-                  }}
+                  severity={isError ? "error" : "success"}
+                  sx={alertStyle(isError)}
                 >
                   {successMessage}
                 </Alert>
