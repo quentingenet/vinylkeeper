@@ -86,7 +86,8 @@ const ArtistCard = memo(
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            height: "50px",
+            height: "100px",
+            p: 1,
           }}
         >
           <Typography
@@ -97,12 +98,14 @@ const ArtistCard = memo(
               fontSize: "1.4rem",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               lineHeight: 1.2,
               height: "2.4em",
               width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             {truncateText(
