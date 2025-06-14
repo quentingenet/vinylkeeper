@@ -363,7 +363,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
               mb={3}
             >
               <img
-                src={item.picture_medium}
+                src={item.picture}
                 alt={
                   itemType === "album"
                     ? (item as IAlbumRequestResults).title
@@ -388,12 +388,12 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                       {(item as IAlbumRequestResults).artist?.name}
                     </Typography>
                   )}
-                <Typography variant="body2" sx={{ color: "#fffbf9" }}>
+                <Typography variant="body2" sx={{ color: "#C9A726" }}>
                   {itemType === "album"
                     ? (item as IAlbumRequestResults).title
                     : (item as IArtistRequestResults).name}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#e4e4e4" }}>
+                <Typography variant="body2" sx={{ color: "#fffbf9" }}>
                   {itemType === "album" ? "Album" : "Artist"}
                 </Typography>
               </Box>

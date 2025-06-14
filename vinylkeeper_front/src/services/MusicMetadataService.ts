@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 
 export interface AlbumMetadata {
+  id: number;
   title: string;
   artist: string;
-  releaseYear?: number;
-  tracklist?: Track[];
-  coverArt?: string;
-  description?: string;
+  picture?: string;
+  release_year?: number;
+  genres: string[];
+  styles: string[];
+  tracklist: Track[];
 }
 
 export interface ArtistMetadata {
@@ -16,34 +18,46 @@ export interface ArtistMetadata {
   genres?: string[];
   country?: string;
   wikipedia_url?: string;
+  discogs_id?: string;
+  discogs_url?: string;
+  members?: string[];
+  active_years?: string;
+  aliases?: string[];
 }
 
 export interface Track {
-  position: number;
+  position: string;
   title: string;
-  duration?: string;
+  duration: string;
 }
 
 interface AlbumMetadataResponse {
-  title?: string;
-  artist?: string;
+  id: number;
+  title: string;
+  artist: string;
+  picture?: string;
   release_year?: number;
-  tracklist?: Track[];
-  cover_art?: string;
-  message?: string;
+  genres: string[];
+  styles: string[];
+  tracklist: Track[];
 }
 
 interface ArtistMetadataResponse {
-  name?: string;
+  name: string;
   biography?: string;
-  country?: string;
+  image?: string;
   genres?: string[];
-  message?: string;
+  country?: string;
+  wikipedia_url?: string;
+  discogs_id?: string;
+  discogs_url?: string;
+  members?: string[];
+  active_years?: string;
+  aliases?: string[];
 }
 
 export interface AlbumMetadataParams {
   id: string;
-  source: "deezer" | "musicbrainz";
   artist: string;
   title: string;
 }
@@ -51,39 +65,53 @@ export interface AlbumMetadataParams {
 export const fetchAlbumMetadata = async (
   params: AlbumMetadataParams
 ): Promise<AlbumMetadata> => {
-  const searchParams = new URLSearchParams();
-  searchParams.append("source", params.source);
-  searchParams.append("artist_name", params.artist);
-  searchParams.append("album_title", params.title);
   const response = await fetch(
-    `${import.meta.env.VITE_API_VK_URL}/music-metadata/album/${
-      params.id
-    }?${searchParams.toString()}`
+    `${
+      import.meta.env.VITE_API_VK_URL
+    }/request-proxy/music-metadata/album?album_id=${params.id}`
   );
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Album with ID ${params.id} not found on Discogs`);
+    }
     throw new Error("Failed to fetch album metadata");
   }
   const data: AlbumMetadataResponse = await response.json();
   return {
-    title: data.title || params.title || "Unknown Album",
-    artist: data.artist || params.artist || "Unknown Artist",
-    releaseYear: data.release_year,
+    id: data.id,
+    title: data.title,
+    artist: data.artist,
+    picture: data.picture,
+    release_year: data.release_year,
+    genres: data.genres,
+    styles: data.styles,
     tracklist: data.tracklist,
-    coverArt: data.cover_art,
   };
 };
 
 export const fetchArtistMetadata = async (
-  artistId: string,
-  artistName: string
+  artistId: string
 ): Promise<ArtistMetadata> => {
-  const params = new URLSearchParams();
-  params.append("artist_name", artistName);
+  if (!artistId || artistId === "Unknown Artist") {
+    return {
+      name: "",
+      biography: undefined,
+      image: undefined,
+      genres: [],
+      country: undefined,
+      wikipedia_url: undefined,
+      discogs_id: undefined,
+      discogs_url: undefined,
+      members: [],
+      active_years: undefined,
+      aliases: [],
+    };
+  }
 
   const response = await fetch(
     `${
       import.meta.env.VITE_API_VK_URL
-    }/music-metadata/artist/${artistId}?${params.toString()}`
+    }/request-proxy/music-metadata/artist?artist_id=${artistId}`
   );
 
   if (!response.ok) {
@@ -93,35 +121,35 @@ export const fetchArtistMetadata = async (
   const data: ArtistMetadataResponse = await response.json();
 
   return {
-    name: data.name || artistName,
+    name: data.name || "",
     biography: data.biography,
     country: data.country,
     genres: data.genres,
+    image: data.image,
+    wikipedia_url: data.wikipedia_url,
+    discogs_id: data.discogs_id,
+    discogs_url: data.discogs_url,
+    members: data.members,
+    active_years: data.active_years,
+    aliases: data.aliases,
   };
 };
 
 export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
   return useQuery({
-    queryKey: [
-      "albumMetadata",
-      params?.id,
-      params?.source,
-      params?.artist,
-      params?.title,
-    ],
+    queryKey: ["albumMetadata", params?.id],
     queryFn: () => fetchAlbumMetadata(params!),
-    enabled:
-      !!params?.id && !!params?.source && !!params?.artist && !!params?.title,
+    enabled: !!params?.id,
     staleTime: 30 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 };
 
-export const useArtistMetadata = (artistId?: string, artistName?: string) => {
+export const useArtistMetadata = (artistId?: string) => {
   return useQuery({
-    queryKey: ["artistMetadata", artistId, artistName],
-    queryFn: () => fetchArtistMetadata(artistId!, artistName!),
-    enabled: !!artistId && !!artistName,
+    queryKey: ["artistMetadata", artistId],
+    queryFn: () => fetchArtistMetadata(artistId!),
+    enabled: !!artistId,
     staleTime: 30 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });

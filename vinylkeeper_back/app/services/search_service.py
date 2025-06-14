@@ -5,16 +5,20 @@ from typing import List, Set, Optional, Tuple, Dict, Any
 
 from httpx import HTTPStatusError
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ErrorCode
 from app.core.logging import logger
 from app.schemas.request_proxy.request_proxy_schema import (
+    AlbumMetadata,
     SearchQuery,
     DiscogsData,
     Artist,
+    ArtistMetadata,
+    Track,
 )
-from app.utils.http_client import make_http_request, get_http_client
+from app.utils.http_client import get_artist_metadata, make_http_request, get_http_client, get_album_metadata
 
 
 class ImageFetcher:
@@ -203,3 +207,90 @@ class SearchService:
             f"Discogs search '{q}' ({entity}) → {len(results)} results")
         logger.info(f"Results: {results}")
         return results
+
+    def clean_biography(self, biography: str) -> str:
+        """Nettoie la biographie pour n'avoir que la partie principale."""
+        if not biography:
+            return ""
+
+        # Trouve le premier [b] qui indique le début des sections détaillées
+        sections = biography.split("[b]")
+        if len(sections) > 1:
+            # Retourne uniquement la première partie (la biographie principale)
+            return sections[0].strip()
+        return biography
+
+    async def get_artist_metadata(self, artist_id: str) -> ArtistMetadata:
+        """
+        Get detailed metadata for an artist from Discogs.
+        """
+        # First, search for the artist to get their ID
+        logger.info(f"Searching for artist: {artist_id}")
+
+        try:
+            artist_data = await get_artist_metadata(artist_id)
+            logger.info(f"Artist data: {artist_data}")
+            # Extract relevant metadata
+            wikipedia_url = None
+            if artist_data.get("urls"):
+                for url in artist_data["urls"]:
+                    if "wikipedia" in url.lower():
+                        wikipedia_url = url
+                        break
+
+            return ArtistMetadata(
+                name=artist_data.get("name"),
+                biography=self.clean_biography(artist_data.get("profile", "")),
+                image=artist_data.get("images", [{}])[0].get(
+                    "uri", "") if artist_data.get("images") else None,
+                genres=artist_data.get("genres", []),
+                country=artist_data.get("country", ""),
+                wikipedia_url=wikipedia_url,
+                discogs_id=str(artist_data.get("id", "")),
+                discogs_url=artist_data.get("uri", ""),
+                members=[member.get("name", "")
+                         for member in artist_data.get("members", [])],
+                active_years=", ".join(
+                    str(year) for year in artist_data.get("years_active", [])),
+            )
+
+        except HTTPStatusError as e:
+            logger.error(f"Error fetching artist metadata: {str(e)}")
+            raise ValidationError(
+                error_code=ErrorCode.EXTERNAL_API_ERROR,
+                message=f"Error fetching artist metadata: {str(e)}"
+            )
+
+    async def get_album_metadata(self, album_id: str) -> AlbumMetadata:
+        """
+        Get detailed metadata for an album from Discogs.
+        """
+        logger.info(f"Getting album metadata for: {album_id}")
+        album_data = await get_album_metadata(album_id)
+        logger.info(f"Album data: {album_data}")
+
+        if not album_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Album with ID {album_id} not found on Discogs"
+            )
+
+        return AlbumMetadata(
+            id=album_data.get("id"),
+            title=album_data.get("title", ""),
+            artist=album_data.get("artists", [{}])[0].get(
+                "name", "") if album_data.get("artists") else "",
+            picture=album_data.get("images", [{}])[0].get(
+                "uri", "") if album_data.get("images") else None,
+            release_year=album_data.get("year"),
+            genres=album_data.get("genres", []),
+            styles=album_data.get("styles", []),
+            tracklist=[
+                Track(
+                    position=track.get("position", ""),
+                    title=track.get("title", ""),
+                    duration=track.get("duration", "")
+                )
+                for track in album_data.get("tracklist", [])
+            ]
+        )

@@ -39,7 +39,6 @@ class Settings(BaseSettings):
 
     # external API
     DISCOGS_API_URL: str
-    COVER_ART_API: str
     DISCOGS_API_KEY: str
 
     # User-Agent

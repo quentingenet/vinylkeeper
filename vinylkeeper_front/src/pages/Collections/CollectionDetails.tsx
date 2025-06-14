@@ -28,7 +28,7 @@ export default function CollectionDetails() {
   const { currentUser } = useUserContext();
   const queryClient = useQueryClient();
 
-  // États pour la modal de confirmation
+  // States for the deletion confirmation modal
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{
     id: number;
@@ -41,13 +41,10 @@ export default function CollectionDetails() {
       | "local_genre";
   } | null>(null);
 
-  // États pour le modal de lecture
+  // States for the playback modal
   const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
   const [selectedPlaybackItem, setSelectedPlaybackItem] =
     useState<PlaybackItem | null>(null);
-  const [playbackItemType, setPlaybackItemType] = useState<"album" | "artist">(
-    "album"
-  );
 
   const {
     data: collectionDetails,
@@ -59,7 +56,7 @@ export default function CollectionDetails() {
     enabled: !!collectionId,
   });
 
-  // Mutations pour la suppression
+  // Mutations for the deletion
   const removeAlbumMutation = useMutation({
     mutationFn: ({ albumId }: { albumId: number }) =>
       collectionApiService.removeAlbumFromCollection(collectionId, albumId),
@@ -103,7 +100,7 @@ export default function CollectionDetails() {
     },
   });
 
-  // Fonctions pour ouvrir la modal de confirmation
+  // Functions to open the deletion confirmation modal
   const openDeleteConfirmation = (item: {
     id: number;
     name: string;
@@ -118,7 +115,7 @@ export default function CollectionDetails() {
     setOpenDeleteDialog(true);
   };
 
-  // Fonction de suppression finale après confirmation
+  // Final deletion function after confirmation
   const handleConfirmDelete = () => {
     if (!selectedItem) return;
 
@@ -142,32 +139,15 @@ export default function CollectionDetails() {
     setSelectedItem(null);
   };
 
-  // Fonctions pour gérer le modal de lecture
-  const handlePlayClick = (item: any, type: "album" | "artist") => {
-    let playbackItem: PlaybackItem;
-    if (item.externalId) {
-      playbackItem = {
-        id: item.id,
-        title: item.title || "Unknown Album",
-        artist: item.artistName || "Unknown Artist",
-        source: "deezer",
-        deezerId: String(item.externalId),
-        pictureMedium: item.pictureMedium || "",
-        releaseYear: item.releaseYear,
-      };
-    } else {
-      playbackItem = {
-        id: item.id,
-        title: item.title || item.name || "Unknown Album",
-        artist: item.artist || item.artistName || "Unknown Artist",
-        source: "musicbrainz",
-        musicbrainzId: item.musicbrainzId ? String(item.musicbrainzId) : "",
-        pictureMedium: item.pictureMedium || "",
-        releaseYear: item.releaseYear,
-      };
-    }
+  const handlePlayClick = (item: any) => {
+    const playbackItem: PlaybackItem = {
+      id: item.id,
+      title: item.title || item.name || "",
+      artist: item.artistName || item.artist || "",
+      picture: item.pictureMedium || "",
+      itemType: item.type === "album" ? "album" : "artist",
+    };
     setSelectedPlaybackItem(playbackItem);
-    setPlaybackItemType(type);
     setPlaybackModalOpen(true);
   };
 
@@ -221,7 +201,6 @@ export default function CollectionDetails() {
 
   return (
     <Box sx={{ padding: 3 }}>
-      {/* Collection Header */}
       <Typography
         variant="h4"
         component="h1"
@@ -237,7 +216,6 @@ export default function CollectionDetails() {
         Created on {new Date(collection.registered_at).toLocaleDateString()}
       </Typography>
 
-      {/* Albums Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
           Albums ({localAlbums.length + externalAlbums.length})
@@ -265,7 +243,6 @@ export default function CollectionDetails() {
             gap={4}
             marginY={isMobile ? 1 : 3}
           >
-            {/* Local Albums */}
             {localAlbums.map((album) => (
               <Card
                 key={`local-album-${album.id}`}
@@ -287,7 +264,7 @@ export default function CollectionDetails() {
                   <PlayButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlayClick(album, "album");
+                      handlePlayClick(album);
                     }}
                     position={{ top: 10, right: 10 }}
                   />
@@ -380,7 +357,6 @@ export default function CollectionDetails() {
               </Card>
             ))}
 
-            {/* External Albums (Deezer) */}
             {externalAlbums.map((album) => (
               <Card
                 key={`external-album-${album.id}`}
@@ -402,7 +378,7 @@ export default function CollectionDetails() {
                   <PlayButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlayClick(album, "album");
+                      handlePlayClick(album);
                     }}
                     position={{ top: 10, right: 10 }}
                   />
@@ -503,7 +479,6 @@ export default function CollectionDetails() {
         )}
       </Box>
 
-      {/* Artists Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ color: "#C9A726", mb: 2 }}>
           Artists ({localArtists.length + externalArtists.length})
@@ -531,7 +506,6 @@ export default function CollectionDetails() {
             gap={4}
             marginY={isMobile ? 1 : 3}
           >
-            {/* Local Artists */}
             {localArtists.map((artist) => (
               <Card
                 key={`local-artist-${artist.id}`}
@@ -553,7 +527,7 @@ export default function CollectionDetails() {
                   <PlayButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlayClick(artist, "artist");
+                      handlePlayClick(artist);
                     }}
                     position={{ top: 10, right: 10 }}
                   />
@@ -655,7 +629,7 @@ export default function CollectionDetails() {
                   <PlayButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlayClick(artist, "artist");
+                      handlePlayClick(artist);
                     }}
                     position={{ top: 10, right: 10 }}
                   />
@@ -798,7 +772,7 @@ export default function CollectionDetails() {
         )}
       </Box>
 
-      {/* Modal de confirmation de suppression */}
+      {/*Modal for deletion confirmation*/}
       <VinylKeeperDialog
         title="Remove from collection"
         content={
@@ -813,12 +787,10 @@ export default function CollectionDetails() {
         onClose={() => setOpenDeleteDialog(false)}
       />
 
-      {/* Modal de lecture */}
       <PlaybackModal
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        itemType={playbackItemType}
       />
     </Box>
   );

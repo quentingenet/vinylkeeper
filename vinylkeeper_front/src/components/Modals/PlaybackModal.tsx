@@ -29,61 +29,86 @@ export interface PlaybackItem {
   id: string | number;
   title: string;
   artist: string;
-  source: "deezer" | "musicbrainz";
-  deezerId?: string;
-  musicbrainzId?: string;
-  pictureMedium?: string;
-  releaseYear?: number;
+  picture?: string;
+  itemType: "album" | "artist";
 }
 
 interface PlaybackModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: PlaybackItem | null;
-  itemType: "album" | "artist";
 }
 
 export default function PlaybackModal({
   isOpen,
   onClose,
   item,
-  itemType,
 }: PlaybackModalProps) {
   const { isMobile } = useDetectMobile();
-  const albumId =
-    item?.deezerId || item?.musicbrainzId || item?.id?.toString() || "unknown";
-  const { data: albumMetadata, isLoading: albumLoading } = useAlbumMetadata(
-    item
+
+  const { data: albumMetadata } = useAlbumMetadata(
+    item?.itemType === "album"
       ? {
-          id: albumId,
-          source: item.source,
+          id: item.id.toString(),
           artist: item.artist,
           title: item.title,
         }
-      : { id: "unknown", source: "deezer", artist: "", title: "" }
+      : undefined
   );
-  const artistId =
-    itemType === "artist" ? item?.deezerId?.toString() || "unknown" : undefined;
-  const { data: artistMetadata, isLoading: artistLoading } = useArtistMetadata(
-    artistId,
-    item?.title || ""
+
+  const { data: artistMetadata } = useArtistMetadata(
+    item?.itemType === "artist" ? item.id.toString() : undefined
   );
-  const loading = itemType === "album" ? albumLoading : artistLoading;
+
+  const metadata = item?.itemType === "album" ? albumMetadata : artistMetadata;
+
+  const loading = item?.itemType === "album" ? !albumMetadata : !artistMetadata;
   if (!item) return null;
 
-  const handleStreamingRedirect = (platformName: string) => {
+  const handleStreamingRedirect = (
+    platformName: string,
+    itemType: "album" | "artist"
+  ) => {
     if (!item) return;
 
-    const query: StreamingQuery = {};
+    const queryParts: string[] = [];
 
     if (itemType === "album") {
-      query.artist = item.artist || item.title;
-      query.album = item.title;
+      if (item.artist) queryParts.push(item.artist);
+      queryParts.push(item.title);
     } else {
-      query.artist = item.title;
+      queryParts.push(item.title);
     }
 
-    musicStreamingService.redirectTo(platformName, query);
+    const searchQuery = encodeURIComponent(queryParts.join(" "));
+    const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+
+    let url = "";
+
+    switch (platformName.toLowerCase()) {
+      case "spotify":
+        url = isMobile
+          ? `spotify:search:${queryParts.join(" ")}`
+          : `${import.meta.env.VITE_SPOTIFY_WEB_URL}/${searchQuery}`;
+        break;
+
+      case "deezer":
+        url = isMobile
+          ? `deezer://search/${searchQuery}`
+          : `${import.meta.env.VITE_DEEZER_WEB_URL}/${searchQuery}`;
+        break;
+
+      case "youtubemusic":
+      case "youtube music":
+        url = `${import.meta.env.VITE_YOUTUBE_MUSIC_URL}?q=${searchQuery}`;
+        break;
+
+      default:
+        console.warn("Unsupported platform:", platformName);
+        return;
+    }
+
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const modalStyle = {
@@ -115,8 +140,12 @@ export default function PlaybackModal({
             alignItems="center"
             mb={2}
           >
-            <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
-              {itemType === "album" ? "Album Details" : "Artist Details"}
+            <Typography
+              variant="h5"
+              component="h2"
+              sx={{ color: "#C9A726", fontWeight: "bold" }}
+            >
+              {item?.itemType === "album" ? "Album Details" : "Artist Details"}
             </Typography>
             <IconButton onClick={onClose} size="small">
               <CloseIcon sx={{ color: "#fffbf9" }} />
@@ -130,9 +159,9 @@ export default function PlaybackModal({
           ) : (
             <>
               <Box display="flex" alignItems="center" mb={3}>
-                {item.pictureMedium && (
+                {item?.picture && (
                   <img
-                    src={item.pictureMedium}
+                    src={item.picture}
                     alt={item.title}
                     style={{
                       width: 120,
@@ -151,23 +180,10 @@ export default function PlaybackModal({
                   >
                     {item.title}
                   </Typography>
-                  {itemType === "album" && (
-                    <Typography
-                      variant="body1"
-                      sx={{ color: "#fffbf9", mb: 1 }}
-                    >
-                      {item.artist}
-                    </Typography>
-                  )}
-                  {(albumMetadata?.releaseYear || item.releaseYear) && (
-                    <Typography variant="body2" sx={{ color: "#e4e4e4" }}>
-                      {albumMetadata?.releaseYear || item.releaseYear}
-                    </Typography>
-                  )}
                 </Box>
               </Box>
 
-              {itemType === "album" && albumMetadata?.tracklist && (
+              {item?.itemType === "album" && albumMetadata?.tracklist && (
                 <>
                   <Typography
                     variant="subtitle1"
@@ -181,15 +197,13 @@ export default function PlaybackModal({
                         <ListItemText
                           primary={
                             <Typography sx={{ color: "#fffbf9" }}>
-                              {track.position}. {track.title}
+                              {track.position} {track.title}
                             </Typography>
                           }
                           secondary={
-                            track.duration && (
-                              <Typography sx={{ color: "#e4e4e4" }}>
-                                {track.duration}
-                              </Typography>
-                            )
+                            <Typography sx={{ color: "#e4e4e4" }}>
+                              {track.duration}
+                            </Typography>
                           }
                         />
                       </ListItem>
@@ -198,66 +212,60 @@ export default function PlaybackModal({
                 </>
               )}
 
-              {itemType === "artist" && artistMetadata && (
+              {item?.itemType === "album" &&
+                albumMetadata?.genres &&
+                albumMetadata.genres.length > 0 && (
+                  <Box mb={3}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ color: "#C9A726", mb: 1 }}
+                    >
+                      Genres
+                    </Typography>
+                    <Box display="flex" flexWrap="wrap" gap={1}>
+                      {[
+                        ...new Set([
+                          ...(albumMetadata.genres || []),
+                          ...(albumMetadata.styles || []),
+                        ]),
+                      ].map((genre, index) => (
+                        <Chip
+                          key={index}
+                          label={genre}
+                          size="small"
+                          sx={{
+                            backgroundColor: "#C9A726",
+                            color: "#fffbf9",
+                            "&:hover": {
+                              backgroundColor: "#b08e1f",
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+              {item?.itemType === "artist" && artistMetadata && (
                 <>
                   {artistMetadata.biography && (
                     <>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ color: "#C9A726", mb: 1 }}
-                      >
+                      <Typography variant="subtitle1" sx={{ color: "#C9A726" }}>
                         Biography
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "#fffbf9", mb: 2 }}
-                      >
-                        {artistMetadata.biography}
-                      </Typography>
-                      {artistMetadata.wikipedia_url && (
-                        <a
-                          href={artistMetadata.wikipedia_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#C9A726",
-                            textDecoration: "underline",
-                            display: "inline-block",
-                            marginTop: 8,
-                          }}
-                        >
-                          En savoir +
-                        </a>
-                      )}
+                      <List sx={{ mb: 1, overflow: "auto", maxHeight: 150 }}>
+                        <ListItem sx={{ py: 0.2 }}>
+                          <ListItemText
+                            primary={
+                              <Typography sx={{ color: "#fffbf9" }}>
+                                {artistMetadata.biography}
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                      </List>
                     </>
                   )}
-
-                  {artistMetadata.genres &&
-                    artistMetadata.genres.length > 0 && (
-                      <>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ color: "#C9A726", mb: 1 }}
-                        >
-                          Genres
-                        </Typography>
-                        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
-                          {artistMetadata.genres
-                            .slice(0, 5)
-                            .map((genre, index) => (
-                              <Chip
-                                key={index}
-                                label={genre}
-                                size="small"
-                                sx={{
-                                  backgroundColor: "#1F1F1F",
-                                  color: "#C9A726",
-                                }}
-                              />
-                            ))}
-                        </Box>
-                      </>
-                    )}
                 </>
               )}
 
@@ -273,7 +281,9 @@ export default function PlaybackModal({
                     key={platform.name}
                     variant="contained"
                     fullWidth
-                    onClick={() => handleStreamingRedirect(platform.name)}
+                    onClick={() =>
+                      handleStreamingRedirect(platform.name, item?.itemType)
+                    }
                     sx={{
                       backgroundColor: "#1F1F1F",
                       color: "#C9A726",
@@ -290,13 +300,13 @@ export default function PlaybackModal({
                 ))}
               </Box>
 
-              {(!albumMetadata?.tracklist && itemType === "album") ||
-              (!artistMetadata?.biography && itemType === "artist") ? (
+              {(!albumMetadata?.tracklist && item?.itemType === "album") ||
+              (!artistMetadata?.biography && item?.itemType === "artist") ? (
                 <Typography
                   variant="body2"
                   sx={{ color: "#e4e4e4", mt: 2, textAlign: "center" }}
                 >
-                  {itemType === "album"
+                  {item?.itemType === "album"
                     ? "Tracklist not available"
                     : "Biography not available"}
                 </Typography>

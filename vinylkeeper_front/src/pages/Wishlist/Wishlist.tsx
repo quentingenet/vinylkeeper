@@ -79,9 +79,8 @@ export default function Wishlist() {
       id: item.id,
       title: item.title || "Unknown Album",
       artist: item.artistName || "Unknown Artist",
-      source: "deezer",
-      deezerId: item.externalId ? String(item.externalId) : "",
-      pictureMedium: item.pictureMedium || "",
+      picture: item.pictureMedium || "",
+      itemType: "album",
     };
     setSelectedPlaybackItem(playbackItem);
     setPlaybackModalOpen(true);
@@ -265,7 +264,6 @@ export default function Wishlist() {
         </Box>
       )}
 
-      {/* Confirmation Modal */}
       <Modal
         open={confirmationOpen}
         onClose={handleCancelRemove}
@@ -367,7 +365,6 @@ export default function Wishlist() {
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        itemType="album"
       />
 
       <Snackbar

@@ -1,7 +1,6 @@
 import { IAlbumRequestResults } from "@models/IRequestProxy";
 import styles from "../../styles/pages/AddVinyls.module.scss";
 import { Box, Typography, CardContent, Card, CardMedia } from "@mui/material";
-import { truncateText } from "@utils/GlobalUtils";
 import AddToCollectionModal from "./AddToCollectionModal";
 import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
@@ -31,12 +30,11 @@ export default function ResultAlbums({ data }: IResultAlbumsProps) {
 
   const handlePlayClick = (album: IAlbumRequestResults) => {
     const playbackItem: PlaybackItem = {
-      id: album.uuid,
-      title: album.title || "Unknown Album",
-      artist: album.artist?.name || "Unknown Artist",
-      source: "deezer",
-      deezerId: album.id ? String(album.id) : "",
-      pictureMedium: album.picture_medium || "",
+      id: album.id.toString(),
+      title: album.title || "",
+      artist: album.artist?.name || "",
+      picture: album.picture || "",
+      itemType: "album",
     };
     setSelectedPlaybackItem(playbackItem);
     setPlaybackModalOpen(true);
@@ -126,7 +124,6 @@ export default function ResultAlbums({ data }: IResultAlbumsProps) {
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        itemType="album"
       />
     </>
   );

@@ -13,7 +13,10 @@ export interface SearchResults {
 
 export class SearchApiService extends BaseApiService {
   async searchMusic(requestToSend: IRequestToSend): Promise<IRequestResults> {
-    return this.post<IRequestResults>("/request-proxy/search", requestToSend);
+    return this.post<IRequestResults>(
+      "/request-proxy/search-music",
+      requestToSend
+    );
   }
 
   // Alias for backward compatibility

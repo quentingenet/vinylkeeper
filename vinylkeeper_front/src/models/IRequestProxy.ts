@@ -95,3 +95,17 @@ export interface IRequestResults {
   type: string;
   data: IArtistRequestResults[] | IAlbumRequestResults[];
 }
+
+export interface ArtistMetadata {
+  name: string;
+  biography?: string;
+  image?: string;
+  genres?: string[];
+  country?: string;
+  wikipedia_url?: string;
+  discogs_id?: string;
+  discogs_url?: string;
+  members?: string[];
+  active_years?: string;
+  aliases?: string[];
+}

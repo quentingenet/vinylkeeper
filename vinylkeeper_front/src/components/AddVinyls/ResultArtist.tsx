@@ -1,7 +1,6 @@
 import { IArtistRequestResults } from "@models/IRequestProxy";
 import styles from "../../styles/pages/AddVinyls.module.scss";
 import { Box, Typography, CardContent, Card, CardMedia } from "@mui/material";
-import { truncateText } from "@utils/GlobalUtils";
 import AddToCollectionModal from "./AddToCollectionModal";
 import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
@@ -32,12 +31,11 @@ export default function ResultArtist({ data }: IResultArtistProps) {
 
   const handlePlayClick = (artist: IArtistRequestResults) => {
     const playbackItem: PlaybackItem = {
-      id: artist.uuid,
-      title: artist.name || "Unknown Artist",
-      artist: artist.name || "Unknown Artist",
-      source: "deezer",
-      deezerId: artist.id ? String(artist.id) : "",
-      pictureMedium: artist.picture_medium || "",
+      id: artist.id.toString(),
+      title: artist.name || "",
+      artist: artist.name || "",
+      picture: artist.picture || "",
+      itemType: "artist",
     };
     setSelectedPlaybackItem(playbackItem);
     setPlaybackModalOpen(true);
@@ -130,14 +128,13 @@ export default function ResultArtist({ data }: IResultArtistProps) {
         open={modalOpen}
         onClose={handleCloseModal}
         item={selectedArtist}
-        itemType="artist"
+        itemType={"artist"}
       />
 
       <PlaybackModal
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        itemType="artist"
       />
     </>
   );

@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
-from app.db.base import Base
 from app.core.config_env import Settings
+from app.models.base import Base
 
 """
 This file/script is used to create the database tables.
