@@ -1,17 +1,127 @@
 import { IArtistRequestResults } from "@models/IRequestProxy";
 import styles from "../../styles/pages/AddVinyls.module.scss";
-import { Box, Typography, CardContent, Card, CardMedia } from "@mui/material";
+import {
+  Box,
+  Typography,
+  CardContent,
+  Card,
+  CardMedia,
+  Skeleton,
+} from "@mui/material";
 import AddToCollectionModal from "./AddToCollectionModal";
 import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Person } from "@mui/icons-material";
+import { truncateText } from "../../utils/GlobalUtils";
 
 interface IResultArtistProps {
   data: IArtistRequestResults[];
+  isLoading?: boolean;
 }
 
-export default function ResultArtist({ data }: IResultArtistProps) {
+const ArtistCard = memo(
+  ({
+    artist,
+    onArtistClick,
+    onPlayClick,
+  }: {
+    artist: IArtistRequestResults;
+    onArtistClick: (artist: IArtistRequestResults) => void;
+    onPlayClick: (artist: IArtistRequestResults) => void;
+  }) => (
+    <Box key={artist.uuid}>
+      <Card
+        className={styles.resultCard}
+        sx={{
+          width: 250,
+          height: 350,
+          borderRadius: "8px",
+          cursor: "pointer",
+          position: "relative",
+          transition: "transform 0.2s ease-in-out",
+          "&:hover": {
+            transform: "scale(1.02)",
+          },
+        }}
+        onClick={() => onArtistClick(artist)}
+      >
+        <PlayButton
+          onClick={(e) => {
+            e.stopPropagation();
+            onPlayClick(artist);
+          }}
+          position={{ top: 10, right: 10 }}
+        />
+        {artist.picture ? (
+          <CardMedia
+            component="img"
+            height="250"
+            sx={{ objectFit: "contain" }}
+            image={artist.picture}
+            alt={artist.name}
+            loading="lazy"
+          />
+        ) : (
+          <Box
+            sx={{
+              height: 250,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Person
+              sx={{
+                opacity: 0.7,
+                width: 150,
+                height: 150,
+                color: "#C9A726",
+              }}
+            />
+          </Box>
+        )}
+        <CardContent
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "50px",
+          }}
+        >
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              textAlign: "center",
+              fontSize: "1.4rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              lineHeight: 1.2,
+              height: "2.4em",
+              width: "100%",
+            }}
+          >
+            {truncateText(
+              artist.name?.split(" - ")[0] || artist.name || "",
+              40
+            )}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
+  )
+);
+
+ArtistCard.displayName = "ArtistCard";
+
+export default function ResultArtist({
+  data,
+  isLoading = false,
+}: IResultArtistProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedArtist, setSelectedArtist] =
     useState<IArtistRequestResults | null>(null);
@@ -19,17 +129,17 @@ export default function ResultArtist({ data }: IResultArtistProps) {
   const [selectedPlaybackItem, setSelectedPlaybackItem] =
     useState<PlaybackItem | null>(null);
 
-  const handleArtistClick = (artist: IArtistRequestResults) => {
+  const handleArtistClick = useCallback((artist: IArtistRequestResults) => {
     setSelectedArtist(artist);
     setModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setModalOpen(false);
     setSelectedArtist(null);
-  };
+  }, []);
 
-  const handlePlayClick = (artist: IArtistRequestResults) => {
+  const handlePlayClick = useCallback((artist: IArtistRequestResults) => {
     const playbackItem: PlaybackItem = {
       id: artist.id.toString(),
       title: artist.name || "",
@@ -39,88 +149,57 @@ export default function ResultArtist({ data }: IResultArtistProps) {
     };
     setSelectedPlaybackItem(playbackItem);
     setPlaybackModalOpen(true);
-  };
+  }, []);
 
-  const handleClosePlaybackModal = () => {
+  const handleClosePlaybackModal = useCallback(() => {
     setPlaybackModalOpen(false);
     setSelectedPlaybackItem(null);
-  };
+  }, []);
 
-  if (!data || data.length === 0) {
-    return <></>;
-  }
-
-  return (
-    <>
+  if (isLoading) {
+    return (
       <div className={styles.resultsContainer}>
-        {data.map((artist: IArtistRequestResults) => (
-          <Box key={artist.uuid}>
+        {[...Array(6)].map((_, index) => (
+          <Box key={index}>
             <Card
               className={styles.resultCard}
               sx={{
                 width: 250,
                 height: 350,
                 borderRadius: "8px",
-                cursor: "pointer",
-                position: "relative",
               }}
-              onClick={() => handleArtistClick(artist)}
             >
-              <PlayButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayClick(artist);
-                }}
-                position={{ top: 10, right: 10 }}
-              />
-              {artist.picture ? (
-                <CardMedia
-                  component="img"
-                  height="250"
-                  sx={{ objectFit: "contain" }}
-                  image={artist.picture}
-                  alt={artist.name}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    height: 250,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Person
-                    sx={{
-                      opacity: 0.7,
-                      width: 150,
-                      height: 150,
-                      color: "#C9A726",
-                    }}
-                  />
-                </Box>
-              )}
-              <CardContent
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "50px",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  component="div"
-                  sx={{
-                    textAlign: "center",
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  {artist.name?.split(" - ")[0] || artist.name}
-                </Typography>
+              <Skeleton variant="rectangular" height={250} />
+              <CardContent>
+                <Skeleton variant="text" height={40} />
               </CardContent>
             </Card>
           </Box>
+        ))}
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <Typography variant="h6" color="text.secondary">
+          Aucun artiste trouvé
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.resultsContainer}>
+        {data.map((artist) => (
+          <ArtistCard
+            key={artist.uuid}
+            artist={artist}
+            onArtistClick={handleArtistClick}
+            onPlayClick={handlePlayClick}
+          />
         ))}
       </div>
 
@@ -128,7 +207,7 @@ export default function ResultArtist({ data }: IResultArtistProps) {
         open={modalOpen}
         onClose={handleCloseModal}
         item={selectedArtist}
-        itemType={"artist"}
+        itemType="artist"
       />
 
       <PlaybackModal

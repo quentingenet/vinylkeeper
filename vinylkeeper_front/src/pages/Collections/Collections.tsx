@@ -36,9 +36,14 @@ export default function Collections() {
     data: collectionsData,
     isLoading: collectionsLoading,
     error,
+    isError,
   } = useQuery<ICollectionResponse>({
     queryKey: ["collections", page],
     queryFn: () => collectionApiService.getCollections(page, itemsPerPage),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const collections = collectionsData?.items || [];
@@ -85,7 +90,7 @@ export default function Collections() {
     setCollection(selectedCollection);
   };
 
-  if (error) {
+  if (isError) {
     return (
       <Box
         display="flex"
@@ -93,7 +98,22 @@ export default function Collections() {
         alignItems="center"
         minHeight="200px"
       >
-        <Typography color="error">Error loading collections</Typography>
+        <Typography color="error">
+          {error instanceof Error ? error.message : "Error loading collections"}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (collectionsLoading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <Typography>Loading collections...</Typography>
       </Box>
     );
   }

@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import { searchApiService } from "@services/SearchApiService";
 import { useState, useCallback, useMemo } from "react";
@@ -63,11 +64,16 @@ export default function RequestsMaker({
 
   const handleSwitchChange = useCallback(() => {
     setIsArtist((prev) => !prev);
-  }, []);
+    setSearchTerm("");
+    setRequestResults([]);
+  }, [setRequestResults]);
 
   const handleSearch = useCallback(() => {
+    if (!searchTerm.trim()) {
+      return;
+    }
     mutation.mutate(requestToSend);
-  }, [mutation, requestToSend]);
+  }, [mutation, requestToSend, searchTerm]);
 
   return (
     <Box
@@ -102,24 +108,35 @@ export default function RequestsMaker({
         label={`Search by ${isArtist ? "artist" : "album"}`}
         variant="outlined"
         fullWidth
+        value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+        error={mutation.isError}
+        helperText={
+          mutation.isError ? "Error searching. Please try again." : ""
+        }
+        disabled={mutation.isPending}
         slotProps={{
           input: {
             endAdornment: (
               <InputAdornment
                 position="end"
                 sx={{
-                  cursor: "pointer",
+                  cursor: mutation.isPending ? "not-allowed" : "pointer",
                   color: "white",
                   animation:
-                    requestResults.length === 0 || searchTerm === ""
+                    (requestResults.length === 0 || searchTerm === "") &&
+                    !mutation.isPending
                       ? `${growItem} 1s ease infinite`
                       : "none",
                 }}
                 onClick={handleSearch}
               >
-                <SearchIcon fontSize="large" />
+                {mutation.isPending ? (
+                  <CircularProgress size={24} sx={{ color: "#C9A726" }} />
+                ) : (
+                  <SearchIcon fontSize="large" />
+                )}
               </InputAdornment>
             ),
           },
