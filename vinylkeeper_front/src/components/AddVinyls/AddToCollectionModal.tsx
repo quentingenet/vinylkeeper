@@ -94,7 +94,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
               mb={2}
             >
               <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
-                Sélectionner une collection
+                Select a collection
               </Typography>
               <IconButton onClick={onClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
@@ -102,17 +102,30 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
             </Box>
 
             {successMessage && (
-              <Alert severity="success" sx={{ mb: 2 }}>
+              <Alert
+                severity={
+                  successMessage.includes("Error") ? "error" : "success"
+                }
+                sx={{
+                  mb: 2,
+                  backgroundColor: successMessage.includes("Error")
+                    ? "rgba(211, 47, 47, 0.1)"
+                    : "rgba(46, 125, 50, 0.1)",
+                  color: successMessage.includes("Error")
+                    ? "#ff6b6b"
+                    : "#4caf50",
+                }}
+              >
                 {successMessage}
               </Alert>
             )}
 
             <Typography variant="body2" sx={{ color: "#fffbf9" }} mb={2}>
-              Ajouter "
+              Add "
               {itemType === "album"
                 ? (item as IAlbumRequestResults).title
                 : (item as IArtistRequestResults).name}
-              " à une collection :
+              " to a collection:
             </Typography>
 
             {isLoading ? (
@@ -126,7 +139,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                 textAlign="center"
                 py={4}
               >
-                Aucune collection trouvée. Créez d'abord une collection.
+                No collections found. Create a collection first.
               </Typography>
             ) : (
               <List dense>
@@ -145,9 +158,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                       >
                         <ListItemText
                           primary={collection.name}
-                          secondary={
-                            collection.description || "Pas de description"
-                          }
+                          secondary={collection.description || "No description"}
                           sx={{
                             "& .MuiListItemText-primary": { color: "#fffbf9" },
                             "& .MuiListItemText-secondary": {
@@ -172,7 +183,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                   "&:hover": { color: "#C9A726" },
                 }}
               >
-                Retour
+                Back
               </Button>
               <Button
                 variant="text"
@@ -182,7 +193,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                   "&:hover": { color: "#C9A726" },
                 }}
               >
-                Annuler
+                Cancel
               </Button>
             </Box>
           </Box>
@@ -233,14 +244,14 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlistItems"] });
-      setSuccessMessage("Ajouté avec succès !");
+      setSuccessMessage("Successfully added!");
       setTimeout(() => {
         setSuccessMessage("");
         onClose();
       }, 2000);
     },
     onError: (error) => {
-      setSuccessMessage(`Erreur : ${error.message}`);
+      setSuccessMessage("Error adding to wishlist");
       setTimeout(() => setSuccessMessage(""), 3000);
     },
   });
@@ -263,21 +274,21 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
-      setSuccessMessage("Ajouté avec succès !");
+      setSuccessMessage("Successfully added!");
       setTimeout(() => {
         setSuccessMessage("");
         onClose();
       }, 2000);
     },
     onError: (error) => {
-      setSuccessMessage(`Erreur : ${error.message}`);
+      setSuccessMessage("Error adding to collection");
       setTimeout(() => setSuccessMessage(""), 3000);
     },
   });
 
-  const handleAddToWishlist = useCallback(() => {
+  const handleAddToWishlist = () => {
     if (!item) return;
-    const albumData = {
+    addToWishlistMutation.mutate({
       external_id: item.id.toString(),
       title:
         itemType === "album"
@@ -288,30 +299,26 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
           ? (item as IAlbumRequestResults).artist?.name
           : undefined,
       picture_medium: item.picture,
-    };
-    addToWishlistMutation.mutate(albumData);
-  }, [item, itemType, addToWishlistMutation]);
+    });
+  };
 
-  const handleAddToCollection = useCallback(
-    (collectionId: number) => {
-      if (!item) return;
-      const data = {
-        collectionId,
-        externalId: item.id.toString(),
-        title:
-          itemType === "album"
-            ? (item as IAlbumRequestResults).title || ""
-            : (item as IArtistRequestResults).name || "",
-        artistName:
-          itemType === "album"
-            ? (item as IAlbumRequestResults).artist?.name
-            : undefined,
-        pictureMedium: item.picture,
-      };
-      addToCollectionMutation.mutate(data);
-    },
-    [item, itemType, addToCollectionMutation]
-  );
+  const handleAddToCollection = (collectionId: number) => {
+    if (!item) return;
+    setSelectedCollectionId(collectionId);
+    addToCollectionMutation.mutate({
+      collectionId,
+      externalId: item.id.toString(),
+      title:
+        itemType === "album"
+          ? (item as IAlbumRequestResults).title || ""
+          : (item as IArtistRequestResults).name || "",
+      artistName:
+        itemType === "album"
+          ? (item as IAlbumRequestResults).artist?.name
+          : undefined,
+      pictureMedium: item.picture,
+    });
+  };
 
   const handleClose = useCallback(() => {
     setShowCollectionSelection(false);
@@ -353,21 +360,37 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
               mb={2}
             >
               <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
-                Ajouter à la collection
+                Add to collection
               </Typography>
               <IconButton onClick={handleClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
               </IconButton>
             </Box>
 
-            {successMessage && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {successMessage}
-              </Alert>
-            )}
+            <div className="flex flex-col items-center gap-4">
+              {successMessage && (
+                <Alert
+                  severity={
+                    successMessage.includes("Error") ? "error" : "success"
+                  }
+                  sx={{
+                    width: "100%",
+                    mb: 2,
+                    backgroundColor: successMessage.includes("Error")
+                      ? "rgba(211, 47, 47, 0.1)"
+                      : "rgba(46, 125, 50, 0.1)",
+                    color: successMessage.includes("Error")
+                      ? "#ff6b6b"
+                      : "#4caf50",
+                  }}
+                >
+                  {successMessage}
+                </Alert>
+              )}
+            </div>
 
             <Box display="flex" flexDirection="column" gap={2}>
-              <Tooltip title="Ajouter à la liste de souhaits">
+              <Tooltip title="Add to wishlist">
                 <Button
                   variant="contained"
                   startIcon={<FavoriteIcon />}
@@ -382,12 +405,12 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                   {addToWishlistMutation.isPending ? (
                     <CircularProgress size={24} sx={{ color: "#fff" }} />
                   ) : (
-                    "Ajouter à la liste de souhaits"
+                    "Add to wishlist"
                   )}
                 </Button>
               </Tooltip>
 
-              <Tooltip title="Ajouter à une collection existante">
+              <Tooltip title="Add to existing collection">
                 <Button
                   variant="outlined"
                   onClick={() => setShowCollectionSelection(true)}
@@ -408,7 +431,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                   {collectionsLoading ? (
                     <CircularProgress size={24} sx={{ color: "#C9A726" }} />
                   ) : (
-                    "Ajouter à une collection"
+                    "Add to collection"
                   )}
                 </Button>
               </Tooltip>
@@ -426,7 +449,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         collections={collections}
         onAddToCollection={handleAddToCollection}
         successMessage={successMessage}
-        isLoading={collectionsLoading}
+        isLoading={addToCollectionMutation.isPending}
       />
     </>
   );

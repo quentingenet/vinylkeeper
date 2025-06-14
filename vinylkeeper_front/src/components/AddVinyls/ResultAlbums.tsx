@@ -207,7 +207,16 @@ export default function ResultAlbums({
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", py: 4 }}>
+      <Box
+        sx={{
+          textAlign: "center",
+          py: 4,
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <Typography variant="h6" color="text.secondary">
           Aucun album trouvé
         </Typography>

@@ -12,9 +12,10 @@ import {
   Typography,
   InputAdornment,
   CircularProgress,
+  Alert,
 } from "@mui/material";
 import { searchApiService } from "@services/SearchApiService";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, memo, useEffect, useRef } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,97 +25,93 @@ interface IRequestsMakerProps {
   setRequestResults: (results: IRequestResults[]) => void;
 }
 
-export default function RequestsMaker({
-  requestResults,
-  setRequestResults,
-}: IRequestsMakerProps) {
-  const [isArtist, setIsArtist] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+const DEBOUNCE_DELAY = 500; // 500ms delay for search
 
-  const requestToSend = useMemo(
-    () => ({
-      query: searchTerm,
-      is_artist: isArtist,
-    }),
-    [searchTerm, isArtist]
+const useDebounce = <T extends (...args: any[]) => void>(
+  callback: T,
+  delay: number
+) => {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
   );
+};
 
-  const { isMobile } = useDetectMobile();
-
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation<IRequestResults, Error, IRequestToSend>({
-    mutationFn: searchApiService.searchProxy,
-    onSuccess: (response) => {
-      setRequestResults([
-        {
-          type: isArtist ? "artist" : "album",
-          data: isArtist
-            ? (response as unknown as IArtistRequestResults[])
-            : (response as unknown as IAlbumRequestResults[]),
-        },
-      ]);
-      queryClient.invalidateQueries({ queryKey: ["requestResults"] });
-    },
-    onError: (error) => {
-      console.error("Error fetching data:", error);
-    },
-    onSettled: () => {},
-  });
-
-  const handleSwitchChange = useCallback(() => {
-    setIsArtist((prev) => !prev);
-    setSearchTerm("");
-    setRequestResults([]);
-  }, [setRequestResults]);
-
-  const handleSearch = useCallback(() => {
-    if (!searchTerm.trim()) {
-      return;
-    }
-    mutation.mutate(requestToSend);
-  }, [mutation, requestToSend, searchTerm]);
-
-  return (
+const SearchTypeSwitch = memo(
+  ({
+    isArtist,
+    onSwitchChange,
+  }: {
+    isArtist: boolean;
+    onSwitchChange: () => void;
+  }) => (
     <Box
+      onClick={onSwitchChange}
       sx={{
+        cursor: "pointer",
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "row",
         alignItems: "center",
-        rowGap: 2,
+        justifyContent: "center",
+        gap: 2,
       }}
     >
-      <Box
-        onClick={handleSwitchChange}
-        sx={{
-          cursor: "pointer",
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 2,
-        }}
-      >
-        <Typography sx={{ paddingY: 1 }} variant="h3">
-          Album
-        </Typography>
-        <Switch checked={isArtist} />
-        <Typography sx={{ paddingY: 1 }} variant="h3">
-          Artist
-        </Typography>
-      </Box>
+      <Typography sx={{ paddingY: 1 }} variant="h3">
+        Album
+      </Typography>
+      <Switch checked={isArtist} />
+      <Typography sx={{ paddingY: 1 }} variant="h3">
+        Artist
+      </Typography>
+    </Box>
+  )
+);
+
+SearchTypeSwitch.displayName = "SearchTypeSwitch";
+
+const SearchInput = memo(
+  ({
+    searchTerm,
+    setSearchTerm,
+    isArtist,
+    isMobile,
+    mutation,
+    requestResults,
+    onSearch,
+    error,
+  }: {
+    searchTerm: string;
+    setSearchTerm: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    isArtist: boolean;
+    isMobile: boolean;
+    mutation: any;
+    requestResults: IRequestResults[];
+    onSearch: () => void;
+    error?: string;
+  }) => (
+    <Box
+      sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 1 }}
+    >
       <TextField
         sx={{ width: isMobile ? "320px" : "400px" }}
         label={`Search by ${isArtist ? "artist" : "album"}`}
         variant="outlined"
         fullWidth
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-        error={mutation.isError}
-        helperText={
-          mutation.isError ? "Error searching. Please try again." : ""
-        }
+        onChange={setSearchTerm}
+        onKeyDown={(e) => e.key === "Enter" && onSearch()}
+        error={!!error}
+        helperText={error}
         disabled={mutation.isPending}
         slotProps={{
           input: {
@@ -130,7 +127,7 @@ export default function RequestsMaker({
                       ? `${growItem} 1s ease infinite`
                       : "none",
                 }}
-                onClick={handleSearch}
+                onClick={onSearch}
               >
                 {mutation.isPending ? (
                   <CircularProgress size={24} sx={{ color: "#C9A726" }} />
@@ -141,6 +138,106 @@ export default function RequestsMaker({
             ),
           },
         }}
+      />
+      {error && (
+        <Alert severity="error" sx={{ width: isMobile ? "320px" : "400px" }}>
+          {error}
+        </Alert>
+      )}
+    </Box>
+  )
+);
+
+SearchInput.displayName = "SearchInput";
+
+export default function RequestsMaker({
+  requestResults,
+  setRequestResults,
+}: IRequestsMakerProps) {
+  const [isArtist, setIsArtist] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const { isMobile } = useDetectMobile();
+  const queryClient = useQueryClient();
+
+  const requestToSend = useMemo(
+    () => ({
+      query: searchTerm,
+      is_artist: isArtist,
+    }),
+    [searchTerm, isArtist]
+  );
+
+  const mutation = useMutation<IRequestResults, Error, IRequestToSend>({
+    mutationFn: searchApiService.searchProxy,
+    onSuccess: (response) => {
+      setError("");
+      setRequestResults([
+        {
+          type: isArtist ? "artist" : "album",
+          data: isArtist
+            ? (response as unknown as IArtistRequestResults[])
+            : (response as unknown as IAlbumRequestResults[]),
+        },
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["requestResults"] });
+    },
+    onError: (error) => {
+      console.error("Error fetching data:", error);
+      setError(
+        error.message || "An error occurred while searching. Please try again."
+      );
+    },
+  });
+
+  const debouncedSearch = useDebounce((term: string) => {
+    if (term.trim()) {
+      mutation.mutate({
+        query: term,
+        is_artist: isArtist,
+      });
+    }
+  }, DEBOUNCE_DELAY);
+
+  const handleSearch = useCallback(() => {
+    if (searchTerm.trim()) {
+      mutation.mutate(requestToSend);
+    }
+  }, [searchTerm, isArtist, mutation, requestToSend]);
+
+  const handleSearchTermChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchTerm(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+        width: "auto",
+        margin: "0 auto",
+      }}
+    >
+      <SearchTypeSwitch
+        isArtist={isArtist}
+        onSwitchChange={() => setIsArtist(!isArtist)}
+      />
+      <SearchInput
+        searchTerm={searchTerm}
+        setSearchTerm={handleSearchTermChange}
+        isArtist={isArtist}
+        isMobile={isMobile}
+        mutation={mutation}
+        requestResults={requestResults}
+        onSearch={handleSearch}
+        error={error}
       />
     </Box>
   );
