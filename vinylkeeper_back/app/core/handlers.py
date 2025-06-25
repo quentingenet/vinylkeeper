@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.exceptions import AppException
+from app.core.config_env import settings
 
 logger = logging.getLogger("app")
 
@@ -31,7 +32,12 @@ def _extract_file_info(tb):
 def register_exception_handlers(app):
     @app.exception_handler(AppException)
     def app_exception_handler(request: Request, exc: AppException):
-        if exc.should_log:
+        # Don't log 404 and 405 errors in production, regardless of should_log
+        should_log = exc.should_log
+        if settings.APP_ENV == "production" and exc.status_code in [404, 405]:
+            should_log = False
+            
+        if should_log:
             tb = traceback.extract_tb(exc.__traceback__)
             file_info = _extract_file_info(tb)
             
@@ -70,7 +76,16 @@ def register_exception_handlers(app):
 
     @app.exception_handler(StarletteHTTPException)
     def http_exception_handler(request: Request, exc: StarletteHTTPException):
-        if "Refresh token not found" not in str(exc.detail):
+        # Don't log 404 and 405 errors in production
+        should_log = True
+        if settings.APP_ENV == "production" and exc.status_code in [404, 405]:
+            should_log = False
+        
+        # Don't log refresh token not found errors
+        if "Refresh token not found" in str(exc.detail):
+            should_log = False
+            
+        if should_log:
             tb = traceback.extract_tb(exc.__traceback__)
             file_info = _extract_file_info(tb)
             logger.error(f"HTTP {exc.status_code} - {exc.detail} | {file_info}")

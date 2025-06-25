@@ -66,6 +66,7 @@ target/
 *.t
 *.output
 *.log
+errors_api_vk.log*
 
 # Backup files
 *~
@@ -133,6 +134,7 @@ coverage.xml
 # Logs
 api_vk.log.*
 *.log
+*.log.*
 *.out
 *.err
 app_vk_back.log

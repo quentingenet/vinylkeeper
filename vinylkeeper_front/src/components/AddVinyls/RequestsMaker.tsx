@@ -20,6 +20,7 @@ import { useState, useCallback, useMemo, memo } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface IRequestsMakerProps {
   requestResults: IRequestResults[];
@@ -101,7 +102,8 @@ const SearchInput = memo(
                   cursor: mutation.isPending ? "not-allowed" : "pointer",
                   color: "white",
                   animation:
-                    (requestResults.length === 0 || searchTerm === "") &&
+                    searchTerm !== "" &&
+                    requestResults.length === 0 &&
                     !mutation.isPending
                       ? `${growItem} 1s ease infinite`
                       : "none",
@@ -109,7 +111,7 @@ const SearchInput = memo(
                 onClick={onSearch}
               >
                 {mutation.isPending ? (
-                  <CircularProgress size={24} sx={{ color: "#C9A726" }} />
+                  <VinylSpinner size={24} />
                 ) : (
                   <SearchIcon fontSize="large" />
                 )}

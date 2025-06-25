@@ -23,7 +23,7 @@ from .role_schema import *
 from .request_proxy.request_proxy_schema import *
 
 __all__ = [
-    "BaseModel",  # Permet d'utiliser BaseModel directement si nécessaire
+    "BaseModel",
     "BaseSchema",
     # User schemas
     "UserCreate", "UserUpdate", "UserInDB", "UserResponse", "UserDetailResponse", "UserMiniResponse",

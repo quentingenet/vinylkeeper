@@ -3,6 +3,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import VinylSpinner from "@components/UI/VinylSpinner";
 import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { CollectionResponse } from "@services/CollectionApiService";
@@ -79,7 +80,7 @@ export default function Collections() {
         alignItems="center"
         minHeight="200px"
       >
-        <Typography>Loading collections...</Typography>
+        <VinylSpinner />
       </Box>
     );
   }

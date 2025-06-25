@@ -22,6 +22,7 @@ import ForgotPasswordModal from "./ForgotPasswordModal";
 import { ILoginForm } from "@models/ILoginForm";
 import { loginValidationSchema } from "@utils/validators/loginValidationSchema";
 import styles from "../../styles/pages/Landpage.module.scss";
+import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface LoginProps {
   setRegister: (value: boolean) => void;
@@ -173,7 +174,7 @@ export default function Login({
             mt={3}
           >
             {userContext.isLoading ? (
-              <CircularProgress />
+              <VinylSpinner />
             ) : (
               <Button type="submit" variant="contained">
                 Login

@@ -38,6 +38,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { passwordChangeValidationSchema } from "@utils/validators/passwordChangeValidationSchema";
 import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
 import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
+import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface PasswordFormData {
   currentPassword: string;
@@ -186,7 +187,7 @@ export default function Settings() {
       </Box>
     );
   }
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <VinylSpinner />;
   if (error) return <div>Error loading user settings.</div>;
 
   return (
@@ -546,7 +547,7 @@ export default function Settings() {
           >
             {sendContactMessageMutation.isPending
               ? "Sending..."
-              : "Send Message"}
+              : "Send message"}
           </Button>
         </DialogActions>
       </Dialog>

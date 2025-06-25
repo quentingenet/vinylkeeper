@@ -43,6 +43,7 @@ import { Album } from "@mui/icons-material";
 import { truncateText } from "@utils/GlobalUtils";
 import styles from "../../styles/pages/Collection.module.scss";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -96,11 +97,14 @@ export default function CollectionDetails() {
     useState<PlaybackItem | null>(null);
   const [deleteAlbumModalOpen, setDeleteAlbumModalOpen] = useState(false);
   const [deleteArtistModalOpen, setDeleteArtistModalOpen] = useState(false);
+  const [deleteWishlistModalOpen, setDeleteWishlistModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
     id: number;
     type: "album" | "artist";
     title: string;
   } | null>(null);
+  const [wishlistItemToDelete, setWishlistItemToDelete] =
+    useState<WishlistItemResponse | null>(null);
 
   // Collection details query
   const {
@@ -170,6 +174,16 @@ export default function CollectionDetails() {
       });
       queryClient.invalidateQueries({
         queryKey: ["collectionArtists", collectionId],
+      });
+    },
+  });
+
+  const removeWishlistItemMutation = useMutation({
+    mutationFn: (wishlistId: number) =>
+      externalReferenceApiService.removeFromWishlist(wishlistId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["collectionDetails", collectionId],
       });
     },
   });
@@ -288,7 +302,22 @@ export default function CollectionDetails() {
   const closeDeleteModals = () => {
     setDeleteAlbumModalOpen(false);
     setDeleteArtistModalOpen(false);
+    setDeleteWishlistModalOpen(false);
     setItemToDelete(null);
+    setWishlistItemToDelete(null);
+  };
+
+  const handleDeleteWishlistItem = (item: WishlistItemResponse) => {
+    setWishlistItemToDelete(item);
+    setDeleteWishlistModalOpen(true);
+  };
+
+  const confirmDeleteWishlistItem = () => {
+    if (wishlistItemToDelete) {
+      removeWishlistItemMutation.mutate(wishlistItemToDelete.id);
+      setDeleteWishlistModalOpen(false);
+      setWishlistItemToDelete(null);
+    }
   };
 
   useEffect(() => {
@@ -308,7 +337,7 @@ export default function CollectionDetails() {
         alignItems="center"
         minHeight="200px"
       >
-        <CircularProgress />
+        <VinylSpinner />
       </Box>
     );
   }
@@ -439,16 +468,27 @@ export default function CollectionDetails() {
               alignItems="center"
               minHeight="200px"
             >
-              <CircularProgress />
+              <VinylSpinner />
             </Box>
           ) : albumsError ? (
             <Typography variant="h6" color="error">
               Error loading albums
             </Typography>
           ) : albumsData?.items.length === 0 ? (
-            <Typography variant="body1" color="text.secondary">
-              No albums in this collection yet.
-            </Typography>
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="200px"
+            >
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                textAlign="center"
+              >
+                No albums in this collection yet.
+              </Typography>
+            </Box>
           ) : (
             <>
               <div className={styles.resultsContainer}>
@@ -631,16 +671,27 @@ export default function CollectionDetails() {
               alignItems="center"
               minHeight="200px"
             >
-              <CircularProgress />
+              <VinylSpinner />
             </Box>
           ) : artistsError ? (
             <Typography variant="h6" color="error">
               Error loading artists
             </Typography>
           ) : artistsData?.items.length === 0 ? (
-            <Typography variant="body1" color="text.secondary">
-              No artists in this collection yet.
-            </Typography>
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="200px"
+            >
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                textAlign="center"
+              >
+                No artists in this collection yet.
+              </Typography>
+            </Box>
           ) : (
             <>
               <div className={styles.resultsContainer}>
@@ -797,9 +848,20 @@ export default function CollectionDetails() {
 
         <TabPanel value={tabValue} index={2}>
           {ownerWishlistItems.length === 0 ? (
-            <Typography variant="body1" color="text.secondary">
-              Your wishlist is empty.
-            </Typography>
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="200px"
+            >
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                textAlign="center"
+              >
+                Your wishlist is empty.
+              </Typography>
+            </Box>
           ) : (
             <>
               <div className={styles.resultsContainer}>
@@ -862,6 +924,31 @@ export default function CollectionDetails() {
                           sx={{ color: "white", fontSize: "20px" }}
                         />
                       </IconButton>
+                      {isOwner && (
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteWishlistItem(item);
+                          }}
+                          sx={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            width: "32px",
+                            height: "32px",
+                            p: 0,
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.7)",
+                            },
+                          }}
+                        >
+                          <DeleteIcon
+                            sx={{ color: "white", fontSize: "20px" }}
+                          />
+                        </IconButton>
+                      )}
                     </Box>
                     {item.image_url ? (
                       <CardMedia
@@ -985,6 +1072,28 @@ export default function CollectionDetails() {
             disabled={removeArtistMutation.isPending}
           >
             {removeArtistMutation.isPending ? "Removing..." : "Remove"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Wishlist Item Confirmation Modal */}
+      <Dialog open={deleteWishlistModalOpen} onClose={closeDeleteModals}>
+        <DialogTitle>Remove from Wishlist</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove "{wishlistItemToDelete?.title}" from
+            your wishlist? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteModals}>Cancel</Button>
+          <Button
+            onClick={confirmDeleteWishlistItem}
+            color="error"
+            variant="contained"
+            disabled={removeWishlistItemMutation.isPending}
+          >
+            {removeWishlistItemMutation.isPending ? "Removing..." : "Remove"}
           </Button>
         </DialogActions>
       </Dialog>

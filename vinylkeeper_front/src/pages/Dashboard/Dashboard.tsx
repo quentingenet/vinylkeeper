@@ -28,6 +28,7 @@ import { dashboardApiService } from "@services/DashboardApiService";
 import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { truncateText } from "@utils/GlobalUtils";
+import VinylSpinner from "@components/UI/VinylSpinner";
 
 ChartJS.register(
   LineElement,
@@ -123,13 +124,8 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="300px"
-      >
-        <CircularProgress color="inherit" />
+      <Box display="flex" justifyContent="center" my={4}>
+        <VinylSpinner />
       </Box>
     );
   }

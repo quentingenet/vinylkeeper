@@ -4,8 +4,6 @@ import {
   Box,
   Typography,
   Button,
-  Divider,
-  CircularProgress,
   List,
   ListItem,
   ListItemText,
@@ -20,7 +18,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
   Snackbar,
   Alert,
 } from "@mui/material";
@@ -36,19 +33,8 @@ import { useUpdateAlbumStates } from "@hooks/useCollections";
 import { useParams } from "react-router-dom";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse } from "date-fns";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-
-// Add vinyl states enum to match backend
-const vinylStates = [
-  { id: "mint", name: "Mint" },
-  { id: "near_mint", name: "Near Mint" },
-  { id: "very_good_plus", name: "Very Good Plus" },
-  { id: "very_good", name: "Very Good" },
-  { id: "good_plus", name: "Good Plus" },
-  { id: "good", name: "Good" },
-  { id: "fair", name: "Fair" },
-  { id: "poor", name: "Poor" },
-];
+import VinylSpinner from "@components/UI/VinylSpinner";
+import { vinylStates } from "@utils/GlobalUtils";
 
 export interface PlaybackItem {
   id: string;
@@ -276,7 +262,7 @@ export default function PlaybackModal({
 
             {isLoading ? (
               <Box display="flex" justifyContent="center" my={4}>
-                <CircularProgress sx={{ color: "#C9A726" }} />
+                <VinylSpinner />
               </Box>
             ) : error ? (
               <Box display="flex" justifyContent="center" my={4}>
@@ -379,39 +365,37 @@ export default function PlaybackModal({
                     >
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography variant="subtitle1" fontWeight="bold">
-                          Album States
+                          Album states
                         </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Box display="flex" flexDirection="column" gap={2}>
                           <FormControl fullWidth size="small">
-                            <InputLabel sx={{ color: "#e4e4e4" }}>
-                              Cover State
+                            <InputLabel
+                              id="cover-state-label"
+                              sx={{
+                                color: "#e4e4e4",
+                                "&.Mui-focused": { color: "#C9A726" },
+                                "&.MuiInputLabel-shrink": { color: "#C9A726" },
+                              }}
+                            >
+                              Cover state
                             </InputLabel>
                             <Select
+                              labelId="cover-state-label"
+                              id="cover-state-select"
                               value={coverState || ""}
+                              label="Cover state"
                               onChange={(e) =>
                                 setCoverState(e.target.value || null)
                               }
                               disabled={isOwner !== true}
+                              variant="outlined"
                               sx={{
                                 color: "#fffbf9",
-                                "& .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#C9A726",
-                                },
-                                "&:hover .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#b38f1f",
-                                },
-                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                  {
-                                    borderColor: "#C9A726",
-                                  },
-                                "& .MuiSelect-icon": {
-                                  color: "#C9A726",
-                                },
+                                "& .MuiSelect-icon": { color: "#C9A726" },
                               }}
                             >
-                              <MenuItem value="">Not defined</MenuItem>
                               {vinylStates.map((state) => (
                                 <MenuItem key={state.id} value={state.id}>
                                   {state.name}
@@ -421,33 +405,31 @@ export default function PlaybackModal({
                           </FormControl>
 
                           <FormControl fullWidth size="small">
-                            <InputLabel sx={{ color: "#e4e4e4" }}>
-                              Record State
+                            <InputLabel
+                              id="record-state-label"
+                              sx={{
+                                color: "#e4e4e4",
+                                "&.Mui-focused": { color: "#C9A726" },
+                                "&.MuiInputLabel-shrink": { color: "#C9A726" },
+                              }}
+                            >
+                              Record state
                             </InputLabel>
                             <Select
+                              labelId="record-state-label"
+                              id="record-state-select"
                               value={discState || ""}
+                              label="Record state"
                               onChange={(e) =>
                                 setDiscState(e.target.value || null)
                               }
                               disabled={isOwner !== true}
+                              variant="outlined"
                               sx={{
                                 color: "#fffbf9",
-                                "& .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#C9A726",
-                                },
-                                "&:hover .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#b38f1f",
-                                },
-                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                  {
-                                    borderColor: "#C9A726",
-                                  },
-                                "& .MuiSelect-icon": {
-                                  color: "#C9A726",
-                                },
+                                "& .MuiSelect-icon": { color: "#C9A726" },
                               }}
                             >
-                              <MenuItem value="">Not defined</MenuItem>
                               {vinylStates.map((state) => (
                                 <MenuItem key={state.id} value={state.id}>
                                   {state.name}
@@ -457,7 +439,7 @@ export default function PlaybackModal({
                           </FormControl>
 
                           <DatePicker
-                            label="Acquisition Month"
+                            label="Acquisition month"
                             value={
                               purchaseDate
                                 ? parse(purchaseDate, "yyyy-MM", new Date())

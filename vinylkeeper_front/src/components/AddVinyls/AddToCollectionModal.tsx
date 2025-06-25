@@ -44,17 +44,8 @@ import {
 import useDetectMobile from "@hooks/useDetectMobile";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse, isValid } from "date-fns";
-
-const vinylStates = [
-  { id: "mint", name: "Mint" },
-  { id: "near_mint", name: "Near Mint" },
-  { id: "very_good_plus", name: "Very Good Plus" },
-  { id: "very_good", name: "Very Good" },
-  { id: "good_plus", name: "Good Plus" },
-  { id: "good", name: "Good" },
-  { id: "fair", name: "Fair" },
-  { id: "poor", name: "Poor" },
-];
+import VinylSpinner from "@components/UI/VinylSpinner";
+import { vinylStates } from "@utils/GlobalUtils";
 
 interface AddToCollectionModalProps {
   open: boolean;
@@ -229,34 +220,35 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                 </AccordionSummary>
                 <AccordionDetails>
                   <Box display="flex" flexDirection="column" gap={2}>
-                    {/* Cover State and Record State - Top row */}
-                    <Box display="flex" gap={2}>
+                    <Box display="flex" flexDirection="column" gap={2}>
                       <FormControl fullWidth size="small">
-                        <InputLabel sx={{ color: "#fffbf9" }}>
-                          Cover State
+                        <InputLabel
+                          id="cover-state-label"
+                          sx={{
+                            color: "#fffbf9",
+                            "&.Mui-focused": { color: "#C9A726" },
+                            "&.MuiInputLabel-shrink": { color: "#C9A726" },
+                          }}
+                        >
+                          Cover state
                         </InputLabel>
                         <Select
+                          labelId="cover-state-label"
+                          id="cover-state-select"
                           value={albumStateData.state_cover || ""}
+                          label="Cover state"
                           onChange={(e) =>
                             onAlbumStateChange(
                               "state_cover",
                               e.target.value || null
                             )
                           }
+                          variant="outlined"
                           sx={{
                             color: "#fffbf9",
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#666",
-                            },
-                            "&:hover .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#C9A726",
-                            },
-                            "& .MuiSelect-icon": {
-                              color: "#C9A726",
-                            },
+                            "& .MuiSelect-icon": { color: "#C9A726" },
                           }}
                         >
-                          <MenuItem value="">Not defined</MenuItem>
                           {vinylStates.map((state) => (
                             <MenuItem key={state.id} value={state.id}>
                               {state.name}
@@ -266,31 +258,33 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                       </FormControl>
 
                       <FormControl fullWidth size="small">
-                        <InputLabel sx={{ color: "#fffbf9" }}>
-                          Record State
+                        <InputLabel
+                          id="record-state-label"
+                          sx={{
+                            color: "#fffbf9",
+                            "&.Mui-focused": { color: "#C9A726" },
+                            "&.MuiInputLabel-shrink": { color: "#C9A726" },
+                          }}
+                        >
+                          Record state
                         </InputLabel>
                         <Select
+                          labelId="record-state-label"
+                          id="record-state-select"
                           value={albumStateData.state_record || ""}
+                          label="Record state"
                           onChange={(e) =>
                             onAlbumStateChange(
                               "state_record",
                               e.target.value || null
                             )
                           }
+                          variant="outlined"
                           sx={{
                             color: "#fffbf9",
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#666",
-                            },
-                            "&:hover .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#C9A726",
-                            },
-                            "& .MuiSelect-icon": {
-                              color: "#C9A726",
-                            },
+                            "& .MuiSelect-icon": { color: "#C9A726" },
                           }}
                         >
-                          <MenuItem value="">Not defined</MenuItem>
                           {vinylStates.map((state) => (
                             <MenuItem key={state.id} value={state.id}>
                               {state.name}
@@ -300,9 +294,8 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                       </FormControl>
                     </Box>
 
-                    {/* Acquisition Date - Middle row */}
                     <DatePicker
-                      label="Acquisition Month"
+                      label="Acquisition month"
                       value={
                         albumStateData.acquisition_month_year
                           ? parse(
@@ -320,26 +313,36 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                       slotProps={{
                         textField: {
                           fullWidth: true,
-                          margin: "normal",
+                          size: "small",
                           helperText: "Select acquisition month and year",
                           onClick: handleDatePickerOpen,
                           sx: {
+                            color: "#fffbf9",
                             "& .MuiOutlinedInput-root": {
                               color: "#fffbf9",
                               "& fieldset": {
-                                borderColor: "#666",
+                                borderColor: "#C9A726",
                               },
                               "&:hover fieldset": {
-                                borderColor: "#C9A726",
+                                borderColor: "#b38f1f",
                               },
                               "&.Mui-focused fieldset": {
                                 borderColor: "#C9A726",
+                              },
+                              "&.Mui-disabled": {
+                                color: "#999",
+                                "& fieldset": {
+                                  borderColor: "#666",
+                                },
                               },
                             },
                             "& .MuiInputLabel-root": {
                               color: "#fffbf9",
                               "&.Mui-focused": {
                                 color: "#C9A726",
+                              },
+                              "&.Mui-disabled": {
+                                color: "#666",
                               },
                             },
                             "& .MuiFormHelperText-root": {
@@ -387,7 +390,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
 
             {isLoading ? (
               <Box display="flex" justifyContent="center" py={4}>
-                <CircularProgress sx={{ color: "#C9A726" }} />
+                <VinylSpinner />
               </Box>
             ) : collections.length === 0 ? (
               <Typography
@@ -636,7 +639,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                     }}
                   >
                     {addToWishlistMutation.isPending ? (
-                      <CircularProgress size={24} sx={{ color: "#fff" }} />
+                      <VinylSpinner size={24} />
                     ) : (
                       "Add to wishlist"
                     )}
@@ -665,7 +668,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                     }}
                   >
                     {collectionsLoading ? (
-                      <CircularProgress size={24} sx={{ color: "#C9A726" }} />
+                      <VinylSpinner size={24} />
                     ) : (
                       "Add to collection"
                     )}

@@ -27,7 +27,6 @@ export const fetchAlbumMetadata = async (
 async function fetchWikipediaContent(url: string): Promise<string> {
   if (!url) return "";
   try {
-    // Extraire le titre de la page depuis l'URL
     const title = url.split("/").pop()?.replace(/_/g, " ") || "";
     const apiUrl = `https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(
       title
@@ -98,83 +97,3 @@ export const useArtistMetadata = (artistId?: string) => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
-
-export class MusicMetadataService {
-  private static instance: MusicMetadataService;
-  private apiUrl: string;
-
-  private constructor() {
-    this.apiUrl = import.meta.env.VITE_API_VK_URL;
-  }
-
-  public static getInstance(): MusicMetadataService {
-    if (!MusicMetadataService.instance) {
-      MusicMetadataService.instance = new MusicMetadataService();
-    }
-    return MusicMetadataService.instance;
-  }
-
-  async searchMusic(query: string): Promise<AlbumMetadata[]> {
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/request-proxy/search-music`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ query, is_artist: false }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Search failed for query: ${query}`);
-      }
-
-      const data = await response.json();
-      // Le backend retourne DiscogsData[], mais nous voulons AlbumMetadata[]
-      // Nous devons transformer les données
-      return data.map((item: any) => ({
-        id: item.id,
-        title: item.title || item.name || "",
-        artist: item.artist?.title || "",
-        year: undefined,
-        image_url: item.picture,
-        source: "discogs",
-        genres: [],
-        styles: [],
-        tracklist: [],
-      }));
-    } catch (error) {
-      console.error("Error searching music:", error);
-      throw error;
-    }
-  }
-
-  async getAlbumMetadata(id: string): Promise<AlbumMetadata> {
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/request-proxy/music-metadata/album/${id}`
-      );
-      if (!response.ok) {
-        throw new Error(`Album with ID ${id} not found`);
-      }
-
-      const data = await response.json();
-      return {
-        id: data.id.toString(),
-        title: data.title,
-        artist: data.artist,
-        year: data.year,
-        image_url: data.image_url,
-        source: "discogs",
-        genres: data.genres,
-        styles: data.styles,
-        tracklist: data.tracklist,
-      };
-    } catch (error) {
-      console.error("Error fetching album metadata:", error);
-      throw error;
-    }
-  }
-}

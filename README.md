@@ -59,7 +59,7 @@ JWT-based login, with refresh token handling via secure HTTPOnly cookies.
 Fully responsive UI, optimized for desktop and mobile, with Capacitor support for Progressive Web App deployment.
 
 🛠️ **Modern Architecture**  
-React + TypeScript frontend (Vite), FastAPI backend (Python), PostgreSQL database. Rust & Java backend alternatives for learning and experimentation.
+React + TypeScript frontend (Vite), FastAPI backend (Python), PostgreSQL database.
 
 ## Technologies
 

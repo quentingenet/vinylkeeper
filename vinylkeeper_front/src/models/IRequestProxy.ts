@@ -84,7 +84,6 @@ export interface ArtistMetadata {
   source: string;
 }
 
-// Types pour la compatibilité avec le code existant
 export interface IRequestToSend extends SearchQuery {}
 export interface IArtistRequestResults extends DiscogsData {}
 export interface IAlbumRequestResults extends DiscogsData {}

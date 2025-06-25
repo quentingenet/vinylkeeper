@@ -7,7 +7,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        // Empêche d’injecter @use dans le fichier variables.scss lui-même
+        // Prevent @use from being injected into the variables.scss file
         additionalData: (content, filename) =>
           filename.includes("variables.scss")
             ? content

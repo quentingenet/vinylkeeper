@@ -25,6 +25,7 @@ import { IRegisterForm } from "@models/IRegisterForm";
 import { getTimezone } from "@utils/GlobalUtils";
 import { registerValidationSchema } from "@utils/validators/registerValidationSchema";
 import styles from "../../styles/pages/Landpage.module.scss";
+import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface RegisterProps {
   setRegister: (value: boolean) => void;
@@ -77,13 +78,12 @@ const Register = ({
       const response = await userApiService.register(watch());
       userContext.setIsUserLoggedIn(response.isLoggedIn);
 
-      // Récupérer les données utilisateur via /me
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
 
       navigate("/dashboard");
     } catch (error) {
-      console.error("Erreur lors de l'inscription :", error);
+      console.error("Error during registration :", error);
       setOpenSnackBar(true);
     } finally {
       userContext.setIsLoading(false);
@@ -243,7 +243,7 @@ const Register = ({
 
           <Grid display="flex" alignItems={"center"} justifyContent="center">
             {userContext.isLoading ? (
-              <CircularProgress color="primary" sx={{ mb: 2 }} />
+              <VinylSpinner />
             ) : (
               <Button
                 type="submit"

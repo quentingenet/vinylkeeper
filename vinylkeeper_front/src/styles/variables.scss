@@ -35,15 +35,15 @@
 }
 
 /* Variables de couleurs */
-$primary-color: #1f1f1f; // Couleur principale (arrière-plan sombre)
-$secondary-color: #c9a726; // Couleur dorée pour les accents
-$text-color-light: #ffffff; // Texte clair
-$text-color-dark: #000000; // Texte sombre
-$hover-color: #3c3c3c; // Couleur de survol
-$shadow-color: rgba(0, 0, 0, 0.3); // Ombre
-$border-color: #333; // Couleur de la bordure
-$button-color: #c9a726; // Couleur du bouton
-$button-hover-color: #e0b936; // Couleur du bouton au survol
+$primary-color: #1f1f1f; // main color
+$secondary-color: #c9a726; // gold color
+$text-color-light: #ffffff; // light text
+$text-color-dark: #000000; // dark text
+$hover-color: #3c3c3c; // hover color
+$shadow-color: rgba(0, 0, 0, 0.3); // shadow color
+$border-color: #333; // border color
+$button-color: #c9a726; // button color
+$button-hover-color: #e0b936; // button hover color
 
 /* Mixin pour les transitions */
 @mixin transition($properties: all, $duration: 0.3s, $ease: ease-in-out) {

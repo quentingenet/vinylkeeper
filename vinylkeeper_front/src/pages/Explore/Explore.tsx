@@ -15,6 +15,7 @@ import {
 } from "@services/CollectionApiService";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import VinylSpinner from "@components/UI/VinylSpinner";
 import { useState, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useNavigate } from "react-router-dom";
@@ -77,7 +78,7 @@ export default function Explore() {
         alignItems="center"
         minHeight="200px"
       >
-        <Typography>Loading public collections...</Typography>
+        <VinylSpinner />
       </Box>
     );
   }

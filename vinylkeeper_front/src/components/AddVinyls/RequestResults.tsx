@@ -12,6 +12,17 @@ interface IRequestResultsProps {
 }
 
 export default function RequestResults({ results }: IRequestResultsProps) {
+  if (results.length === 0) {
+    return <></>;
+  }
+
+  const artistResult = results.find(
+    (result: IRequestResults) => result.type === "artist"
+  );
+  const albumResult = results.find(
+    (result: IRequestResults) => result.type === "album"
+  );
+
   return (
     <div
       className={styles.resultsContainer}
@@ -21,21 +32,10 @@ export default function RequestResults({ results }: IRequestResultsProps) {
         width: "100%",
       }}
     >
-      {results.length > 0 &&
-      results.find((result: IRequestResults) => result.type === "artist") ? (
-        <ResultArtist
-          data={
-            results.find((result: IRequestResults) => result.type === "artist")
-              ?.data as IArtistRequestResults[]
-          }
-        />
+      {artistResult ? (
+        <ResultArtist data={artistResult.data as IArtistRequestResults[]} />
       ) : (
-        <ResultAlbums
-          data={
-            results.find((result: IRequestResults) => result.type === "album")
-              ?.data as IAlbumRequestResults[]
-          }
-        />
+        <ResultAlbums data={albumResult?.data as IAlbumRequestResults[]} />
       )}
     </div>
   );

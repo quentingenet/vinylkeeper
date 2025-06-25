@@ -12,7 +12,6 @@ import AddToCollectionModal from "./AddToCollectionModal";
 import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { useState, useCallback, memo } from "react";
-import { truncateText } from "../../utils/GlobalUtils";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 
 interface IResultArtistProps {
@@ -37,6 +36,7 @@ const ArtistCard = memo(
         height: 350,
         borderRadius: "8px",
         cursor: "pointer",
+        position: "relative",
         "&:hover": {
           transform: "scale(1.02)",
           transition: "transform 0.2s ease-in-out",

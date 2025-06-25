@@ -11,7 +11,12 @@ export {
   ExternalReferenceService,
   externalReferenceApiService,
 } from "./ExternalReferenceService";
-export { MusicMetadataService } from "./MusicMetadataService";
+export {
+  useAlbumMetadata,
+  useArtistMetadata,
+  fetchAlbumMetadata,
+  fetchArtistMetadata,
+} from "./MusicMetadataService";
 export { SearchApiService, searchApiService } from "./SearchApiService";
 export { UserApiService, userApiService } from "./UserApiService";
 export { musicStreamingService } from "./MusicStreamingService";
