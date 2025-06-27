@@ -85,6 +85,10 @@ def register_exception_handlers(app):
         if "Refresh token not found" in str(exc.detail):
             should_log = False
             
+        # Don't log 401 "No access token provided" errors
+        if exc.status_code == 401 and "No access token provided" in str(exc.detail):
+            should_log = False
+            
         if should_log:
             tb = traceback.extract_tb(exc.__traceback__)
             file_info = _extract_file_info(tb)

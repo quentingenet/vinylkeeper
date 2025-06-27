@@ -89,6 +89,7 @@ class UserService:
             liked_collections_count = len(user.likes)
             loans_count = len(user.loans)
             wishlist_items_count = len(user.wishlist_items)
+            liked_places_count = len(user.place_likes)
             
             # Determine terms_accepted_at date
             terms_accepted_at = user.created_at if user.is_accepted_terms else None
@@ -111,6 +112,7 @@ class UserService:
                 "liked_collections_count": liked_collections_count,
                 "loans_count": loans_count,
                 "wishlist_items_count": wishlist_items_count,
+                "liked_places_count": liked_places_count,
                 "terms_accepted_at": terms_accepted_at
             }
         except Exception as e:
@@ -328,14 +330,18 @@ class UserService:
             liked_collections_count = len(user.likes)
             loans_count = len(user.loans)
             wishlist_items_count = len(user.wishlist_items)
+            liked_places_count = len(user.place_likes)
             
             return {
                 "username": user.username,
                 "user_uuid": user.user_uuid,
+                "role": user.role,
+                "is_superuser": user.is_superuser,
                 "collections_count": collections_count,
                 "liked_collections_count": liked_collections_count,
                 "loans_count": loans_count,
-                "wishlist_items_count": wishlist_items_count
+                "wishlist_items_count": wishlist_items_count,
+                "liked_places_count": liked_places_count
             }
         except Exception as e:
             raise ServerError(

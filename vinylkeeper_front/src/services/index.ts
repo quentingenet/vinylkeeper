@@ -20,6 +20,8 @@ export {
 export { SearchApiService, searchApiService } from "./SearchApiService";
 export { UserApiService, userApiService } from "./UserApiService";
 export { musicStreamingService } from "./MusicStreamingService";
+export { placeApiService } from "./PlaceApiService";
+export { adminApiService } from "./AdminApiService";
 
 // Base Service
 export { BaseApiService } from "./BaseApiService";
@@ -39,3 +41,16 @@ export type {
   CollectionUpdate,
   AlbumInCollection,
 } from "./CollectionApiService";
+
+export type {
+  Place,
+  CreatePlaceData,
+  GeocodingResult,
+} from "./PlaceApiService";
+
+export type {
+  ModerationRequest,
+  ModerationRequestList,
+  ModerationStats,
+  ModerationStatus,
+} from "./AdminApiService";

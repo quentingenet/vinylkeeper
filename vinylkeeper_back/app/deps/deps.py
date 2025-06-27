@@ -11,6 +11,8 @@ from app.repositories.external_reference_repository import ExternalReferenceRepo
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.dashboard_repository import DashboardRepository
+from app.repositories.place_repository import PlaceRepository
+from app.repositories.moderation_request_repository import ModerationRequestRepository
 
 # Services
 from app.services.user_service import UserService
@@ -19,6 +21,8 @@ from app.services.search_service import SearchService
 from app.services.external_reference_service import ExternalReferenceService
 from app.services.dashboard_service import DashboardService
 from app.services.wishlist_service import WishlistService
+from app.services.place_service import PlaceService
+from app.services.moderation_service import ModerationService
 
 # Database
 from app.db.session import get_db
@@ -67,6 +71,15 @@ def get_dashboard_repository(db: Session = Depends(get_db)) -> DashboardReposito
     return DashboardRepository(db)
 
 
+def get_place_repository(db: Session = Depends(get_db)) -> PlaceRepository:
+    return PlaceRepository(db)
+
+
+def get_moderation_request_repository(db: Session = Depends(get_db)) -> ModerationRequestRepository:
+    """Get moderation request repository instance."""
+    return ModerationRequestRepository(db)
+
+
 # Service Dependencies
 def get_collection_service(
     repository: CollectionRepository = Depends(get_collection_repository),
@@ -96,6 +109,12 @@ def get_wishlist_service(
     return WishlistService(wishlist_repo, external_ref_repo)
 
 
+def get_place_service(
+    place_repo: PlaceRepository = Depends(get_place_repository)
+) -> PlaceService:
+    return PlaceService(place_repo)
+
+
 def get_user_service(
     user_repo: UserRepository = Depends(get_user_repository),
     collection_service: CollectionService = Depends(get_collection_service)
@@ -108,3 +127,11 @@ def get_dashboard_service(
     collection_repository: CollectionRepository = Depends(get_collection_repository),
 ) -> DashboardService:
     return DashboardService(dashboard_repository, collection_repository)
+
+
+def get_moderation_service(
+    moderation_repo: ModerationRequestRepository = Depends(get_moderation_request_repository),
+    place_repo: PlaceRepository = Depends(get_place_repository)
+) -> ModerationService:
+    """Get moderation service instance."""
+    return ModerationService(moderation_repo, place_repo)

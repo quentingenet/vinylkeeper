@@ -5,6 +5,7 @@ from app.models.artist_model import Artist
 from app.models.user_model import User
 from app.models.collection_model import Collection
 from app.models.collection_album import CollectionAlbum
+from app.models.place_model import Place
 
 class DashboardRepository:
     def __init__(self, db: Session):
@@ -54,3 +55,11 @@ class DashboardRepository:
             .order_by(Artist.created_at.desc())
             .first()
         )
+
+    def count_places(self, is_moderated: bool = None, is_valid: bool = None):
+        query = self.db.query(func.count(Place.id))
+        if is_moderated is not None:
+            query = query.filter(Place.is_moderated == is_moderated)
+        if is_valid is not None:
+            query = query.filter(Place.is_valid == is_valid)
+        return query.scalar()

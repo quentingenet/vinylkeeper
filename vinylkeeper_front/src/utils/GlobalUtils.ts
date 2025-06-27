@@ -29,3 +29,10 @@ export const vinylStates = [
   { id: "fair", name: "Fair" },
   { id: "poor", name: "Poor" },
 ];
+
+export enum PlaceType {
+  BROCANTE = "brocante",
+  SHOP = "shop",
+  EXPOSITION = "exposition",
+  OTHER = "other",
+}

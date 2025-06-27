@@ -19,6 +19,7 @@ export interface IDashboardStats {
   user_artists_total: number;
   user_collections_total: number;
   global_places_total: number;
+  moderated_places_total: number;
   latest_album?: LatestAddition;
   latest_artist?: LatestAddition;
 }

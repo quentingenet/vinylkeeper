@@ -4,6 +4,14 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ModerationStatusResponse(BaseModel):
+    """Schema for moderation status response."""
+    id: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=50)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ModerationRequestBase(BaseModel):
     """Base schema for moderation request data."""
     place_id: int = Field(
@@ -61,7 +69,16 @@ class ModerationRequestResponse(ModerationRequestInDB):
         None,
         description="User data who submitted this request"
     )
-    status: Optional[dict] = Field(
+    status: Optional[ModerationStatusResponse] = Field(
         None,
         description="Status data of this request"
     )
+
+
+class ModerationRequestListResponse(BaseModel):
+    """Schema for list of moderation requests."""
+    items: list[ModerationRequestResponse]
+    total: int
+    pending_count: int
+    approved_count: int
+    rejected_count: int

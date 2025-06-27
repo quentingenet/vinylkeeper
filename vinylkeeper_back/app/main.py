@@ -4,7 +4,7 @@ import os
 from fastapi import FastAPI
 from app.core.security import configure_cors
 from app.core.handlers import register_exception_handlers
-from app.endpoints import users, collections, request_proxy, dashboard
+from app.endpoints import users, collections, request_proxy, dashboard, places, admin
 from app.endpoints import external_references
 from app.core.lifespan import lifespan
 
@@ -29,6 +29,8 @@ app.include_router(request_proxy.router, prefix="/api/request-proxy")
 app.include_router(external_references.router,
                    prefix="/api/external-references")
 app.include_router(dashboard.router, prefix="/api/dashboard")
+app.include_router(places.router, prefix="/api/places")
+app.include_router(admin.router, prefix="/api/vk-admin")
 
 @app.get("/")
 def root():

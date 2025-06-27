@@ -8,8 +8,10 @@ from app.core.logging import logger
 from app.mails.templates_mails.new_user import new_user_register_template
 from app.mails.templates_mails.reset_password import reset_password_template
 from app.mails.templates_mails.contact_message import contact_message_template
+from app.mails.templates_mails.new_place_suggestion import new_place_suggestion_template
 from app.core.config_env import Settings
 import asyncio
+import concurrent.futures
 
 settings = Settings()
 
@@ -17,6 +19,8 @@ class MailSubject(Enum):
     PasswordReset = "Password reset"
     NewUserRegistered = "New user registered"
     ContactMessage = "Contact message from VinylKeeper user"
+    NewPlaceSuggestion = "New place suggestion requires moderation"
+    NewPlaceSubmitted = "New place submitted for moderation"
 
 
 def smtp_client():
@@ -38,6 +42,7 @@ def get_template(subject: MailSubject, **kwargs) -> str:
         MailSubject.NewUserRegistered: new_user_register_template,
         MailSubject.PasswordReset: reset_password_template,
         MailSubject.ContactMessage: contact_message_template,
+        MailSubject.NewPlaceSuggestion: new_place_suggestion_template,
     }
     template_function = templates.get(subject)
     if template_function:
@@ -66,7 +71,16 @@ async def send_mail(to: str, subject: MailSubject, **kwargs):
 def send_mail_sync(to: str, subject: MailSubject, **kwargs):
     """Synchronous version of send_mail for use in non-async contexts"""
     try:
-        return asyncio.run(send_mail(to, subject, **kwargs))
+        # Check if we're already in an event loop
+        try:
+            loop = asyncio.get_running_loop()
+            # If we're in a loop, create a task
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, send_mail(to, subject, **kwargs))
+                return future.result()
+        except RuntimeError:
+            # No event loop running, we can use asyncio.run
+            return asyncio.run(send_mail(to, subject, **kwargs))
     except Exception as e:
         logger.error(f"Error in send_mail_sync: {e}")
         return False

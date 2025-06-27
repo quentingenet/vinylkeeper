@@ -24,6 +24,7 @@ import {
   SwapHoriz as SwapHorizIcon,
   Settings as SettingsIcon,
   ContactMail as ContactMailIcon,
+  AdminPanelSettings,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
@@ -45,13 +46,17 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
   setTitlePage,
   titlePage,
 }) => {
-  const { logout } = useUserContext();
+  const { logout, currentUser } = useUserContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const colorYellow = "#C9A726";
   const sizeIcons = "large";
+
+  // Check if user has admin permissions
+  const isAdmin =
+    currentUser?.role?.name === "admin" && currentUser?.is_superuser === true;
 
   const menuItems = [
     {
@@ -79,12 +84,21 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       icon: <SwapHorizIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.PLACES,
     },
-
     {
       text: "Settings",
       icon: <SettingsIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SETTINGS,
     },
+    // Only show Admin if user is admin AND superuser
+    ...(isAdmin
+      ? [
+          {
+            text: "Admin",
+            icon: <AdminPanelSettings fontSize={sizeIcons} />,
+            linkTo: EGlobalUrls.ADMIN,
+          },
+        ]
+      : []),
     {
       text: "Logout",
       icon: <PowerSettingsNewIcon fontSize={sizeIcons} />,

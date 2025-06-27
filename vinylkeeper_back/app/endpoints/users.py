@@ -31,6 +31,8 @@ from app.core.exceptions import (
     PasswordUpdateError,
     AppException
 )
+from app.core.enums import RoleEnum
+from app.core.config_env import settings
 
 router = APIRouter()
 
@@ -75,10 +77,15 @@ def register(
         set_token_cookie(response, access_token, TokenType.ACCESS)
         set_token_cookie(response, refresh_token, TokenType.REFRESH)
         logger.warning(f"New user registered: {user.username} - {user.email}")
-        try:
-            user_service.send_new_user_registered_email(user)
-        except Exception as e:
-            logger.error(f"Failed to send registered email to ADMIN for user {user.username}: {e}")
+        
+        # Send email to ADMIN if in development mode or user is superuser
+        if settings.APP_ENV == "development" or (user.role.name == RoleEnum.ADMIN.value and user.is_superuser):
+            pass
+        else:
+            try:
+                user_service.send_new_user_registered_email(user)
+            except Exception as e:
+                logger.error(f"Failed to send registered email to ADMIN for user {user.username}: {e}")
         return {"message": "User registered successfully", "isLoggedIn": True}
     except (DuplicateEmailError, DuplicateUsernameError) as e:
         raise

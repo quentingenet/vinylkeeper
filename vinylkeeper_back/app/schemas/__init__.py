@@ -19,6 +19,7 @@ from .like_schema import *
 from .loan_schema import *
 from .moderation_request_schema import *
 from .place_schema import *
+from .place_like_schema import *
 from .role_schema import *
 from .request_proxy.request_proxy_schema import *
 
@@ -47,14 +48,16 @@ __all__ = [
     "DashboardStats", "ChartDataset", "ChartData",
     # Like schemas
     "LikeCreate", "LikeResponse", "LikeStatusResponse",
+    # Place Like schemas
+    "PlaceLikeCreate", "PlaceLikeResponse", "PlaceLikeStatusResponse",
     # Loan schemas
-    "LoanCreate", "LoanUpdate", "LoanInDB", "LoanResponse", "LoanDetailResponse",
+    "LoanCreate", "LoanUpdate", "LoanInDB", "LoanResponse",
     # Moderation Request schemas
-    "ModerationRequestCreate", "ModerationRequestUpdate", "ModerationRequestInDB", "ModerationRequestResponse",
+    "ModerationRequestBase", "ModerationRequestCreate", "ModerationRequestUpdate", "ModerationRequestInDB", "ModerationRequestResponse",
     # Place schemas
-    "PlaceBase", "PlaceCreate", "PlaceUpdate", "PlaceInDB", "PlaceResponse", "PlaceDetailResponse",
+    "PlaceBase", "PlaceCreate", "PlaceUpdate", "PlaceInDB", "PlaceResponse",
     # Role schemas
-    "RoleResponse", "RoleListResponse",
+    "RoleBase", "RoleCreate", "RoleUpdate", "RoleInDB", "RoleResponse",
     # Request Proxy schemas
     "RequestProxyBase", "RequestProxyCreate", "RequestProxyUpdate", "RequestProxyInDB", "RequestProxyResponse",
     "PaginatedRequestProxyResponse", "DiscogsData", "Artist", "Album", "Track", "MusicBrainzData",

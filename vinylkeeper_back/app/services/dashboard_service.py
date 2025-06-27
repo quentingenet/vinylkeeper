@@ -45,6 +45,9 @@ class DashboardService:
             # Total global places (hardcoded for now)
             global_places_total = 12
 
+            # Nombre de places modérées
+            moderated_places_total = self.dashboard_repository.count_places(is_moderated=True, is_valid=True)
+
             # Get latest additions
             latest_album = None
             latest_artist = None
@@ -85,6 +88,7 @@ class DashboardService:
                 user_artists_total=user_artists_total,
                 user_collections_total=user_collections_total,
                 global_places_total=global_places_total,
+                moderated_places_total=moderated_places_total,
                 latest_album=latest_album,
                 latest_artist=latest_artist
             )

@@ -55,7 +55,7 @@ class MusicStreamingService {
       return `${platform.mobileUrl}:${searchQuery}`;
     }
 
-    // Format spécifique selon la plateforme
+    // Specific format according to platform
     if (platform.name === "Spotify" || platform.name === "Deezer") {
       return `${platform.webUrl}/${searchQuery}`;
     } else {

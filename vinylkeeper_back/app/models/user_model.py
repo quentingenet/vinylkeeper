@@ -119,7 +119,14 @@ class User(Base):
         lazy="selectin",
         cascade="all, delete-orphan"
     )
-
+    
+    place_likes = relationship(
+        "PlaceLike",
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan"
+    )
+    
     submitted_places = relationship(
         "Place",
         back_populates="submitted_by",

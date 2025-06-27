@@ -9,6 +9,7 @@ from .place_model import Place
 from .like_model import Like
 from .moderation_request_model import ModerationRequest
 from .association_tables import collection_artist
+from .place_like_model import PlaceLike
 
 from .reference_data.external_sources import ExternalSource
 from .reference_data.entity_types import EntityType
@@ -37,4 +38,5 @@ __all__ = [
     "ModerationStatus",
     "Mood",
     "PlaceType",
+    "PlaceLike",
 ]

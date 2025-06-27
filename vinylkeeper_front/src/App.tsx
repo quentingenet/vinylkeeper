@@ -12,6 +12,7 @@ import Explore from "@pages/Explore/Explore";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import CollectionDetails from "@pages/Collections/CollectionDetails";
 import Places from "@pages/Places/Places";
+import Admin from "@pages/Admin/Admin";
 
 function App() {
   const userContext = useUserContext();
@@ -85,6 +86,14 @@ function App() {
               element={
                 <Protected>
                   <Settings />
+                </Protected>
+              }
+            />
+            <Route
+              path={EGlobalUrls.ADMIN}
+              element={
+                <Protected>
+                  <Admin />
                 </Protected>
               }
             />

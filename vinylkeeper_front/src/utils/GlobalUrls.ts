@@ -23,6 +23,7 @@ export enum EGlobalUrls {
   WISHLIST = "/wishlist",
   PLACES = "/places",
   SETTINGS = "/settings",
+  ADMIN = "/admin",
   RESET_PASSWORD = "/reset-password",
   NO_MATCH = "*",
 }

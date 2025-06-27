@@ -23,6 +23,7 @@ import {
   Favorite as FavoriteIcon,
   Settings as SettingsIcon,
   Place as PlaceIcon,
+  AdminPanelSettings,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
@@ -58,7 +59,7 @@ const NavBar: React.FC<NavBarProps> = ({
   setTitlePage,
   titlePage,
 }) => {
-  const { logout } = useUserContext();
+  const { logout, currentUser } = useUserContext();
   const navigate = useNavigate();
 
   const handleItemClick = (title: string, linkTo: EGlobalUrls) => {
@@ -68,6 +69,10 @@ const NavBar: React.FC<NavBarProps> = ({
 
   const colorYellow = "#C9A726";
   const sizeIcons = "large";
+
+  // Check if user has admin permissions
+  const isAdmin =
+    currentUser?.role?.name === "admin" && currentUser?.is_superuser === true;
 
   const menuItems = [
     {
@@ -101,6 +106,16 @@ const NavBar: React.FC<NavBarProps> = ({
       icon: <SettingsIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SETTINGS,
     },
+    // Only show Admin if user is admin AND superuser
+    ...(isAdmin
+      ? [
+          {
+            text: "Admin",
+            icon: <AdminPanelSettings fontSize={sizeIcons} />,
+            linkTo: EGlobalUrls.ADMIN,
+          },
+        ]
+      : []),
   ];
 
   return (

@@ -28,7 +28,7 @@ const MobileThemeAppVinylKeeper = createTheme({
     },
     h2: {
       color: "#fffbf9",
-      fontSize: "1.5rem", // Ajustement de taille pour mobile
+      fontSize: "1.5rem", // Size adjustment for mobile
       fontWeight: 500,
       textShadow: "0 0 8px #2e3440",
     },

@@ -28,7 +28,7 @@ async function fetchWikipediaContent(url: string): Promise<string> {
   if (!url) return "";
   try {
     const title = url.split("/").pop()?.replace(/_/g, " ") || "";
-    const apiUrl = `https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(
+    const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(
       title
     )}&origin=*`;
 

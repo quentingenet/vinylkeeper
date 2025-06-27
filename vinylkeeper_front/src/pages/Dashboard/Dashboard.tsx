@@ -211,7 +211,7 @@ export default function Dashboard() {
         )}
         {renderStatCard(
           "Community places",
-          data?.global_places_total ?? 0,
+          data?.moderated_places_total ?? 0,
           900
         )}
 

@@ -21,5 +21,6 @@ class DashboardStatsResponse(BaseModel):
     user_artists_total: int = Field(..., description="Total artists in user's collections")
     user_collections_total: int = Field(..., description="Total collections of the user")
     global_places_total: int = Field(..., description="Total places (all users, hardcoded for now)")
+    moderated_places_total: int = Field(..., description="Total moderated places (is_moderated=True)")
     latest_album: Optional[LatestAddition] = Field(None, description="Latest album added to any collection")
     latest_artist: Optional[LatestAddition] = Field(None, description="Latest artist added to any collection")

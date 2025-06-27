@@ -34,7 +34,7 @@
     src: url("/fonts/static/Oswald-Regular.ttf");
 }
 
-/* Variables de couleurs */
+/* Color variables */
 $primary-color: #1f1f1f; // main color
 $secondary-color: #c9a726; // gold color
 $text-color-light: #ffffff; // light text
@@ -45,7 +45,7 @@ $border-color: #333; // border color
 $button-color: #c9a726; // button color
 $button-hover-color: #e0b936; // button hover color
 
-/* Mixin pour les transitions */
+/* Transition mixin */
 @mixin transition($properties: all, $duration: 0.3s, $ease: ease-in-out) {
     transition: $properties $duration $ease;
 }

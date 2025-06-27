@@ -29,31 +29,29 @@ class Place(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
-    place_type_id = Column(Integer, ForeignKey(
-        "place_types.id"), nullable=False)
-    place_type = relationship(
-        "PlaceType", back_populates="places", lazy="selectin")
+    description = Column(String(600), nullable=True)
+    source_url = Column(String(255), nullable=True)
+    is_valid = Column(Boolean, default=True, nullable=False)
 
-    submitted_by_id = Column(Integer, ForeignKey(
-        "users.id", ondelete="CASCADE"), nullable=True, index=True)
+    place_type_id = Column(Integer, ForeignKey("place_types.id"), nullable=False)
+    place_type = relationship("PlaceType", back_populates="places", lazy="selectin")
+
+    submitted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    submitted_by = relationship("User", back_populates="submitted_places", lazy="selectin")
+
     is_moderated = Column(Boolean, default=False, nullable=False)
 
-    created_at = Column(DateTime(timezone=True),
-                        server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(
-    ), onupdate=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    submitted_by = relationship(
-        "User", back_populates="submitted_places", lazy="selectin")
-    moderation_requests = relationship(
-        "ModerationRequest", back_populates="place", lazy="selectin", cascade="all, delete-orphan")
+    moderation_requests = relationship("ModerationRequest", back_populates="place", lazy="selectin", cascade="all, delete-orphan")
+
+    likes = relationship("PlaceLike", back_populates="place", cascade="all, delete-orphan", lazy="selectin")
 
     __table_args__ = (
         CheckConstraint("length(name) >= 1", name="check_place_name_length"),
-        CheckConstraint("latitude >= -90 AND latitude <= 90",
-                        name="check_latitude_range"),
-        CheckConstraint("longitude >= -180 AND longitude <= 180",
-                        name="check_longitude_range"),
+        CheckConstraint("latitude >= -90 AND latitude <= 90", name="check_latitude_range"),
+        CheckConstraint("longitude >= -180 AND longitude <= 180", name="check_longitude_range"),
     )
 
     @validates('name')

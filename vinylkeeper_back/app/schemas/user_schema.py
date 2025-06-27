@@ -187,6 +187,11 @@ class UserResponse(UserInDB):
         description="When the user accepted the terms (same as created_at if terms were accepted at registration)"
     )
 
+    liked_places_count: int = Field(
+        default=0,
+        description="Number of places liked by the user"
+    )
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -208,6 +213,11 @@ class UserDetailResponse(UserResponse):
         default_factory=list,
         description="List of items in user's wishlist"
     )
+    liked_places: List[dict] = Field(
+    default_factory=list,
+    description="List of places liked by the user"
+    )
+
 
 
 class UserAuthSchema(BaseModel):
@@ -301,6 +311,12 @@ class UserMeResponse(BaseModel):
     user_uuid: UUID = Field(
         description="User's UUID"
     )
+    role: RoleResponse = Field(
+        description="User's role information"
+    )
+    is_superuser: bool = Field(
+        description="Whether the user is a superuser"
+    )
     collections_count: int = Field(
         default=0,
         description="Number of collections owned by the user"
@@ -316,6 +332,10 @@ class UserMeResponse(BaseModel):
     wishlist_items_count: int = Field(
         default=0,
         description="Number of items in user's wishlist"
+    )
+    liked_places_count: int = Field(
+        default=0,
+        description="Number of places liked by the user"
     )
 
     model_config = ConfigDict(from_attributes=True)
