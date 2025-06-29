@@ -4,7 +4,7 @@ import useDetectMobile from "../../hooks/useDetectMobile";
 import Login from "@components/Login/Login";
 import Register from "@components/Register/Register";
 import Footer from "@components/Footer/Footer";
-import { Button, Typography } from "@mui/material";
+import { Button, Typography, Snackbar, Alert } from "@mui/material";
 import Background from "@components/Landpage/Background";
 
 export default function Landpage() {
@@ -15,7 +15,10 @@ export default function Landpage() {
   const [open, setOpen] = useState<boolean>(false);
   const [openForgotPassword, setOpenForgotPassword] = useState<boolean>(false);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
-  const [openSnackBar, setOpenSnackBar] = useState<boolean>(false);
+  const [errorSnackbar, setErrorSnackbar] = useState({
+    open: false,
+    message: "",
+  });
 
   const handleLoginOpen = useCallback(() => {
     setLogin(true);
@@ -26,6 +29,13 @@ export default function Landpage() {
     setRegister(true);
     setOpen(true);
   }, []);
+
+  const handleErrorSnackbarClose = () => {
+    setErrorSnackbar({
+      open: false,
+      message: "",
+    });
+  };
 
   return (
     <>
@@ -75,7 +85,7 @@ export default function Landpage() {
                   setOpen={setOpen}
                   setOpenTermsModal={setOpenTermsModal}
                   openTermsModal={openTermsModal}
-                  setOpenSnackBar={setOpenSnackBar}
+                  setErrorSnackbar={setErrorSnackbar}
                 />
               )}
             </div>
@@ -87,6 +97,22 @@ export default function Landpage() {
         setOpenTermsModal={setOpenTermsModal}
         openTermsModal={openTermsModal}
       />
+
+      <Snackbar
+        open={errorSnackbar.open}
+        autoHideDuration={6000}
+        onClose={handleErrorSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{ zIndex: 9999 }}
+      >
+        <Alert
+          onClose={handleErrorSnackbarClose}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          {errorSnackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

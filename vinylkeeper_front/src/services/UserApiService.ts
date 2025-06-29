@@ -95,8 +95,8 @@ export class UserApiService extends BaseApiService {
         timezone: data.timezone,
       });
     } catch (error) {
-      console.error("Registration failed:", error);
-      throw new Error("Failed to register. Please try again.");
+      // Propagate the original error message from the backend
+      throw error;
     }
   }
 
