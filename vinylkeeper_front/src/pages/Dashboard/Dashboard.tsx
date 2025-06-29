@@ -29,6 +29,9 @@ import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { truncateText } from "@utils/GlobalUtils";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import TutorialModal from "@components/Modals/TutorialModal";
+import { useUserContext } from "@contexts/UserContext";
+import { useState, useEffect } from "react";
 
 ChartJS.register(
   LineElement,
@@ -115,12 +118,28 @@ const LatestAdditionCard = ({
 
 export default function Dashboard() {
   const { isMobile } = useDetectMobile();
+  const { currentUser } = useUserContext();
+  const [showTutorial, setShowTutorial] = useState(false);
+
   const { data, isLoading, isError } = useQuery<IDashboardStats>({
     queryKey: ["dashboard-stats"],
     queryFn: () => dashboardApiService.getStats(),
     refetchOnMount: true,
     staleTime: 0, // Always consider data stale to refetch on mount
   });
+
+  // Show tutorial for new users who haven't seen it yet
+  useEffect(() => {
+    if (currentUser && !currentUser.is_tutorial_seen) {
+      // Check if user has already seen the tutorial in this session
+      const hasSeenTutorial = localStorage.getItem(
+        `tutorial_seen_${currentUser.user_uuid}`
+      );
+      if (!hasSeenTutorial) {
+        setShowTutorial(true);
+      }
+    }
+  }, [currentUser]);
 
   if (isLoading) {
     return (
@@ -259,6 +278,20 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <TutorialModal
+        open={showTutorial}
+        onClose={() => {
+          setShowTutorial(false);
+          // Mark tutorial as seen for this user in localStorage
+          if (currentUser) {
+            localStorage.setItem(
+              `tutorial_seen_${currentUser.user_uuid}`,
+              "true"
+            );
+          }
+        }}
+      />
     </Box>
   );
 }

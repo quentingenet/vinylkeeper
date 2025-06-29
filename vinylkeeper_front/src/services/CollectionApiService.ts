@@ -123,6 +123,13 @@ export interface PaginatedArtistsResponse {
   total_pages: number;
 }
 
+export interface CollectionSearchResponse {
+  albums: CollectionAlbumResponse[];
+  artists: CollectionArtistResponse[];
+  search_term: string;
+  search_type: string;
+}
+
 export interface PaginatedCollectionResponse {
   items: CollectionResponse[];
   total: number;
@@ -253,11 +260,19 @@ export class CollectionApiService extends BaseApiService {
     limit: number = 12
   ): Promise<PaginatedArtistsResponse> {
     return this.get<PaginatedArtistsResponse>(
-      this.buildPaginatedEndpoint(
-        `/collections/${collectionId}/artists`,
-        page,
-        limit
-      )
+      `/collections/${collectionId}/artists?page=${page}&limit=${limit}`
+    );
+  }
+
+  async searchCollectionItems(
+    collectionId: number,
+    query: string,
+    searchType: "album" | "artist" | "both" = "both"
+  ): Promise<CollectionSearchResponse> {
+    return this.get<CollectionSearchResponse>(
+      `/collections/${collectionId}/search?q=${encodeURIComponent(
+        query
+      )}&search_type=${searchType}`
     );
   }
 
@@ -334,6 +349,16 @@ export const collectionApiService = {
       collectionId,
       page,
       limit
+    ),
+  searchCollectionItems: (
+    collectionId: number,
+    query: string,
+    searchType: "album" | "artist" | "both" = "both"
+  ) =>
+    collectionApiServiceInstance.searchCollectionItems(
+      collectionId,
+      query,
+      searchType
     ),
   updateAlbumMetadata: (
     collectionId: number,

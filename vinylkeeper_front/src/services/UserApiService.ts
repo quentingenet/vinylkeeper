@@ -12,6 +12,7 @@ export interface UserMini {
 export interface UserResponse {
   username: string;
   user_uuid: string;
+  is_tutorial_seen: boolean;
   collections_count: number;
   liked_collections_count: number;
   loans_count: number;
@@ -95,8 +96,8 @@ export class UserApiService extends BaseApiService {
         timezone: data.timezone,
       });
     } catch (error) {
-      console.error("Registration failed:", error);
-      throw new Error("Failed to register. Please try again.");
+      // Propagate the original error message from the backend
+      throw error;
     }
   }
 

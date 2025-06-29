@@ -768,40 +768,27 @@ class CollectionService:
     def get_collection_artists_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedArtistsResponse:
         """Get paginated artists for a collection"""
         try:
-            # Validate pagination parameters
             self._validate_pagination_params(page, limit)
             
-            # Get collection and check access
+            # Get collection and verify access
             collection = self.repository.get_by_id(collection_id)
             if not collection.is_public and collection.owner_id != user_id:
                 raise ForbiddenError(
                     error_code=4030,
-                    message="You don't have permission to access this collection"
+                    message="You don't have permission to view this collection"
                 )
             
             # Get paginated artists
             artists, total = self.repository.get_collection_artists_paginated(collection_id, page, limit)
             
-            # Map artists to response format and sort by date (newest first)
-            artist_responses = []
+            # Convert to response format
+            items = []
             for artist in artists:
-                artist_data = {
-                    "id": artist.id,
-                    "external_artist_id": artist.external_artist_id,
-                    "external_source_id": artist.external_source_id,
-                    "title": artist.title,
-                    "image_url": artist.image_url,
-                    "created_at": artist.created_at,
-                    "updated_at": artist.updated_at,
-                    "collections_count": 0
-                }
-                artist_responses.append(artist_data)
-            
-            # Sort by created_at (newest first)
-            artist_responses.sort(key=lambda x: x["created_at"], reverse=True)
+                response = CollectionArtistResponse.model_validate(artist)
+                items.append(response)
             
             return PaginatedArtistsResponse(
-                items=artist_responses,
+                items=items,
                 total=total,
                 page=page,
                 limit=limit,
@@ -810,8 +797,89 @@ class CollectionService:
         except (ResourceNotFoundError, ForbiddenError):
             raise
         except Exception as e:
+            logger.error(f"Error getting collection artists paginated: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection artists",
+                details={"error": str(e)}
+            )
+
+    def search_collection_items(self, collection_id: int, user_id: int, query: str, search_type: str = "both") -> dict:
+        """Search albums and/or artists in a collection"""
+        try:
+            # Get collection and verify access with all relations loaded
+            collection = self.repository.get_by_id(collection_id, load_relations=True)
+            if not collection.is_public and collection.owner_id != user_id:
+                raise ForbiddenError(
+                    error_code=4030,
+                    message="You don't have permission to view this collection"
+                )
+            
+            results = {
+                "albums": [],
+                "artists": [],
+                "search_term": query,
+                "search_type": search_type
+            }
+            
+            # Search albums if requested
+            if search_type in ["album", "both"]:
+                albums = self.repository.search_collection_albums(collection_id, query)
+                # Convert albums to the correct format with collection metadata
+                album_responses = []
+                for album in albums:
+                    # Find the collection album association to get metadata
+                    collection_album = next(
+                        (ca for ca in collection.collection_albums if ca.album_id == album.id),
+                        None
+                    )
+                    
+                    album_data = {
+                        "id": album.id,
+                        "external_album_id": album.external_album_id,
+                        "external_source_id": album.external_source_id,
+                        "title": album.title,
+                        "image_url": album.image_url,
+                        "state_record": collection_album.state_record_ref.name if collection_album and collection_album.state_record_ref else None,
+                        "state_cover": collection_album.state_cover_ref.name if collection_album and collection_album.state_cover_ref else None,
+                        "acquisition_month_year": collection_album.acquisition_month_year if collection_album else None,
+                        "created_at": album.created_at,
+                        "updated_at": album.updated_at,
+                        "collections_count": 0,
+                        "loans_count": 0,
+                        "wishlist_count": 0
+                    }
+                    album_responses.append(album_data)
+                
+                results["albums"] = album_responses
+            
+            # Search artists if requested
+            if search_type in ["artist", "both"]:
+                artists = self.repository.search_collection_artists(collection_id, query)
+                # Convert artists to the correct format
+                artist_responses = []
+                for artist in artists:
+                    artist_data = {
+                        "id": artist.id,
+                        "external_artist_id": artist.external_artist_id,
+                        "external_source_id": artist.external_source_id,
+                        "title": artist.title,
+                        "image_url": artist.image_url,
+                        "created_at": artist.created_at,
+                        "updated_at": artist.updated_at,
+                        "collections_count": 0
+                    }
+                    artist_responses.append(artist_data)
+                
+                results["artists"] = artist_responses
+            
+            return results
+        except (ResourceNotFoundError, ForbiddenError):
+            raise
+        except Exception as e:
+            logger.error(f"Error searching collection items: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to search collection items",
                 details={"error": str(e)}
             )

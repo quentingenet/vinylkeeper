@@ -179,7 +179,7 @@ export default function PlaybackModal({
         return;
     }
 
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.location.href = url;
   };
 
   const handleUpdateAlbumStates = async () => {

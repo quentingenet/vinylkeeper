@@ -77,51 +77,6 @@ class UserService:
                 details={"error": str(e)}
             )
 
-    def get_user_with_counts(self, user_id: int) -> dict:
-        """Get a user by ID with calculated counts and dates"""
-        try:
-            user = self.repository.get_user_by_id(user_id)
-            if not user:
-                raise ResourceNotFoundError("User", user_id)
-            
-            # Calculate counts
-            collections_count = len(user.collections)
-            liked_collections_count = len(user.likes)
-            loans_count = len(user.loans)
-            wishlist_items_count = len(user.wishlist_items)
-            liked_places_count = len(user.place_likes)
-            
-            # Determine terms_accepted_at date
-            terms_accepted_at = user.created_at if user.is_accepted_terms else None
-            
-            return {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "user_uuid": user.user_uuid,
-                "role": user.role,
-                "is_accepted_terms": user.is_accepted_terms,
-                "is_active": user.is_active,
-                "is_superuser": user.is_superuser,
-                "last_login": user.last_login,
-                "created_at": user.created_at,
-                "timezone": user.timezone,
-                "number_of_connections": user.number_of_connections,
-                "role_id": user.role_id,
-                "collections_count": collections_count,
-                "liked_collections_count": liked_collections_count,
-                "loans_count": loans_count,
-                "wishlist_items_count": wishlist_items_count,
-                "liked_places_count": liked_places_count,
-                "terms_accepted_at": terms_accepted_at
-            }
-        except Exception as e:
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get user with counts",
-                details={"error": str(e)}
-            )
-
     def get_user_by_uuid(self, user_uuid: str) -> User:
         """Get a user by UUID"""
         try:
@@ -332,11 +287,15 @@ class UserService:
             wishlist_items_count = len(user.wishlist_items)
             liked_places_count = len(user.place_likes)
             
+            # Determine if tutorial has been seen based on number of connections
+            is_tutorial_seen = user.number_of_connections > 1
+            
             return {
                 "username": user.username,
                 "user_uuid": user.user_uuid,
                 "role": user.role,
                 "is_superuser": user.is_superuser,
+                "is_tutorial_seen": is_tutorial_seen,
                 "collections_count": collections_count,
                 "liked_collections_count": liked_collections_count,
                 "loans_count": loans_count,

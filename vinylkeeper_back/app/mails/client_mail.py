@@ -20,7 +20,6 @@ class MailSubject(Enum):
     NewUserRegistered = "New user registered"
     ContactMessage = "Contact message from VinylKeeper user"
     NewPlaceSuggestion = "New place suggestion requires moderation"
-    NewPlaceSubmitted = "New place submitted for moderation"
 
 
 def smtp_client():

@@ -45,7 +45,7 @@ class DashboardService:
             # Total global places (hardcoded for now)
             global_places_total = 12
 
-            # Nombre de places modérées
+            # Number of moderated places
             moderated_places_total = self.dashboard_repository.count_places(is_moderated=True, is_valid=True)
 
             # Get latest additions

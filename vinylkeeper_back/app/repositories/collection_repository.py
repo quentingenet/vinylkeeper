@@ -49,6 +49,8 @@ class CollectionRepository:
                 query = query.options(
                     joinedload(Collection.owner),
                     joinedload(Collection.collection_albums).joinedload(CollectionAlbum.album),
+                    joinedload(Collection.collection_albums).joinedload(CollectionAlbum.state_record_ref),
+                    joinedload(Collection.collection_albums).joinedload(CollectionAlbum.state_cover_ref),
                     joinedload(Collection.artists),
                     joinedload(Collection.mood),
                     joinedload(Collection.likes)
@@ -287,9 +289,49 @@ class CollectionRepository:
             
             return artists, total
         except Exception as e:
-            logger.error(f"Error retrieving paginated artists for collection {collection_id}: {str(e)}")
+            logger.error(f"Error getting collection artists paginated: {str(e)}")
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to retrieve collection artists",
+                message="Failed to get collection artists",
+                details={"error": str(e)}
+            )
+
+    def search_collection_albums(self, collection_id: int, query: str) -> List[Album]:
+        """Search albums in a collection by title."""
+        try:
+            return self.db.query(Album).join(
+                CollectionAlbum
+            ).filter(
+                CollectionAlbum.collection_id == collection_id,
+                or_(
+                    Album.title.ilike(f"%{query}%"),
+                    Album.external_album_id.ilike(f"%{query}%")
+                )
+            ).all()
+        except Exception as e:
+            logger.error(f"Error searching collection albums: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to search collection albums",
+                details={"error": str(e)}
+            )
+
+    def search_collection_artists(self, collection_id: int, query: str) -> List[Artist]:
+        """Search artists in a collection by title."""
+        try:
+            return self.db.query(Artist).join(
+                Collection.artists
+            ).filter(
+                Collection.id == collection_id,
+                or_(
+                    Artist.title.ilike(f"%{query}%"),
+                    Artist.external_artist_id.ilike(f"%{query}%")
+                )
+            ).all()
+        except Exception as e:
+            logger.error(f"Error searching collection artists: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to search collection artists",
                 details={"error": str(e)}
             )

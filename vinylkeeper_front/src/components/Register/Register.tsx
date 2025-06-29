@@ -12,6 +12,7 @@ import {
   IconButton,
   InputAdornment,
   Modal,
+  Snackbar,
 } from "@mui/material";
 import { useState } from "react";
 import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
@@ -34,7 +35,7 @@ interface RegisterProps {
   open: boolean;
   setOpenTermsModal: (value: boolean) => void;
   openTermsModal: boolean;
-  setOpenSnackBar: (value: boolean) => void;
+  setErrorSnackbar: (snackbar: { open: boolean; message: string }) => void;
 }
 
 const Register = ({
@@ -43,7 +44,7 @@ const Register = ({
   setOpen,
   open,
   setOpenTermsModal,
-  setOpenSnackBar,
+  setErrorSnackbar,
 }: RegisterProps) => {
   const userContext = useUserContext();
   const navigate = useNavigate();
@@ -82,181 +83,194 @@ const Register = ({
       userContext.setCurrentUser(userData);
 
       navigate("/dashboard");
-    } catch (error) {
-      console.error("Error during registration :", error);
-      setOpenSnackBar(true);
+    } catch (error: any) {
+      // Extract error message from backend response
+      let errorMessage =
+        "An error occurred during registration. Please try again.";
+
+      if (error.message) {
+        // Backend error object with message property
+        errorMessage = error.message;
+      }
+
+      setErrorSnackbar({
+        open: true,
+        message: errorMessage,
+      });
     } finally {
       userContext.setIsLoading(false);
     }
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      sx={{
-        display: "flex",
-        alignItems: isMobile ? "flex-start" : "center",
-        justifyContent: "center",
-        margin: "auto",
-        border: "none",
-        height: isMobile ? "100dvh" : "100vh",
-      }}
-    >
-      <Grid
-        container
-        spacing={2}
-        justifyContent="center"
+    <>
+      <Modal
+        open={open}
+        onClose={handleClose}
         sx={{
-          bgcolor: "#fffbf9",
-          borderRadius: "5px",
-          width: isMobile ? "90dvw" : "24vw",
-          minWidth: isMobile ? "280px" : 350,
-          maxWidth: isMobile ? "400px" : 460,
-          maxHeight: isMobile ? "80dvh" : "90vh",
-          overflowY: "auto",
-          boxShadow: 6,
-          mt: isMobile ? "5dvh" : 0,
-          mb: isMobile ? "5dvh" : 0,
-          p: isMobile ? 2 : 4,
-          opacity: isMobile ? 0.9 : 0.7,
+          display: "flex",
+          alignItems: isMobile ? "flex-start" : "center",
+          justifyContent: "center",
+          margin: "auto",
+          border: "none",
+          height: isMobile ? "100dvh" : "100vh",
         }}
       >
-        <form
-          onSubmit={handleSubmit(submitRegister)}
-          className={styles.globalForm}
-          style={{ width: "100%" }}
+        <Grid
+          container
+          spacing={2}
+          justifyContent="center"
+          sx={{
+            bgcolor: "#fffbf9",
+            borderRadius: "5px",
+            width: isMobile ? "90dvw" : "24vw",
+            minWidth: isMobile ? "280px" : 350,
+            maxWidth: isMobile ? "400px" : 460,
+            maxHeight: isMobile ? "80dvh" : "90vh",
+            overflowY: "auto",
+            boxShadow: 6,
+            mt: isMobile ? "5dvh" : 0,
+            mb: isMobile ? "5dvh" : 0,
+            p: isMobile ? 2 : 4,
+            opacity: isMobile ? 0.9 : 0.7,
+          }}
         >
-          <Grid sx={{ width: "100%", mb: 2 }}>
-            <TextField
-              fullWidth
-              label="Username"
-              type="text"
-              variant="outlined"
-              error={!!errors.username}
-              helperText={errors.username?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Person2 />
-                  </InputAdornment>
-                ),
-                style: { textTransform: "lowercase" },
-              }}
-              {...register("username", {
-                setValueAs: (value) => value.toLowerCase(),
-              })}
-            />
-          </Grid>
+          <form
+            onSubmit={handleSubmit(submitRegister)}
+            className={styles.globalForm}
+            style={{ width: "100%" }}
+          >
+            <Grid sx={{ width: "100%", mb: 2 }}>
+              <TextField
+                fullWidth
+                label="Username"
+                type="text"
+                variant="outlined"
+                error={!!errors.username}
+                helperText={errors.username?.message}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Person2 />
+                    </InputAdornment>
+                  ),
+                  style: { textTransform: "lowercase" },
+                }}
+                {...register("username", {
+                  setValueAs: (value) => value.toLowerCase(),
+                })}
+              />
+            </Grid>
 
-          <Grid sx={{ width: "100%", mb: 2 }}>
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              variant="outlined"
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Email />
-                  </InputAdornment>
-                ),
-                style: { textTransform: "lowercase" },
-              }}
-              {...register("email", {
-                setValueAs: (value) => value.toLowerCase(),
-              })}
-            />
-          </Grid>
+            <Grid sx={{ width: "100%", mb: 2 }}>
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                variant="outlined"
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                  style: { textTransform: "lowercase" },
+                }}
+                {...register("email", {
+                  setValueAs: (value) => value.toLowerCase(),
+                })}
+              />
+            </Grid>
 
-          <Grid sx={{ width: "100%", mb: 2 }}>
-            <TextField
-              fullWidth
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              variant="outlined"
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                      sx={{ marginRight: "-8px" }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              {...register("password")}
-            />
-          </Grid>
+            <Grid sx={{ width: "100%", mb: 2 }}>
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                variant="outlined"
+                error={!!errors.password}
+                helperText={errors.password?.message}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={handleClickShowPassword}
+                        onMouseDown={handleMouseDownPassword}
+                        sx={{ marginRight: "-8px" }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                {...register("password")}
+              />
+            </Grid>
 
-          <Grid sx={{ width: "100%", mb: 2 }}>
-            <TextField
-              fullWidth
-              label="Password confirmation"
-              type={showPassword ? "text" : "password"}
-              variant="outlined"
-              error={!!errors.passwordBis}
-              helperText={errors.passwordBis?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                      sx={{ marginRight: "-8px" }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              {...register("passwordBis")}
-            />
-          </Grid>
+            <Grid sx={{ width: "100%", mb: 2 }}>
+              <TextField
+                fullWidth
+                label="Password confirmation"
+                type={showPassword ? "text" : "password"}
+                variant="outlined"
+                error={!!errors.passwordBis}
+                helperText={errors.passwordBis?.message}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={handleClickShowPassword}
+                        onMouseDown={handleMouseDownPassword}
+                        sx={{ marginRight: "-8px" }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                {...register("passwordBis")}
+              />
+            </Grid>
 
-          <Grid sx={{ textAlign: "center" }}>
-            <Typography color="black" variant="caption" mb={2}>
-              I confirm that I have read, and accepted{" "}
-              <span
-                style={{ fontWeight: "bold", cursor: "pointer" }}
-                onClick={() => setOpenTermsModal(true)}
-              >
-                <br />
-                Terms and conditions
-              </span>
-            </Typography>
-          </Grid>
-          <Grid sx={{ display: "flex", justifyContent: "center" }}>
-            <FormControlLabel
-              label="I agree"
-              control={<Checkbox {...register("isAcceptedTerms")} />}
-              sx={{ color: "black" }}
-            />
-          </Grid>
+            <Grid sx={{ textAlign: "center" }}>
+              <Typography color="black" variant="caption" mb={2}>
+                I confirm that I have read, and accepted{" "}
+                <span
+                  style={{ fontWeight: "bold", cursor: "pointer" }}
+                  onClick={() => setOpenTermsModal(true)}
+                >
+                  <br />
+                  Terms and conditions
+                </span>
+              </Typography>
+            </Grid>
+            <Grid sx={{ display: "flex", justifyContent: "center" }}>
+              <FormControlLabel
+                label="I agree"
+                control={<Checkbox {...register("isAcceptedTerms")} />}
+                sx={{ color: "black" }}
+              />
+            </Grid>
 
-          <Grid display="flex" alignItems={"center"} justifyContent="center">
-            {userContext.isLoading ? (
-              <VinylSpinner />
-            ) : (
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!watch().isAcceptedTerms}
-              >
-                Join now
-              </Button>
-            )}
-          </Grid>
-        </form>
-      </Grid>
-    </Modal>
+            <Grid display="flex" alignItems={"center"} justifyContent="center">
+              {userContext.isLoading ? (
+                <VinylSpinner />
+              ) : (
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={!watch().isAcceptedTerms}
+                >
+                  Join now
+                </Button>
+              )}
+            </Grid>
+          </form>
+        </Grid>
+      </Modal>
+    </>
   );
 };
 

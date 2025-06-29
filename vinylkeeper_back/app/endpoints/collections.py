@@ -299,3 +299,25 @@ def update_album_metadata(
             message="Failed to update album metadata",
             details={"error": str(e)}
         )
+
+
+@router.get("/{collection_id}/search", status_code=status.HTTP_200_OK)
+def search_collection_items(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    q: str = Query(..., min_length=1, description="Search term"),
+    search_type: str = Query("both", description="Search type: 'album', 'artist', or 'both'"),
+    user=Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service),
+):
+    """Search albums and/or artists in a collection."""
+    try:
+        if search_type not in ["album", "artist", "both"]:
+            raise HTTPException(status_code=400, detail="Invalid search_type. Must be 'album', 'artist', or 'both'")
+        
+        result = service.search_collection_items(collection_id, user.id, q, search_type)
+        return result
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
+    except Exception as e:
+        logger.error(f"Unexpected error searching collection items: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -317,6 +317,10 @@ class UserMeResponse(BaseModel):
     is_superuser: bool = Field(
         description="Whether the user is a superuser"
     )
+    is_tutorial_seen: bool = Field(
+        default=False,
+        description="Whether the user has seen the tutorial"
+    )
     collections_count: int = Field(
         default=0,
         description="Number of collections owned by the user"
