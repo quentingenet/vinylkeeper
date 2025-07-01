@@ -77,7 +77,8 @@ export default function Places() {
           component="div"
           sx={{ textAlign: "center", fontWeight: "bold", mb: 3 }}
         >
-          📍 Discover & share vinyl places around the world with community
+          📍 Browse and share the best vinyl spots around the world with the
+          community.
         </Typography>
 
         <Box sx={{ position: "relative" }}>

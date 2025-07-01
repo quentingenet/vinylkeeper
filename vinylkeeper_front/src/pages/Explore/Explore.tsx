@@ -103,8 +103,9 @@ export default function Explore() {
         mb={3}
         gap={4}
       >
-        <Typography variant="h4" component="h1" sx={{ color: "white" }}>
-          Explore public shared collections
+        <Typography variant="h6" color="white">
+          Explore public and shared vinyl collections from other users on the
+          platform.
         </Typography>
 
         <FormControl sx={{ minWidth: 200 }}>
@@ -166,7 +167,7 @@ export default function Explore() {
           </Box>
         ) : (
           <Box width="100%" textAlign="center">
-            <Typography variant="body1">
+            <Typography variant="body1" color="text.secondary">
               No public collections available at the moment.
             </Typography>
           </Box>

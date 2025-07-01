@@ -80,7 +80,13 @@ const SearchInput = memo(
     error?: string;
   }) => (
     <Box
-      sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 1 }}
+      sx={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 1,
+      }}
     >
       <TextField
         sx={{ width: isMobile ? "320px" : "400px" }}
@@ -188,11 +194,14 @@ export default function RequestsMaker({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        justifyContent: "center",
         gap: 2,
-        width: "auto",
-        margin: "0 auto",
+        width: "100%",
       }}
     >
+      <Typography variant="h6" color="white">
+        Search and add your favorite albums or artists to your collections.
+      </Typography>
       <SearchTypeSwitch
         isArtist={isArtist}
         onSwitchChange={() => setIsArtist(!isArtist)}

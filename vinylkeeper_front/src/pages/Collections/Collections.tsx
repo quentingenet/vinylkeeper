@@ -117,6 +117,10 @@ export default function Collections() {
         />
         <Box>
           <Typography variant="h3">Create a new collection</Typography>
+          <Typography variant="body1" color="text.secondary" mt={1}>
+            Share your collection with others by changing
+            <br /> its visibility from private to public.
+          </Typography>
         </Box>
       </Box>
 
