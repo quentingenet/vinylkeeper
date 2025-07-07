@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
@@ -33,7 +33,7 @@ async def add_to_wishlist(
 ):
     """Add an item to user's wishlist"""
     try:
-        wishlist_item = service.add_to_wishlist(current_user.id, request)
+        wishlist_item = await service.add_to_wishlist(current_user.id, request)
         return wishlist_item
     except ValidationError as e:
         logger.error(f"Validation error: {str(e)}")
@@ -55,7 +55,7 @@ async def remove_from_wishlist(
 ):
     """Remove an item from user's wishlist"""
     try:
-        result = service.remove_from_wishlist(current_user.id, wishlist_id)
+        result = await service.remove_from_wishlist(current_user.id, wishlist_id)
         return result
     except ResourceNotFoundError as e:
         logger.error(f"Resource not found: {str(e)}")
@@ -81,7 +81,7 @@ async def add_to_collection(
 ):
     """Add an item to user's collection"""
     try:
-        collection_item = service.add_to_collection(
+        collection_item = await service.add_to_collection(
             current_user.id, collection_id, request)
         return collection_item
     except ValidationError as e:
@@ -118,7 +118,7 @@ async def remove_from_collection(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid entity_type: {entity_type}")
         
-        result = service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
+        result = await service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
         return result
     except ResourceNotFoundError as e:
         logger.error(f"Resource not found: {str(e)}")
@@ -145,7 +145,7 @@ async def get_user_wishlist(
     try:
         # If no user_id provided, use current user's ID
         target_user_id = user_id if user_id is not None else current_user.id
-        items = service.get_user_wishlist(target_user_id)
+        items = await service.get_user_wishlist(target_user_id)
         return items
     except ServerError as e:
         logger.error(f"Server error: {str(e)}")
@@ -163,7 +163,7 @@ async def get_collection_items(
 ):
     """Get user's collection items"""
     try:
-        items = service.get_collection_items(current_user.id)
+        items = await service.get_collection_items(current_user.id)
         return items
     except ServerError as e:
         logger.error(f"Server error: {str(e)}")

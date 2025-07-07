@@ -131,7 +131,11 @@ export default function PlaybackModal({
     data: artistMetadata,
     isLoading: isArtistLoading,
     error: artistError,
-  } = useArtistMetadata(item?.itemType === "artist" ? item.id : undefined);
+  } = useArtistMetadata(
+    item?.itemType === "artist" && item.id && item.id.trim() !== ""
+      ? item.id
+      : undefined
+  );
 
   const metadata = item?.itemType === "album" ? albumMetadata : artistMetadata;
   const isLoading =

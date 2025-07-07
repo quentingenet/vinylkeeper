@@ -1,17 +1,20 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.user_model import User
 from typing import Optional, List
 from app.core.exceptions import ServerError
 
 
 class UserRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get a user by email"""
         try:
-            return self.db.query(User).filter(User.email == email).first()
+            result = await self.db.execute(select(User).filter(User.email == email))
+            return result.scalar_one_or_none()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -19,10 +22,13 @@ class UserRepository:
                 details={"error": str(e)}
             )
 
-    def get_user_by_id(self, user_id: int) -> Optional[User]:
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get a user by id"""
         try:
-            return self.db.query(User).filter(User.id == user_id).first()
+            result = await self.db.execute(
+                select(User).options(selectinload(User.role)).filter(User.id == user_id)
+            )
+            return result.scalar_one_or_none()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -30,10 +36,11 @@ class UserRepository:
                 details={"error": str(e)}
             )
 
-    def get_user_by_uuid(self, user_uuid: str) -> Optional[User]:
+    async def get_user_by_uuid(self, user_uuid: str) -> Optional[User]:
         """Get a user by UUID"""
         try:
-            return self.db.query(User).filter(User.user_uuid == user_uuid).first()
+            result = await self.db.execute(select(User).filter(User.user_uuid == user_uuid))
+            return result.scalar_one_or_none()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -41,92 +48,101 @@ class UserRepository:
                 details={"error": str(e)}
             )
 
-    def create_user(self, user: User) -> User:
+    async def create_user(self, user: User) -> User:
         """Create a new user"""
         try:
             self.db.add(user)
-            self.db.commit()
-            self.db.refresh(user)
+            await self.db.commit()
+            await self.db.refresh(user)
             return user
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to create user",
                 details={"error": str(e)}
             )
 
-    def update_user(self, user: User) -> User:
+    async def update_user(self, user: User) -> User:
         """Update a user"""
         try:
             self.db.add(user)
-            self.db.commit()
-            self.db.refresh(user)
+            await self.db.commit()
+            await self.db.refresh(user)
             return user
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to update user",
                 details={"error": str(e)}
             )
 
-    def update_user_last_login(self, user: User) -> User:
+    async def update_user_last_login(self, user: User) -> User:
         """Update user's number of connections and last login"""
         try:
             self.db.add(user)
-            self.db.commit()
-            self.db.refresh(user)
+            await self.db.commit()
+            await self.db.refresh(user)
             return user
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to update user last login",
                 details={"error": str(e)}
             )
 
-    def update_user_password(self, user_id: int, hashed_password: str) -> bool:
+    async def update_user_password(self, user_id: int, hashed_password: str) -> bool:
         """Update user's password"""
         try:
-            user = self.get_user_by_id(user_id)
+            user = await self.get_user_by_id(user_id)
             if not user:
                 return False
 
             user.password = hashed_password
             self.db.add(user)
-            self.db.commit()
+            await self.db.commit()
             return True
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to update user password",
                 details={"error": str(e)}
             )
 
-    def delete_user(self, user_id: int) -> bool:
+    async def delete_user(self, user_id: int) -> bool:
         """Delete a user"""
         try:
-            user = self.get_user_by_id(user_id)
+            user = await self.get_user_by_id(user_id)
             if not user:
                 return False
 
-            self.db.delete(user)
-            self.db.commit()
+            # Delete moderation requests first (no cascade delete)
+            from app.models.moderation_request_model import ModerationRequest
+            moderation_requests = await self.db.execute(
+                select(ModerationRequest).filter(ModerationRequest.user_id == user_id)
+            )
+            for request in moderation_requests.scalars().all():
+                await self.db.delete(request)
+
+            # Delete the user (other relations have cascade delete)
+            await self.db.delete(user)
+            await self.db.commit()
             return True
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete user",
                 details={"error": str(e)}
             )
 
-    def is_email_taken(self, email: str) -> bool:
+    async def is_email_taken(self, email: str) -> bool:
         """Check if email is already taken"""
         try:
-            return self.get_user_by_email(email) is not None
+            return await self.get_user_by_email(email) is not None
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -134,10 +150,11 @@ class UserRepository:
                 details={"error": str(e)}
             )
 
-    def is_username_taken(self, username: str) -> bool:
+    async def is_username_taken(self, username: str) -> bool:
         """Check if username is already taken"""
         try:
-            return self.db.query(User).filter(User.username == username).first() is not None
+            result = await self.db.execute(select(User).filter(User.username == username))
+            return result.scalar_one_or_none() is not None
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -145,10 +162,11 @@ class UserRepository:
                 details={"error": str(e)}
             )
 
-    def get_all_users(self, skip: int = 0, limit: int = 100) -> List[User]:
+    async def get_all_users(self, skip: int = 0, limit: int = 100) -> List[User]:
         """Get all users with pagination"""
         try:
-            return self.db.query(User).offset(skip).limit(limit).all()
+            result = await self.db.execute(select(User).offset(skip).limit(limit))
+            return result.scalars().all()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -156,10 +174,11 @@ class UserRepository:
                 details={"error": str(e)}
             )
 
-    def count_users(self) -> int:
+    async def count_users(self) -> int:
         """Count total number of users"""
         try:
-            return self.db.query(User).count()
+            result = await self.db.execute(select(User))
+            return len(result.scalars().all())
         except Exception as e:
             raise ServerError(
                 error_code=5000,

@@ -21,6 +21,10 @@ class AlbumBase(BaseSchema):
         None,
         description="Cached title of the album"
     )
+    artist: Optional[str] = Field(
+        None,
+        description="Artist name for the album"
+    )
     image_url: Optional[str] = Field(
         None,
         description="URL of the album cover image"

@@ -1,87 +1,111 @@
-from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.models.artist_model import Artist
-from app.core.exceptions import ResourceNotFoundError, ServerError
+from typing import Optional, List
+from app.core.exceptions import ServerError
 
 
 class ArtistRepository:
     """Repository for managing artists"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def create(self, artist: Artist) -> Artist:
+    async def get_by_id(self, artist_id: int) -> Optional[Artist]:
+        """Get an artist by ID"""
+        try:
+            query = select(Artist).filter(Artist.id == artist_id)
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get artist by id",
+                details={"error": str(e)}
+            )
+
+    async def get_by_external_id(self, external_artist_id: str, external_source_id: int) -> Optional[Artist]:
+        """Get an artist by external ID and source"""
+        try:
+            query = select(Artist).filter(
+                Artist.external_artist_id == external_artist_id,
+                Artist.external_source_id == external_source_id
+            )
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get artist by external id",
+                details={"error": str(e)}
+            )
+
+    async def create(self, artist: Artist) -> Artist:
         """Create a new artist"""
         try:
             self.db.add(artist)
-            self.db.commit()
-            self.db.refresh(artist)
+            await self.db.commit()
+            await self.db.refresh(artist)
             return artist
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to create artist",
                 details={"error": str(e)}
             )
 
-    def find_by_id(self, artist_id: int) -> Optional[Artist]:
-        """Find an artist by its ID"""
-        try:
-            return self.db.query(Artist).filter(Artist.id == artist_id).first()
-        except Exception as e:
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find artist by ID",
-                details={"error": str(e)}
-            )
-
-    def find_by_external_id(self, external_id: str) -> Optional[Artist]:
-        """Find an artist by its external ID"""
-        try:
-            return self.db.query(Artist).filter(Artist.external_artist_id == external_id).first()
-        except Exception as e:
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find artist by external ID",
-                details={"error": str(e)}
-            )
-
-    def update(self, artist: Artist) -> Artist:
+    async def update(self, artist: Artist) -> Artist:
         """Update an artist"""
         try:
-            self.db.commit()
-            self.db.refresh(artist)
+            self.db.add(artist)
+            await self.db.commit()
+            await self.db.refresh(artist)
             return artist
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to update artist",
                 details={"error": str(e)}
             )
 
-    def delete(self, artist: Artist) -> bool:
+    async def delete(self, artist: Artist) -> bool:
         """Delete an artist"""
         try:
-            self.db.delete(artist)
-            self.db.commit()
+            await self.db.delete(artist)
+            await self.db.commit()
             return True
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete artist",
                 details={"error": str(e)}
             )
 
-    def find_all(self) -> List[Artist]:
-        """Find all artists"""
+    async def get_all(self) -> List[Artist]:
+        """Get all artists"""
         try:
-            return self.db.query(Artist).all()
+            query = select(Artist)
+            result = await self.db.execute(query)
+            return result.scalars().all()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
-                message="Failed to find all artists",
+                message="Failed to get all artists",
+                details={"error": str(e)}
+            )
+
+    async def search_by_title(self, title: str) -> List[Artist]:
+        """Search artists by title"""
+        try:
+            query = select(Artist).filter(Artist.title.ilike(f"%{title}%"))
+            result = await self.db.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            raise ServerError(
+                error_code=5000,
+                message="Failed to search artists by title",
                 details={"error": str(e)}
             )

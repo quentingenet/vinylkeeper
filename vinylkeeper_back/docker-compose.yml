@@ -38,7 +38,7 @@ services:
     working_dir: /app
     command: >
       sh -c "poetry run alembic upgrade head &&
-             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000"
+             poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
     restart: always
 
 networks:

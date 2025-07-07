@@ -89,7 +89,7 @@ class PlaceApiService extends BaseApiService {
   }
 
   async getPlaceTypes(): Promise<PlaceTypeData[]> {
-    return this.get<PlaceTypeData[]>("/place-types/");
+    return this.get<PlaceTypeData[]>("/places/place-types");
   }
 
   async reverseGeocode(lat: number, lng: number): Promise<GeocodingResult> {

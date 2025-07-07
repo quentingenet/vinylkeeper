@@ -1,87 +1,111 @@
-from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.models.album_model import Album
-from app.core.exceptions import ResourceNotFoundError, ServerError
+from typing import Optional, List
+from app.core.exceptions import ServerError
 
 
 class AlbumRepository:
     """Repository for managing albums"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def create(self, album: Album) -> Album:
+    async def get_by_id(self, album_id: int) -> Optional[Album]:
+        """Get an album by ID"""
+        try:
+            query = select(Album).filter(Album.id == album_id)
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get album by id",
+                details={"error": str(e)}
+            )
+
+    async def get_by_external_id(self, external_album_id: str, external_source_id: int) -> Optional[Album]:
+        """Get an album by external ID and source"""
+        try:
+            query = select(Album).filter(
+                Album.external_album_id == external_album_id,
+                Album.external_source_id == external_source_id
+            )
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get album by external id",
+                details={"error": str(e)}
+            )
+
+    async def create(self, album: Album) -> Album:
         """Create a new album"""
         try:
             self.db.add(album)
-            self.db.commit()
-            self.db.refresh(album)
+            await self.db.commit()
+            await self.db.refresh(album)
             return album
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to create album",
                 details={"error": str(e)}
             )
 
-    def find_by_id(self, album_id: int) -> Optional[Album]:
-        """Find an album by its ID"""
-        try:
-            return self.db.query(Album).filter(Album.id == album_id).first()
-        except Exception as e:
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find album by ID",
-                details={"error": str(e)}
-            )
-
-    def find_by_external_id(self, external_id: str) -> Optional[Album]:
-        """Find an album by its external ID"""
-        try:
-            return self.db.query(Album).filter(Album.external_album_id == external_id).first()
-        except Exception as e:
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find album by external ID",
-                details={"error": str(e)}
-            )
-
-    def update(self, album: Album) -> Album:
+    async def update(self, album: Album) -> Album:
         """Update an album"""
         try:
-            self.db.commit()
-            self.db.refresh(album)
+            self.db.add(album)
+            await self.db.commit()
+            await self.db.refresh(album)
             return album
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to update album",
                 details={"error": str(e)}
             )
 
-    def delete(self, album: Album) -> bool:
+    async def delete(self, album: Album) -> bool:
         """Delete an album"""
         try:
-            self.db.delete(album)
-            self.db.commit()
+            await self.db.delete(album)
+            await self.db.commit()
             return True
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete album",
                 details={"error": str(e)}
             )
 
-    def find_all(self) -> List[Album]:
-        """Find all albums"""
+    async def get_all(self) -> List[Album]:
+        """Get all albums"""
         try:
-            return self.db.query(Album).all()
+            query = select(Album)
+            result = await self.db.execute(query)
+            return result.scalars().all()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
-                message="Failed to find all albums",
+                message="Failed to get all albums",
+                details={"error": str(e)}
+            )
+
+    async def search_by_title(self, title: str) -> List[Album]:
+        """Search albums by title"""
+        try:
+            query = select(Album).filter(Album.title.ilike(f"%{title}%"))
+            result = await self.db.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            raise ServerError(
+                error_code=5000,
+                message="Failed to search albums by title",
                 details={"error": str(e)}
             )

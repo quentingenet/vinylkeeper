@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy import select
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
@@ -17,13 +18,16 @@ from app.schemas.collection_schema import (
     CollectionAlbumResponse,
     CollectionArtistResponse,
     PaginatedAlbumsResponse,
-    PaginatedArtistsResponse
+    PaginatedArtistsResponse,
+    CollectionSearchResponse
 )
 from app.schemas.collection_album_schema import (
     CollectionAlbumCreate,
-    CollectionAlbumUpdate,
-    CollectionAlbumMetadataResponse
+    CollectionAlbumUpdate
 )
+from app.schemas.external_reference_schema import WishlistItemResponse
+from app.schemas.user_schema import UserMiniResponse
+from app.schemas.album_schema import AlbumBase
 from app.core.exceptions import (
     ResourceNotFoundError,
     ForbiddenError,
@@ -50,7 +54,81 @@ class CollectionService:
         self.collection_album_repository = collection_album_repository
         self.wishlist_repository = wishlist_repository
 
-    def create_collection(self, collection_data: CollectionCreate, user_id: int) -> CollectionResponse:
+    def _convert_external_source_to_dict(self, external_source: ExternalSource) -> dict:
+        """Convert ExternalSource SQLAlchemy object to dict for Pydantic schema"""
+        if external_source:
+            return {
+                "id": external_source.id,
+                "name": external_source.name
+            }
+        return {
+            "id": 0,
+            "name": "UNKNOWN"
+        }
+
+    def _convert_artist_to_collection_artist_response(self, artist) -> CollectionArtistResponse:
+        """Convert artist SQLAlchemy object to CollectionArtistResponse schema"""
+        external_source_dict = self._convert_external_source_to_dict(
+            artist.external_source if hasattr(artist, 'external_source') else None
+        )
+        
+        return CollectionArtistResponse(
+            id=artist.id,
+            external_artist_id=artist.external_artist_id,
+            title=artist.title,
+            image_url=artist.image_url,
+            external_source=external_source_dict,
+            created_at=artist.created_at,
+            updated_at=artist.updated_at,
+            collections_count=getattr(artist, 'collections_count', 0)
+        )
+
+    def _convert_album_to_collection_album_response(self, album, collection_album=None) -> CollectionAlbumResponse:
+        """Convert album SQLAlchemy object to CollectionAlbumResponse schema"""
+        # Get metadata from collection_album if available
+        state_record = None
+        state_cover = None
+        acquisition_month_year = None
+        
+        if collection_album:
+            # Use ORM relationships to get state names
+            if collection_album.state_record_ref:
+                state_record = collection_album.state_record_ref.name
+            if collection_album.state_cover_ref:
+                state_cover = collection_album.state_cover_ref.name
+            acquisition_month_year = collection_album.acquisition_month_year
+        
+        external_source_dict = self._convert_external_source_to_dict(
+            album.external_source if hasattr(album, 'external_source') else None
+        )
+        
+        return CollectionAlbumResponse(
+            id=album.id,
+            external_album_id=album.external_album_id,
+            external_source_id=album.external_source_id,
+            external_source=external_source_dict,
+            title=album.title,
+            artist=None,  # Not available in current model
+            image_url=album.image_url,
+            state_record=state_record,
+            state_cover=state_cover,
+            acquisition_month_year=acquisition_month_year,
+            created_at=album.created_at,
+            updated_at=album.updated_at,
+            collections_count=getattr(album, 'collections_count', 0),
+            loans_count=getattr(album, 'loans_count', 0),
+            wishlist_count=getattr(album, 'wishlist_count', 0)
+        )
+
+    def _convert_user_to_mini_response(self, user) -> UserMiniResponse:
+        """Convert user SQLAlchemy object to UserMiniResponse schema"""
+        return UserMiniResponse(
+            id=user.id,
+            username=user.username,
+            user_uuid=user.user_uuid
+        )
+
+    async def create_collection(self, collection_data: CollectionCreate, user_id: int) -> CollectionResponse:
         """Create a new collection"""
         try:
             # Validate collection data
@@ -66,30 +144,54 @@ class CollectionService:
             )
             
             # Save to database
-            created_collection = self.repository.create(collection)
+            created_collection = await self.repository.create(collection)
             
             # Force load relationships
-            self.repository.db.refresh(created_collection)
+            await self.repository.db.refresh(created_collection)
             
             # Add albums if provided
             if collection_data.album_ids:
-                self.repository.add_albums(created_collection, collection_data.album_ids)
+                await self.repository.add_albums(created_collection, collection_data.album_ids)
             
             # Add artists if provided
             if collection_data.artist_ids:
-                self.repository.add_artists(created_collection, collection_data.artist_ids)
+                await self.repository.add_artists(created_collection, collection_data.artist_ids)
             
             # Load all relationships
-            self.repository.db.refresh(created_collection)
+            await self.repository.db.refresh(created_collection)
             
             # Get likes info for the new collection
-            likes_count = self.like_repository.count_likes(created_collection.id)
+            likes_count = await self.like_repository.count_likes(created_collection.id)
             is_liked = False  # New collection, so not liked by anyone yet
             
-            # Create response with all data
-            response = CollectionResponse.model_validate(created_collection)
-            response.likes_count = likes_count
-            response.is_liked_by_user = is_liked
+            # Convert artists to Pydantic schemas
+            artists = []
+            if hasattr(created_collection, 'artists') and created_collection.artists:
+                for artist in created_collection.artists:
+                    artists.append(self._convert_artist_to_collection_artist_response(artist))
+            
+            # Convert owner to Pydantic schema
+            owner = None
+            if hasattr(created_collection, 'owner') and created_collection.owner:
+                owner = self._convert_user_to_mini_response(created_collection.owner)
+            
+            # Create response using Pydantic schema
+            response = CollectionResponse(
+                id=created_collection.id,
+                name=created_collection.name,
+                description=created_collection.description,
+                is_public=created_collection.is_public,
+                mood_id=created_collection.mood_id,
+                owner_id=created_collection.owner_id,
+                created_at=created_collection.created_at,
+                updated_at=created_collection.updated_at,
+                owner=owner,
+                albums=[],  # We'll handle albums separately if needed
+                artists=artists,
+                likes_count=likes_count,
+                is_liked_by_user=is_liked,
+                wishlist=[]
+            )
             
             return response
         except (DuplicateFieldError, ValidationError) as e:
@@ -102,700 +204,764 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
-    def get_collection(self, collection_id: int) -> CollectionResponse:
+    async def get_user_collections_count(self, user_id: int) -> int:
+        """Get count of user's collections"""
+        try:
+            return await self.repository.count_user_collections(user_id)
+        except Exception as e:
+            logger.error(f"Error getting user collections count: {str(e)}")
+            return 0
+
+    async def get_user_wishlist_count(self, user_id: int) -> int:
+        """Get count of user's wishlist items"""
+        try:
+            return await self.wishlist_repository.count_user_wishlist_items(user_id)
+        except Exception as e:
+            logger.error(f"Error getting user wishlist count: {str(e)}")
+            return 0
+
+    async def get_user_likes_count(self, user_id: int) -> int:
+        """Get count of user's likes"""
+        try:
+            return await self.like_repository.count_user_likes(user_id)
+        except Exception as e:
+            logger.error(f"Error getting user likes count: {str(e)}")
+            return 0
+
+    async def get_user_places_count(self, user_id: int) -> int:
+        """Get count of user's places"""
+        try:
+            # This would need to be implemented in place repository
+            # For now, return 0 as placeholder
+            return 0
+        except Exception as e:
+            logger.error(f"Error getting user places count: {str(e)}")
+            return 0
+
+    async def get_collection(self, collection_id: int) -> CollectionResponse:
         """Get a collection by ID"""
         try:
-            collection = self.repository.get_by_id(collection_id, load_relations=True)
-            return CollectionResponse.model_validate(collection)
-        except ResourceNotFoundError:
-            raise
+            collection = await self.repository.get_by_id(collection_id, load_relations=False)
+            
+            # Load artists explicitly
+            artists = []
+            artists_data, _ = await self.repository.get_collection_artists_paginated(collection_id, 1, 1000)
+            for artist in artists_data:
+                artists.append(self._convert_artist_to_collection_artist_response(artist))
+            
+            # Load albums explicitly
+            albums = []
+            albums_data = await self.collection_album_repository.get_collection_albums(collection_id)
+            for album, collection_album in albums_data:
+                albums.append(self._convert_album_to_collection_album_response(album, collection_album))
+            
+            # Convert owner to Pydantic schema
+            owner = None
+            if hasattr(collection, 'owner') and collection.owner:
+                owner = self._convert_user_to_mini_response(collection.owner)
+            
+            # Get likes info
+            likes_count = await self.like_repository.count_likes(collection.id)
+            is_liked = await self.like_repository.is_liked_by_user(collection.id, collection.owner_id)
+
+            # Get wishlist items for the collection owner
+            wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
+            wishlist = []
+            for item in wishlist_items:
+                try:
+                    wishlist_data = {
+                        "id": item.id,
+                        "user_id": item.user_id,
+                        "external_id": item.external_id,
+                        "entity_type_id": item.entity_type_id,
+                        "external_source_id": item.external_source_id,
+                        "title": item.title,
+                        "image_url": item.image_url,
+                        "created_at": item.created_at,
+                        "entity_type": item.entity_type.name if item.entity_type else "UNKNOWN",
+                        "source": item.external_source.name if item.external_source else "UNKNOWN"
+                    }
+                    wishlist.append(WishlistItemResponse(**wishlist_data))
+                except Exception as e:
+                    logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
+                    continue
+            
+            # Create response using Pydantic schema
+            response = CollectionResponse(
+                id=collection.id,
+                name=collection.name,
+                description=collection.description,
+                is_public=collection.is_public,
+                mood_id=collection.mood_id,
+                owner_id=collection.owner_id,
+                created_at=collection.created_at,
+                updated_at=collection.updated_at,
+                owner=owner,
+                albums=albums,
+                artists=artists,
+                likes_count=likes_count,
+                is_liked_by_user=is_liked,
+                wishlist=wishlist
+            )
+            
+            return response
+        except NoResultFound:
+            raise ResourceNotFoundError("Collection", collection_id)
         except Exception as e:
+            logger.error(f"Error getting collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection",
                 details={"error": str(e)}
             )
 
-    def update_collection(self, user_id: int, collection_id: int, collection_data: CollectionUpdate) -> CollectionResponse:
+    async def update_collection(self, user_id: int, collection_id: int, collection_data: CollectionUpdate) -> CollectionResponse:
         """Update a collection"""
         try:
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify ownership
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to update this collection"
+                    error_code=4003,
+                    message="You can only update your own collections",
+                    details={"collection_id": collection_id}
                 )
-
-            if collection_data.name is not None:
-                collection.name = collection_data.name
-            if collection_data.description is not None:
-                collection.description = collection_data.description
-            if collection_data.is_public is not None:
-                collection.is_public = collection_data.is_public
-            if collection_data.mood_id is not None:
-                collection.mood_id = collection_data.mood_id
-
-            updated_collection = self.repository.update(collection)
-            return CollectionResponse.model_validate(updated_collection)
-        except (ResourceNotFoundError, ForbiddenError):
-            raise
+            
+            # Validate update data
+            self._validate_update_data(collection_data)
+            
+            # Update collection fields (only basic fields)
+            update_data = collection_data.model_dump(exclude_unset=True)
+            for field, value in update_data.items():
+                setattr(collection, field, value)
+            
+            # Save updated collection
+            updated_collection = await self.repository.update(collection)
+            
+            # Refresh to get updated relationships
+            await self.repository.db.refresh(updated_collection)
+            
+            # Convert to response schema
+            return await self.get_collection(collection_id)
+            
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+            raise e
         except Exception as e:
+            logger.error(f"Error updating collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update collection",
                 details={"error": str(e)}
             )
 
-    def delete_collection(self, user_id: int, collection_id: int) -> bool:
+    async def delete_collection(self, user_id: int, collection_id: int) -> bool:
         """Delete a collection"""
         try:
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify ownership
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if collection.owner_id != user_id:
                 raise ForbiddenError(
-                    message="You don't have permission to delete this collection"
+                    error_code=4003,
+                    message="You can only delete your own collections",
+                    details={"collection_id": collection_id}
                 )
-
-            return self.repository.delete(collection)
-        except (ResourceNotFoundError, ForbiddenError):
-            raise
+            
+            # Delete collection
+            await self.repository.delete(collection_id)
+            return True
+            
+        except (ResourceNotFoundError, ForbiddenError) as e:
+            raise e
         except Exception as e:
+            logger.error(f"Error deleting collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete collection",
                 details={"error": str(e)}
             )
 
-    def add_album_to_collection(self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate) -> CollectionAlbumMetadataResponse:
-        """Add an album to a collection with metadata"""
+    async def add_album_to_collection(self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate) -> CollectionAlbumResponse:
+        """Add an album to a collection"""
         try:
-            # Verify collection exists and user owns it
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify ownership
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to modify this collection"
+                    error_code=4003,
+                    message="You can only add albums to your own collections",
+                    details={"collection_id": collection_id}
                 )
-
-            # Check if album is already in collection
-            existing = self.collection_album_repository.find_by_collection_and_album(
-                collection_id, album_data.album_id)
-            if existing:
-                raise ValidationError(
-                    error_code=4000,
-                    message="Album is already in this collection"
-                )
-
-            # Create collection-album association with metadata
-            collection_album = CollectionAlbum(
-                collection_id=collection_id,
-                album_id=album_data.album_id,
-                state_record=album_data.state_record,
-                state_cover=album_data.state_cover,
-                acquisition_month_year=album_data.acquisition_month_year
-            )
-
-            created = self.collection_album_repository.create(collection_album)
             
-            # Create response with state names instead of IDs
-            response_data = {
-                "collection_id": created.collection_id,
-                "album_id": created.album_id,
-                "state_record": created.state_record_ref.name if created.state_record_ref else None,
-                "state_cover": created.state_cover_ref.name if created.state_cover_ref else None,
-                "acquisition_month_year": created.acquisition_month_year
-            }
-
-            return CollectionAlbumMetadataResponse(**response_data)
-        except (ResourceNotFoundError, ForbiddenError, ValidationError):
-            raise
+            # Add album to collection
+            collection_album = await self.collection_album_repository.add_album_to_collection(
+                collection_id, album_data.album_id, album_data.model_dump(exclude={'album_id'})
+            )
+            
+            # Get the album with metadata
+            album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_data.album_id)
+            
+            # Convert to response schema using the conversion method
+            return self._convert_album_to_collection_album_response(album, collection_album)
+            
+        except (ResourceNotFoundError, ForbiddenError) as e:
+            raise e
         except Exception as e:
+            logger.error(f"Error adding album to collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add album to collection",
                 details={"error": str(e)}
             )
 
-    def update_album_metadata(self, user_id: int, collection_id: int, album_id: int, metadata: CollectionAlbumUpdate) -> CollectionAlbumMetadataResponse:
+    async def update_album_metadata(self, user_id: int, collection_id: int, album_id: int, metadata: CollectionAlbumUpdate) -> CollectionAlbumResponse:
         """Update album metadata in a collection"""
         try:
-            # Get collection and check ownership
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify ownership
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to update this collection"
+                    error_code=4003,
+                    message="You can only update albums in your own collections",
+                    details={"collection_id": collection_id}
                 )
-
-            # Find the collection-album association
-            collection_album = self.collection_album_repository.find_by_collection_and_album(collection_id, album_id)
-            if not collection_album:
-                raise ResourceNotFoundError(
-                    error_code=4040,
-                    message=f"Album with id {album_id} not found",
-                    details={"collection_id": collection_id, "album_id": album_id}
-                )
-
-            # Update vinyl states if provided
-            if metadata.state_record is not None:
-                state_record_id = self.collection_album_repository.get_vinyl_state_id(metadata.state_record)
-                if state_record_id is None:
-                    raise ValidationError(f"Invalid vinyl state: {metadata.state_record}")
-                collection_album.state_record = state_record_id
-
-            if metadata.state_cover is not None:
-                state_cover_id = self.collection_album_repository.get_vinyl_state_id(metadata.state_cover)
-                if state_cover_id is None:
-                    raise ValidationError(f"Invalid vinyl state: {metadata.state_cover}")
-                collection_album.state_cover = state_cover_id
-
-            # Update acquisition month/year if provided
-            if metadata.acquisition_month_year is not None:
-                collection_album.acquisition_month_year = metadata.acquisition_month_year
-
-            # Save changes
-            self.repository.db.commit()
-            self.repository.db.refresh(collection_album)
-
-            # Return updated metadata
-            return CollectionAlbumMetadataResponse(
-                collection_id=collection_id,
-                album_id=album_id,
-                state_record=collection_album.state_record_ref.name if collection_album.state_record_ref else None,
-                state_cover=collection_album.state_cover_ref.name if collection_album.state_cover_ref else None,
-                acquisition_month_year=collection_album.acquisition_month_year
+            
+            # Update metadata
+            updated_metadata = await self.collection_album_repository.update_album_metadata(
+                collection_id, album_id, metadata.model_dump(exclude_unset=True)
             )
-
-        except (ResourceNotFoundError, ForbiddenError, ValidationError):
-            raise
+            
+            # Get the album with updated metadata
+            album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_id)
+            
+            # Convert to response schema using the conversion method
+            return self._convert_album_to_collection_album_response(album, updated_metadata)
+            
+        except (ResourceNotFoundError, ForbiddenError) as e:
+            raise e
         except Exception as e:
-            self.repository.db.rollback()
+            logger.error(f"Error updating album metadata: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update album metadata",
                 details={"error": str(e)}
             )
 
-    def remove_album_from_collection(self, user_id: int, collection_id: int, album_id: int) -> bool:
+    async def remove_album_from_collection(self, user_id: int, collection_id: int, album_id: int) -> bool:
         """Remove an album from a collection"""
         try:
-            # Verify collection exists and user owns it
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify ownership
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to modify this collection"
+                    error_code=4003,
+                    message="You can only remove albums from your own collections",
+                    details={"collection_id": collection_id}
                 )
-
+            
             # Remove album from collection
-            self.repository.remove_albums(collection, [album_id])
+            await self.collection_album_repository.remove_album_from_collection(collection_id, album_id)
             return True
-        except ResourceNotFoundError:
-            raise
+            
+        except (ResourceNotFoundError, ForbiddenError) as e:
+            raise e
         except Exception as e:
             logger.error(f"Error removing album from collection: {str(e)}")
             raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
+                error_code=5000,
                 message="Failed to remove album from collection",
                 details={"error": str(e)}
             )
 
-    def remove_artist_from_collection(self, user_id: int, collection_id: int, artist_id: int) -> bool:
+    async def remove_artist_from_collection(self, user_id: int, collection_id: int, artist_id: int) -> bool:
         """Remove an artist from a collection"""
         try:
-            # Verify collection exists and user owns it
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify ownership
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to modify this collection"
+                    error_code=4003,
+                    message="You can only remove artists from your own collections",
+                    details={"collection_id": collection_id}
                 )
-
+            
             # Remove artist from collection
-            self.repository.remove_artists(collection, [artist_id])
+            await self.repository.remove_artist_from_collection(collection_id, artist_id)
             return True
-        except ResourceNotFoundError:
-            raise
+            
+        except (ResourceNotFoundError, ForbiddenError) as e:
+            raise e
         except Exception as e:
             logger.error(f"Error removing artist from collection: {str(e)}")
             raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
+                error_code=5000,
                 message="Failed to remove artist from collection",
                 details={"error": str(e)}
             )
 
-    def get_collection_albums(self, collection_id: int) -> List[CollectionAlbumResponse]:
+    async def get_collection_albums(self, collection_id: int) -> List[CollectionAlbumResponse]:
         """Get all albums in a collection"""
         try:
-            collection = self.repository.get_by_id(collection_id, load_relations=True)
-            return [CollectionAlbumResponse.model_validate(ca) for ca in collection.collection_albums]
-        except ResourceNotFoundError:
-            raise
+            albums = await self.collection_album_repository.get_collection_albums(collection_id)
+            
+            # Convert to Pydantic schemas
+            album_responses = []
+            for album, collection_album in albums:
+                album_responses.append(self._convert_album_to_collection_album_response(album, collection_album))
+            
+            return album_responses
+            
         except Exception as e:
+            logger.error(f"Error getting collection albums: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection albums",
                 details={"error": str(e)}
             )
 
-    def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[CollectionResponse], int]:
-        """Get collections owned by a user with pagination"""
+    async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[CollectionResponse], int]:
+        """Get user's collections with pagination"""
         try:
+            # Validate pagination parameters
             self._validate_pagination_params(page, limit)
             
-            # Get all collections for the user
-            all_collections = self.repository.get_by_owner(user_id)
-            total = len(all_collections)
+            # Get collections from repository
+            collections, total = await self.repository.get_user_collections(user_id, page, limit)
             
-            # Apply pagination
-            start_index = (page - 1) * limit
-            end_index = start_index + limit
-            collections = all_collections[start_index:end_index]
-            
-            # Convert to response models
-            response_collections = []
+            # Convert to Pydantic schemas
+            collection_responses = []
             for collection in collections:
-                try:
-                    # Get likes info
-                    likes_count = self.like_repository.count_likes(collection.id)
-                    is_liked = self.like_repository.get(user_id, collection.id) is not None
-                    
-                    # Create response with proper mapping
-                    response_data = {
-                        "id": collection.id,
-                        "name": collection.name,
-                        "description": collection.description,
-                        "is_public": collection.is_public,
-                        "mood_id": collection.mood_id,
-                        "owner_id": collection.owner_id,
-                        "created_at": collection.created_at,
-                        "updated_at": collection.updated_at,
-                        "owner": collection.owner,
-                        "albums": [ca.album for ca in collection.collection_albums],
-                        "artists": [artist for artist in collection.artists],
-                        "likes_count": likes_count,
-                        "is_liked_by_user": is_liked
-                    }
-                    
-                    response = CollectionResponse(**response_data)
-                    response_collections.append(response)
-                except Exception as e:
-                    continue  # Skip this collection if there's an error
+                # Get likes info
+                likes_count = await self.like_repository.count_likes(collection.id)
+                is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
+                
+                # Load artists explicitly
+                artists = []
+                artists_data, _ = await self.repository.get_collection_artists_paginated(collection.id, 1, 1000)
+                for artist in artists_data:
+                    artists.append(self._convert_artist_to_collection_artist_response(artist))
+                
+                # Load albums explicitly
+                albums = []
+                albums_data = await self.collection_album_repository.get_collection_albums(collection.id)
+                for album, collection_album in albums_data:
+                    albums.append(self._convert_album_to_collection_album_response(album, collection_album))
+                
+                # Convert owner to Pydantic schema
+                owner = None
+                if hasattr(collection, 'owner') and collection.owner:
+                    owner = self._convert_user_to_mini_response(collection.owner)
+                
+                # Create response using Pydantic schema
+                response = CollectionResponse(
+                    id=collection.id,
+                    name=collection.name,
+                    description=collection.description,
+                    is_public=collection.is_public,
+                    mood_id=collection.mood_id,
+                    owner_id=collection.owner_id,
+                    created_at=collection.created_at,
+                    updated_at=collection.updated_at,
+                    owner=owner,
+                    albums=albums,
+                    artists=artists,
+                    likes_count=likes_count,
+                    is_liked_by_user=is_liked,
+                    wishlist=[]
+                )
+                collection_responses.append(response)
             
-            return response_collections, total
+            return collection_responses, total
             
+        except ValidationError as e:
+            raise e
         except Exception as e:
-            logger.error(f"Error in get_user_collections: {str(e)}")
+            logger.error(f"Error getting user collections: {str(e)}")
             raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
+                error_code=5000,
                 message="Failed to get user collections",
                 details={"error": str(e)}
             )
 
-    def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None) -> Tuple[List[CollectionResponse], int]:
+    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None, user_id: int = None) -> Tuple[List[CollectionResponse], int]:
         """Get public collections with pagination"""
         try:
+            # Validate pagination parameters
             self._validate_pagination_params(page, limit)
             
-            collections = self.repository.get_public_collections(exclude_user_id=exclude_user_id)
-
-            total = len(collections)
+            # Get collections from repository
+            collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id)
             
-            # Apply pagination
-            start = (page - 1) * limit
-            end = start + limit
-            paginated_collections = collections[start:end]
+            # Convert to Pydantic schemas
+            collection_responses = []
+            for collection in collections:
+                # Get likes info
+                likes_count = await self.like_repository.count_likes(collection.id)
+                # Check if current user liked this collection
+                is_liked = False
+                if user_id:
+                    is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
+                
+                # Load artists explicitly
+                artists = []
+                artists_data, _ = await self.repository.get_collection_artists_paginated(collection.id, 1, 1000)
+                for artist in artists_data:
+                    artists.append(self._convert_artist_to_collection_artist_response(artist))
+                
+                # Load albums explicitly
+                albums = []
+                albums_data = await self.collection_album_repository.get_collection_albums(collection.id)
+                for album, collection_album in albums_data:
+                    albums.append(self._convert_album_to_collection_album_response(album, collection_album))
+                
+                # Convert owner to Pydantic schema
+                owner = None
+                if hasattr(collection, 'owner') and collection.owner:
+                    owner = self._convert_user_to_mini_response(collection.owner)
+                
+                # Create response using Pydantic schema
+                response = CollectionResponse(
+                    id=collection.id,
+                    name=collection.name,
+                    description=collection.description,
+                    is_public=collection.is_public,
+                    mood_id=collection.mood_id,
+                    owner_id=collection.owner_id,
+                    created_at=collection.created_at,
+                    updated_at=collection.updated_at,
+                    owner=owner,
+                    albums=albums,
+                    artists=artists,
+                    likes_count=likes_count,
+                    is_liked_by_user=is_liked,
+                    wishlist=[]
+                )
+                collection_responses.append(response)
             
-            # Convert to response models
-            response_collections = []
-            for i, collection in enumerate(paginated_collections):
-                try:
-                    # Get likes info
-                    likes_count = self.like_repository.count_likes(collection.id)
-                    
-                    # Check if current user has liked this collection
-                    is_liked_by_user = False
-                    if exclude_user_id is not None:
-                        is_liked_by_user = self.like_repository.get(exclude_user_id, collection.id) is not None
-                    
-                    # Get owner's wishlist
-                    owner_wishlist_items = self.wishlist_repository.get_by_user_id(collection.owner_id)
-                    
-                    # Convert wishlist items to response format
-                    wishlist_responses = []
-                    for wishlist_item in owner_wishlist_items:
-                        # Get entity type name from database
-                        entity_type_record = self.repository.db.query(EntityType).filter(
-                            EntityType.id == wishlist_item.entity_type_id
-                        ).first()
-                        entity_type_name = entity_type_record.name if entity_type_record else "UNKNOWN"
-                        
-                        # Get source name from database
-                        source_record = self.repository.db.query(ExternalSource).filter(
-                            ExternalSource.id == wishlist_item.external_source_id
-                        ).first()
-                        source_name = source_record.name if source_record else "UNKNOWN"
-                        
-                        wishlist_response = {
-                            "id": wishlist_item.id,
-                            "user_id": wishlist_item.user_id,
-                            "external_id": wishlist_item.external_id,
-                            "entity_type_id": wishlist_item.entity_type_id,
-                            "external_source_id": wishlist_item.external_source_id,
-                            "title": wishlist_item.title,
-                            "image_url": wishlist_item.image_url,
-                            "created_at": wishlist_item.created_at,
-                            "entity_type": entity_type_name,
-                            "source": source_name
-                        }
-                        wishlist_responses.append(wishlist_response)
-                    
-                    # Create response with proper mapping
-                    response_data = {
-                        "id": collection.id,
-                        "name": collection.name,
-                        "description": collection.description,
-                        "is_public": collection.is_public,
-                        "mood_id": collection.mood_id,
-                        "owner_id": collection.owner_id,
-                        "created_at": collection.created_at,
-                        "updated_at": collection.updated_at,
-                        "owner": collection.owner,
-                        "albums": [ca.album for ca in collection.collection_albums],
-                        "artists": [artist for artist in collection.artists],
-                        "likes_count": likes_count,
-                        "is_liked_by_user": is_liked_by_user,
-                        "wishlist": wishlist_responses
-                    }
-                    
-                    response = CollectionResponse(**response_data)
-                    response_collections.append(response)
-                except Exception as e:
-                    continue  # Skip this collection if there's an error
+            return collection_responses, total
             
-            return response_collections, total
-            
+        except ValidationError as e:
+            raise e
         except Exception as e:
-            logger.error(f"Error in get_public_collections: {str(e)}")
-            logger.error(f"Exception type: {type(e)}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"Error getting public collections: {str(e)}")
             raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
+                error_code=5000,
                 message="Failed to get public collections",
                 details={"error": str(e)}
             )
 
-    def like_collection(self, user_id: int, collection_id: int) -> dict:
+    async def like_collection(self, user_id: int, collection_id: int) -> dict:
         """Like a collection"""
         try:
-            collection = self.repository.get_by_id(collection_id)
-
-            # Check if already liked
-            existing_like = self.like_repository.get(user_id, collection_id)
-            if existing_like:
-                # Already liked, return current status
-                likes_count = self.like_repository.count_likes(collection_id)
-                return {
-                    "collection_id": collection_id,
-                    "liked": True,
-                    "likes_count": likes_count,
-                    "last_liked_at": existing_like.created_at
-                }
+            # Check if collection exists
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
             
-            # Add like
-            new_like = self.like_repository.add(user_id, collection_id)
-            likes_count = self.like_repository.count_likes(collection_id)
+            # Check if user already liked the collection
+            if await self.like_repository.is_liked_by_user(collection_id, user_id):
+                raise DuplicateFieldError(
+                    field="like",
+                    value=f"collection_{collection_id}_user_{user_id}"
+                )
+            
+            # Like the collection
+            await self.like_repository.create_like(user_id, collection_id)
+            
+            # Get updated likes count
+            likes_count = await self.like_repository.count_likes(collection_id)
             
             return {
-                "collection_id": collection_id,
-                "liked": True,
+                "message": "Collection liked successfully",
                 "likes_count": likes_count,
-                "last_liked_at": new_like.created_at if new_like else None
+                "is_liked": True
             }
-        except ResourceNotFoundError:
-            raise
-        except DuplicateFieldError:
-            # Handle case where user already liked (race condition)
-            existing_like = self.like_repository.get(user_id, collection_id)
-            likes_count = self.like_repository.count_likes(collection_id)
-            return {
-                "collection_id": collection_id,
-                "liked": True,
-                "likes_count": likes_count,
-                "last_liked_at": existing_like.created_at if existing_like else None
-            }
+            
+        except (ResourceNotFoundError, DuplicateFieldError) as e:
+            raise e
         except Exception as e:
-            logger.error(f"Error in like_collection: {e}")
+            logger.error(f"Error liking collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to like collection",
                 details={"error": str(e)}
             )
 
-    def unlike_collection(self, user_id: int, collection_id: int) -> dict:
+    async def unlike_collection(self, user_id: int, collection_id: int) -> dict:
         """Unlike a collection"""
         try:
-            collection = self.repository.get_by_id(collection_id)
-
-            # Remove like
-            self.like_repository.remove(user_id, collection_id)
-            likes_count = self.like_repository.count_likes(collection_id)
+            # Check if collection exists
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
+            # Check if user liked the collection
+            if not await self.like_repository.is_liked_by_user(collection_id, user_id):
+                raise ResourceNotFoundError("Like", f"collection_{collection_id}_user_{user_id}")
+            
+            # Unlike the collection
+            await self.like_repository.remove(user_id, collection_id)
+            
+            # Get updated likes count
+            likes_count = await self.like_repository.count_likes(collection_id)
             
             return {
-                "collection_id": collection_id,
-                "liked": False,
+                "message": "Collection unliked successfully",
                 "likes_count": likes_count,
-                "last_liked_at": None
+                "is_liked": False
             }
-        except ResourceNotFoundError:
-            raise
+            
+        except ResourceNotFoundError as e:
+            raise e
         except Exception as e:
+            logger.error(f"Error unliking collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to unlike collection",
                 details={"error": str(e)}
             )
 
-    def get_collection_likes(self, collection_id: int) -> int:
+    async def get_collection_likes(self, collection_id: int) -> int:
         """Get the number of likes for a collection"""
         try:
-            collection = self.repository.get_by_id(collection_id)
-            return self.like_repository.count_likes(collection_id)
-        except ResourceNotFoundError:
-            raise
+            return await self.like_repository.count_likes(collection_id)
         except Exception as e:
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get collection likes",
-                details={"error": str(e)}
-            )
+            logger.error(f"Error getting collection likes: {str(e)}")
+            return 0
 
     def _validate_collection_data(self, data: CollectionCreate) -> None:
-        """Validate collection creation data."""
+        """Validate collection creation data"""
         if not data.name or len(data.name.strip()) == 0:
-            raise ValidationError("Collection name cannot be empty")
-        if data.description and len(data.description) > 255:
             raise ValidationError(
-                "Description cannot be longer than 255 characters")
+                error_code=4000,
+                message="Collection name cannot be empty",
+                details={"field": "name"}
+            )
 
     def _validate_update_data(self, data: CollectionUpdate) -> None:
-        """Validate collection update data."""
+        """Validate collection update data"""
         if data.name is not None and len(data.name.strip()) == 0:
-            raise ValidationError("Collection name cannot be empty")
-        if data.description is not None and len(data.description) > 255:
             raise ValidationError(
-                "Description cannot be longer than 255 characters")
+                error_code=4000,
+                message="Collection name cannot be empty",
+                details={"field": "name"}
+            )
 
     def _validate_pagination_params(self, page: int, limit: int) -> None:
-        """Validate pagination parameters."""
+        """Validate pagination parameters"""
         if page < 1:
-            raise ValidationError("Page number must be greater than 0")
+            raise ValidationError(
+                error_code=4000,
+                message="Page number must be greater than 0",
+                details={"field": "page", "value": page}
+            )
         if limit < 1 or limit > 100:
-            raise ValidationError("Limit must be between 1 and 100")
+            raise ValidationError(
+                error_code=4000,
+                message="Limit must be between 1 and 100",
+                details={"field": "limit", "value": limit}
+            )
 
-    def get_collection_by_id(self, collection_id: int, user_id: int) -> CollectionResponse:
+    async def get_collection_by_id(self, collection_id: int, user_id: int) -> CollectionResponse:
         """Get a collection by ID with proper access control"""
         try:
-            collection = self.repository.get_by_id(collection_id, load_relations=True)
+            collection = await self.repository.get_by_id(collection_id, load_relations=False)
+            
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
             
             # Check if user has access to the collection
             if not collection.is_public and collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to access this collection"
+                    error_code=4003,
+                    message="You don't have permission to view this collection",
+                    details={"collection_id": collection_id}
                 )
             
-            # Get likes info
-            likes_count = self.like_repository.count_likes(collection_id)
-            is_liked_by_user = self.like_repository.get(user_id, collection_id) is not None
-            
-            # Get owner's wishlist
-            owner_wishlist_items = self.wishlist_repository.get_by_user_id(collection.owner_id)
-            
-            # Convert wishlist items to response format
-            wishlist_responses = []
-            for wishlist_item in owner_wishlist_items:
-                # Get entity type name from database
-                entity_type_record = self.repository.db.query(EntityType).filter(
-                    EntityType.id == wishlist_item.entity_type_id
-                ).first()
-                entity_type_name = entity_type_record.name if entity_type_record else "UNKNOWN"
-                
-                # Get source name from database
-                source_record = self.repository.db.query(ExternalSource).filter(
-                    ExternalSource.id == wishlist_item.external_source_id
-                ).first()
-                source_name = source_record.name if source_record else "UNKNOWN"
-                
-                wishlist_response = {
-                    "id": wishlist_item.id,
-                    "user_id": wishlist_item.user_id,
-                    "external_id": wishlist_item.external_id,
-                    "entity_type_id": wishlist_item.entity_type_id,
-                    "external_source_id": wishlist_item.external_source_id,
-                    "title": wishlist_item.title,
-                    "image_url": wishlist_item.image_url,
-                    "created_at": wishlist_item.created_at,
-                    "entity_type": entity_type_name,
-                    "source": source_name
-                }
-                wishlist_responses.append(wishlist_response)
-            
-            # Map collection albums to the correct format
-            albums = []
-            for collection_album in collection.collection_albums:
-                album_data = {
-                    "id": collection_album.album.id,
-                    "external_album_id": collection_album.album.external_album_id,
-                    "external_source_id": collection_album.album.external_source_id,
-                    "title": collection_album.album.title,
-                    "image_url": collection_album.album.image_url,
-                    "state_record": collection_album.state_record_ref.name if collection_album.state_record_ref else None,
-                    "state_cover": collection_album.state_cover_ref.name if collection_album.state_cover_ref else None,
-                    "acquisition_month_year": collection_album.acquisition_month_year,
-                    "created_at": collection_album.album.created_at,
-                    "updated_at": collection_album.album.updated_at,
-                    "collections_count": 0,
-                    "loans_count": 0,
-                    "wishlist_count": 0
-                }
-                albums.append(album_data)
-            
-            # Map collection artists to the correct format
+            # Load artists explicitly
             artists = []
-            for artist in collection.artists:
-                artist_data = {
-                    "id": artist.id,
-                    "external_artist_id": artist.external_artist_id,
-                    "external_source_id": artist.external_source_id,
-                    "title": artist.title,
-                    "image_url": artist.image_url,
-                    "created_at": artist.created_at,
-                    "updated_at": artist.updated_at,
-                    "collections_count": 0
-                }
-                artists.append(artist_data)
+            artists_data, _ = await self.repository.get_collection_artists_paginated(collection_id, 1, 1000)
+            for artist in artists_data:
+                artists.append(self._convert_artist_to_collection_artist_response(artist))
             
-            # Create response data
-            response_data = {
-                "id": collection.id,
-                "name": collection.name,
-                "description": collection.description,
-                "is_public": collection.is_public,
-                "mood_id": collection.mood_id,
-                "owner_id": collection.owner_id,
-                "created_at": collection.created_at,
-                "updated_at": collection.updated_at,
-                "owner": collection.owner,
-                "albums": albums,
-                "artists": artists,
-                "likes_count": likes_count,
-                "is_liked_by_user": is_liked_by_user,
-                "wishlist": wishlist_responses
-            }
+            # Load albums explicitly
+            albums = []
+            albums_data = await self.collection_album_repository.get_collection_albums(collection_id)
+            for album, collection_album in albums_data:
+                albums.append(self._convert_album_to_collection_album_response(album, collection_album))
             
-            return CollectionResponse(**response_data)
-        except ResourceNotFoundError as e:
-            raise e
-        except ForbiddenError as e:
+            # Convert owner to Pydantic schema
+            owner = None
+            if hasattr(collection, 'owner') and collection.owner:
+                owner = self._convert_user_to_mini_response(collection.owner)
+            
+            # Get likes info
+            likes_count = await self.like_repository.count_likes(collection.id)
+            is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
+            
+            # Get wishlist items for the collection owner
+            wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
+            wishlist = []
+            for item in wishlist_items:
+                try:
+                    wishlist_data = {
+                        "id": item.id,
+                        "user_id": item.user_id,
+                        "external_id": item.external_id,
+                        "entity_type_id": item.entity_type_id,
+                        "external_source_id": item.external_source_id,
+                        "title": item.title,
+                        "image_url": item.image_url,
+                        "created_at": item.created_at,
+                        "entity_type": item.entity_type.name if item.entity_type else "UNKNOWN",
+                        "source": item.external_source.name if item.external_source else "UNKNOWN"
+                    }
+                    wishlist.append(WishlistItemResponse(**wishlist_data))
+                except Exception as e:
+                    logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
+                    continue
+            
+            # Create response using Pydantic schema
+            response = CollectionResponse(
+                id=collection.id,
+                name=collection.name,
+                description=collection.description,
+                is_public=collection.is_public,
+                mood_id=collection.mood_id,
+                owner_id=collection.owner_id,
+                created_at=collection.created_at,
+                updated_at=collection.updated_at,
+                owner=owner,
+                albums=albums,
+                artists=artists,
+                likes_count=likes_count,
+                is_liked_by_user=is_liked,
+                wishlist=wishlist
+            )
+            
+            return response
+            
+        except (ResourceNotFoundError, ForbiddenError) as e:
             raise e
         except Exception as e:
+            logger.error(f"Error getting collection by ID: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection",
                 details={"error": str(e)}
             )
 
-    def get_collection_albums_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedAlbumsResponse:
-        """Get paginated albums for a collection"""
+    async def get_collection_albums_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedAlbumsResponse:
+        """Get paginated albums from a collection"""
         try:
             # Validate pagination parameters
             self._validate_pagination_params(page, limit)
             
-            # Get collection and check access
-            collection = self.repository.get_by_id(collection_id)
+            # Get collection and verify access
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if not collection.is_public and collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to access this collection"
+                    error_code=4003,
+                    message="You don't have permission to view this collection",
+                    details={"collection_id": collection_id}
                 )
             
             # Get paginated albums
-            albums, total = self.repository.get_collection_albums_paginated(collection_id, page, limit)
-            
-            # Map albums to response format and sort by date (newest first)
-            album_responses = []
-            for collection_album in albums:
-                album_data = {
-                    "id": collection_album.album.id,
-                    "external_album_id": collection_album.album.external_album_id,
-                    "external_source_id": collection_album.album.external_source_id,
-                    "title": collection_album.album.title,
-                    "image_url": collection_album.album.image_url,
-                    "state_record": collection_album.state_record_ref.name if collection_album.state_record_ref else None,
-                    "state_cover": collection_album.state_cover_ref.name if collection_album.state_cover_ref else None,
-                    "acquisition_month_year": collection_album.acquisition_month_year,
-                    "created_at": collection_album.album.created_at,
-                    "updated_at": collection_album.album.updated_at,
-                    "collections_count": 0,
-                    "loans_count": 0,
-                    "wishlist_count": 0
-                }
-                album_responses.append(album_data)
-            
-            # Sort by created_at first, then by updated_at (newest first)
-            album_responses.sort(
-                key=lambda x: (x["created_at"], x["updated_at"]),
-                reverse=True
+            albums_data, total = await self.collection_album_repository.get_collection_albums_paginated(
+                collection_id, page, limit
             )
             
-            return PaginatedAlbumsResponse(
+            # Convert to Pydantic schemas
+            album_responses = []
+            for album, collection_album in albums_data:
+                album_responses.append(self._convert_album_to_collection_album_response(album, collection_album))
+            
+            # Calculate total pages
+            total_pages = (total + limit - 1) // limit
+            
+            # Create paginated response using Pydantic schema
+            response = PaginatedAlbumsResponse(
                 items=album_responses,
                 total=total,
                 page=page,
                 limit=limit,
-                total_pages=(total + limit - 1) // limit
+                total_pages=total_pages
             )
-        except (ResourceNotFoundError, ForbiddenError):
-            raise
+            
+            return response
+            
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+            raise e
         except Exception as e:
+            logger.error(f"Error getting collection albums paginated: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection albums",
                 details={"error": str(e)}
             )
 
-    def get_collection_artists_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedArtistsResponse:
-        """Get paginated artists for a collection"""
+    async def get_collection_artists_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedArtistsResponse:
+        """Get paginated artists from a collection"""
         try:
+            # Validate pagination parameters
             self._validate_pagination_params(page, limit)
             
             # Get collection and verify access
-            collection = self.repository.get_by_id(collection_id)
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if not collection.is_public and collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to view this collection"
+                    error_code=4003,
+                    message="You don't have permission to view this collection",
+                    details={"collection_id": collection_id}
                 )
             
             # Get paginated artists
-            artists, total = self.repository.get_collection_artists_paginated(collection_id, page, limit)
+            artists, total = await self.repository.get_collection_artists_paginated(collection_id, page, limit)
             
-            # Convert to response format
-            items = []
+            # Convert to Pydantic schemas
+            artist_responses = []
             for artist in artists:
-                response = CollectionArtistResponse.model_validate(artist)
-                items.append(response)
+                artist_responses.append(self._convert_artist_to_collection_artist_response(artist))
             
-            return PaginatedArtistsResponse(
-                items=items,
+            # Calculate total pages
+            total_pages = (total + limit - 1) // limit
+            
+            # Create paginated response using Pydantic schema
+            response = PaginatedArtistsResponse(
+                items=artist_responses,
                 total=total,
                 page=page,
                 limit=limit,
-                total_pages=(total + limit - 1) // limit
+                total_pages=total_pages
             )
-        except (ResourceNotFoundError, ForbiddenError):
-            raise
+            
+            return response
+            
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+            raise e
         except Exception as e:
             logger.error(f"Error getting collection artists paginated: {str(e)}")
             raise ServerError(
@@ -804,78 +970,69 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
-    def search_collection_items(self, collection_id: int, user_id: int, query: str, search_type: str = "both") -> dict:
-        """Search albums and/or artists in a collection"""
+    async def search_collection_items(self, collection_id: int, user_id: int, query: str, search_type: str = "both") -> dict:
+        """Search for items in a collection"""
         try:
-            # Get collection and verify access with all relations loaded
-            collection = self.repository.get_by_id(collection_id, load_relations=True)
+            # Get collection and verify access
+            collection = await self.repository.get_by_id(collection_id)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            
             if not collection.is_public and collection.owner_id != user_id:
                 raise ForbiddenError(
-                    error_code=4030,
-                    message="You don't have permission to view this collection"
+                    error_code=4003,
+                    message="You don't have permission to search this collection",
+                    details={"collection_id": collection_id}
                 )
             
-            results = {
-                "albums": [],
-                "artists": [],
-                "search_term": query,
-                "search_type": search_type
+            # Validate search type and normalize to plural form
+            search_type_mapping = {
+                "album": "albums",
+                "artist": "artists", 
+                "albums": "albums",
+                "artists": "artists",
+                "both": "both"
             }
             
-            # Search albums if requested
-            if search_type in ["album", "both"]:
-                albums = self.repository.search_collection_albums(collection_id, query)
-                # Convert albums to the correct format with collection metadata
-                album_responses = []
-                for album in albums:
-                    # Find the collection album association to get metadata
-                    collection_album = next(
-                        (ca for ca in collection.collection_albums if ca.album_id == album.id),
-                        None
-                    )
-                    
-                    album_data = {
-                        "id": album.id,
-                        "external_album_id": album.external_album_id,
-                        "external_source_id": album.external_source_id,
-                        "title": album.title,
-                        "image_url": album.image_url,
-                        "state_record": collection_album.state_record_ref.name if collection_album and collection_album.state_record_ref else None,
-                        "state_cover": collection_album.state_cover_ref.name if collection_album and collection_album.state_cover_ref else None,
-                        "acquisition_month_year": collection_album.acquisition_month_year if collection_album else None,
-                        "created_at": album.created_at,
-                        "updated_at": album.updated_at,
-                        "collections_count": 0,
-                        "loans_count": 0,
-                        "wishlist_count": 0
-                    }
-                    album_responses.append(album_data)
-                
-                results["albums"] = album_responses
+            if search_type not in search_type_mapping:
+                raise ValidationError(
+                    error_code=4000,
+                    message="Search type must be 'album', 'artist', 'albums', 'artists', or 'both'",
+                    details={"field": "search_type", "value": search_type}
+                )
             
-            # Search artists if requested
-            if search_type in ["artist", "both"]:
-                artists = self.repository.search_collection_artists(collection_id, query)
-                # Convert artists to the correct format
-                artist_responses = []
-                for artist in artists:
-                    artist_data = {
-                        "id": artist.id,
-                        "external_artist_id": artist.external_artist_id,
-                        "external_source_id": artist.external_source_id,
-                        "title": artist.title,
-                        "image_url": artist.image_url,
-                        "created_at": artist.created_at,
-                        "updated_at": artist.updated_at,
-                        "collections_count": 0
-                    }
-                    artist_responses.append(artist_data)
-                
-                results["artists"] = artist_responses
+            # Normalize to plural form for internal processing
+            normalized_search_type = search_type_mapping[search_type]
             
-            return results
-        except (ResourceNotFoundError, ForbiddenError):
-            raise
+            # Perform search
+            results = await self.repository.search_collection_items(collection_id, query, normalized_search_type)
+            
+            # Convert results to Pydantic schemas
+            albums = []
+            artists = []
+            
+            if "albums" in results:
+                for album in results["albums"]:
+                    # Get collection album metadata for this album
+                    collection_album = await self.collection_album_repository.get_collection_album_metadata(collection_id, album.id)
+                    albums.append(self._convert_album_to_collection_album_response(album, collection_album))
+            
+            if "artists" in results:
+                for artist in results["artists"]:
+                    artists.append(self._convert_artist_to_collection_artist_response(artist))
+            
+            # Create response using Pydantic schema
+            response = CollectionSearchResponse(
+                albums=albums,
+                artists=artists,
+                query=query,
+                search_type=search_type
+            )
+            
+            return response.model_dump()
+            
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+            raise e
         except Exception as e:
             logger.error(f"Error searching collection items: {str(e)}")
             raise ServerError(

@@ -19,7 +19,7 @@ router = APIRouter()
 
 
 @router.post("/search-music", response_model=List[DiscogsData], status_code=200)
-def search(
+async def search(
     search_query: SearchQuery,
     service: SearchService = Depends(get_search_service)
 ) -> List[DiscogsData]:
@@ -38,7 +38,7 @@ def search(
         ServerError: If an error occurs during search or API communication
     """
     try:
-        results = service.search_music(search_query)
+        results = await service.search_music(search_query)
         return results
     except ValidationError:
         raise
@@ -52,7 +52,7 @@ def search(
 
 
 @router.get("/music-metadata/artist/{artist_id}", response_model=ArtistMetadata, status_code=200)
-def get_artist_metadata(
+async def get_artist_metadata(
     artist_id: str,
     service: SearchService = Depends(get_search_service)
 ) -> ArtistMetadata:
@@ -70,19 +70,25 @@ def get_artist_metadata(
         ServerError: If artist not found or API communication fails
     """
     try:
-        results = service.get_artist_metadata(artist_id)
+        logger.info(f"Artist metadata request received for ID: {artist_id}")
+        results = await service.get_artist_metadata(artist_id)
         return results
+    except ServerError:
+        # Re-raise ServerError as-is to preserve error details
+        raise
     except Exception as e:
         logger.error(f"Artist metadata endpoint error: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Artist ID: {artist_id}")
         raise ServerError(
-            error_code=ErrorCode.RESOURCE_NOT_FOUND,
+            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
             message="Artist metadata retrieval error",
-            details={"error": str(e)}
+            details={"error": str(e), "artist_id": artist_id}
         )
 
 
 @router.get("/music-metadata/album/{album_id}", response_model=AlbumMetadata, status_code=200)
-def get_album_metadata(
+async def get_album_metadata(
     album_id: str,
     service: SearchService = Depends(get_search_service)
 ) -> AlbumMetadata:
@@ -100,7 +106,7 @@ def get_album_metadata(
         ServerError: If album not found or API communication fails
     """
     try:
-        results = service.get_album_metadata(album_id)
+        results = await service.get_album_metadata(album_id)
         return results
     except Exception as e:
         logger.error(f"Album metadata endpoint error: {str(e)}")

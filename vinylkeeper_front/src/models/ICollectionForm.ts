@@ -11,6 +11,13 @@ export interface ICollectionForm {
   acquisition_month_year?: string;
 }
 
+export interface ICollectionUpdateForm {
+  name?: string;
+  description?: string;
+  is_public?: boolean;
+  mood_id?: number;
+}
+
 export interface ICollectionSwitchArea {
   collectionId: number;
   newIsPublic: boolean;

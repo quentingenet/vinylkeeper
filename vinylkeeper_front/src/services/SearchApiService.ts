@@ -22,6 +22,11 @@ export class SearchApiService extends BaseApiService {
   }
 
   async getArtistMetadata(artistId: string): Promise<ArtistMetadata> {
+    if (!artistId || artistId.trim() === "") {
+      console.warn("Invalid artist ID provided:", artistId);
+      throw new Error("Invalid artist ID provided");
+    }
+
     try {
       return await this.get<ArtistMetadata>(
         `/request-proxy/music-metadata/artist/${artistId}`

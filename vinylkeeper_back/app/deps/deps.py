@@ -1,5 +1,5 @@
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Repositories
 from app.repositories.user_repository import UserRepository
@@ -29,36 +29,36 @@ from app.db.session import get_db
 
 
 # Repository Dependencies
-def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
+def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
 
-def get_collection_repository(db: Session = Depends(get_db)) -> CollectionRepository:
+def get_collection_repository(db: AsyncSession = Depends(get_db)) -> CollectionRepository:
     return CollectionRepository(db)
 
 
-def get_wishlist_repository(db: Session = Depends(get_db)) -> WishlistRepository:
+def get_wishlist_repository(db: AsyncSession = Depends(get_db)) -> WishlistRepository:
     return WishlistRepository(db)
 
 
-def get_album_repository(db: Session = Depends(get_db)) -> AlbumRepository:
+def get_album_repository(db: AsyncSession = Depends(get_db)) -> AlbumRepository:
     return AlbumRepository(db)
 
 
-def get_artist_repository(db: Session = Depends(get_db)) -> ArtistRepository:
+def get_artist_repository(db: AsyncSession = Depends(get_db)) -> ArtistRepository:
     return ArtistRepository(db)
 
 
-def get_like_repository(db: Session = Depends(get_db)) -> LikeRepository:
+def get_like_repository(db: AsyncSession = Depends(get_db)) -> LikeRepository:
     return LikeRepository(db)
 
 
-def get_collection_album_repository(db: Session = Depends(get_db)) -> CollectionAlbumRepository:
+def get_collection_album_repository(db: AsyncSession = Depends(get_db)) -> CollectionAlbumRepository:
     return CollectionAlbumRepository(db)
 
 
 def get_external_reference_repository(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     wishlist_repo: WishlistRepository = Depends(get_wishlist_repository),
     collection_repo: CollectionRepository = Depends(get_collection_repository),
     album_repo: AlbumRepository = Depends(get_album_repository),
@@ -67,15 +67,15 @@ def get_external_reference_repository(
     return ExternalReferenceRepository(db, wishlist_repo, collection_repo, album_repo, artist_repo)
 
 
-def get_dashboard_repository(db: Session = Depends(get_db)) -> DashboardRepository:
+def get_dashboard_repository(db: AsyncSession = Depends(get_db)) -> DashboardRepository:
     return DashboardRepository(db)
 
 
-def get_place_repository(db: Session = Depends(get_db)) -> PlaceRepository:
+def get_place_repository(db: AsyncSession = Depends(get_db)) -> PlaceRepository:
     return PlaceRepository(db)
 
 
-def get_moderation_request_repository(db: Session = Depends(get_db)) -> ModerationRequestRepository:
+def get_moderation_request_repository(db: AsyncSession = Depends(get_db)) -> ModerationRequestRepository:
     """Get moderation request repository instance."""
     return ModerationRequestRepository(db)
 
@@ -110,9 +110,10 @@ def get_wishlist_service(
 
 
 def get_place_service(
-    place_repo: PlaceRepository = Depends(get_place_repository)
+    place_repo: PlaceRepository = Depends(get_place_repository),
+    moderation_request_repo: ModerationRequestRepository = Depends(get_moderation_request_repository)
 ) -> PlaceService:
-    return PlaceService(place_repo)
+    return PlaceService(place_repo, moderation_request_repo)
 
 
 def get_user_service(

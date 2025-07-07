@@ -6,7 +6,8 @@ from app.schemas.collection_schema import (
     CollectionResponse,
     CollectionVisibilityUpdate,
     PaginatedAlbumsResponse,
-    PaginatedArtistsResponse
+    PaginatedArtistsResponse,
+    CollectionSearchResponse
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -28,13 +29,13 @@ router = APIRouter()
 
 
 @router.post("/add", status_code=status.HTTP_201_CREATED)
-def create_collection(
+async def create_collection(
     data: CollectionCreate,
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service)
 ):
     try:
-        collection = service.create_collection(data, user.id)
+        collection = await service.create_collection(data, user.id)
         return {"message": "Collection created successfully"}
     except DuplicateFieldError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -46,14 +47,14 @@ def create_collection(
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def get_user_collections(
+async def get_user_collections(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
     page: int = Query(1, gt=0),
     limit: int = Query(10, gt=0, le=100)
 ):
     try:
-        collections, total = service.get_user_collections(user.id, page, limit)
+        collections, total = await service.get_user_collections(user.id, page, limit)
         
         # Serialize collections with error handling
         items = []
@@ -78,14 +79,14 @@ def get_user_collections(
 
 
 @router.get("/public", status_code=status.HTTP_200_OK)
-def get_public_collections(
+async def get_public_collections(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
     page: int = Query(1, gt=0),
     limit: int = Query(10, gt=0, le=100)
 ):
     try:
-        collections, total = service.get_public_collections(page, limit, exclude_user_id=user.id)
+        collections, total = await service.get_public_collections(page, limit, exclude_user_id=user.id, user_id=user.id)
         return {
             "items": [c.model_dump() for c in collections],
             "total": total,
@@ -101,24 +102,24 @@ def get_public_collections(
 
 
 @router.get("/{collection_id}", status_code=status.HTTP_200_OK)
-def get_collection_by_id(
+async def get_collection_by_id(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    collection = service.get_collection_by_id(collection_id, user.id)
+    collection = await service.get_collection_by_id(collection_id, user.id)
     return CollectionResponse.model_validate(collection).model_dump()
 
 
 @router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK)
-def switch_area_collection(
+async def switch_area_collection(
     collection_id: int = Path(..., gt=0),
     data: CollectionVisibilityUpdate = Body(...),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
     try:
-        updated = service.update_collection(
+        updated = await service.update_collection(
             user.id,
             collection_id,
             CollectionUpdate(is_public=data.is_public)
@@ -139,14 +140,14 @@ def switch_area_collection(
 
 
 @router.patch("/update/{collection_id}", status_code=status.HTTP_200_OK)
-def update_collection(
+async def update_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     data: CollectionUpdate = Body(...),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
     try:
-        updated = service.update_collection(user.id, collection_id, data)
+        updated = await service.update_collection(user.id, collection_id, data)
         if not updated:
             raise HTTPException(
                 status_code=400, detail="Failed to update collection")
@@ -165,13 +166,13 @@ def update_collection(
 
 
 @router.delete("/{collection_id}", status_code=status.HTTP_200_OK)
-def delete_collection(
+async def delete_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
     try:
-        deleted = service.delete_collection(user.id, collection_id)
+        deleted = await service.delete_collection(user.id, collection_id)
         return {"message": "Collection deleted successfully"}
     except ForbiddenError as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -183,27 +184,30 @@ def delete_collection(
 
 
 @router.get("/{collection_id}/details", status_code=status.HTTP_200_OK)
-def get_collection_details(
+async def get_collection_details(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    details = service.get_collection_by_id(collection_id, user.id)
+    details = await service.get_collection_by_id(collection_id, user.id)
     return CollectionDetailResponse.model_validate(details).model_dump()
 
 
 @router.get("/{collection_id}/albums", status_code=status.HTTP_200_OK)
-def get_collection_albums_paginated(
+async def get_collection_albums_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(12, gt=0, le=50, description="Number of items per page"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    """Get paginated albums for a collection."""
     try:
-        result = service.get_collection_albums_paginated(collection_id, user.id, page, limit)
-        return PaginatedAlbumsResponse.model_validate(result).model_dump()
+        response = await service.get_collection_albums_paginated(collection_id, user.id, page, limit)
+        return response.model_dump()
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
     except Exception as e:
@@ -212,17 +216,20 @@ def get_collection_albums_paginated(
 
 
 @router.get("/{collection_id}/artists", status_code=status.HTTP_200_OK)
-def get_collection_artists_paginated(
+async def get_collection_artists_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(12, gt=0, le=50, description="Number of items per page"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    """Get paginated artists for a collection."""
     try:
-        result = service.get_collection_artists_paginated(collection_id, user.id, page, limit)
-        return PaginatedArtistsResponse.model_validate(result).model_dump()
+        response = await service.get_collection_artists_paginated(collection_id, user.id, page, limit)
+        return response.model_dump()
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
     except Exception as e:
@@ -231,91 +238,138 @@ def get_collection_artists_paginated(
 
 
 @router.delete("/{collection_id}/albums/{album_id}", status_code=status.HTTP_200_OK)
-def remove_album_from_collection(
+async def remove_album_from_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     album_id: int = Path(..., gt=0, title="Album ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    success = service.remove_album_from_collection(
-        user.id, collection_id, album_id)
-    return {"success": success, "message": "Album removed from collection successfully"}
+    try:
+        await service.remove_album_from_collection(user.id, collection_id, album_id)
+        return {"message": "Album removed from collection successfully"}
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
+    except Exception as e:
+        logger.error(f"Unexpected error removing album from collection: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_200_OK)
-def remove_artist_from_collection(
+async def remove_artist_from_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     artist_id: int = Path(..., gt=0, title="Artist ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    success = service.remove_artist_from_collection(
-        user.id, collection_id, artist_id)
-    return {"success": success, "message": "Artist removed from collection successfully"}
+    try:
+        await service.remove_artist_from_collection(user.id, collection_id, artist_id)
+        return {"message": "Artist removed from collection successfully"}
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
+    except Exception as e:
+        logger.error(f"Unexpected error removing artist from collection: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
-def like_collection(
+async def like_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    status = service.like_collection(user.id, collection_id)
-    return LikeStatusResponse(**status)
+    try:
+        result = await service.like_collection(user.id, collection_id)
+        return LikeStatusResponse(
+            collection_id=collection_id,
+            liked=True,
+            likes_count=result["likes_count"],
+            message=result["message"]
+        )
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
+    except Exception as e:
+        logger.error(f"Unexpected error liking collection: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
-def unlike_collection(
+async def unlike_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    status = service.unlike_collection(user.id, collection_id)
-    return LikeStatusResponse(**status)
+    try:
+        result = await service.unlike_collection(user.id, collection_id)
+        return LikeStatusResponse(
+            collection_id=collection_id,
+            liked=False,
+            likes_count=result["likes_count"],
+            message=result["message"]
+        )
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
+    except Exception as e:
+        logger.error(f"Unexpected error unliking collection: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.patch("/{collection_id}/albums/{album_id}/metadata", response_model=CollectionAlbumMetadataResponse)
-def update_album_metadata(
+async def update_album_metadata(
     collection_id: int,
     album_id: int,
     data: CollectionAlbumUpdate,
     current_user: User = Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service)
 ) -> CollectionAlbumMetadataResponse:
-    """Update album metadata in a collection"""
     try:
-        return service.update_album_metadata(
-            user_id=current_user.id,
-            collection_id=collection_id,
-            album_id=album_id,
-            metadata=data
+        updated_metadata = await service.update_album_metadata(
+            current_user.id, collection_id, album_id, data
         )
-    except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-        raise e
+        return updated_metadata
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
     except Exception as e:
-        logger.error(f"update_album_metadata endpoint - {str(e)}")
-        raise ServerError(
-            error_code=5000,
-            message="Failed to update album metadata",
-            details={"error": str(e)}
-        )
+        logger.error(f"Unexpected error updating album metadata: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/{collection_id}/search", status_code=status.HTTP_200_OK)
-def search_collection_items(
+async def search_collection_items(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     q: str = Query(..., min_length=1, description="Search term"),
-    search_type: str = Query("both", description="Search type: 'album', 'artist', or 'both'"),
+    search_type: str = Query("both", description="Search type: 'album', 'artist', 'albums', 'artists', or 'both'"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    """Search albums and/or artists in a collection."""
     try:
-        if search_type not in ["album", "artist", "both"]:
-            raise HTTPException(status_code=400, detail="Invalid search_type. Must be 'album', 'artist', or 'both'")
-        
-        result = service.search_collection_items(collection_id, user.id, q, search_type)
-        return result
+        results = await service.search_collection_items(collection_id, user.id, q, search_type)
+        return results
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
     except Exception as e:

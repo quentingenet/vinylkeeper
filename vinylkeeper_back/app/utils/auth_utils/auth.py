@@ -4,8 +4,8 @@ import os
 
 from fastapi import Request, Depends, HTTPException, status, Response
 from jose import jwt, JWTError
-from sqlalchemy.orm import Session
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import HTTPBearer
 from typing import Optional
 
 from app.core.config_env import Settings
@@ -15,11 +15,24 @@ from app.repositories.user_repository import UserRepository
 from app.core.exceptions import RefreshTokenNotFoundError
 
 # Load keys
-base_path = "./app/keys"
-with open(os.path.join(base_path, "public_key.pem"), "rb") as key_file:
-    PUBLIC_KEY = key_file.read()
-with open(os.path.join(base_path, "private_key.pem"), "rb") as key_file:
-    PRIVATE_KEY = key_file.read()
+def load_keys():
+    """Load JWT keys with error handling"""
+    base_path = "./app/keys"
+    try:
+        with open(os.path.join(base_path, "public_key.pem"), "rb") as key_file:
+            public_key = key_file.read()
+        with open(os.path.join(base_path, "private_key.pem"), "rb") as key_file:
+            private_key = key_file.read()
+        return public_key, private_key
+    except FileNotFoundError as e:
+        raise RuntimeError(f"JWT keys not found in {base_path}. Please ensure public_key.pem and private_key.pem exist. Error: {e}")
+
+# Load keys with error handling
+try:
+    PUBLIC_KEY, PRIVATE_KEY = load_keys()
+except RuntimeError as e:
+    print(f"ERROR: {e}")
+    raise
 
 # Load config only once
 settings = Settings()
@@ -119,9 +132,9 @@ def verify_reset_token(token: str) -> str:
 
 
 # Retrieve the current user from access token
-def get_current_user(
+async def get_current_user(
     request: Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ) -> User:
     """Get the current user from the access token"""
     user_repository = UserRepository(db)
@@ -133,7 +146,7 @@ def get_current_user(
                 detail="No access token provided"
             )
         user_uuid = verify_token(token)
-        user = user_repository.get_user_by_uuid(user_uuid)
+        user = await user_repository.get_user_by_uuid(user_uuid)
         if not user:
             raise ValueError("User not found")
         return user

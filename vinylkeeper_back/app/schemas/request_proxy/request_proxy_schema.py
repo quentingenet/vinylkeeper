@@ -253,7 +253,7 @@ class ArtistMetadata(BaseModel):
         ...,
         description="Artist ID"
     )
-    name: str = Field(
+    title: str = Field(
         ...,
         description="Artist name"
     )

@@ -11,20 +11,8 @@ from app.schemas.external_reference_schema import WishlistItemResponse
 from app.core.enums import MoodEnum, VinylStateEnum
 
 
-class AlbumInCollection(BaseSchema):
-    """Schema for album data in collection context."""
-    state_record: Optional[str] = Field(
-        None,
-        description="Name of the vinyl record condition (e.g., 'near_mint')"
-    )
-    state_cover: Optional[str] = Field(
-        None,
-        description="Name of the album cover condition (e.g., 'near_mint')"
-    )
-    acquisition_month_year: Optional[str] = Field(
-        None,
-        description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')"
-    )
+# Import AlbumInCollection from album_schema to avoid duplication
+from app.schemas.album_schema import AlbumInCollection
 
 
 class CollectionAlbumResponse(AlbumBase, AlbumInCollection):
@@ -37,9 +25,13 @@ class CollectionAlbumResponse(AlbumBase, AlbumInCollection):
     wishlist_count: int = Field(default=0)
 
 
-class CollectionArtistResponse(ArtistBase):
+class CollectionArtistResponse(BaseSchema):
     """Schema for artist data in collection responses."""
     id: int = Field(gt=0)
+    external_artist_id: str = Field(..., description="External Artist ID")
+    title: str = Field(..., description="Artist title")
+    image_url: Optional[str] = Field(None, description="Artist image URL")
+    external_source: dict = Field(..., description="External source information")
     created_at: datetime
     updated_at: datetime
     collections_count: int = Field(default=0)
@@ -136,8 +128,6 @@ class CollectionUpdate(BaseSchema):
         gt=0,
         description="ID of the mood"
     )
-    album_ids: Optional[List[int]] = None
-    artist_ids: Optional[List[int]] = None
 
     @model_validator(mode='after')
     def validate_fields(self) -> 'CollectionUpdate':
@@ -145,24 +135,6 @@ class CollectionUpdate(BaseSchema):
         if not any(v is not None for v in self.model_dump().values()):
             raise ValueError("At least one field must be provided for update")
         return self
-
-    @field_validator("album_ids")
-    @classmethod
-    def validate_album_ids(cls, v: Optional[List[int]]) -> Optional[List[int]]:
-        """Validate album IDs."""
-        if v is not None:
-            if not all(id > 0 for id in v):
-                raise ValueError("All album IDs must be positive integers")
-        return v
-
-    @field_validator("artist_ids")
-    @classmethod
-    def validate_artist_ids(cls, v: Optional[List[int]]) -> Optional[List[int]]:
-        """Validate artist IDs."""
-        if v is not None:
-            if not all(id > 0 for id in v):
-                raise ValueError("All artist IDs must be positive integers")
-        return v
 
 
 class CollectionVisibilityUpdate(BaseSchema):
@@ -212,6 +184,14 @@ class PaginatedArtistsResponse(BaseSchema):
     page: int = Field(gt=0, description="Current page number")
     limit: int = Field(gt=0, description="Number of items per page")
     total_pages: int = Field(ge=0, description="Total number of pages")
+
+
+class CollectionSearchResponse(BaseSchema):
+    """Schema for collection search response."""
+    albums: List[CollectionAlbumResponse] = Field(default_factory=list)
+    artists: List[CollectionArtistResponse] = Field(default_factory=list)
+    query: str = Field(..., description="Search query used")
+    search_type: str = Field(..., description="Type of search performed")
 
 
 class PaginatedCollectionResponse(BaseSchema):

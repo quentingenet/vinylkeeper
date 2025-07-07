@@ -51,20 +51,30 @@ def get_template(subject: MailSubject, **kwargs) -> str:
 
 async def send_mail(to: str, subject: MailSubject, **kwargs):
     try:
-        server = smtp_client()
+        # Create message in main thread
         msg = MIMEMultipart()
         msg['From'] = settings.SMTP_FROM_ADDRESS
         msg['To'] = to
         msg['Subject'] = subject.value
         template = get_template(subject, **kwargs)
         msg.attach(MIMEText(template, 'html'))
-        server.sendmail(settings.SMTP_FROM_ADDRESS, to, msg.as_string())
-        server.quit()
+        
+        # Execute SMTP operations in thread pool to avoid blocking event loop
+        await asyncio.to_thread(_send_mail_sync, to, msg)
         logger.info(f"{subject.value} - mail sent with success to {to}")
     except Exception as e:
         logger.error(f"{subject.value} - Error sending mail: {e}")
         return False
     return True
+
+
+def _send_mail_sync(to: str, msg: MIMEMultipart):
+    """Synchronous helper function to send mail"""
+    server = smtp_client()
+    try:
+        server.sendmail(settings.SMTP_FROM_ADDRESS, to, msg.as_string())
+    finally:
+        server.quit()
 
 
 def send_mail_sync(to: str, subject: MailSubject, **kwargs):

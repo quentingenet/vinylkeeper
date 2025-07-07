@@ -68,8 +68,6 @@ export interface CollectionUpdate {
   description?: string;
   is_public?: boolean;
   mood_id?: number;
-  album_ids?: number[];
-  artist_ids?: number[];
 }
 
 export interface CollectionInDB extends CollectionBase {

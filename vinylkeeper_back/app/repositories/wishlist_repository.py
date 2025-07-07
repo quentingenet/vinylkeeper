@@ -1,23 +1,28 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import ResourceNotFoundError, ServerError
 from app.core.logging import logger
+from app.models.collection_album import CollectionAlbum
+from app.models.album_model import Album
+from app.models.artist_model import Artist
+from app.models.association_tables import collection_artist
 
 
 class WishlistRepository:
     """Repository for managing wishlist items"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def _get_entity_type_id(self, entity_type: EntityTypeEnum) -> int:
+    async def _get_entity_type_id(self, entity_type: EntityTypeEnum) -> int:
         """Get the entity type ID from the database"""
-        entity_type_record = self.db.query(EntityType).filter(
-            EntityType.name == entity_type.value
-        ).first()
+        query = select(EntityType).filter(EntityType.name == entity_type.value)
+        result = await self.db.execute(query)
+        entity_type_record = result.scalar_one_or_none()
         if not entity_type_record:
             raise ServerError(
                 error_code=5000,
@@ -25,10 +30,10 @@ class WishlistRepository:
             )
         return entity_type_record.id
 
-    def add_to_wishlist(self, user_id: int, external_id: str, entity_type: EntityTypeEnum, title: str, image_url: str, external_source_id: int) -> Wishlist:
+    async def add_to_wishlist(self, user_id: int, external_id: str, entity_type: EntityTypeEnum, title: str, image_url: str, external_source_id: int) -> Wishlist:
         """Add an item to user's wishlist"""
         try:
-            entity_type_id = self._get_entity_type_id(entity_type)
+            entity_type_id = await self._get_entity_type_id(entity_type)
             wishlist_item = Wishlist(
                 user_id=user_id,
                 external_id=external_id,
@@ -38,11 +43,11 @@ class WishlistRepository:
                 external_source_id=external_source_id
             )
             self.db.add(wishlist_item)
-            self.db.commit()
-            self.db.refresh(wishlist_item)
+            await self.db.commit()
+            await self.db.refresh(wishlist_item)
             return wishlist_item
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             logger.error(f"Error adding to wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -50,15 +55,17 @@ class WishlistRepository:
                 details={"error": str(e)}
             )
 
-    def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
+    async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
         """Remove an item from user's wishlist"""
         try:
             logger.info(
                 f"Finding wishlist item {wishlist_id} for user {user_id}")
-            wishlist_item = self.db.query(Wishlist).filter(
+            query = select(Wishlist).filter(
                 Wishlist.id == wishlist_id,
                 Wishlist.user_id == user_id
-            ).first()
+            )
+            result = await self.db.execute(query)
+            wishlist_item = result.scalar_one_or_none()
 
             if not wishlist_item:
                 logger.warning(
@@ -67,27 +74,31 @@ class WishlistRepository:
 
             logger.info(
                 f"Deleting wishlist item {wishlist_id} for user {user_id}")
-            self.db.delete(wishlist_item)
-            self.db.commit()
+            await self.db.delete(wishlist_item)
+            await self.db.commit()
             logger.info(
                 f"Successfully deleted wishlist item {wishlist_id} for user {user_id}")
             return True
         except Exception as e:
             logger.error(
                 f"Error removing wishlist item {wishlist_id} for user {user_id}: {str(e)}")
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove from wishlist",
                 details={"error": str(e)}
             )
 
-    def get_user_wishlist(self, user_id: int) -> List[Wishlist]:
+    async def get_user_wishlist(self, user_id: int) -> List[Wishlist]:
         """Get all items in user's wishlist"""
         try:
-            return self.db.query(Wishlist).filter(
-                Wishlist.user_id == user_id
-            ).all()
+            from sqlalchemy.orm import selectinload
+            query = select(Wishlist).options(
+                selectinload(Wishlist.entity_type),
+                selectinload(Wishlist.external_source)
+            ).filter(Wishlist.user_id == user_id)
+            result = await self.db.execute(query)
+            return result.scalars().all()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -95,30 +106,32 @@ class WishlistRepository:
                 details={"error": str(e)}
             )
 
-    def create(self, wishlist: Wishlist) -> Wishlist:
+    async def create(self, wishlist: Wishlist) -> Wishlist:
         """Create a new wishlist item"""
         try:
             self.db.add(wishlist)
-            self.db.commit()
-            self.db.refresh(wishlist)
+            await self.db.commit()
+            await self.db.refresh(wishlist)
             return wishlist
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
                 details={"error": str(e)}
             )
 
-    def find_by_user_and_external_id(self, user_id: int, external_id: str, entity_type: EntityTypeEnum) -> Optional[Wishlist]:
+    async def find_by_user_and_external_id(self, user_id: int, external_id: str, entity_type: EntityTypeEnum) -> Optional[Wishlist]:
         """Find a wishlist item by user ID and external ID"""
         try:
-            entity_type_id = self._get_entity_type_id(entity_type)
-            return self.db.query(Wishlist).filter(
+            entity_type_id = await self._get_entity_type_id(entity_type)
+            query = select(Wishlist).filter(
                 Wishlist.user_id == user_id,
                 Wishlist.external_id == external_id,
                 Wishlist.entity_type_id == entity_type_id
-            ).first()
+            )
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
         except Exception as e:
             logger.error(f"Database error in find_by_user_and_external_id: {str(e)}")
             raise ServerError(
@@ -127,10 +140,12 @@ class WishlistRepository:
                 details={"error": str(e)}
             )
 
-    def get_by_id(self, wishlist_id: int) -> Optional[Wishlist]:
+    async def get_by_id(self, wishlist_id: int) -> Optional[Wishlist]:
         """Get a wishlist item by ID"""
         try:
-            return self.db.query(Wishlist).filter(Wishlist.id == wishlist_id).first()
+            query = select(Wishlist).filter(Wishlist.id == wishlist_id)
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -138,10 +153,12 @@ class WishlistRepository:
                 details={"error": str(e)}
             )
 
-    def get_all(self) -> List[Wishlist]:
+    async def get_all(self) -> List[Wishlist]:
         """Get all wishlist items"""
         try:
-            return self.db.query(Wishlist).all()
+            query = select(Wishlist)
+            result = await self.db.execute(query)
+            return result.scalars().all()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -149,10 +166,16 @@ class WishlistRepository:
                 details={"error": str(e)}
             )
 
-    def get_by_user_id(self, user_id: int) -> List[Wishlist]:
+    async def get_by_user_id(self, user_id: int) -> List[Wishlist]:
         """Get all wishlist items for a user"""
         try:
-            return self.db.query(Wishlist).filter(Wishlist.user_id == user_id).all()
+            from sqlalchemy.orm import selectinload
+            query = select(Wishlist).options(
+                selectinload(Wishlist.entity_type),
+                selectinload(Wishlist.external_source)
+            ).filter(Wishlist.user_id == user_id)
+            result = await self.db.execute(query)
+            return result.scalars().all()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -160,33 +183,75 @@ class WishlistRepository:
                 details={"error": str(e)}
             )
 
-    def update(self, wishlist: Wishlist) -> Wishlist:
+    async def update(self, wishlist: Wishlist) -> Wishlist:
         """Update a wishlist item"""
         try:
-            self.db.commit()
-            self.db.refresh(wishlist)
+            self.db.add(wishlist)
+            await self.db.commit()
+            await self.db.refresh(wishlist)
             return wishlist
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to update wishlist item",
                 details={"error": str(e)}
             )
 
-    def delete(self, wishlist_id: int) -> bool:
+    async def delete(self, wishlist_id: int) -> bool:
         """Delete a wishlist item"""
         try:
-            wishlist = self.get_by_id(wishlist_id)
+            wishlist = await self.get_by_id(wishlist_id)
             if wishlist:
-                self.db.delete(wishlist)
-                self.db.commit()
+                await self.db.delete(wishlist)
+                await self.db.commit()
                 return True
             return False
         except Exception as e:
-            self.db.rollback()
+            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete wishlist item",
+                details={"error": str(e)}
+            )
+
+    async def count_user_wishlist_items(self, user_id: int) -> int:
+        """Count user's wishlist items"""
+        try:
+            query = select(func.count()).filter(Wishlist.user_id == user_id)
+            result = await self.db.execute(query)
+            return result.scalar()
+        except Exception as e:
+            logger.error(f"Error counting user wishlist items: {str(e)}")
+            return 0
+
+    async def get_collection_wishlist(self, collection_id: int) -> list[Wishlist]:
+        """Get all wishlist items for albums or artists in a collection"""
+        try:
+            # Get all album external_ids in the collection
+            album_query = select(Album.external_album_id).join(CollectionAlbum).filter(CollectionAlbum.collection_id == collection_id)
+            album_result = await self.db.execute(album_query)
+            album_external_ids = [row[0] for row in album_result.all()]
+
+            # Get all artist external_ids in the collection
+            artist_query = select(Artist.external_artist_id).join(collection_artist, collection_artist.c.artist_id == Artist.id).filter(collection_artist.c.collection_id == collection_id)
+            artist_result = await self.db.execute(artist_query)
+            artist_external_ids = [row[0] for row in artist_result.all()]
+
+            # Get all wishlist items matching these external_ids with relationships loaded
+            from sqlalchemy.orm import selectinload
+            wishlist_query = select(Wishlist).options(
+                selectinload(Wishlist.entity_type),
+                selectinload(Wishlist.external_source)
+            ).filter(
+                (Wishlist.external_id.in_(album_external_ids + artist_external_ids))
+            )
+            wishlist_result = await self.db.execute(wishlist_query)
+            return wishlist_result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting collection wishlist: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get collection wishlist",
                 details={"error": str(e)}
             )

@@ -20,6 +20,10 @@ class ArtistBase(BaseSchema):
         None,
         description="Cached title of the artist"
     )
+    artist: Optional[str] = Field(
+        None,
+        description="Artist name (alias for title for frontend compatibility)"
+    )
     image_url: Optional[str] = Field(
         None,
         description="URL of the artist image"

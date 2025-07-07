@@ -340,6 +340,12 @@ export default function CollectionDetails() {
       item.external_id ||
       (type === "album" ? item.external_album_id : item.external_artist_id);
 
+    // Validate external ID
+    if (!externalId || externalId.trim() === "") {
+      console.warn(`Invalid external ID for ${type}:`, externalId, item);
+      return;
+    }
+
     const playbackItem: PlaybackItem = {
       id: externalId,
       title: item.title || item.name,

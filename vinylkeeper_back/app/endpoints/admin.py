@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, Path, Query, HTTPException
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.moderation_request_schema import (
     ModerationRequestResponse,
@@ -23,7 +23,7 @@ router = APIRouter()
 
 
 @router.get("/moderation-requests", response_model=ModerationRequestListResponse, status_code=status.HTTP_200_OK)
-def get_moderation_requests(
+async def get_moderation_requests(
     user: User = Depends(get_current_user),
     service: ModerationService = Depends(get_moderation_service),
     limit: Optional[int] = Query(None, gt=0, le=100),
@@ -38,7 +38,7 @@ def get_moderation_requests(
                 message="Admin access required"
             )
         
-        requests = service.get_all_moderation_requests(limit, offset)
+        requests = await service.get_all_moderation_requests(limit, offset)
         return requests
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -50,7 +50,7 @@ def get_moderation_requests(
 
 
 @router.get("/moderation-requests/pending", response_model=List[ModerationRequestResponse], status_code=status.HTTP_200_OK)
-def get_pending_moderation_requests(
+async def get_pending_moderation_requests(
     user: User = Depends(get_current_user),
     service: ModerationService = Depends(get_moderation_service),
     limit: Optional[int] = Query(None, gt=0, le=100),
@@ -65,7 +65,7 @@ def get_pending_moderation_requests(
                 message="Admin access required"
             )
         
-        requests = service.get_pending_moderation_requests(limit, offset)
+        requests = await service.get_pending_moderation_requests(limit, offset)
         return requests
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -77,7 +77,7 @@ def get_pending_moderation_requests(
 
 
 @router.get("/moderation-requests/{request_id}", response_model=ModerationRequestResponse, status_code=status.HTTP_200_OK)
-def get_moderation_request_by_id(
+async def get_moderation_request_by_id(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
     user: User = Depends(get_current_user),
     service: ModerationService = Depends(get_moderation_service)
@@ -91,7 +91,7 @@ def get_moderation_request_by_id(
                 message="Admin access required"
             )
         
-        request = service.get_moderation_request_by_id(request_id)
+        request = await service.get_moderation_request_by_id(request_id)
         return request
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -105,7 +105,7 @@ def get_moderation_request_by_id(
 
 
 @router.post("/moderation-requests/{request_id}/approve", response_model=ModerationRequestResponse, status_code=status.HTTP_200_OK)
-def approve_moderation_request(
+async def approve_moderation_request(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
     user: User = Depends(get_current_user),
     service: ModerationService = Depends(get_moderation_service)
@@ -119,7 +119,7 @@ def approve_moderation_request(
                 message="Admin access required"
             )
         
-        approved_request = service.approve_moderation_request(request_id, user.id)
+        approved_request = await service.approve_moderation_request(request_id, user.id)
         return approved_request
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -135,7 +135,7 @@ def approve_moderation_request(
 
 
 @router.post("/moderation-requests/{request_id}/reject", response_model=ModerationRequestResponse, status_code=status.HTTP_200_OK)
-def reject_moderation_request(
+async def reject_moderation_request(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
     user: User = Depends(get_current_user),
     service: ModerationService = Depends(get_moderation_service)
@@ -149,7 +149,7 @@ def reject_moderation_request(
                 message="Admin access required"
             )
         
-        rejected_request = service.reject_moderation_request(request_id, user.id)
+        rejected_request = await service.reject_moderation_request(request_id, user.id)
         return rejected_request
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -165,7 +165,7 @@ def reject_moderation_request(
 
 
 @router.get("/moderation-stats", status_code=status.HTTP_200_OK)
-def get_moderation_stats(
+async def get_moderation_stats(
     user: User = Depends(get_current_user),
     service: ModerationService = Depends(get_moderation_service)
 ):
@@ -178,7 +178,7 @@ def get_moderation_stats(
                 message="Admin access required"
             )
         
-        stats = service.get_moderation_stats()
+        stats = await service.get_moderation_stats()
         return stats
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Admin access required")

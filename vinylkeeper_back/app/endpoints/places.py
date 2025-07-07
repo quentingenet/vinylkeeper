@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, Path, Query, Body, HTTPException
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.place_schema import (
     PlaceCreate,
@@ -47,7 +47,7 @@ async def create_place(
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-def get_places(
+async def get_places(
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service),
     limit: Optional[int] = Query(None, gt=0, le=100),
@@ -55,7 +55,7 @@ def get_places(
 ):
     """Get all places with optional pagination (only moderated places)"""
     try:
-        places = service.get_all_places(user.id, limit, offset)
+        places = await service.get_all_places(user.id, limit, offset)
         return [place.model_dump() for place in places]
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
@@ -64,15 +64,27 @@ def get_places(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@router.get("/place-types", status_code=status.HTTP_200_OK)
+async def get_place_types(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all place types (public endpoint)"""
+    from app.models.reference_data.place_types import PlaceType as PlaceTypeModel
+    from sqlalchemy import select
+    result = await db.execute(select(PlaceTypeModel))
+    place_types = result.scalars().all()
+    return [{"id": pt.id, "name": pt.name} for pt in place_types]
+
+
 @router.get("/{place_id}", status_code=status.HTTP_200_OK)
-def get_place_by_id(
+async def get_place_by_id(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
     """Get a place by ID (only moderated places)"""
     try:
-        place = service.get_place(place_id, user.id)
+        place = await service.get_place(place_id, user.id)
         return place.model_dump()
     except ResourceNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -84,7 +96,7 @@ def get_place_by_id(
 
 
 @router.patch("/{place_id}", status_code=status.HTTP_200_OK)
-def update_place(
+async def update_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     data: PlaceUpdate = Body(...),
     user: User = Depends(get_current_user),
@@ -92,7 +104,7 @@ def update_place(
 ):
     """Update a place"""
     try:
-        updated_place = service.update_place(user.id, place_id, data)
+        updated_place = await service.update_place(user.id, place_id, data)
         return {"message": "Place updated successfully", "place": updated_place.model_dump()}
     except ResourceNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -108,14 +120,14 @@ def update_place(
 
 
 @router.delete("/{place_id}", status_code=status.HTTP_200_OK)
-def delete_place(
+async def delete_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
     """Delete a place"""
     try:
-        deleted = service.delete_place(user.id, place_id)
+        deleted = await service.delete_place(user.id, place_id)
         return {"message": "Place deleted successfully"}
     except ResourceNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -129,14 +141,14 @@ def delete_place(
 
 
 @router.post("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
-def like_place(
+async def like_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
     """Like a place"""
     try:
-        result = service.like_place(user.id, place_id)
+        result = await service.like_place(user.id, place_id)
         return PlaceLikeStatusResponse(
             place_id=place_id,
             liked=True,
@@ -156,14 +168,14 @@ def like_place(
 
 
 @router.delete("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
-def unlike_place(
+async def unlike_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
     """Unlike a place"""
     try:
-        result = service.unlike_place(user.id, place_id)
+        result = await service.unlike_place(user.id, place_id)
         return PlaceLikeStatusResponse(
             place_id=place_id,
             liked=False,
@@ -183,14 +195,14 @@ def unlike_place(
 
 
 @router.get("/search", status_code=status.HTTP_200_OK)
-def search_places(
+async def search_places(
     q: str = Query(..., min_length=1, description="Search term"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
     """Search places by name, city, or country"""
     try:
-        places = service.search_places(q, user.id)
+        places = await service.search_places(q, user.id)
         return {
             "items": [place.model_dump() for place in places],
             "total": len(places),
@@ -204,14 +216,14 @@ def search_places(
 
 
 @router.get("/type/{place_type_id}", status_code=status.HTTP_200_OK)
-def get_places_by_type(
+async def get_places_by_type(
     place_type_id: int = Path(..., gt=0, title="Place Type ID"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
-    """Get all places of a specific type"""
+    """Get places by type"""
     try:
-        places = service.get_places_by_type(place_type_id, user.id)
+        places = await service.get_places_by_type(place_type_id, user.id)
         return {
             "items": [place.model_dump() for place in places],
             "total": len(places),
@@ -225,7 +237,7 @@ def get_places_by_type(
 
 
 @router.get("/region", status_code=status.HTTP_200_OK)
-def get_places_in_region(
+async def get_places_in_region(
     min_lat: float = Query(..., ge=-90, le=90, description="Minimum latitude"),
     max_lat: float = Query(..., ge=-90, le=90, description="Maximum latitude"),
     min_lng: float = Query(..., ge=-180, le=180, description="Minimum longitude"),
@@ -235,11 +247,11 @@ def get_places_in_region(
 ):
     """Get places within a geographic region"""
     try:
-        places = service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user.id)
+        places = await service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user.id)
         return {
             "items": [place.model_dump() for place in places],
             "total": len(places),
-            "bounds": {
+            "region": {
                 "min_lat": min_lat,
                 "max_lat": max_lat,
                 "min_lng": min_lng,
@@ -250,25 +262,4 @@ def get_places_in_region(
         raise HTTPException(status_code=e.status_code, detail=e.detail["message"])
     except Exception as e:
         logger.error(f"Unexpected error getting places in region: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.get("/place-types", status_code=status.HTTP_200_OK)
-def get_place_types(
-    db: Session = Depends(get_db)
-):
-    """Get all place types"""
-    try:
-        place_types = db.query(PlaceType).all()
-        return {
-            "items": [
-                {
-                    "id": pt.id,
-                    "name": pt.name
-                } for pt in place_types
-            ],
-            "total": len(place_types)
-        }
-    except Exception as e:
-        logger.error(f"Unexpected error getting place types: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error") 

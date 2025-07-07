@@ -10,7 +10,10 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { collectionValidationSchema } from "@utils/validators/collection";
 import { useUserContext } from "@contexts/UserContext";
-import { ICollectionForm } from "@models/ICollectionForm";
+import {
+  ICollectionForm,
+  ICollectionUpdateForm,
+} from "@models/ICollectionForm";
 import { collectionApiService } from "@services/CollectionApiService";
 import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -87,7 +90,7 @@ export default function ModalCollection({
   const updateMutation = useMutation<
     { message: string },
     Error,
-    { id: number; data: ICollectionForm }
+    { id: number; data: ICollectionUpdateForm }
   >({
     mutationFn: ({ id, data }) =>
       collectionApiService.updateCollection(id, data),
@@ -109,7 +112,14 @@ export default function ModalCollection({
     }
 
     if (isUpdatingCollection && collection?.id) {
-      updateMutation.mutate({ id: collection.id, data });
+      // For update, only send the fields that can be updated
+      const updateData: ICollectionUpdateForm = {
+        name: data.name,
+        description: data.description,
+        is_public: data.is_public,
+        mood_id: data.mood_id,
+      };
+      updateMutation.mutate({ id: collection.id, data: updateData });
     } else {
       createMutation.mutate(data);
     }

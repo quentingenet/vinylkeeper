@@ -24,7 +24,7 @@ DB_PASSWORD = os.getenv('DATABASE_PASSWORD')
 DB_HOST = os.getenv('DATABASE_HOST')
 DB_PORT = os.getenv('DATABASE_PORT')
 DB_NAME = os.getenv('DATABASE_NAME')
-DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = f"postgresql+asyncpg://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 config.set_main_option('sqlalchemy.url', DATABASE_URL)
 
@@ -45,6 +45,10 @@ def run_migrations_offline():
 
 def run_migrations_online():
     """Run migrations in 'online' mode."""
+    # For async support, we need to use the sync URL for Alembic
+    sync_url = config.get_main_option("sqlalchemy.url").replace("postgresql+asyncpg://", "postgresql://")
+    config.set_main_option('sqlalchemy.url', sync_url)
+    
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",

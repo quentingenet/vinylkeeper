@@ -50,7 +50,8 @@ async function fetchWikipediaContent(url: string): Promise<string> {
 export const fetchArtistMetadata = async (
   artistId: string
 ): Promise<ArtistMetadata> => {
-  if (!artistId || artistId === "Unknown Artist") {
+  if (!artistId || artistId === "Unknown Artist" || artistId.trim() === "") {
+    console.warn("Invalid artist ID provided:", artistId);
     return {
       id: "",
       title: "",
@@ -61,17 +62,30 @@ export const fetchArtistMetadata = async (
     };
   }
 
-  const response = await fetch(
-    `${
-      import.meta.env.VITE_API_VK_URL
-    }/request-proxy/music-metadata/artist/${artistId}`
-  );
+  try {
+    const response = await fetch(
+      `${
+        import.meta.env.VITE_API_VK_URL
+      }/request-proxy/music-metadata/artist/${artistId}`
+    );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch artist metadata");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        "Artist metadata fetch failed:",
+        response.status,
+        errorText
+      );
+      throw new Error(
+        `Failed to fetch artist metadata: ${response.status} ${errorText}`
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching artist metadata:", error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
@@ -90,7 +104,7 @@ export const useArtistMetadata = (artistId?: string) => {
   return useQuery({
     queryKey: ["artistMetadata", artistId],
     queryFn: () => fetchArtistMetadata(artistId!),
-    enabled: !!artistId,
+    enabled: !!artistId && artistId.trim() !== "",
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     retry: 2,
