@@ -77,8 +77,7 @@ class PlaceService:
                         error_code=4000,
                         message=f"Could not find coordinates for {place_data.city}, {place_data.country}. Please check the city and country names."
                     )
-            else:
-                pass
+            # Coordinates are already valid, no action needed
             
             # Create place
             created_place = await self.repository.create_place(place_dict)
@@ -93,6 +92,7 @@ class PlaceService:
             
             # Send email notification
             if settings.APP_ENV == "development" or (user.role.name == RoleEnum.ADMIN.value and user.is_superuser):
+                # Skip email notification in development mode or for admin users
                 pass
             else:
                 try:

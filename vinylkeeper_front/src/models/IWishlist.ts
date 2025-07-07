@@ -18,6 +18,3 @@ export interface WishlistResponse {
   items: WishlistItem[];
   total: number;
 }
-
-// Compatibility aliases (to be removed progressively)
-export interface IWishlistItem extends WishlistItem {}

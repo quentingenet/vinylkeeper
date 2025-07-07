@@ -341,6 +341,10 @@ class UserMeResponse(BaseModel):
         default=0,
         description="Number of places liked by the user"
     )
+    number_of_connections: int = Field(
+        default=0,
+        description="Number of times the user has connected"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -58,8 +58,6 @@ class WishlistRepository:
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
         """Remove an item from user's wishlist"""
         try:
-            logger.info(
-                f"Finding wishlist item {wishlist_id} for user {user_id}")
             query = select(Wishlist).filter(
                 Wishlist.id == wishlist_id,
                 Wishlist.user_id == user_id
@@ -72,12 +70,8 @@ class WishlistRepository:
                     f"Wishlist item {wishlist_id} not found for user {user_id}")
                 return False
 
-            logger.info(
-                f"Deleting wishlist item {wishlist_id} for user {user_id}")
             await self.db.delete(wishlist_item)
             await self.db.commit()
-            logger.info(
-                f"Successfully deleted wishlist item {wishlist_id} for user {user_id}")
             return True
         except Exception as e:
             logger.error(

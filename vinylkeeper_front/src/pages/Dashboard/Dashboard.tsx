@@ -130,12 +130,16 @@ export default function Dashboard() {
 
   // Show tutorial for new users who haven't seen it yet
   useEffect(() => {
-    if (currentUser && !currentUser.is_tutorial_seen) {
-      // Check if user has already seen the tutorial in this session
+    if (
+      currentUser &&
+      !currentUser.is_tutorial_seen &&
+      typeof currentUser.number_of_connections === "number" &&
+      currentUser.number_of_connections < 2
+    ) {
       const hasSeenTutorial = localStorage.getItem(
         `tutorial_seen_${currentUser.user_uuid}`
       );
-      if (!hasSeenTutorial) {
+      if (!hasSeenTutorial && currentUser.number_of_connections < 2) {
         setShowTutorial(true);
       }
     }

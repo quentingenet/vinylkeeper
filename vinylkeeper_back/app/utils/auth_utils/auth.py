@@ -13,6 +13,7 @@ from app.db.session import get_db
 from app.models.user_model import User
 from app.repositories.user_repository import UserRepository
 from app.core.exceptions import RefreshTokenNotFoundError
+from app.core.logging import logger
 
 # Load keys
 def load_keys():
@@ -31,7 +32,7 @@ def load_keys():
 try:
     PUBLIC_KEY, PRIVATE_KEY = load_keys()
 except RuntimeError as e:
-    print(f"ERROR: {e}")
+    logger.error(f"ERROR: {e}")
     raise
 
 # Use global settings instance

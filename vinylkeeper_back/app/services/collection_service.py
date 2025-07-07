@@ -6,6 +6,7 @@ from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.wishlist_repository import WishlistRepository
+from app.repositories.place_repository import PlaceRepository
 from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.collection_album import CollectionAlbum
@@ -37,6 +38,7 @@ from app.core.exceptions import (
     ErrorCode
 )
 from app.core.logging import logger
+from app.core.enums import EntityTypeEnum
 
 
 class CollectionService:
@@ -47,12 +49,14 @@ class CollectionService:
         repository: CollectionRepository,
         like_repository: LikeRepository,
         collection_album_repository: CollectionAlbumRepository,
-        wishlist_repository: WishlistRepository
+        wishlist_repository: WishlistRepository,
+        place_repository: PlaceRepository
     ):
         self.repository = repository
         self.like_repository = like_repository
         self.collection_album_repository = collection_album_repository
         self.wishlist_repository = wishlist_repository
+        self.place_repository = place_repository
 
     def _convert_external_source_to_dict(self, external_source: ExternalSource) -> dict:
         """Convert ExternalSource SQLAlchemy object to dict for Pydantic schema"""
@@ -131,10 +135,7 @@ class CollectionService:
     async def create_collection(self, collection_data: CollectionCreate, user_id: int) -> CollectionResponse:
         """Create a new collection"""
         try:
-            # Validate collection data
             self._validate_collection_data(collection_data)
-            
-            # Create collection
             collection = Collection(
                 name=collection_data.name,
                 description=collection_data.description,
@@ -142,58 +143,14 @@ class CollectionService:
                 mood_id=collection_data.mood_id,
                 owner_id=user_id
             )
-            
-            # Save to database
             created_collection = await self.repository.create(collection)
-            
-            # Force load relationships
             await self.repository.db.refresh(created_collection)
-            
-            # Add albums if provided
             if collection_data.album_ids:
                 await self.repository.add_albums(created_collection, collection_data.album_ids)
-            
-            # Add artists if provided
             if collection_data.artist_ids:
                 await self.repository.add_artists(created_collection, collection_data.artist_ids)
-            
-            # Load all relationships
             await self.repository.db.refresh(created_collection)
-            
-            # Get likes info for the new collection
-            likes_count = await self.like_repository.count_likes(created_collection.id)
-            is_liked = False  # New collection, so not liked by anyone yet
-            
-            # Convert artists to Pydantic schemas
-            artists = []
-            if hasattr(created_collection, 'artists') and created_collection.artists:
-                for artist in created_collection.artists:
-                    artists.append(self._convert_artist_to_collection_artist_response(artist))
-            
-            # Convert owner to Pydantic schema
-            owner = None
-            if hasattr(created_collection, 'owner') and created_collection.owner:
-                owner = self._convert_user_to_mini_response(created_collection.owner)
-            
-            # Create response using Pydantic schema
-            response = CollectionResponse(
-                id=created_collection.id,
-                name=created_collection.name,
-                description=created_collection.description,
-                is_public=created_collection.is_public,
-                mood_id=created_collection.mood_id,
-                owner_id=created_collection.owner_id,
-                created_at=created_collection.created_at,
-                updated_at=created_collection.updated_at,
-                owner=owner,
-                albums=[],  # We'll handle albums separately if needed
-                artists=artists,
-                likes_count=likes_count,
-                is_liked_by_user=is_liked,
-                wishlist=[]
-            )
-            
-            return response
+            return await self._build_collection_response(created_collection, user_id)
         except (DuplicateFieldError, ValidationError) as e:
             raise e
         except Exception as e:
@@ -231,9 +188,7 @@ class CollectionService:
     async def get_user_places_count(self, user_id: int) -> int:
         """Get count of user's places"""
         try:
-            # This would need to be implemented in place repository
-            # For now, return 0 as placeholder
-            return 0
+            return await self.place_repository.count_places_by_user(user_id)
         except Exception as e:
             logger.error(f"Error getting user places count: {str(e)}")
             return 0
@@ -242,58 +197,7 @@ class CollectionService:
         """Get a collection by ID"""
         try:
             collection = await self.repository.get_by_id(collection_id, load_relations=False)
-            
-            # Load artists explicitly
-            artists = []
-            artists_data, _ = await self.repository.get_collection_artists_paginated(collection_id, 1, 1000)
-            for artist in artists_data:
-                artists.append(self._convert_artist_to_collection_artist_response(artist))
-            
-            # Load albums explicitly
-            albums = []
-            albums_data = await self.collection_album_repository.get_collection_albums(collection_id)
-            for album, collection_album in albums_data:
-                albums.append(self._convert_album_to_collection_album_response(album, collection_album))
-            
-            # Convert owner to Pydantic schema
-            owner = None
-            if hasattr(collection, 'owner') and collection.owner:
-                owner = self._convert_user_to_mini_response(collection.owner)
-            
-            # Get likes info
-            likes_count = await self.like_repository.count_likes(collection.id)
-            is_liked = await self.like_repository.is_liked_by_user(collection.id, collection.owner_id)
-
-            # Get wishlist items for the collection owner
-            wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
-            wishlist = []
-            for item in wishlist_items:
-                try:
-                    # Use Pydantic to validate directly from SQLAlchemy object
-                    wishlist.append(WishlistItemResponse.model_validate(item))
-                except Exception as e:
-                    logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
-                    continue
-            
-            # Create response using Pydantic schema
-            response = CollectionResponse(
-                id=collection.id,
-                name=collection.name,
-                description=collection.description,
-                is_public=collection.is_public,
-                mood_id=collection.mood_id,
-                owner_id=collection.owner_id,
-                created_at=collection.created_at,
-                updated_at=collection.updated_at,
-                owner=owner,
-                albums=albums,
-                artists=artists,
-                likes_count=likes_count,
-                is_liked_by_user=is_liked,
-                wishlist=wishlist
-            )
-            
-            return response
+            return await self._build_collection_response(collection)
         except NoResultFound:
             raise ResourceNotFoundError("Collection", collection_id)
         except Exception as e:
@@ -528,57 +432,13 @@ class CollectionService:
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[CollectionResponse], int]:
         """Get user's collections with pagination"""
         try:
-            # Validate pagination parameters
             self._validate_pagination_params(page, limit)
-            
-            # Get collections from repository
             collections, total = await self.repository.get_user_collections(user_id, page, limit)
-            
-            # Convert to Pydantic schemas
             collection_responses = []
             for collection in collections:
-                # Get likes info
-                likes_count = await self.like_repository.count_likes(collection.id)
-                is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
-                
-                # Load artists explicitly
-                artists = []
-                artists_data, _ = await self.repository.get_collection_artists_paginated(collection.id, 1, 1000)
-                for artist in artists_data:
-                    artists.append(self._convert_artist_to_collection_artist_response(artist))
-                
-                # Load albums explicitly
-                albums = []
-                albums_data = await self.collection_album_repository.get_collection_albums(collection.id)
-                for album, collection_album in albums_data:
-                    albums.append(self._convert_album_to_collection_album_response(album, collection_album))
-                
-                # Convert owner to Pydantic schema
-                owner = None
-                if hasattr(collection, 'owner') and collection.owner:
-                    owner = self._convert_user_to_mini_response(collection.owner)
-                
-                # Create response using Pydantic schema
-                response = CollectionResponse(
-                    id=collection.id,
-                    name=collection.name,
-                    description=collection.description,
-                    is_public=collection.is_public,
-                    mood_id=collection.mood_id,
-                    owner_id=collection.owner_id,
-                    created_at=collection.created_at,
-                    updated_at=collection.updated_at,
-                    owner=owner,
-                    albums=albums,
-                    artists=artists,
-                    likes_count=likes_count,
-                    is_liked_by_user=is_liked,
-                    wishlist=[]
-                )
+                response = await self._build_collection_response(collection, user_id)
                 collection_responses.append(response)
-            
             return collection_responses, total
-            
         except ValidationError as e:
             raise e
         except Exception as e:
@@ -592,60 +452,13 @@ class CollectionService:
     async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None, user_id: int = None) -> Tuple[List[CollectionResponse], int]:
         """Get public collections with pagination"""
         try:
-            # Validate pagination parameters
             self._validate_pagination_params(page, limit)
-            
-            # Get collections from repository
             collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id)
-            
-            # Convert to Pydantic schemas
             collection_responses = []
             for collection in collections:
-                # Get likes info
-                likes_count = await self.like_repository.count_likes(collection.id)
-                # Check if current user liked this collection
-                is_liked = False
-                if user_id:
-                    is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
-                
-                # Load artists explicitly
-                artists = []
-                artists_data, _ = await self.repository.get_collection_artists_paginated(collection.id, 1, 1000)
-                for artist in artists_data:
-                    artists.append(self._convert_artist_to_collection_artist_response(artist))
-                
-                # Load albums explicitly
-                albums = []
-                albums_data = await self.collection_album_repository.get_collection_albums(collection.id)
-                for album, collection_album in albums_data:
-                    albums.append(self._convert_album_to_collection_album_response(album, collection_album))
-                
-                # Convert owner to Pydantic schema
-                owner = None
-                if hasattr(collection, 'owner') and collection.owner:
-                    owner = self._convert_user_to_mini_response(collection.owner)
-                
-                # Create response using Pydantic schema
-                response = CollectionResponse(
-                    id=collection.id,
-                    name=collection.name,
-                    description=collection.description,
-                    is_public=collection.is_public,
-                    mood_id=collection.mood_id,
-                    owner_id=collection.owner_id,
-                    created_at=collection.created_at,
-                    updated_at=collection.updated_at,
-                    owner=owner,
-                    albums=albums,
-                    artists=artists,
-                    likes_count=likes_count,
-                    is_liked_by_user=is_liked,
-                    wishlist=[]
-                )
+                response = await self._build_collection_response(collection, user_id)
                 collection_responses.append(response)
-            
             return collection_responses, total
-            
         except ValidationError as e:
             raise e
         except Exception as e:
@@ -772,84 +585,16 @@ class CollectionService:
         """Get a collection by ID with proper access control"""
         try:
             collection = await self.repository.get_by_id(collection_id, load_relations=False)
-            
             if not collection:
                 raise ResourceNotFoundError("Collection", collection_id)
-            
-            # Check if user has access to the collection
             if not collection.is_public and collection.owner_id != user_id:
                 raise ForbiddenError(
                     error_code=4003,
                     message="You don't have permission to view this collection",
                     details={"collection_id": collection_id}
                 )
-            
-            # Load artists explicitly
-            artists = []
-            artists_data, _ = await self.repository.get_collection_artists_paginated(collection_id, 1, 1000)
-            for artist in artists_data:
-                artists.append(self._convert_artist_to_collection_artist_response(artist))
-            
-            # Load albums explicitly
-            albums = []
-            albums_data = await self.collection_album_repository.get_collection_albums(collection_id)
-            for album, collection_album in albums_data:
-                albums.append(self._convert_album_to_collection_album_response(album, collection_album))
-            
-            # Convert owner to Pydantic schema
-            owner = None
-            if hasattr(collection, 'owner') and collection.owner:
-                owner = self._convert_user_to_mini_response(collection.owner)
-            
-            # Get likes info
-            likes_count = await self.like_repository.count_likes(collection.id)
-            is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
-            
-            # Get wishlist items for the collection owner
-            wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
-            wishlist = []
-            for item in wishlist_items:
-                try:
-                    # Create a dictionary with the item data and computed fields
-                    item_dict = {
-                        "id": item.id,
-                        "user_id": item.user_id,
-                        "external_id": item.external_id,
-                        "entity_type_id": item.entity_type_id,
-                        "external_source_id": item.external_source_id,
-                        "title": item.title,
-                        "image_url": item.image_url,
-                        "created_at": item.created_at,
-                        "entity_type": item.entity_type.name.lower() if item.entity_type else "unknown",
-                        "source": item.external_source.name.lower() if item.external_source else "unknown"
-                    }
-                    wishlist_response = WishlistItemResponse.model_validate(item_dict)
-                    wishlist.append(wishlist_response)
-                except Exception as e:
-                    logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
-                    continue
-            
-            # Create response using Pydantic schema
-            response = CollectionResponse(
-                id=collection.id,
-                name=collection.name,
-                description=collection.description,
-                is_public=collection.is_public,
-                mood_id=collection.mood_id,
-                owner_id=collection.owner_id,
-                created_at=collection.created_at,
-                updated_at=collection.updated_at,
-                owner=owner,
-                albums=albums,
-                artists=artists,
-                likes_count=likes_count,
-                is_liked_by_user=is_liked,
-                wishlist=wishlist
-            )
-            
-            return response
-            
-        except (ResourceNotFoundError, ForbiddenError) as e:
+            return await self._build_collection_response(collection, user_id)
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
             raise e
         except Exception as e:
             logger.error(f"Error getting collection by ID: {str(e)}")
@@ -1030,4 +775,79 @@ class CollectionService:
                 error_code=5000,
                 message="Failed to search collection items",
                 details={"error": str(e)}
+            )
+
+    async def _build_collection_response(self, collection, user_id=None) -> CollectionResponse:
+        """Helper to build a CollectionResponse from a Collection instance."""
+        # Load artists
+        artists = []
+        artists_data, _ = await self.repository.get_collection_artists_paginated(collection.id, 1, 1000)
+        for artist in artists_data:
+            artists.append(self._convert_artist_to_collection_artist_response(artist))
+
+        # Load albums
+        albums = []
+        albums_data = await self.collection_album_repository.get_collection_albums(collection.id)
+        for album, collection_album in albums_data:
+            albums.append(self._convert_album_to_collection_album_response(album, collection_album))
+
+        # Owner
+        owner = None
+        if hasattr(collection, 'owner') and collection.owner:
+            owner = self._convert_user_to_mini_response(collection.owner)
+
+        # Likes
+        likes_count = await self.like_repository.count_likes(collection.id)
+        is_liked = False
+        if user_id is not None:
+            is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
+        elif hasattr(collection, 'owner_id'):
+            is_liked = await self.like_repository.is_liked_by_user(collection.id, collection.owner_id)
+
+        # Wishlist (pour le owner)
+        wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
+        wishlist = []
+        for item in wishlist_items:
+            try:
+                item_dict = item.__dict__.copy()
+                # Robust mapping for entity_type
+                entity_type_str = None
+                if hasattr(item, 'entity_type') and item.entity_type is not None:
+                    entity_type = item.entity_type
+                    if hasattr(entity_type, 'value'):
+                        entity_type_str = entity_type.value
+                    elif hasattr(entity_type, 'name'):
+                        entity_type_str = entity_type.name.lower()
+                    else:
+                        entity_type_str = str(entity_type).lower()
+                elif hasattr(item, 'entity_type_id') and item.entity_type_id:
+                    # Fallback: map id to enum
+                    try:
+                        if item.entity_type_id == 1:
+                            entity_type_str = EntityTypeEnum.ALBUM.value
+                        elif item.entity_type_id == 2:
+                            entity_type_str = EntityTypeEnum.ARTIST.value
+                    except Exception:
+                        entity_type_str = None
+                item_dict['entity_type'] = entity_type_str
+                wishlist.append(WishlistItemResponse.model_validate(item_dict))
+            except Exception as e:
+                logger.error(f"Error processing wishlist item {getattr(item, 'id', '?')}: {str(e)}")
+                continue
+
+        return CollectionResponse(
+            id=collection.id,
+            name=collection.name,
+            description=collection.description,
+            is_public=collection.is_public,
+            mood_id=collection.mood_id,
+            owner_id=collection.owner_id,
+            created_at=collection.created_at,
+            updated_at=collection.updated_at,
+            owner=owner,
+            albums=albums,
+            artists=artists,
+            likes_count=likes_count,
+            is_liked_by_user=is_liked,
+            wishlist=wishlist
             )

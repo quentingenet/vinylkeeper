@@ -12,7 +12,7 @@ from app.schemas.user_schema import (
     ContactMessageResponse
 )
 import uuid
-from app.mails.client_mail import send_mail, send_mail_sync, MailSubject
+from app.mails.client_mail import send_mail, MailSubject
 from app.core.exceptions import (
     ErrorCode,
     InvalidCredentialsError,
@@ -170,7 +170,7 @@ class UserService:
 
             # Send password reset email
             reset_token = create_reset_token(str(user.user_uuid))
-            email_sent = send_mail_sync(
+            email_sent = await send_mail(
                 to=user.email,
                 subject=MailSubject.PasswordReset,
                 token=reset_token
@@ -225,10 +225,11 @@ class UserService:
     async def send_new_user_registered_email(self, user: User) -> None:
         """Send email to admin about new user registration"""
         try:
-            email_sent = send_mail_sync(
+            email_sent = await send_mail(
                 to=settings.EMAIL_ADMIN,
-                subject=MailSubject.NewUser,
-                user=user
+                subject=MailSubject.NewUserRegistered,
+                username=user.username,
+                user_email=user.email
             )
             if not email_sent:
                 logger.error(f"Failed to send new user email to admin for user {user.username}")

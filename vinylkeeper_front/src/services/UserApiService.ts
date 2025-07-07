@@ -23,6 +23,7 @@ export interface UserResponse {
   };
   is_superuser: boolean;
   liked_places_count: number;
+  number_of_connections: number;
 }
 
 export interface UserSettingsResponse {

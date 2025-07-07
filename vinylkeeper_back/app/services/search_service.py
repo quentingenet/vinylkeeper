@@ -261,7 +261,6 @@ class SearchService:
             )
 
         url = f"{self.base_url}/artists/{artist_id}"
-        logger.info(f"Fetching artist metadata for ID: {artist_id}")
         
         async with httpx.AsyncClient() as client:
             try:

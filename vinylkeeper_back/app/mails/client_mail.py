@@ -11,7 +11,6 @@ from app.mails.templates_mails.contact_message import contact_message_template
 from app.mails.templates_mails.new_place_suggestion import new_place_suggestion_template
 from app.core.config_env import settings
 import asyncio
-import concurrent.futures
 
 class MailSubject(Enum):
     PasswordReset = "Password reset"
@@ -75,19 +74,4 @@ def _send_mail_sync(to: str, msg: MIMEMultipart):
         server.quit()
 
 
-def send_mail_sync(to: str, subject: MailSubject, **kwargs):
-    """Synchronous version of send_mail for use in non-async contexts"""
-    try:
-        # Check if we're already in an event loop
-        try:
-            loop = asyncio.get_running_loop()
-            # If we're in a loop, create a task
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, send_mail(to, subject, **kwargs))
-                return future.result()
-        except RuntimeError:
-            # No event loop running, we can use asyncio.run
-            return asyncio.run(send_mail(to, subject, **kwargs))
-    except Exception as e:
-        logger.error(f"Error in send_mail_sync: {e}")
-        return False
+

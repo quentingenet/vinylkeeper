@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from app.models.collection_model import Collection
@@ -47,9 +47,11 @@ class CollectionRepository:
             query = select(Collection).filter(Collection.id == collection_id)
             
             if load_relations:
-                # Note: joinedload doesn't work with async, we'll need to handle this differently
-                # For now, we'll load the basic collection and handle relations separately
-                pass
+                query = query.options(
+                    selectinload(Collection.owner),
+                    selectinload(Collection.albums),
+                    selectinload(Collection.artists)
+                )
             
             result = await self.db.execute(query)
             collection = result.scalar_one_or_none()
@@ -327,8 +329,6 @@ class CollectionRepository:
             logger.error(f"Error getting collection albums: {str(e)}")
             return []
 
-
-
     async def get_collection_artists_paginated(self, collection_id: int, page: int = 1, limit: int = 12) -> Tuple[List[Artist], int]:
         """Get paginated artists from a collection."""
         try:
@@ -350,8 +350,6 @@ class CollectionRepository:
             
             result = await self.db.execute(query)
             artists = result.scalars().all()
-            
-
             
             return artists, total
         except Exception as e:

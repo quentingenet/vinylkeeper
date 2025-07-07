@@ -127,6 +127,22 @@ class PlaceRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
+    async def count_places_by_user(self, user_id: int) -> int:
+        """Count all places submitted by a specific user."""
+        query = select(func.count(Place.id)).filter(
+            and_(Place.submitted_by_id == user_id, Place.is_valid == True)
+        )
+        result = await self.db.execute(query)
+        return result.scalar()
+
+    async def count_moderated_places_by_user(self, user_id: int) -> int:
+        """Count all moderated places submitted by a specific user."""
+        query = select(func.count(Place.id)).filter(
+            and_(Place.submitted_by_id == user_id, Place.is_valid == True, Place.is_moderated == True)
+        )
+        result = await self.db.execute(query)
+        return result.scalar()
+
     async def get_places_by_type(self, place_type_id: int) -> List[Place]:
         """Get all places of a specific type."""
         query = select(Place).options(
