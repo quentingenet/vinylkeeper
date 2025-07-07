@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Response, Depends, BackgroundTasks, status, Query, HTTPException, Request
+from fastapi import APIRouter, Response, Depends, BackgroundTasks, status, Query, Request
 from app.schemas.user_schema import (
     UserAuthSchema,
     UserCreate,
@@ -29,10 +29,12 @@ from app.core.exceptions import (
     DuplicateEmailError,
     DuplicateUsernameError,
     PasswordUpdateError,
-    AppException
+    AppException,
+    ServerError
 )
 from app.core.enums import RoleEnum
 from app.core.config_env import settings
+from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
@@ -92,59 +94,37 @@ async def register(
 
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def forgot_password(
     data: ForgotPasswordSchema,
     user_service: UserService = Depends(get_user_service)
 ):
     """Send password reset email"""
-    try:
-        await user_service.send_password_reset_email(data.email)
-        return {"message": "If an account exists with this email, a password reset link has been sent"}
-    except Exception as e:
-        logger.error(f"Failed to send password reset email: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to send password reset email"}
-        )
+    await user_service.send_password_reset_email(data.email)
+    return {"message": "If an account exists with this email, a password reset link has been sent"}
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def reset_password(
     data: ResetPasswordSchema,
     user_service: UserService = Depends(get_user_service)
 ):
     """Reset user password"""
-    try:
-        await user_service.reset_password(data.token, data.new_password)
-        return {"message": "Password reset successfully"}
-    except (UserNotFoundError, PasswordUpdateError) as e:
-        logger.warning(f"Password reset failed: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": str(e)}
-        )
+    await user_service.reset_password(data.token, data.new_password)
+    return {"message": "Password reset successfully"}
 
 
 @router.post("/refresh-token", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def refresh_token(response: Response, request: Request):
     """Refresh access and refresh tokens"""
-    try:
-        user_uuid = verify_refresh_token(request)
-        access_token = create_token(user_uuid, TokenType.ACCESS)
-        refresh_token = create_token(user_uuid, TokenType.REFRESH)
-        set_token_cookie(response, access_token, TokenType.ACCESS)
-        set_token_cookie(response, refresh_token, TokenType.REFRESH)
-        return {"message": "Tokens refreshed", "isLoggedIn": True}
-    except RefreshTokenNotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"message": "Refresh token not found"}
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"message": "Invalid refresh token"}
-        )
+    user_uuid = verify_refresh_token(request)
+    access_token = create_token(user_uuid, TokenType.ACCESS)
+    refresh_token = create_token(user_uuid, TokenType.REFRESH)
+    set_token_cookie(response, access_token, TokenType.ACCESS)
+    set_token_cookie(response, refresh_token, TokenType.REFRESH)
+    return {"message": "Tokens refreshed", "isLoggedIn": True}
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
@@ -156,118 +136,75 @@ async def logout(response: Response):
 
 
 @router.get("/me", response_model=UserMeResponse)
+@handle_app_exceptions
 async def get_current_user_info(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Get current user information"""
-    try:
-        user_me_data = await user_service.get_user_me(current_user)
-        return user_me_data
-    except Exception as e:
-        logger.error(f"Failed to get current user info: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to get user information"}
-        )
+    user_me_data = await user_service.get_user_me(current_user)
+    return user_me_data
 
 
 @router.get("/me/settings", response_model=UserSettingsResponse)
+@handle_app_exceptions
 async def get_current_user_settings(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Get current user settings information"""
-    try:
-        user_settings_data = await user_service.get_user_settings(current_user)
-        return user_settings_data
-    except Exception as e:
-        logger.error(f"Failed to get current user settings: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to get user settings"}
-        )
+    user_settings_data = await user_service.get_user_settings(current_user)
+    return user_settings_data
 
 
 @router.put("/me", response_model=UserResponse)
+@handle_app_exceptions
 async def update_current_user(
     user_data: UserUpdate,
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Update current user information"""
-    try:
-        updated_user = await user_service.update_user(current_user, user_data)
-        return UserResponse.model_validate(updated_user)
-    except (DuplicateEmailError, DuplicateUsernameError) as e:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to update current user: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to update user information"}
-        )
+    updated_user = await user_service.update_user(current_user, user_data)
+    return UserResponse.model_validate(updated_user)
 
 
 @router.put("/me/password", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def change_my_password(
     password_data: PasswordChangeSchema,
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Change current user password"""
-    try:
-        await user_service.change_password(
-            current_user,
-            password_data.current_password,
-            password_data.new_password
-        )
-        return {"message": "Password changed successfully"}
-    except (InvalidCredentialsError, PasswordUpdateError) as e:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to change password: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to change password"}
-        )
+    await user_service.change_password(
+        current_user,
+        password_data.current_password,
+        password_data.new_password
+    )
+    return {"message": "Password changed successfully"}
 
 
 @router.delete("/me", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def delete_my_account(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Delete current user account"""
-    try:
-        success = await user_service.delete_user(current_user)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={"message": "User not found"}
-            )
-        return {"message": "Account deleted successfully"}
-    except Exception as e:
-        logger.error(f"Failed to delete account: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to delete account"}
-        )
+    success = await user_service.delete_user(current_user)
+    if not success:
+        raise UserNotFoundError(str(current_user.user_uuid))
+    return {"message": "Account deleted successfully"}
 
 
 @router.post("/contact", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def send_contact_message(
     message_data: ContactMessageRequest,
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Send contact message from authenticated user"""
-    try:
-        response = await user_service.send_contact_message(current_user, message_data)
-        return response
-    except Exception as e:
-        logger.error(f"Failed to send contact message: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Failed to send contact message"}
-        )
+    response = await user_service.send_contact_message(current_user, message_data)
+    return response

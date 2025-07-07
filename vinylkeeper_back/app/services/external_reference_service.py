@@ -112,19 +112,12 @@ class ExternalReferenceService:
 
     def _build_wishlist_response(self, wishlist_item: Wishlist, entity_type: str, source: str) -> WishlistItemResponse:
         """Build wishlist response with additional fields"""
-        response_data = {
-            "id": wishlist_item.id,
-            "user_id": wishlist_item.user_id,
-            "external_id": wishlist_item.external_id,
-            "entity_type_id": wishlist_item.entity_type_id,
-            "external_source_id": wishlist_item.external_source_id,
-            "title": wishlist_item.title,
-            "image_url": wishlist_item.image_url,
-            "created_at": wishlist_item.created_at,
+        wishlist_dict = wishlist_item.__dict__.copy()
+        wishlist_dict.update({
             "entity_type": entity_type,
             "source": source
-        }
-        return WishlistItemResponse(**response_data)
+        })
+        return WishlistItemResponse.model_validate(wishlist_dict)
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
         """Remove an item from user's wishlist"""
@@ -213,10 +206,9 @@ class ExternalReferenceService:
             # Build response with data from the created collection item
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # For albums, collection_item is a CollectionAlbum object with composite primary key
-                response_data = {
+                response_dict = {
                     "id": collection_item.collection_id,  # Use collection_id as ID
                     "user_id": user_id,
-                    "collection_id": collection_id,
                     "external_id": external_id,
                     "entity_type": request.entity_type.value,
                     "title": request.title,
@@ -226,10 +218,9 @@ class ExternalReferenceService:
                 }
             else:
                 # For artists, collection_item is a dictionary
-                response_data = {
+                response_dict = {
                     "id": collection_item["id"],
                     "user_id": user_id,
-                    "collection_id": collection_id,
                     "external_id": external_id,
                     "entity_type": request.entity_type.value,
                     "title": request.title,
@@ -238,10 +229,7 @@ class ExternalReferenceService:
                     "created_at": collection_item["created_at"]
                 }
             
-            if request.entity_type == EntityTypeEnum.ALBUM and request.album_data:
-                response_data["album_data"] = request.album_data.dict(exclude_none=True)
-            
-            return CollectionItemResponse(**response_data)
+            return CollectionItemResponse.model_validate(response_dict)
 
         except Exception as e:
             logger.error(f"Failed to add to collection: {str(e)}")

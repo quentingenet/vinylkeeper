@@ -1,13 +1,11 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from app.core.config_env import Settings
+from app.core.config_env import settings
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 import logging
 
 logger = logging.getLogger(__name__)
-
-settings = Settings()
 
 def configure_cors(app: FastAPI):
     origins = settings.ALLOWED_ORIGINS.split(",")

@@ -1,12 +1,11 @@
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
-from app.core.config_env import Settings
+from app.core.config_env import settings
 from app.models.base import Base
 
 """
 This file/script is used to create the database tables.
 """
-settings = Settings()
 
 DB_USERNAME = settings.DATABASE_USERNAME
 DB_PASSWORD = settings.DATABASE_PASSWORD

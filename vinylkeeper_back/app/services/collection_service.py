@@ -269,19 +269,8 @@ class CollectionService:
             wishlist = []
             for item in wishlist_items:
                 try:
-                    wishlist_data = {
-                        "id": item.id,
-                        "user_id": item.user_id,
-                        "external_id": item.external_id,
-                        "entity_type_id": item.entity_type_id,
-                        "external_source_id": item.external_source_id,
-                        "title": item.title,
-                        "image_url": item.image_url,
-                        "created_at": item.created_at,
-                        "entity_type": item.entity_type.name if item.entity_type else "UNKNOWN",
-                        "source": item.external_source.name if item.external_source else "UNKNOWN"
-                    }
-                    wishlist.append(WishlistItemResponse(**wishlist_data))
+                    # Use Pydantic to validate directly from SQLAlchemy object
+                    wishlist.append(WishlistItemResponse.model_validate(item))
                 except Exception as e:
                     logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
                     continue
@@ -503,7 +492,7 @@ class CollectionService:
                 )
             
             # Remove artist from collection
-            await self.repository.remove_artist_from_collection(collection_id, artist_id)
+            await self.repository.remove_artist(collection, artist_id)
             return True
             
         except (ResourceNotFoundError, ForbiddenError) as e:
@@ -821,19 +810,8 @@ class CollectionService:
             wishlist = []
             for item in wishlist_items:
                 try:
-                    wishlist_data = {
-                        "id": item.id,
-                        "user_id": item.user_id,
-                        "external_id": item.external_id,
-                        "entity_type_id": item.entity_type_id,
-                        "external_source_id": item.external_source_id,
-                        "title": item.title,
-                        "image_url": item.image_url,
-                        "created_at": item.created_at,
-                        "entity_type": item.entity_type.name if item.entity_type else "UNKNOWN",
-                        "source": item.external_source.name if item.external_source else "UNKNOWN"
-                    }
-                    wishlist.append(WishlistItemResponse(**wishlist_data))
+                    # Use Pydantic to validate directly from SQLAlchemy object
+                    wishlist.append(WishlistItemResponse.model_validate(item))
                 except Exception as e:
                     logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
                     continue

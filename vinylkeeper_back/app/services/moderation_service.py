@@ -114,11 +114,9 @@ class ModerationService:
             if new_status == ModerationStatusEnum.APPROVED.value:
                 # Approve the place
                 await self.place_repository.update_place(request.place_id, {"is_moderated": True})
-                logger.info(f"Place {request.place_id} approved by admin {admin_user_id}")
             elif new_status == ModerationStatusEnum.REJECTED.value:
                 # Reject the place (mark as invalid)
                 await self.place_repository.update_place(request.place_id, {"is_moderated": False, "is_valid": False})
-                logger.info(f"Place {request.place_id} rejected by admin {admin_user_id}")
 
             return self._create_moderation_request_response(updated_request)
         except (ResourceNotFoundError, ValidationError):
@@ -153,39 +151,4 @@ class ModerationService:
 
     def _create_moderation_request_response(self, request: ModerationRequest) -> ModerationRequestResponse:
         """Create a ModerationRequestResponse from a ModerationRequest model."""
-        response_data = {
-            "id": request.id,
-            "place_id": request.place_id,
-            "user_id": request.user_id,
-            "status_id": request.status_id,
-            "created_at": request.created_at,
-            "submitted_at": request.submitted_at,
-            "place": None,
-            "user": None,
-            "status": None
-        }
-        
-        # Add place info if available
-        if request.place:
-            response_data["place"] = {
-                "id": request.place.id,
-                "name": request.place.name,
-                "city": request.place.city,
-                "country": request.place.country
-            }
-        
-        # Add user info if available
-        if request.user:
-            response_data["user"] = {
-                "id": request.user.id,
-                "username": request.user.username
-            }
-        
-        # Add status info if available
-        if request.status:
-            response_data["status"] = {
-                "id": request.status.id,
-                "name": request.status.name
-            }
-        
-        return ModerationRequestResponse(**response_data) 
+        return ModerationRequestResponse.model_validate(request) 

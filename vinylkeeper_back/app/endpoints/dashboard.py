@@ -1,22 +1,18 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, status
 from app.schemas.dashboard_schema import DashboardStatsResponse
 from app.services.dashboard_service import DashboardService
 from app.deps.deps import get_dashboard_service
 from app.core.exceptions import ServerError
 from app.utils.auth_utils.auth import get_current_user
+from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
 @router.get("/stats", response_model=DashboardStatsResponse)
+@handle_app_exceptions
 async def get_dashboard_stats(
     year: int = Query(default=2025, description="Year for stats"),
     dashboard_service: DashboardService = Depends(get_dashboard_service),
     user=Depends(get_current_user)
 ):
-    try:
-        return await dashboard_service.get_dashboard_stats(year, user)
-    except ServerError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": str(e)}
-        )
+    return await dashboard_service.get_dashboard_stats(year, user)

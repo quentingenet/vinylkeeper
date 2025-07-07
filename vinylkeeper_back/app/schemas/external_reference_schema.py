@@ -1,9 +1,26 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import Field, field_validator
+from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
 from app.core.enums import EntityTypeEnum
+
+
+class EntityTypeResponse(BaseSchema):
+    """Schema for entity type data in responses."""
+    id: int = Field(gt=0, description="Entity type ID")
+    name: str = Field(description="Entity type name")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExternalSourceResponse(BaseSchema):
+    """Schema for external source data in responses."""
+    id: int = Field(gt=0, description="External source ID")
+    name: str = Field(description="External source name")
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlbumStateData(BaseSchema):
@@ -102,9 +119,11 @@ class WishlistItemResponse(BaseSchema):
     image_url: str = Field(..., description="URL of the image")
     created_at: datetime = Field(..., description="When the wishlist item was created")
     
-    # Additional fields for display
-    entity_type: str = Field(..., description="Entity type name (ALBUM or ARTIST)")
-    source: str = Field(..., description="Source name (DISCOGS, etc.)")
+    # Additional fields for display - now using proper schemas
+    entity_type: Optional[EntityTypeResponse] = Field(None, description="Entity type data")
+    external_source: Optional[ExternalSourceResponse] = Field(None, description="External source data")
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CollectionItemResponse(BaseSchema):
@@ -117,6 +136,8 @@ class CollectionItemResponse(BaseSchema):
     image_url: str = Field(..., description="URL of the image")
     source: str = Field(..., description="Source of the data")
     created_at: datetime = Field(..., description="When the reference was created")
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AddExternalResponse(BaseSchema):

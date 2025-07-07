@@ -9,11 +9,9 @@ from app.mails.templates_mails.new_user import new_user_register_template
 from app.mails.templates_mails.reset_password import reset_password_template
 from app.mails.templates_mails.contact_message import contact_message_template
 from app.mails.templates_mails.new_place_suggestion import new_place_suggestion_template
-from app.core.config_env import Settings
+from app.core.config_env import settings
 import asyncio
 import concurrent.futures
-
-settings = Settings()
 
 class MailSubject(Enum):
     PasswordReset = "Password reset"

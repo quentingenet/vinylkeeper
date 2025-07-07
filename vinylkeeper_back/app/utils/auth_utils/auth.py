@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import HTTPBearer
 from typing import Optional
 
-from app.core.config_env import Settings
+from app.core.config_env import settings
 from app.db.session import get_db
 from app.models.user_model import User
 from app.repositories.user_repository import UserRepository
@@ -34,8 +34,7 @@ except RuntimeError as e:
     print(f"ERROR: {e}")
     raise
 
-# Load config only once
-settings = Settings()
+# Use global settings instance
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRE_MINUTES = settings.REFRESH_TOKEN_EXPIRE_MINUTES

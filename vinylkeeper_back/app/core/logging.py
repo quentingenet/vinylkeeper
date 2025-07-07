@@ -1,9 +1,7 @@
 import logging
 from logging.config import dictConfig
 from logging.handlers import TimedRotatingFileHandler
-from app.core.config_env import Settings
-
-settings = Settings()
+from app.core.config_env import settings
 
 # Determine log level based on environment
 if settings.APP_ENV == "production":

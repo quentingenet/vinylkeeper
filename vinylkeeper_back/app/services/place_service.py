@@ -361,23 +361,11 @@ class PlaceService:
             result = await self.repository.db.execute(query)
             pending_status = result.scalar_one_or_none()
             
-            # Add logging to debug the issue
-            logger.info(f"Looking for moderation status: '{ModerationStatusEnum.PENDING.value}'")
-            logger.info(f"Found status: {pending_status}")
-            
             if not pending_status:
-                # Let's also check what statuses exist in the database
-                all_statuses_query = select(ModerationStatus)
-                all_result = await self.repository.db.execute(all_statuses_query)
-                all_statuses = all_result.scalars().all()
-                logger.error(f"Available moderation statuses: {[s.name for s in all_statuses]}")
-                
                 raise ServerError(
                     error_code=5000,
                     message="Pending moderation status not found in database"
                 )
-            
-            logger.info(f"Creating moderation request with place_id={place_id}, user_id={user_id}, status_id={pending_status.id}")
             
             # Create moderation request using Pydantic schema
             moderation_request_data = ModerationRequestCreate(
@@ -386,12 +374,8 @@ class PlaceService:
                 status_id=pending_status.id
             )
             
-            logger.info(f"ModerationRequest data created: {moderation_request_data}")
-            
             # Create the moderation request in database
             moderation_request = await self.moderation_request_repository.create_request(moderation_request_data.model_dump())
-            
-            logger.info(f"ModerationRequest created in database: {moderation_request}")
             
             return moderation_request
         except Exception as e:
@@ -408,66 +392,17 @@ class PlaceService:
 
     def _create_place_response(self, place: Place, likes_count: int, is_liked: bool) -> PlaceResponse:
         """Create a PlaceResponse from a Place model"""
-        # Create place_type dictionary
-        place_type_dict = {
-            "id": place.place_type.id,
-            "name": place.place_type.name
-        } if place.place_type else None
-        
-        # Create submitted_by dictionary
-        submitted_by_dict = {
-            "id": place.submitted_by.id,
-            "username": place.submitted_by.username
-        } if place.submitted_by else None
-        
-        # Create response with all required fields
-        place_data = {
-            "id": place.id,
-            "name": place.name,
-            "description": place.description,
-            "address": place.address,
-            "city": place.city,
-            "country": place.country,
-            "latitude": place.latitude,
-            "longitude": place.longitude,
-            "place_type_id": place.place_type_id,
-            "is_moderated": place.is_moderated,
-            "is_valid": place.is_valid,
-            "submitted_by_id": place.submitted_by_id,
-            "place_type": place_type_dict,
-            "submitted_by": submitted_by_dict,
-            "created_at": place.created_at,
-            "updated_at": place.updated_at,
-            "likes_count": likes_count,
-            "is_liked": is_liked
-        }
-        return PlaceResponse(**place_data)
+        # Add computed fields to the place object
+        place.likes_count = likes_count
+        place.is_liked = is_liked
+        return PlaceResponse.model_validate(place)
 
     def _create_public_place_response(self, place: Place, likes_count: int, is_liked: bool) -> PublicPlaceResponse:
         """Create a PublicPlaceResponse from a Place model"""
-        # Create place_type dictionary
-        place_type_dict = {
-            "id": place.place_type.id,
-            "name": place.place_type.name
-        } if place.place_type else None
-        
-        # Create response with all required fields
-        place_data = {
-            "id": place.id,
-            "name": place.name,
-            "description": place.description,
-            "address": place.address,
-            "city": place.city,
-            "country": place.country,
-            "latitude": place.latitude,
-            "longitude": place.longitude,
-            "place_type": place_type_dict,
-            "created_at": place.created_at,
-            "updated_at": place.updated_at,
-            "likes_count": likes_count,
-            "is_liked": is_liked
-        }
-        return PublicPlaceResponse(**place_data)
+        # Add computed fields to the place object
+        place.likes_count = likes_count
+        place.is_liked = is_liked
+        return PublicPlaceResponse.model_validate(place)
 
     def _validate_place_data(self, data: PlaceCreate) -> None:
         """Validate place data"""

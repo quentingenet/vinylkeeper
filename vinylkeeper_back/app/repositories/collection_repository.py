@@ -230,9 +230,17 @@ class CollectionRepository:
     async def remove_artist(self, collection: Collection, artist_id: int) -> bool:
         """Remove a specific artist from a collection."""
         try:
-            # This would need to be implemented based on the association table structure
+            from app.models.association_tables import collection_artist
+            
+            # Delete from association table
+            delete_query = collection_artist.delete().where(
+                collection_artist.c.collection_id == collection.id,
+                collection_artist.c.artist_id == artist_id
+            )
+            result = await self.db.execute(delete_query)
+            
             await self.db.commit()
-            return True
+            return result.rowcount > 0
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error removing artist from collection: {str(e)}")

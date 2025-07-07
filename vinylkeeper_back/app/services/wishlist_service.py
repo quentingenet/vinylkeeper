@@ -113,20 +113,12 @@ class WishlistService:
 
     def _build_wishlist_response(self, wishlist_item: Wishlist, entity_type: str, source: str) -> WishlistItemResponse:
         """Build wishlist response with additional fields"""
-        # Create response with all required fields
-        wishlist_data = {
-            "id": wishlist_item.id,
-            "user_id": wishlist_item.user_id,
-            "external_id": wishlist_item.external_id,
-            "entity_type_id": wishlist_item.entity_type_id,
-            "external_source_id": wishlist_item.external_source_id,
-            "title": wishlist_item.title,
-            "image_url": wishlist_item.image_url,
-            "created_at": wishlist_item.created_at,
+        wishlist_dict = wishlist_item.__dict__.copy()
+        wishlist_dict.update({
             "entity_type": entity_type,
             "source": source
-        }
-        return WishlistItemResponse(**wishlist_data)
+        })
+        return WishlistItemResponse.model_validate(wishlist_dict)
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
         """Remove an item from user's wishlist"""
@@ -159,20 +151,10 @@ class WishlistService:
             responses = []
             for item in items:
                 try:
-                    # Create wishlist item response with all required fields
-                    wishlist_data = {
-                    "id": item.id,
-                    "user_id": item.user_id,
-                    "external_id": item.external_id,
-                    "entity_type_id": item.entity_type_id,
-                    "external_source_id": item.external_source_id,
-                    "title": item.title,
-                    "image_url": item.image_url,
-                    "created_at": item.created_at,
-                        "entity_type": item.entity_type.name if item.entity_type else "UNKNOWN",
-                        "source": item.external_source.name if item.external_source else "UNKNOWN"
-                }
-                    wishlist_response = WishlistItemResponse(**wishlist_data)
+                    # Add computed fields for display
+                    item.entity_type = item.entity_type.name if item.entity_type else "UNKNOWN"
+                    item.source = item.external_source.name if item.external_source else "UNKNOWN"
+                    wishlist_response = WishlistItemResponse.model_validate(item)
                     responses.append(wishlist_response)
                 except Exception as e:
                     logger.error(f"Error processing wishlist item {item.id}: {str(e)}")

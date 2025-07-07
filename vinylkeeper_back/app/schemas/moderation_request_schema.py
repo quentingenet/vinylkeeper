@@ -3,11 +3,25 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.place_schema import PlaceTypeResponse
+from app.schemas.user_schema import UserMiniResponse
+
 
 class ModerationStatusResponse(BaseModel):
     """Schema for moderation status response."""
     id: int = Field(gt=0)
     name: str = Field(min_length=1, max_length=50)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PlaceMiniResponse(BaseModel):
+    """Schema for minimal place data in moderation responses."""
+    id: int = Field(gt=0, description="Place ID")
+    name: str = Field(description="Place name")
+    city: str = Field(description="City")
+    country: str = Field(description="Country")
+    place_type: Optional[PlaceTypeResponse] = Field(None, description="Place type")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,11 +75,11 @@ class ModerationRequestInDB(ModerationRequestBase):
 
 class ModerationRequestResponse(ModerationRequestInDB):
     """Schema for moderation request data in API responses."""
-    place: Optional[dict] = Field(
+    place: Optional[PlaceMiniResponse] = Field(
         None,
         description="Place data associated with this request"
     )
-    user: Optional[dict] = Field(
+    user: Optional[UserMiniResponse] = Field(
         None,
         description="User data who submitted this request"
     )
@@ -73,6 +87,8 @@ class ModerationRequestResponse(ModerationRequestInDB):
         None,
         description="Status data of this request"
     )
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ModerationRequestListResponse(BaseModel):

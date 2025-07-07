@@ -6,6 +6,7 @@ from app.models.user_model import User
 from app.models.collection_model import Collection
 from app.models.collection_album import CollectionAlbum
 from app.models.place_model import Place
+from app.models.association_tables import collection_artist
 
 class DashboardRepository:
     def __init__(self, db: AsyncSession):
@@ -36,6 +37,17 @@ class DashboardRepository:
         )
         result = await self.db.execute(query)
         return result.all()
+
+    async def count_user_artists(self, user_id: int) -> int:
+        """Count unique artists added by a user to their collections"""
+        query = (
+            select(func.count(func.distinct(Artist.id)))
+            .join(collection_artist, Artist.id == collection_artist.c.artist_id)
+            .join(Collection, collection_artist.c.collection_id == Collection.id)
+            .filter(Collection.owner_id == user_id)
+        )
+        result = await self.db.execute(query)
+        return result.scalar() or 0
 
     async def get_latest_album(self):
         """Get the latest album added to any collection"""

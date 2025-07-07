@@ -2,6 +2,16 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.user_schema import UserMiniResponse
+
+
+class PlaceTypeResponse(BaseModel):
+    """Schema for place type data in responses."""
+    id: int = Field(gt=0, description="Place type ID")
+    name: str = Field(description="Place type name")
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PlaceBase(BaseModel):
     """Base schema for place data."""
@@ -75,8 +85,8 @@ class PlaceInDB(PlaceBase):
 
 class PlaceResponse(PlaceInDB):
     """Schema for place data in API responses (includes all fields for admins)."""
-    submitted_by: Optional[dict] = None
-    place_type: Optional[dict] = None
+    submitted_by: Optional[UserMiniResponse] = None
+    place_type: Optional[PlaceTypeResponse] = None
     likes_count: int = Field(default=0, description="Number of likes for this place")
     is_liked: bool = Field(default=False, description="Whether the current user has liked this place")
 
@@ -86,7 +96,7 @@ class PlaceResponse(PlaceInDB):
 class PublicPlaceResponse(PlaceBase):
     """Schema for public place data (only moderated places)."""
     id: int = Field(gt=0)
-    place_type: Optional[dict] = None
+    place_type: Optional[PlaceTypeResponse] = None
     likes_count: int = Field(default=0, description="Number of likes for this place")
     is_liked: bool = Field(default=False, description="Whether the current user has liked this place")
     created_at: datetime

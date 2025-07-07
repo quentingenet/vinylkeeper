@@ -29,19 +29,13 @@ class DashboardService:
             # Total user stats
             user_collections = await self.collection_repository.get_by_owner(user.id) or []
             user_albums_total = 0
-            user_artists_set = set()
+            user_artists_total = await self.dashboard_repository.count_user_artists(user.id)
 
             for c in user_collections:
                 # Count albums through collection_albums relationship
                 collection_albums = await self.collection_repository.get_collection_albums(c.id)
                 user_albums_total += len(collection_albums)
-                
-                # Count artists directly associated with the collection
-                # This would need to be implemented based on the association table
-                # For now, we'll use a placeholder
-                pass
 
-            user_artists_total = len(user_artists_set)
             user_collections_total = len(user_collections)
 
             # Total global places (hardcoded for now)

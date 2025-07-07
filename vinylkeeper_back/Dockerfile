@@ -4,28 +4,28 @@ FROM python:3.12-slim
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Install dependencies for PostgreSQL and compiling
+# Install system dependencies for PostgreSQL and building packages
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy dependency files
+# Copy Poetry dependency files
 COPY pyproject.toml poetry.lock ./
 
-# Install Poetry + dependencies
+# Install Poetry and Python dependencies (uvloop and httptools must be listed in pyproject.toml)
 RUN pip install --no-cache-dir poetry && \
     poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-ansi
 
-# Copy the full app
+# Copy application source code
 COPY . .
 
 # Expose Uvicorn port
 EXPOSE 8000
 
-# Launch with Uvicorn + 2 workers (async-friendly)
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Run FastAPI with Uvicorn using uvloop and httptools (single worker for async setup)
+CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--loop", "uvloop", "--http", "httptools", "--workers", "1"]

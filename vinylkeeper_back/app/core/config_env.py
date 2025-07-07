@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     DATABASE_PASSWORD: str
     DATABASE_URL: str
 
+    # Database pool configuration
+    DB_POOL_SIZE: int
+    DB_MAX_OVERFLOW: int
+    DB_POOL_TIMEOUT: int
+    DB_POOL_RECYCLE: int
+    DB_STATEMENT_TIMEOUT: int
+    DB_LOCK_TIMEOUT: int
+
     # Tokens configuration
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_MINUTES: int
