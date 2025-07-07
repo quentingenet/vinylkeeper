@@ -119,9 +119,9 @@ class WishlistItemResponse(BaseSchema):
     image_url: str = Field(..., description="URL of the image")
     created_at: datetime = Field(..., description="When the wishlist item was created")
     
-    # Additional fields for display - now using proper schemas
-    entity_type: Optional[EntityTypeResponse] = Field(None, description="Entity type data")
-    external_source: Optional[ExternalSourceResponse] = Field(None, description="External source data")
+    # Additional fields for display - using simple strings for frontend compatibility
+    entity_type: Optional[str] = Field(None, description="Entity type name (album or artist)")
+    source: Optional[str] = Field(None, description="Source name (discogs or musicbrainz)")
 
     model_config = ConfigDict(from_attributes=True)
 

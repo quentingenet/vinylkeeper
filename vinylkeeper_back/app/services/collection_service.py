@@ -810,8 +810,21 @@ class CollectionService:
             wishlist = []
             for item in wishlist_items:
                 try:
-                    # Use Pydantic to validate directly from SQLAlchemy object
-                    wishlist.append(WishlistItemResponse.model_validate(item))
+                    # Create a dictionary with the item data and computed fields
+                    item_dict = {
+                        "id": item.id,
+                        "user_id": item.user_id,
+                        "external_id": item.external_id,
+                        "entity_type_id": item.entity_type_id,
+                        "external_source_id": item.external_source_id,
+                        "title": item.title,
+                        "image_url": item.image_url,
+                        "created_at": item.created_at,
+                        "entity_type": item.entity_type.name.lower() if item.entity_type else "unknown",
+                        "source": item.external_source.name.lower() if item.external_source else "unknown"
+                    }
+                    wishlist_response = WishlistItemResponse.model_validate(item_dict)
+                    wishlist.append(wishlist_response)
                 except Exception as e:
                     logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
                     continue

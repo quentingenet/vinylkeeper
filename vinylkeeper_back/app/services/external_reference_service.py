@@ -112,11 +112,18 @@ class ExternalReferenceService:
 
     def _build_wishlist_response(self, wishlist_item: Wishlist, entity_type: str, source: str) -> WishlistItemResponse:
         """Build wishlist response with additional fields"""
-        wishlist_dict = wishlist_item.__dict__.copy()
-        wishlist_dict.update({
-            "entity_type": entity_type,
-            "source": source
-        })
+        wishlist_dict = {
+            "id": wishlist_item.id,
+            "user_id": wishlist_item.user_id,
+            "external_id": wishlist_item.external_id,
+            "entity_type_id": wishlist_item.entity_type_id,
+            "external_source_id": wishlist_item.external_source_id,
+            "title": wishlist_item.title,
+            "image_url": wishlist_item.image_url,
+            "created_at": wishlist_item.created_at,
+            "entity_type": entity_type.lower(),
+            "source": source.lower()
+        }
         return WishlistItemResponse.model_validate(wishlist_dict)
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
