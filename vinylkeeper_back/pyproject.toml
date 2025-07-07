@@ -25,6 +25,7 @@ httpx = "^0.28.1"
 aiohttp = "^3.12.13"
 uvloop = "^0.21.0"
 httptools = "^0.6.4"
+psycopg2-binary = "^2.9.6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
