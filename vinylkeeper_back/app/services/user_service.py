@@ -288,7 +288,8 @@ class UserService:
                 "liked_collections_count": likes_count,  # Using likes_count as liked_collections_count
                 "loans_count": 0,  # Default value
                 "wishlist_items_count": wishlist_count,
-                "liked_places_count": places_count
+                "liked_places_count": places_count,
+                "number_of_connections": user.number_of_connections
             }
             return response
         except Exception as e:

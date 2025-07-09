@@ -298,26 +298,30 @@ class SearchService:
                 )
 
             # Get artist releases
-            releases_data = await client.get(f"{self.base_url}/artists/{artist_id}/releases")
-            releases_data.raise_for_status()
-            releases_data = releases_data.json()
-            
-            # Parse releases
-            releases = []
-            if releases_data and "releases" in releases_data:
-                for release in releases_data["releases"][:10]:  # Limit to 10 releases
-                    try:
-                        release_info = DiscogsData(
-                            id=str(release.get("id", "")),
-                            title=release.get("title", ""),
-                            type=release.get("type", ""),
-                            picture=release.get("thumb", ""),
-                            link=release.get("resource_url", "")
-                        )
-                        releases.append(release_info)
-                    except Exception as e:
-                        logger.warning(f"Failed to parse release: {str(e)}")
-                        continue
+            try:
+                releases_data = await client.get(f"{self.base_url}/artists/{artist_id}/releases")
+                releases_data.raise_for_status()
+                releases_data = releases_data.json()
+                
+                # Parse releases
+                releases = []
+                if releases_data and "releases" in releases_data:
+                    for release in releases_data["releases"][:10]:  # Limit to 10 releases
+                        try:
+                            release_info = DiscogsData(
+                                id=str(release.get("id", "")),
+                                title=release.get("title", ""),
+                                type=release.get("type", ""),
+                                picture=release.get("thumb", ""),
+                                link=release.get("resource_url", "")
+                            )
+                            releases.append(release_info)
+                        except Exception as e:
+                            logger.warning(f"Failed to parse release: {str(e)}")
+                            continue
+            except Exception as e:
+                logger.warning(f"Failed to fetch artist releases for ID {artist_id}: {str(e)}")
+                releases = []
 
             # Build artist metadata
             artist_metadata = ArtistMetadata(
