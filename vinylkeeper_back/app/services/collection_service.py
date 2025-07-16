@@ -450,15 +450,19 @@ class CollectionService:
             )
 
     async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None, user_id: int = None) -> Tuple[List[CollectionResponse], int]:
-        """Get public collections with pagination"""
+        """Get public collections with pagination, filtered to only those with at least one album, artist, or wishlist item"""
         try:
             self._validate_pagination_params(page, limit)
             collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id)
             collection_responses = []
             for collection in collections:
                 response = await self._build_collection_response(collection, user_id)
-                collection_responses.append(response)
-            return collection_responses, total
+                # Only include collections with at least one album, artist, or wishlist item
+                if (len(response.albums) > 0) or (len(response.artists) > 0) or (len(response.wishlist) > 0):
+                    collection_responses.append(response)
+            # Adjust total for pagination (actual number after filtering)
+            filtered_total = len(collection_responses)
+            return collection_responses, filtered_total
         except ValidationError as e:
             raise e
         except Exception as e:
