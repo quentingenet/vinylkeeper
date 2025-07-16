@@ -511,7 +511,7 @@ export default function CollectionDetails() {
             {/* Search bar */}
             <TextField
               sx={{ width: isMobile ? "320px" : "400px" }}
-              label={getSearchPlaceholder()}
+              label={`${getSearchPlaceholder()} in my collection`}
               variant="outlined"
               value={searchTerm}
               onChange={handleSearchTermChange}
