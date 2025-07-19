@@ -15,6 +15,7 @@ export default function Landpage() {
   const [open, setOpen] = useState<boolean>(false);
   const [openForgotPassword, setOpenForgotPassword] = useState<boolean>(false);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
+  const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);
   const [errorSnackbar, setErrorSnackbar] = useState({
     open: false,
     message: "",
@@ -56,8 +57,6 @@ export default function Landpage() {
                 The free and open-source way
                 <br />
                 to manage your vinyl collection
-                <br />
-                effortlessly with fun !
               </p>
 
               <div className={styles.buttonContainer}>
@@ -96,6 +95,8 @@ export default function Landpage() {
       <Footer
         setOpenTermsModal={setOpenTermsModal}
         openTermsModal={openTermsModal}
+        setOpenFounderModal={setOpenFounderModal}
+        openFounderModal={openFounderModal}
       />
 
       <Snackbar

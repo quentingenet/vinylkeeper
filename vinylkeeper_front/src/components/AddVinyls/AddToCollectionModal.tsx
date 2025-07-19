@@ -23,7 +23,9 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Stack,
 } from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -45,7 +47,8 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse, isValid } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { vinylStates } from "@utils/GlobalUtils";
+import { truncateText, vinylStates } from "@utils/GlobalUtils";
+import { growItem } from "@utils/Animations";
 
 interface AddToCollectionModalProps {
   open: boolean;
@@ -120,7 +123,6 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
   ({
     open,
     onClose,
-    onBack,
     item,
     itemType,
     collections,
@@ -157,6 +159,8 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
         onClose={onClose}
         closeAfterTransition
         slots={{ backdrop: Backdrop }}
+        disableAutoFocus
+        disableEnforceFocus
       >
         <Fade in={open}>
           <Box sx={modalStyle(isMobile)}>
@@ -405,41 +409,64 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
               <List dense>
                 {collections.map((collection) => (
                   <React.Fragment key={collection.id}>
-                    <ListItem disablePadding>
-                      <ListItemButton
-                        onClick={() => onAddToCollection(collection.id)}
+                    <Stack
+                      display="flex"
+                      justifyContent="center"
+                      alignItems="center"
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        cursor: "pointer",
+                      }}
+                      onClick={() => onAddToCollection(collection.id)}
+                    >
+                      <AddCircleOutlineIcon
+                        fontSize="large"
                         sx={{
-                          borderRadius: 1,
-                          transition: "background-color 0.2s",
-                          "&:hover": {
-                            backgroundColor: "rgba(201, 167, 38, 0.1)",
-                          },
+                          color: "#C9A726",
+                          animation: `${growItem} 1s ease infinite`,
                         }}
-                      >
-                        <ListItemText
-                          primary={collection.name}
-                          secondary={collection.description || "No description"}
+                      />
+
+                      <ListItem disablePadding>
+                        <ListItemButton
+                          onClick={() => onAddToCollection(collection.id)}
                           sx={{
-                            "& .MuiListItemText-primary": { color: "#fffbf9" },
-                            "& .MuiListItemText-secondary": {
-                              color: "#e4e4e4",
+                            borderRadius: 1,
+                            transition: "background-color 0.2s",
+                            "&:hover": {
+                              backgroundColor: "rgba(201, 167, 38, 0.1)",
                             },
                           }}
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                    <Divider sx={{ bgcolor: "#666" }} />
+                        >
+                          <ListItemText
+                            primary={truncateText(collection.name, 25)}
+                            secondary={
+                              collection.description
+                                ? truncateText(collection.description, 30)
+                                : "No description"
+                            }
+                            sx={{
+                              "& .MuiListItemText-primary": {
+                                color: "#fffbf9",
+                              },
+                              "& .MuiListItemText-secondary": {
+                                color: "#e4e4e4",
+                              },
+                            }}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                      <Divider sx={{ bgcolor: "#666" }} />
+                    </Stack>
                   </React.Fragment>
                 ))}
               </List>
             )}
 
-            <Box display="flex" justifyContent="space-between" mt={3}>
-              <Button variant="text" onClick={onBack} sx={buttonStyle}>
-                Back
-              </Button>
+            <Box display="flex" justifyContent="flex-end" mt={3}>
               <Button variant="text" onClick={onClose} sx={buttonStyle}>
-                Cancel
+                Back
               </Button>
             </Box>
           </Box>
@@ -490,7 +517,10 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     const successMessage = `Successfully added to ${queryKey}`;
     setSuccessMessage(successMessage);
     setIsDatePickerOpen(false); // Close date picker on success
-    setTimeout(() => setSuccessMessage(""), 3000);
+    setTimeout(() => {
+      setSuccessMessage("");
+      handleClose(); // Close modal after success message
+    }, 1500);
   };
 
   const handleMutationError = (error: Error) => {

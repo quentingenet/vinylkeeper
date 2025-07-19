@@ -32,6 +32,8 @@ import VinylSpinner from "@components/UI/VinylSpinner";
 import TutorialModal from "@components/Modals/TutorialModal";
 import { useUserContext } from "@contexts/UserContext";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 
 ChartJS.register(
   LineElement,
@@ -48,11 +50,13 @@ const LatestAdditionCard = ({
   data,
   icon,
   color,
+  onClick,
 }: {
   title: string;
   data?: LatestAddition;
   icon: React.ReactNode;
   color: string;
+  onClick?: () => void;
 }) => {
   const { isMobile } = useDetectMobile();
 
@@ -63,7 +67,9 @@ const LatestAdditionCard = ({
         color: "#e4e4e4",
         height: "100%",
         boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+        cursor: "pointer",
       }}
+      onClick={onClick}
     >
       <CardContent>
         <Box display="flex" alignItems="center" mb={2}>
@@ -120,6 +126,10 @@ export default function Dashboard() {
   const { isMobile } = useDetectMobile();
   const { currentUser } = useUserContext();
   const [showTutorial, setShowTutorial] = useState(false);
+  const navigate = useNavigate();
+  const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
+  const [selectedPlaybackItem, setSelectedPlaybackItem] =
+    useState<PlaybackItem | null>(null);
 
   const { data, isLoading, isError } = useQuery<IDashboardStats>({
     queryKey: ["dashboard-stats"],
@@ -150,6 +160,26 @@ export default function Dashboard() {
       }
     }
   }, [currentUser]);
+
+  // Utility function to transform LatestAddition into PlaybackItem
+  const toPlaybackItem = (
+    addition: LatestAddition | undefined,
+    type: "album" | "artist"
+  ): PlaybackItem | null => {
+    if (!addition) return null;
+    return {
+      id: addition.external_id ? addition.external_id : addition.id.toString(),
+      title: addition.name,
+      artist: addition.name,
+      image_url: addition.image_url,
+      itemType: type,
+    };
+  };
+
+  useEffect(() => {
+    setPlaybackModalOpen(false);
+    setSelectedPlaybackItem(null);
+  }, []);
 
   if (isLoading) {
     return (
@@ -213,9 +243,14 @@ export default function Dashboard() {
     title: string,
     value: number,
     duration: number,
-    unit: string = ""
+    unit: string = "",
+    redirectTo: string = ""
   ) => (
-    <div className={styles.stat}>
+    <div
+      className={styles.stat}
+      onClick={() => redirectTo && navigate(redirectTo)}
+      style={{ cursor: redirectTo ? "pointer" : "default" }}
+    >
       <Paper className={`${styles.card} ${styles.statCard}`}>
         <Typography className={styles.textTitleShadow} variant="h6">
           {title}
@@ -231,17 +266,33 @@ export default function Dashboard() {
   return (
     <Box p={3} sx={{ backgroundColor: "#313132", color: "#e4e4e4" }}>
       <div className={styles.dashboard}>
-        {renderStatCard("My albums", data?.user_albums_total ?? 0, 1000)}
-        {renderStatCard("My artists", data?.user_artists_total ?? 0, 1200)}
+        {renderStatCard(
+          "My albums",
+          data?.user_albums_total ?? 0,
+          1000,
+          "",
+          data?.user_albums_total > 0 ? "/collections" : "/add-vinyls"
+        )}
+        {renderStatCard(
+          "My artists",
+          data?.user_artists_total ?? 0,
+          1200,
+          "",
+          data?.user_artists_total > 0 ? "/collections" : "/add-vinyls"
+        )}
         {renderStatCard(
           "My collections",
           data?.user_collections_total ?? 0,
-          1500
+          1500,
+          "",
+          data?.user_collections_total > 0 ? "/collections" : "/add-vinyls"
         )}
         {renderStatCard(
           "Community places",
           data?.moderated_places_total ?? 0,
-          900
+          900,
+          "",
+          "/places"
         )}
 
         <div className={styles.rowCenter}>
@@ -275,6 +326,13 @@ export default function Dashboard() {
                 data={data.latest_album}
                 icon={<Album />}
                 color="#c9a726"
+                onClick={() => {
+                  const item = toPlaybackItem(data.latest_album, "album");
+                  if (item) {
+                    setSelectedPlaybackItem(item);
+                    setPlaybackModalOpen(true);
+                  }
+                }}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -283,12 +341,23 @@ export default function Dashboard() {
                 data={data.latest_artist}
                 icon={<Person />}
                 color="#b0b0b0"
+                onClick={() => {
+                  const item = toPlaybackItem(data.latest_artist, "artist");
+                  if (item) {
+                    setSelectedPlaybackItem(item);
+                    setPlaybackModalOpen(true);
+                  }
+                }}
               />
             </div>
           </div>
         </div>
       </div>
-
+      <PlaybackModal
+        isOpen={playbackModalOpen}
+        onClose={() => setPlaybackModalOpen(false)}
+        item={selectedPlaybackItem}
+      />
       <TutorialModal
         open={showTutorial}
         onClose={() => {

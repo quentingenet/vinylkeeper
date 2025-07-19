@@ -11,7 +11,7 @@ export default function ResetPassword() {
   const { isMobile } = useDetectMobile();
 
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
-
+  const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);
   return (
     <>
       <div className={styles.globalContainer}>
@@ -43,6 +43,8 @@ export default function ResetPassword() {
         <Footer
           setOpenTermsModal={setOpenTermsModal}
           openTermsModal={openTermsModal}
+          setOpenFounderModal={setOpenFounderModal}
+          openFounderModal={openFounderModal}
         />
       </div>
     </>

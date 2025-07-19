@@ -202,6 +202,9 @@ export default function RequestsMaker({
       <Typography variant="h6" color="white">
         Search and add your favorite albums or artists to your collections.
       </Typography>
+      <Typography variant="body1" color="text.secondary">
+        Data sourced from Discogs.
+      </Typography>
       <SearchTypeSwitch
         isArtist={isArtist}
         onSwitchChange={() => setIsArtist(!isArtist)}

@@ -5,6 +5,7 @@ import MobileNavBar from "@components/NavBar/MobileNavBar";
 import { useTheme } from "@mui/material/styles";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { Typography } from "@mui/material";
+import { usePageTitle } from "@hooks/usePageTitle";
 
 /**
  * Layout component that provides the main structure for the application
@@ -39,6 +40,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [titlePage, setTitlePage] = useState<string>("Vinyl Keeper");
   const [currentTitle, setCurrentTitle] = useState<string>("Vinyl Keeper");
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+
+  // Use the page title hook to automatically update title based on current route
+  usePageTitle(setTitlePage);
 
   useEffect(() => {
     if (titlePage !== currentTitle) {

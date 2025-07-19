@@ -39,6 +39,8 @@ export default function ModalTermsVinylKeeper(
       onClose={handleClose}
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
+      disableAutoFocus
+      disableEnforceFocus
     >
       <Box sx={style}>
         <Typography

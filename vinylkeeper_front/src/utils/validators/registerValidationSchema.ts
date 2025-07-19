@@ -10,7 +10,10 @@ export const registerValidationSchema = yup.object({
   username: yup
     .string()
     .min(3, "Username must contain at least 3 characters")
-    .matches(/^[a-z0-9]+$/, "Must be lowercase")
+    .matches(
+      /^[a-z0-9]+$/,
+      "Only lowercase letters and numbers allowed (no spaces or special characters)"
+    )
     .required("Enter your username"),
   email: yup
     .string()

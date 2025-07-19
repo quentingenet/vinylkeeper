@@ -58,7 +58,8 @@ class DashboardService:
                     username=display_username,
                     created_at=album.created_at,
                     type="album",
-                    image_url=album.image_url
+                    image_url=album.image_url,
+                    external_id=album.external_album_id,
                 )
 
             latest_artist_result = await self.dashboard_repository.get_latest_artist()
@@ -71,7 +72,8 @@ class DashboardService:
                     username=display_username,
                     created_at=artist.created_at,
                     type="artist",
-                    image_url=artist.image_url
+                    image_url=artist.image_url,
+                    external_id=artist.external_artist_id
                 )
 
             return DashboardStatsResponse(

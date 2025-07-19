@@ -15,6 +15,8 @@ import { styled } from "@mui/material/styles";
 interface TutorialModalProps {
   open: boolean;
   onClose: () => void;
+  disableAutoFocus?: boolean;
+  disableEnforceFocus?: boolean;
 }
 
 const StyledModal = styled(Modal)(({ theme }) => ({
@@ -83,7 +85,12 @@ const steps = [
   },
 ];
 
-export default function TutorialModal({ open, onClose }: TutorialModalProps) {
+export default function TutorialModal({
+  open,
+  onClose,
+  disableAutoFocus = true,
+  disableEnforceFocus = true,
+}: TutorialModalProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
 
@@ -115,7 +122,12 @@ export default function TutorialModal({ open, onClose }: TutorialModalProps) {
   const progress = ((activeStep + 1) / steps.length) * 100;
 
   return (
-    <StyledModal open={open} onClose={handleClose}>
+    <StyledModal
+      open={open}
+      onClose={handleClose}
+      disableAutoFocus={disableAutoFocus}
+      disableEnforceFocus={disableEnforceFocus}
+    >
       <ModalContent>
         <Typography
           variant="h4"

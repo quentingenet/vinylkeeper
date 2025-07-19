@@ -159,7 +159,10 @@ export default function PlaybackModal({
       queryParts.push(item.title);
     }
 
-    const searchQuery = encodeURIComponent(queryParts.join(" "));
+    // Remove duplicates
+    const uniqueParts = Array.from(new Set(queryParts));
+    const searchQuery = encodeURIComponent(uniqueParts.join(" "));
+
     const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
 
     let url = "";
@@ -241,6 +244,8 @@ export default function PlaybackModal({
         onClose={onClose}
         closeAfterTransition
         slots={{ backdrop: Backdrop }}
+        disableAutoFocus
+        disableEnforceFocus
       >
         <Fade in={isOpen}>
           <Box sx={modalStyle}>

@@ -10,6 +10,7 @@ export interface LatestAddition {
   created_at: string;
   type: string;
   image_url?: string;
+  external_id?: string;
 }
 
 export interface IDashboardStats {

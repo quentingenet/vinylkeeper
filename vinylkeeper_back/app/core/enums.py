@@ -8,9 +8,9 @@ class ModerationStatusEnum(str, Enum):
 
 
 class PlaceTypeEnum(str, Enum):
-    BROCANTE = "brocante"
+    FLEA_MARKET = "flea market"
     SHOP = "shop"
-    EXPOSITION = "exposition"
+    EXHIBITION = "music or records exhibition"
     OTHER = "other"
 
 

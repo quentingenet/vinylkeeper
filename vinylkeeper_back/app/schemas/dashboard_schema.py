@@ -13,6 +13,7 @@ class LatestAddition(BaseModel):
     created_at: datetime
     type: str = Field(..., description="Type: 'album' or 'artist'")
     image_url: Optional[str] = Field(None, description="Image URL for thumbnail")
+    external_id: Optional[str] = Field(None, description="External ID for the item")
 
 class DashboardStatsResponse(BaseModel):
     labels: List[str] = Field(..., description="List of time labels (e.g. months)")

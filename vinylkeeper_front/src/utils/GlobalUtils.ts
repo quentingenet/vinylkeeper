@@ -31,8 +31,8 @@ export const vinylStates = [
 ];
 
 export enum PlaceType {
-  BROCANTE = "brocante",
+  FLEA_MARKET = "flea market",
   SHOP = "shop",
-  EXPOSITION = "exposition",
+  EXHIBITION = "music or records exhibition",
   OTHER = "other",
 }
