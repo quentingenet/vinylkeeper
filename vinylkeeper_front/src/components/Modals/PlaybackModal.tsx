@@ -163,8 +163,6 @@ export default function PlaybackModal({
     const uniqueParts = Array.from(new Set(queryParts));
     const searchQuery = encodeURIComponent(uniqueParts.join(" "));
 
-    const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-
     let url = "";
 
     switch (platformName.toLowerCase()) {
@@ -186,7 +184,9 @@ export default function PlaybackModal({
         return;
     }
 
-    window.location.href = url;
+    isMobile
+      ? (window.location.href = url)
+      : window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleUpdateAlbumStates = async () => {
