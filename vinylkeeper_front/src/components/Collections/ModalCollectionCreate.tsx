@@ -71,8 +71,27 @@ export default function ModalCollectionCreate({
       collectionApiService
         .updateCollection(collection?.id, watch())
         .then(() => {
+          // Optimistic update instead of full invalidation
+          queryClient.setQueryData(
+            ["collections", userContext.currentUser?.user_uuid],
+            (oldData: any) => {
+              if (!oldData?.items) return oldData;
+              return {
+                ...oldData,
+                items: oldData.items.map((item: any) =>
+                  item.id === collection.id
+                    ? {
+                        ...item,
+                        name: watch().name,
+                        description: watch().description,
+                        is_public: watch().is_public,
+                      }
+                    : item
+                ),
+              };
+            }
+          );
           onCollectionAdded();
-          queryClient.invalidateQueries({ queryKey: ["collections"] });
         })
         .catch(() => setOpenSnackBar(true))
         .finally(() => {

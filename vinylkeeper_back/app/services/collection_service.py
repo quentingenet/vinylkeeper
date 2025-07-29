@@ -266,7 +266,7 @@ class CollectionService:
                 )
             
             # Delete collection
-            await self.repository.delete(collection_id)
+            await self.repository.delete(collection)
             return True
             
         except (ResourceNotFoundError, ForbiddenError) as e:

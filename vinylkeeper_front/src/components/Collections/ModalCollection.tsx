@@ -94,8 +94,27 @@ export default function ModalCollection({
   >({
     mutationFn: ({ id, data }) =>
       collectionApiService.updateCollection(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: (_, variables) => {
+      // Optimistic update instead of full invalidation
+      queryClient.setQueryData(
+        ["collections", userContext.currentUser?.user_uuid],
+        (oldData: any) => {
+          if (!oldData?.items) return oldData;
+          return {
+            ...oldData,
+            items: oldData.items.map((item: any) =>
+              item.id === variables.id
+                ? {
+                    ...item,
+                    name: variables.data.name,
+                    description: variables.data.description,
+                    is_public: variables.data.is_public,
+                  }
+                : item
+            ),
+          };
+        }
+      );
       onCollectionAdded();
     },
     onError: () => {

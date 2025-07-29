@@ -295,7 +295,7 @@ class CollectionRepository:
             
             # Apply pagination
             offset = (page - 1) * limit
-            query = query.order_by(Collection.updated_at.desc()).offset(offset).limit(limit)
+            query = query.order_by(Collection.created_at.desc()).offset(offset).limit(limit)
             
             result = await self.db.execute(query)
             collections = result.scalars().all()
