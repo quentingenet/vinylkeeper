@@ -4,7 +4,9 @@ from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
     AddToCollectionRequest,
     WishlistItemResponse,
-    CollectionItemResponse
+    CollectionItemResponse,
+    AddToWishlistResponse,
+    AddToCollectionResponse
 )
 from app.schemas.album_schema import AlbumResponse, AlbumCreate
 from app.schemas.artist_schema import ArtistResponse, ArtistCreate
@@ -57,8 +59,11 @@ class ExternalReferenceService:
                         logger.warning(f"Failed to create album, trying to find existing: {str(create_error)}")
                         entity = await self.repository.find_album_by_external_id(external_id, external_source_id)
                         if not entity:
-                            # Still not found, re-raise the original error
+                            # Still not found, this is a real error
+                            logger.error(f"Failed to create album and could not find existing: {str(create_error)}")
                             raise create_error
+                        else:
+                            pass
                 
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
@@ -93,8 +98,11 @@ class ExternalReferenceService:
                         logger.warning(f"Failed to create artist, trying to find existing: {str(create_error)}")
                         entity = await self.repository.find_artist_by_external_id(external_id, external_source_id)
                         if not entity:
-                            # Still not found, re-raise the original error
+                            # Still not found, this is a real error
+                            logger.error(f"Failed to create artist and could not find existing: {str(create_error)}")
                             raise create_error
+                        else:
+                            pass
                 
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
@@ -121,7 +129,7 @@ class ExternalReferenceService:
                 details={"error": str(e)}
             )
 
-    async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> WishlistItemResponse:
+    async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> AddToWishlistResponse:
         """Add an album or artist to the wishlist"""
         try:
             external_id = request.get_external_id()
@@ -133,8 +141,15 @@ class ExternalReferenceService:
 
             # Check if item already exists in wishlist
             existing = await self.repository.find_wishlist_item(user_id, external_id, request.entity_type)
+            is_new = False
             if existing:
-                return self._build_wishlist_response(existing, request.entity_type.value, request.source)
+                wishlist_response = self._build_wishlist_response(existing, request.entity_type.value, request.source)
+                return AddToWishlistResponse(
+                    item=wishlist_response,
+                    is_new=False,
+                    message=f"Already have {request.entity_type.value} '{request.title}' in wishlist",
+                    entity_type=request.entity_type.value
+                )
 
             # Find or create entity
             await self._find_or_create_entity(request)
@@ -151,7 +166,13 @@ class ExternalReferenceService:
             
             result = await self.repository.create_wishlist_item(wishlist_data)
 
-            return self._build_wishlist_response(result, request.entity_type.value, request.source)
+            wishlist_response = self._build_wishlist_response(result, request.entity_type.value, request.source)
+            return AddToWishlistResponse(
+                item=wishlist_response,
+                is_new=True,
+                message=f"Added {request.entity_type.value} '{request.title}' to wishlist",
+                entity_type=request.entity_type.value
+            )
 
         except Exception as e:
             logger.error(f"Failed to add to wishlist: {str(e)}")
@@ -200,7 +221,7 @@ class ExternalReferenceService:
                 details={"error": str(e)}
             )
 
-    async def add_to_collection(self, user_id: int, collection_id: int, request: AddToCollectionRequest) -> CollectionItemResponse:
+    async def add_to_collection(self, user_id: int, collection_id: int, request: AddToCollectionRequest) -> AddToCollectionResponse:
         """Add an album or artist to a collection"""
         try:
             external_id = request.get_external_id()
@@ -211,7 +232,7 @@ class ExternalReferenceService:
                 )
 
             # Get collection and verify ownership
-            collection = await self.repository.find_collection_by_id(collection_id)
+            collection = await self.repository.find_collection_by_id(collection_id, load_relations=True)
             if not collection or collection.owner_id != user_id:
                 raise ResourceNotFoundError(
                     error_code=4040,
@@ -227,12 +248,13 @@ class ExternalReferenceService:
             # Add to collection using the entity from the response
             collection_item = None
             if request.entity_type == EntityTypeEnum.ALBUM:
-                # Get the album from the database using the external ID
+                # Use the album from the entity response instead of searching again
                 album = await self.repository.find_album_by_external_id(external_id, external_source_id)
                 if not album:
+                    logger.error(f"Album not found after creation! external_id: {external_id}, source_id: {external_source_id}")
                     raise ValidationError(
                         error_code=4000,
-                        message="Album not found",
+                        message="Album not found after creation",
                         details={"external_id": external_id}
                     )
                 
@@ -243,10 +265,12 @@ class ExternalReferenceService:
                         existing_collection_album = ca
                         break
                 
+                is_new_album = False
                 if existing_collection_album:
                     # Album already in collection, return existing info
                     collection_item = existing_collection_album
                 else:
+                    is_new_album = True
                     # Process album_data to convert names to IDs
                     processed_album_data = None
                     if request.album_data:
@@ -267,6 +291,7 @@ class ExternalReferenceService:
                 # Get the artist from the database using the external ID
                 artist = await self.repository.find_artist_by_external_id(external_id, external_source_id)
                 if not artist:
+                    logger.error(f"Artist not found after creation! external_id: {external_id}, source_id: {external_source_id}")
                     raise ValidationError(
                         error_code=4000,
                         message="Artist not found",
@@ -274,44 +299,63 @@ class ExternalReferenceService:
                     )
                 
                 # Check if artist is already in collection before trying to add
-                if artist in collection.artists:
+                is_new_artist = False
+                existing_artist = await self.repository.find_artist_in_collection(collection.id, artist.id)
+                
+                if existing_artist:
                     # Artist already in collection, return existing info
                     collection_item = {
                         "id": artist.id,
                         "collection_id": collection.id,
                         "artist_id": artist.id,
-                        "created_at": collection.created_at
+                        "created_at": existing_artist["created_at"]
                     }
                 else:
+                    is_new_artist = True
                     collection_item = await self.repository.add_artist_to_collection(collection, artist)
 
             # Build response with data from the created collection item
+            # Determine if item is new or existing
+            is_new = is_new_album if request.entity_type == EntityTypeEnum.ALBUM else is_new_artist
+            
+            # Build the collection item response
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # For albums, collection_item is a CollectionAlbum object with composite primary key
-                response_dict = {
-                    "id": collection_item.collection_id,  # Use collection_id as ID
-                    "user_id": user_id,
-                    "external_id": external_id,
-                    "entity_type": request.entity_type.value,
-                    "title": request.title,
-                    "image_url": request.image_url,
-                    "source": request.source,
-                    "created_at": collection_item.collection.created_at if collection_item.collection else datetime.now()
-                }
+                item_response = CollectionItemResponse(
+                    id=collection_item.collection_id,  # Use collection_id as ID
+                    user_id=user_id,
+                    external_id=external_id,
+                    entity_type=request.entity_type.value,
+                    title=request.title,
+                    image_url=request.image_url,
+                    source=request.source,
+                    created_at=collection.created_at
+                )
             else:
                 # For artists, collection_item is a dictionary
-                response_dict = {
-                    "id": collection_item["id"],
-                    "user_id": user_id,
-                    "external_id": external_id,
-                    "entity_type": request.entity_type.value,
-                    "title": request.title,
-                    "image_url": request.image_url,
-                    "source": request.source,
-                    "created_at": collection_item["created_at"]
-                }
+                item_response = CollectionItemResponse(
+                    id=collection_item["id"],
+                    user_id=user_id,
+                    external_id=external_id,
+                    entity_type=request.entity_type.value,
+                    title=request.title,
+                    image_url=request.image_url,
+                    source=request.source,
+                    created_at=collection_item["created_at"]
+                )
             
-            return CollectionItemResponse.model_validate(response_dict)
+            # Build the final response with status information
+            message = f"{'Added' if is_new else 'Already have'} {request.entity_type.value} '{request.title}' in collection '{collection.name}'"
+            
+            final_response = AddToCollectionResponse(
+                item=item_response,
+                is_new=is_new,
+                message=message,
+                entity_type=request.entity_type.value,
+                collection_name=collection.name
+            )
+            
+            return final_response
 
         except Exception as e:
             logger.error(f"Failed to add to collection: {str(e)}")
@@ -325,7 +369,7 @@ class ExternalReferenceService:
         """Remove an album or artist from a collection"""
         try:
             # Get collection and verify ownership
-            collection = await self.repository.find_collection_by_id(collection_id)
+            collection = await self.repository.find_collection_by_id(collection_id, load_relations=True)
             if not collection or collection.owner_id != user_id:
                 raise ResourceNotFoundError(
                     error_code=4040,

@@ -14,7 +14,7 @@ from app.core.exceptions import (
 )
 from app.core.logging import logger
 from typing import List, Optional, Tuple
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 
 class CollectionRepository:
@@ -79,6 +79,20 @@ class CollectionRepository:
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to retrieve user collections",
+                details={"error": str(e)}
+            )
+
+    async def count_by_owner(self, owner_id: int) -> int:
+        """Count collections owned by a user."""
+        try:
+            query = select(func.count(Collection.id)).filter(Collection.owner_id == owner_id)
+            result = await self.db.execute(query)
+            return result.scalar() or 0
+        except Exception as e:
+            logger.error(f"Error counting collections for owner {owner_id}: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to count user collections",
                 details={"error": str(e)}
             )
 
@@ -270,6 +284,13 @@ class CollectionRepository:
             offset = (page - 1) * limit
             query = query.order_by(Collection.updated_at.desc()).offset(offset).limit(limit)
             
+            # Preload relations to avoid N+1 queries
+            query = query.options(
+                selectinload(Collection.owner),
+                selectinload(Collection.collection_albums),
+                selectinload(Collection.artists)
+            )
+            
             result = await self.db.execute(query)
             collections = result.scalars().all()
             
@@ -281,6 +302,38 @@ class CollectionRepository:
                 message="Failed to retrieve public collections",
                 details={"error": str(e)}
             )
+
+    async def get_collections_likes_counts(self, collection_ids: List[int]) -> dict:
+        """Get likes counts for multiple collections in one query."""
+        from app.models.like_model import Like
+        
+        query = select(Like.collection_id, func.count(Like.id)).filter(
+            Like.collection_id.in_(collection_ids)
+        ).group_by(Like.collection_id)
+        
+        result = await self.db.execute(query)
+        likes_counts = {collection_id: count for collection_id, count in result.all()}
+        
+        # Ensure all collection_ids have a count (even if 0)
+        for collection_id in collection_ids:
+            if collection_id not in likes_counts:
+                likes_counts[collection_id] = 0
+                
+        return likes_counts
+
+    async def get_user_collections_likes(self, user_id: int, collection_ids: List[int]) -> dict:
+        """Get which collections are liked by a user in one query."""
+        from app.models.like_model import Like
+        
+        query = select(Like.collection_id).filter(
+            and_(Like.user_id == user_id, Like.collection_id.in_(collection_ids))
+        )
+        
+        result = await self.db.execute(query)
+        liked_collection_ids = {row[0] for row in result.all()}
+        
+        # Create a dict mapping collection_id to is_liked boolean
+        return {collection_id: collection_id in liked_collection_ids for collection_id in collection_ids}
 
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Collection], int]:
         """Get user's collections with pagination."""

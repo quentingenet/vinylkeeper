@@ -21,6 +21,7 @@ class PlaceMiniResponse(BaseModel):
     name: str = Field(description="Place name")
     city: str = Field(description="City")
     country: str = Field(description="Country")
+    description: Optional[str] = Field(None, description="Place description")
     place_type: Optional[PlaceTypeResponse] = Field(None, description="Place type")
 
     model_config = ConfigDict(from_attributes=True)

@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
+import asyncio
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
@@ -454,12 +455,41 @@ class CollectionService:
         try:
             self._validate_pagination_params(page, limit)
             collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id)
+            
+            if not collections:
+                return [], 0
+            
+            # Get all collection IDs for batch operations
+            collection_ids = [collection.id for collection in collections]
+            
+            # Get likes info for all collections in batch (2 queries instead of N*2)
+            likes_counts, user_likes = await asyncio.gather(
+                self.repository.get_collections_likes_counts(collection_ids),
+                self.repository.get_user_collections_likes(user_id, collection_ids) if user_id else asyncio.sleep(0)
+            )
+            
+            # If no user, create empty user_likes dict
+            if not user_id:
+                user_likes = {}
+            
             collection_responses = []
             for collection in collections:
-                response = await self._build_collection_response(collection, user_id)
-                # Only include collections with at least one album, artist, or wishlist item
-                if (len(response.albums) > 0) or (len(response.artists) > 0) or (len(response.wishlist) > 0):
-                    collection_responses.append(response)
+                try:
+                    # Use preloaded data and batch likes info
+                    response = await self._build_collection_response_optimized(
+                        collection, 
+                        user_id, 
+                        likes_counts.get(collection.id, 0),
+                        user_likes.get(collection.id, False)
+                    )
+                    
+                    # Only include collections with at least one album, artist, or wishlist item
+                    if (len(response.albums) > 0) or (len(response.artists) > 0) or (len(response.wishlist) > 0):
+                        collection_responses.append(response)
+                except Exception as collection_error:
+                    logger.error(f"Error processing collection {collection.id}: {str(collection_error)}")
+                    continue
+                    
             # Adjust total for pagination (actual number after filtering)
             filtered_total = len(collection_responses)
             return collection_responses, filtered_total
@@ -855,3 +885,78 @@ class CollectionService:
             is_liked_by_user=is_liked,
             wishlist=wishlist
             )
+
+    async def _build_collection_response_optimized(self, collection, user_id=None, likes_count=None, is_liked=None) -> CollectionResponse:
+        """Optimized version that uses preloaded data and pre-fetched likes info."""
+        # Use preloaded artists and albums (no additional queries)
+        artists = []
+        if hasattr(collection, 'artists') and collection.artists:
+            for artist in collection.artists:
+                artists.append(self._convert_artist_to_collection_artist_response(artist))
+
+        albums = []
+        if hasattr(collection, 'collection_albums') and collection.collection_albums:
+            for collection_album in collection.collection_albums:
+                if hasattr(collection_album, 'album') and collection_album.album:
+                    albums.append(self._convert_album_to_collection_album_response(collection_album.album, collection_album))
+
+        # Owner (preloaded)
+        owner = None
+        if hasattr(collection, 'owner') and collection.owner:
+            owner = self._convert_user_to_mini_response(collection.owner)
+
+        # Use pre-fetched likes info
+        if likes_count is None:
+            likes_count = await self.like_repository.count_likes(collection.id)
+        if is_liked is None and user_id is not None:
+            is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
+        elif is_liked is None:
+            is_liked = False
+
+        # Wishlist (pour le owner) - still need to query this
+        wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
+        wishlist = []
+        for item in wishlist_items:
+            try:
+                item_dict = item.__dict__.copy()
+                # Robust mapping for entity_type
+                entity_type_str = None
+                if hasattr(item, 'entity_type') and item.entity_type is not None:
+                    entity_type = item.entity_type
+                    if hasattr(entity_type, 'value'):
+                        entity_type_str = entity_type.value
+                    elif hasattr(entity_type, 'name'):
+                        entity_type_str = entity_type.name.lower()
+                    else:
+                        entity_type_str = str(entity_type).lower()
+                elif hasattr(item, 'entity_type_id') and item.entity_type_id:
+                    # Fallback: map id to enum
+                    try:
+                        if item.entity_type_id == 1:
+                            entity_type_str = EntityTypeEnum.ALBUM.value
+                        elif item.entity_type_id == 2:
+                            entity_type_str = EntityTypeEnum.ARTIST.value
+                    except Exception:
+                        entity_type_str = None
+                item_dict['entity_type'] = entity_type_str
+                wishlist.append(WishlistItemResponse.model_validate(item_dict))
+            except Exception as e:
+                logger.error(f"Error processing wishlist item {getattr(item, 'id', '?')}: {str(e)}")
+                continue
+
+        return CollectionResponse(
+            id=collection.id,
+            name=collection.name,
+            description=collection.description,
+            is_public=collection.is_public,
+            mood_id=collection.mood_id,
+            owner_id=collection.owner_id,
+            created_at=collection.created_at,
+            updated_at=collection.updated_at,
+            owner=owner,
+            albums=albums,
+            artists=artists,
+            likes_count=likes_count,
+            is_liked_by_user=is_liked,
+            wishlist=wishlist
+        )

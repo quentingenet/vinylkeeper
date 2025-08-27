@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo, useEffect } from "react";
 import {
   Modal,
   Box,
@@ -42,6 +42,8 @@ import {
 import {
   AddToWishlistRequest,
   AddToCollectionRequest,
+  AddToWishlistResponse,
+  AddToCollectionResponse,
 } from "@models/IExternalReference";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -72,7 +74,9 @@ interface CollectionSelectionModalProps {
   collections: CollectionResponse[];
   onAddToCollection: (collectionId: number) => void;
   successMessage?: string;
+  messageType?: "success" | "warning" | "info" | "error";
   isLoading?: boolean;
+  isAddingToCollection?: boolean; // New prop for collection addition state
   albumStateData?: AlbumStateData;
   onAlbumStateChange?: (field: keyof AlbumStateData, value: any) => void;
   isDatePickerOpen?: boolean;
@@ -114,6 +118,34 @@ const alertStyle = (isError: boolean = false) => ({
   textOverflow: "ellipsis",
 });
 
+const getAlertStyle = (
+  messageType: "success" | "warning" | "info" | "error"
+) => ({
+  width: "auto",
+  maxWidth: "100%",
+  mb: 2,
+  backgroundColor:
+    messageType === "error"
+      ? "rgba(211, 47, 47, 0.1)"
+      : messageType === "warning"
+      ? "rgba(255, 152, 0, 0.1)"
+      : messageType === "info"
+      ? "rgba(33, 150, 243, 0.1)"
+      : "rgba(46, 125, 50, 0.1)",
+  color:
+    messageType === "error"
+      ? "#ff6b6b"
+      : messageType === "warning"
+      ? "#ff9800"
+      : messageType === "info"
+      ? "#2196f3"
+      : "#4caf50",
+  wordBreak: "break-word",
+  whiteSpace: "normal",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
+
 const buttonStyle = {
   color: "#fffbf9",
   "&:hover": { color: "#C9A726" },
@@ -128,14 +160,16 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
     collections,
     onAddToCollection,
     successMessage,
+    messageType = "success",
     isLoading = false,
+    isAddingToCollection = false,
     albumStateData,
     onAlbumStateChange,
     isDatePickerOpen,
     setIsDatePickerOpen,
   }) => {
     const { isMobile } = useDetectMobile();
-    const isError = successMessage?.includes("Error");
+    const isError = messageType === "error";
 
     const handleDateChange = (newValue: Date | null) => {
       onAlbumStateChange?.(
@@ -179,10 +213,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
             </Box>
 
             {successMessage && (
-              <Alert
-                severity={isError ? "error" : "success"}
-                sx={alertStyle(isError)}
-              >
+              <Alert severity={messageType} sx={getAlertStyle(messageType)}>
                 {successMessage}
               </Alert>
             )}
@@ -409,56 +440,75 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
               <List dense>
                 {collections.map((collection) => (
                   <React.Fragment key={collection.id}>
-                    <Stack
-                      display="flex"
-                      justifyContent="center"
-                      alignItems="center"
-                      direction="row"
-                      spacing={1}
+                    <Tooltip
+                      title={
+                        isAddingToCollection
+                          ? "Adding to collection..."
+                          : "Click to add to collection"
+                      }
+                      arrow
                       sx={{
-                        cursor: "pointer",
+                        "& .MuiTooltip-tooltip": {
+                          backgroundColor: isAddingToCollection
+                            ? "#4caf50"
+                            : "#C9A726",
+                          color: isAddingToCollection ? "#fff" : "#000",
+                          fontSize: "0.875rem",
+                          fontWeight: isAddingToCollection ? "bold" : "normal",
+                        },
                       }}
-                      onClick={() => onAddToCollection(collection.id)}
                     >
-                      <AddCircleOutlineIcon
-                        fontSize="large"
+                      <Stack
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        direction="row"
+                        spacing={1}
                         sx={{
-                          color: "#C9A726",
-                          animation: `${growItem} 1s ease infinite`,
+                          cursor: isAddingToCollection ? "wait" : "pointer",
                         }}
-                      />
-
-                      <ListItem disablePadding>
-                        <ListItemButton
-                          onClick={() => onAddToCollection(collection.id)}
+                        // Click handled by ListItemButton below
+                      >
+                        <AddCircleOutlineIcon
+                          fontSize="large"
                           sx={{
-                            borderRadius: 1,
-                            transition: "background-color 0.2s",
-                            "&:hover": {
-                              backgroundColor: "rgba(201, 167, 38, 0.1)",
-                            },
+                            color: "#C9A726",
+                            animation: `${growItem} 1s ease infinite`,
                           }}
-                        >
-                          <ListItemText
-                            primary={truncateText(collection.name, 25)}
-                            secondary={
-                              collection.description
-                                ? truncateText(collection.description, 30)
-                                : "No description"
-                            }
+                        />
+
+                        <ListItem disablePadding>
+                          <ListItemButton
+                            onClick={() => onAddToCollection(collection.id)}
                             sx={{
-                              "& .MuiListItemText-primary": {
-                                color: "#fffbf9",
-                              },
-                              "& .MuiListItemText-secondary": {
-                                color: "#e4e4e4",
+                              borderRadius: 1,
+                              transition: "background-color 0.2s",
+                              "&:hover": {
+                                backgroundColor: "rgba(201, 167, 38, 0.1)",
                               },
                             }}
-                          />
-                        </ListItemButton>
-                      </ListItem>
-                      <Divider sx={{ bgcolor: "#666" }} />
-                    </Stack>
+                          >
+                            <ListItemText
+                              primary={truncateText(collection.name, 25)}
+                              secondary={
+                                collection.description
+                                  ? truncateText(collection.description, 30)
+                                  : "No description"
+                              }
+                              sx={{
+                                "& .MuiListItemText-primary": {
+                                  color: "#fffbf9",
+                                },
+                                "& .MuiListItemText-secondary": {
+                                  color: "#e4e4e4",
+                                },
+                              }}
+                            />
+                          </ListItemButton>
+                        </ListItem>
+                        <Divider sx={{ bgcolor: "#666" }} />
+                      </Stack>
+                    </Tooltip>
                   </React.Fragment>
                 ))}
               </List>
@@ -486,6 +536,9 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 }) => {
   const [showCollectionSelection, setShowCollectionSelection] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
+  const [messageType, setMessageType] = useState<
+    "success" | "warning" | "info" | "error"
+  >("success");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Album state data
@@ -513,8 +566,39 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 
   const collections = collectionsData?.items || [];
 
-  const handleMutationSuccess = (queryKey: string) => {
-    const successMessage = `Successfully added to ${queryKey}`;
+  const handleMutationSuccess = (
+    queryKey: string,
+    customMessage?: string,
+    isNew?: boolean
+  ) => {
+    // Protect against multiple calls with empty data
+    if (!customMessage && isNew === undefined) {
+      return;
+    }
+
+    const successMessage = customMessage || `Successfully added to ${queryKey}`;
+
+    // Determine message type based on context and isNew flag
+    let messageType: "success" | "warning" | "info" | "error" = "success";
+
+    if (customMessage?.includes("Error")) {
+      messageType = "error";
+    } else if (isNew === false) {
+      // Item already exists
+      messageType = "warning";
+    } else if (isNew === true) {
+      // New item added
+      messageType = "success";
+    } else {
+      // Fallback to text analysis if isNew is undefined
+      if (customMessage?.includes("Already have")) {
+        messageType = "warning";
+      } else if (customMessage?.includes("Added")) {
+        messageType = "success";
+      }
+    }
+
+    setMessageType(messageType);
     setSuccessMessage(successMessage);
     setIsDatePickerOpen(false); // Close date picker on success
     setTimeout(() => {
@@ -542,7 +626,11 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     mutationFn: (albumData: AddToWishlistRequest) => {
       return externalReferenceApiService.addToWishlist(albumData);
     },
-    onSuccess: () => handleMutationSuccess("wishlist"),
+    onSuccess: (response) => {
+      // Invalidate wishlist queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      handleMutationSuccess("wishlist", response.message, response.is_new);
+    },
     onError: handleMutationError,
   });
 
@@ -556,7 +644,20 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         data.item
       );
     },
-    onSuccess: () => handleMutationSuccess("collections"),
+    onSuccess: (response, variables) => {
+      // Invalidate all collection-related queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      queryClient.invalidateQueries({ queryKey: ["collectionDetails"] });
+      queryClient.invalidateQueries({ queryKey: ["collectionAlbums"] });
+      // Invalidate specific collection that was updated
+      queryClient.invalidateQueries({
+        queryKey: ["collectionDetails", variables.collectionId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["collectionAlbums", variables.collectionId],
+      });
+      handleMutationSuccess("collections", response.message, response.is_new);
+    },
     onError: handleMutationError,
   });
 
@@ -575,6 +676,11 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
   };
 
   const handleAddToCollection = async (collectionId: number) => {
+    // Prevent multiple calls while mutation is pending
+    if (addToCollectionMutation.isPending) {
+      return;
+    }
+
     setSuccessMessage("Adding to collection...");
 
     try {
@@ -595,9 +701,8 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         },
       });
 
-      if (response) {
-        handleMutationSuccess("collections");
-      }
+      // Response is handled by mutation onSuccess callback
+      // No need to call handleMutationSuccess here
     } catch (err) {
       handleMutationError(
         err instanceof Error ? err : new Error("An error occurred")
@@ -639,22 +744,38 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
               <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
                 Add to collection
               </Typography>
-              <IconButton onClick={handleClose} size="small">
+              <IconButton onClick={onClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
               </IconButton>
             </Box>
 
             {successMessage && (
-              <Alert
-                severity={isError ? "error" : "success"}
-                sx={alertStyle(isError)}
-              >
+              <Alert severity={messageType} sx={getAlertStyle(messageType)}>
                 {successMessage}
               </Alert>
             )}
 
             <Box display="flex" flexDirection="column" gap={2}>
-              <Tooltip title="Add to wishlist">
+              <Tooltip
+                title={
+                  addToWishlistMutation.isPending
+                    ? "Adding to wishlist..."
+                    : "Add to wishlist"
+                }
+                arrow
+                sx={{
+                  "& .MuiTooltip-tooltip": {
+                    backgroundColor: addToWishlistMutation.isPending
+                      ? "#4caf50"
+                      : "#C9A726",
+                    color: addToWishlistMutation.isPending ? "#fff" : "#000",
+                    fontSize: "0.875rem",
+                    fontWeight: addToWishlistMutation.isPending
+                      ? "bold"
+                      : "normal",
+                  },
+                }}
+              >
                 <span style={{ display: "flex", width: "100%" }}>
                   <Button
                     variant="contained"
@@ -677,7 +798,22 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                 </span>
               </Tooltip>
 
-              <Tooltip title="Add to existing collection">
+              <Tooltip
+                title={
+                  collectionsLoading
+                    ? "Loading collections..."
+                    : "Add to existing collection"
+                }
+                arrow
+                sx={{
+                  "& .MuiTooltip-tooltip": {
+                    backgroundColor: collectionsLoading ? "#4caf50" : "#C9A726",
+                    color: collectionsLoading ? "#fff" : "#000",
+                    fontSize: "0.875rem",
+                    fontWeight: collectionsLoading ? "bold" : "normal",
+                  },
+                }}
+              >
                 <span style={{ display: "flex", width: "100%" }}>
                   <Button
                     variant="outlined"
@@ -719,7 +855,9 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         collections={collections}
         onAddToCollection={handleAddToCollection}
         successMessage={successMessage}
+        messageType={messageType}
         isLoading={addToCollectionMutation.isPending}
+        isAddingToCollection={addToCollectionMutation.isPending}
         albumStateData={albumStateData}
         onAlbumStateChange={handleAlbumStateChange}
         isDatePickerOpen={isDatePickerOpen}

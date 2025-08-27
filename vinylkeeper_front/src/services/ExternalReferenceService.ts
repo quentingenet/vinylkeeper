@@ -3,6 +3,8 @@ import {
   AddToCollectionRequest,
   WishlistItemResponse,
   CollectionItemResponse,
+  AddToWishlistResponse,
+  AddToCollectionResponse,
 } from "@models/IExternalReference";
 import { BaseApiService } from "./BaseApiService";
 
@@ -11,9 +13,9 @@ export class ExternalReferenceService extends BaseApiService {
 
   async addToWishlist(
     data: AddToWishlistRequest
-  ): Promise<WishlistItemResponse> {
+  ): Promise<AddToWishlistResponse> {
     try {
-      return await this.post<WishlistItemResponse>(
+      return await this.post<AddToWishlistResponse>(
         `${this.endpoint}/wishlist/add`,
         data
       );
@@ -26,9 +28,9 @@ export class ExternalReferenceService extends BaseApiService {
   async addToCollection(
     collectionId: number,
     data: AddToCollectionRequest
-  ): Promise<CollectionItemResponse> {
+  ): Promise<AddToCollectionResponse> {
     try {
-      return await this.post<CollectionItemResponse>(
+      return await this.post<AddToCollectionResponse>(
         `${this.endpoint}/collection/${collectionId}/add`,
         data
       );

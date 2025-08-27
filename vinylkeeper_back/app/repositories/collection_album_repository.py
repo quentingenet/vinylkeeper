@@ -208,12 +208,12 @@ class CollectionAlbumRepository:
             if metadata.get('state_record'):
                 state_record_id = VinylStateMapping.get_id_from_name(metadata['state_record'])
                 if not state_record_id:
-                    logger.warning(f"Invalid state_record value: {metadata['state_record']}")
+                    logger.info(f"Invalid state_record value: {metadata['state_record']}")
             
             if metadata.get('state_cover'):
                 state_cover_id = VinylStateMapping.get_id_from_name(metadata['state_cover'])
                 if not state_cover_id:
-                    logger.warning(f"Invalid state_cover value: {metadata['state_cover']}")
+                    logger.info(f"Invalid state_cover value: {metadata['state_cover']}")
             
             # Create new association
             collection_album = CollectionAlbum(
@@ -254,7 +254,7 @@ class CollectionAlbumRepository:
                 else:
                     state_record_id = VinylStateMapping.get_id_from_name(metadata['state_record'])
                     if not state_record_id:
-                        logger.warning(f"Invalid state_record value: {metadata['state_record']}")
+                        logger.info(f"Invalid state_record value: {metadata['state_record']}")
                     collection_album.state_record = state_record_id
                     
             if 'state_cover' in metadata:
@@ -263,7 +263,7 @@ class CollectionAlbumRepository:
                 else:
                     state_cover_id = VinylStateMapping.get_id_from_name(metadata['state_cover'])
                     if not state_cover_id:
-                        logger.warning(f"Invalid state_cover value: {metadata['state_cover']}")
+                        logger.info(f"Invalid state_cover value: {metadata['state_cover']}")
                     collection_album.state_cover = state_cover_id
                     
             if 'acquisition_month_year' in metadata:

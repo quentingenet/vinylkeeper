@@ -281,7 +281,7 @@ class UserService:
             response = {
                 "username": user.username,
                 "user_uuid": str(user.user_uuid),
-                "role": user.role if user.role else {"id": 0, "name": "Unknown"},
+                "role": {"id": user.role.id, "name": user.role.name} if user.role else {"id": 0, "name": "Unknown"},
                 "is_superuser": user.is_superuser,
                 "is_tutorial_seen": False,  # Default value
                 "collections_count": collections_count,

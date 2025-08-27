@@ -57,7 +57,7 @@ async def login(
         refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH)
         set_token_cookie(response, access_token, TokenType.ACCESS)
         set_token_cookie(response, refresh_token, TokenType.REFRESH)
-        logger.warning(f"User logged in: {user.username} - {user.email}")
+        logger.info(f"User logged in: {user.username} - {user.email}")
         return {"isLoggedIn": True}
     except (InvalidCredentialsError, EmailNotFoundError) as e:
         raise
@@ -78,7 +78,7 @@ async def register(
         refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH)
         set_token_cookie(response, access_token, TokenType.ACCESS)
         set_token_cookie(response, refresh_token, TokenType.REFRESH)
-        logger.warning(f"New user registered: {user.username} - {user.email}")
+        logger.info(f"New user registered: {user.username} - {user.email}")
         
         # Send email to ADMIN if in development mode or user is superuser
         if settings.APP_ENV == "development" or (user.role.name == RoleEnum.ADMIN.value and user.is_superuser):
@@ -193,7 +193,7 @@ async def delete_my_account(
 ):
     """Delete current user account"""
     success = await user_service.delete_user(current_user)
-    logger.warning(f"User deleted: {current_user.username} - {current_user.email}")
+    logger.info(f"User deleted: {current_user.username} - {current_user.email}")
     if not success:
         raise UserNotFoundError(str(current_user.user_uuid))
     return {"message": "Account deleted successfully"}

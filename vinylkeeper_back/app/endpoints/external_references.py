@@ -10,7 +10,9 @@ from app.schemas.external_reference_schema import (
     AddToCollectionRequest,
     AddExternalResponse,
     WishlistItemResponse,
-    CollectionItemResponse
+    CollectionItemResponse,
+    AddToWishlistResponse,
+    AddToCollectionResponse
 )
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -25,7 +27,7 @@ from app.utils.endpoint_utils import handle_app_exceptions
 router = APIRouter()
 
 
-@router.post("/wishlist/add", response_model=WishlistItemResponse)
+@router.post("/wishlist/add", response_model=AddToWishlistResponse)
 @handle_app_exceptions
 async def add_to_wishlist(
     request: AddToWishlistRequest,
@@ -49,7 +51,7 @@ async def remove_from_wishlist(
     return result
 
 
-@router.post("/collection/{collection_id}/add", response_model=CollectionItemResponse)
+@router.post("/collection/{collection_id}/add", response_model=AddToCollectionResponse)
 @handle_app_exceptions
 async def add_to_collection(
     request: AddToCollectionRequest,

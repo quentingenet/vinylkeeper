@@ -282,6 +282,34 @@ class PlaceRepository:
         result = await self.db.execute(query)
         return result.scalar()
 
+    async def get_places_likes_counts(self, place_ids: List[int]) -> dict:
+        """Get likes counts for multiple places in one query."""
+        query = select(PlaceLike.place_id, func.count(PlaceLike.id)).filter(
+            PlaceLike.place_id.in_(place_ids)
+        ).group_by(PlaceLike.place_id)
+        
+        result = await self.db.execute(query)
+        likes_counts = {place_id: count for place_id, count in result.all()}
+        
+        # Ensure all place_ids have a count (even if 0)
+        for place_id in place_ids:
+            if place_id not in likes_counts:
+                likes_counts[place_id] = 0
+                
+        return likes_counts
+
+    async def get_user_places_likes(self, user_id: int, place_ids: List[int]) -> dict:
+        """Get which places are liked by a user in one query."""
+        query = select(PlaceLike.place_id).filter(
+            and_(PlaceLike.user_id == user_id, PlaceLike.place_id.in_(place_ids))
+        )
+        
+        result = await self.db.execute(query)
+        liked_place_ids = {row[0] for row in result.all()}
+        
+        # Create a dict mapping place_id to is_liked boolean
+        return {place_id: place_id in liked_place_ids for place_id in place_ids}
+
     async def is_place_liked_by_user(self, user_id: int, place_id: int) -> bool:
         """Check if a place is liked by a specific user."""
         query = select(PlaceLike).filter(

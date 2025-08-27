@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -153,14 +154,30 @@ class PlaceService:
         try:
             places = await self.repository.get_all_moderated_places(limit, offset)
             
-            # Get likes info for each place
+            if not places:
+                return []
+            
+            # Get all place IDs
+            place_ids = [place.id for place in places]
+            
+            # Get likes info for all places in parallel (2 queries executed simultaneously)
+            if user_id:
+                # Execute both queries in parallel for better performance
+                likes_counts, user_likes = await asyncio.gather(
+                    self.repository.get_places_likes_counts(place_ids),
+                    self.repository.get_user_places_likes(user_id, place_ids)
+                )
+            else:
+                # Only get likes counts if no user (no need for user_likes)
+                likes_counts = await self.repository.get_places_likes_counts(place_ids)
+                user_likes = {}
+            
+            # Build responses efficiently
             response_places = []
             for place in places:
                 try:
-                    likes_count = await self.repository.get_place_likes_count(place.id)
-                    is_liked = False
-                    if user_id:
-                        is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
+                    likes_count = likes_counts.get(place.id, 0)
+                    is_liked = user_likes.get(place.id, False) if user_id else False
                     
                     response_places.append(self._create_public_place_response(place, likes_count, is_liked))
                 except Exception as place_error:

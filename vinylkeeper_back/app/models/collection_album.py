@@ -34,7 +34,7 @@ class CollectionAlbum(Base):
     state_cover = Column(Integer, ForeignKey("vinyl_states.id"), nullable=True)
     acquisition_month_year = Column(String(7), nullable=True, comment="Format: YYYY-MM")
 
-    collection = relationship("Collection", back_populates="collection_albums")
-    album = relationship("Album", back_populates="album_collections")
-    state_record_ref = relationship("VinylState", foreign_keys=[state_record])
-    state_cover_ref = relationship("VinylState", foreign_keys=[state_cover])
+    collection = relationship("Collection", back_populates="collection_albums", lazy="selectin")
+    album = relationship("Album", back_populates="album_collections", lazy="selectin")
+    state_record_ref = relationship("VinylState", foreign_keys=[state_record], lazy="selectin")
+    state_cover_ref = relationship("VinylState", foreign_keys=[state_cover], lazy="selectin")

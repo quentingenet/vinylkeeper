@@ -126,6 +126,16 @@ class WishlistItemResponse(BaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AddToWishlistResponse(BaseSchema):
+    """Response model for adding items to wishlist with status information."""
+    item: WishlistItemResponse = Field(..., description="The wishlist item")
+    is_new: bool = Field(..., description="Whether this is a newly added item")
+    message: str = Field(..., description="User-friendly message about the operation")
+    entity_type: str = Field(..., description="Type of entity (album or artist)")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CollectionItemResponse(BaseSchema):
     """Response model for collection items."""
     id: int = Field(..., description="Unique identifier")
@@ -136,6 +146,17 @@ class CollectionItemResponse(BaseSchema):
     image_url: str = Field(..., description="URL of the image")
     source: str = Field(..., description="Source of the data")
     created_at: datetime = Field(..., description="When the reference was created")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AddToCollectionResponse(BaseSchema):
+    """Response model for adding items to collection with status information."""
+    item: CollectionItemResponse = Field(..., description="The collection item")
+    is_new: bool = Field(..., description="Whether this is a newly added item")
+    message: str = Field(..., description="User-friendly message about the operation")
+    entity_type: str = Field(..., description="Type of entity (album or artist)")
+    collection_name: str = Field(..., description="Name of the collection")
 
     model_config = ConfigDict(from_attributes=True)
 

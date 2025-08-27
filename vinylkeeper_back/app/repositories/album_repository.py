@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.album_model import Album
 from typing import Optional, List
 from app.core.exceptions import ServerError
@@ -25,9 +26,11 @@ class AlbumRepository:
             )
 
     async def get_by_external_id(self, external_album_id: str, external_source_id: int) -> Optional[Album]:
-        """Get an album by external ID and source"""
+        """Get an album by external ID and source with relations loaded"""
         try:
-            query = select(Album).filter(
+            query = select(Album).options(
+                selectinload(Album.external_source)
+            ).filter(
                 Album.external_album_id == external_album_id,
                 Album.external_source_id == external_source_id
             )

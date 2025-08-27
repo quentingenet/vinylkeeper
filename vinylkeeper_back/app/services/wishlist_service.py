@@ -3,7 +3,8 @@ from app.repositories.wishlist_repository import WishlistRepository
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
-    WishlistItemResponse
+    WishlistItemResponse,
+    AddToWishlistResponse
 )
 from app.schemas.album_schema import AlbumResponse, AlbumCreate
 from app.schemas.artist_schema import ArtistResponse, ArtistCreate
@@ -121,7 +122,7 @@ class WishlistService:
                 details={"error": str(e)}
             )
 
-    async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> WishlistItemResponse:
+    async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> AddToWishlistResponse:
         """Add an album or artist to the wishlist"""
         try:
             external_id = request.get_external_id()
@@ -133,8 +134,16 @@ class WishlistService:
 
             # Check if item already exists in wishlist
             existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
+            is_new = False
             if existing:
-                return self._build_wishlist_response(existing, request.entity_type.value, request.source)
+                logger.info(f"Item already in wishlist, returning existing: {existing}")
+                wishlist_response = self._build_wishlist_response(existing, request.entity_type.value, request.source)
+                return AddToWishlistResponse(
+                    item=wishlist_response,
+                    is_new=False,
+                    message=f"Already have {request.entity_type.value} '{request.title}' in wishlist",
+                    entity_type=request.entity_type.value
+                )
 
             # Find or create entity
             await self._find_or_create_entity(request)
@@ -152,7 +161,13 @@ class WishlistService:
                 external_source_id=external_source_id
             )
 
-            return self._build_wishlist_response(result, request.entity_type.value, request.source)
+            wishlist_response = self._build_wishlist_response(result, request.entity_type.value, request.source)
+            return AddToWishlistResponse(
+                item=wishlist_response,
+                is_new=True,
+                message=f"Added {request.entity_type.value} '{request.title}' to wishlist",
+                entity_type=request.entity_type.value
+            )
 
         except Exception as e:
             logger.error(f"Failed to add to wishlist: {str(e)}")

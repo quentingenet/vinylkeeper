@@ -43,7 +43,7 @@ def verify_password(hashed_password: str, plain_password: str) -> bool:
         ph.verify(hashed_password, plain_password)
         return True
     except VerifyMismatchError:
-        logger.warning("Password verification failed: VerifyMismatchError")
+        logger.info("Password verification failed: VerifyMismatchError")
         return False
     except Exception as e:
         logger.error(f"Password verification failed with error: {str(e)}")

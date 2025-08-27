@@ -51,3 +51,18 @@ export interface AddExternalResponse {
   success: boolean;
   message: string;
 }
+
+export interface AddToWishlistResponse {
+  item: WishlistItemResponse;
+  is_new: boolean;
+  message: string;
+  entity_type: string;
+}
+
+export interface AddToCollectionResponse {
+  item: CollectionItemResponse;
+  is_new: boolean;
+  message: string;
+  entity_type: string;
+  collection_name: string;
+}

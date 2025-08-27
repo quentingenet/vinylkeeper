@@ -12,9 +12,9 @@ async def lifespan(app: FastAPI):
         try:
             # Check if all reference data exists
             if not await check_reference_data_exists(db):
-                logger.warning("🟡 Insert reference data (missing tables)...")
+                logger.info("🟡 Insert reference data (missing tables)...")
                 await insert_reference_values(db)
-                logger.warning("✅ Reference data inserted.")
+                logger.info("✅ Reference data inserted.")
             yield
         finally:
             await db.close()

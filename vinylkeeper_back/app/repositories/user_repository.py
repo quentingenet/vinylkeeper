@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from app.models.user_model import User
 from typing import Optional, List
@@ -177,8 +177,8 @@ class UserRepository:
     async def count_users(self) -> int:
         """Count total number of users"""
         try:
-            result = await self.db.execute(select(User))
-            return len(result.scalars().all())
+            result = await self.db.execute(select(func.count(User.id)))
+            return result.scalar() or 0
         except Exception as e:
             raise ServerError(
                 error_code=5000,

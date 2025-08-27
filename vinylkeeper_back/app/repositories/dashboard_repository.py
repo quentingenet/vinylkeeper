@@ -65,7 +65,8 @@ class DashboardRepository:
         """Get the latest artist added to any collection"""
         query = (
             select(Artist, User.username)
-            .join(Artist.collections)
+            .join(collection_artist, Artist.id == collection_artist.c.artist_id)
+            .join(Collection, collection_artist.c.collection_id == Collection.id)
             .join(User, Collection.owner_id == User.id)
             .order_by(Artist.created_at.desc())
         )
@@ -80,3 +81,13 @@ class DashboardRepository:
             query = query.filter(Place.is_valid == is_valid)
         result = await self.db.execute(query)
         return result.scalar()
+
+    async def count_user_albums_total(self, user_id: int) -> int:
+        """Count total albums in all collections of a user in one query"""
+        query = (
+            select(func.count(CollectionAlbum.collection_id))
+            .join(Collection, CollectionAlbum.collection_id == Collection.id)
+            .filter(Collection.owner_id == user_id)
+        )
+        result = await self.db.execute(query)
+        return result.scalar() or 0

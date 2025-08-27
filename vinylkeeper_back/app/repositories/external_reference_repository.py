@@ -186,7 +186,7 @@ class ExternalReferenceRepository:
 
     async def find_wishlist_item(self, user_id: int, external_id: str, entity_type: EntityTypeEnum) -> Optional[Wishlist]:
         """Find a wishlist item by user ID and external ID"""
-        return await self.wishlist_repo.get_by_user_and_external_id(user_id, external_id, entity_type)
+        return await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, entity_type)
 
     async def remove_wishlist_item(self, wishlist_item: Wishlist) -> bool:
         """Remove a wishlist item"""
@@ -206,9 +206,9 @@ class ExternalReferenceRepository:
         """Get a user's wishlist"""
         return await self.wishlist_repo.get_by_user_id(user_id)
 
-    async def find_collection_by_id(self, collection_id: int) -> Optional[Collection]:
-        """Find a collection by ID with relations loaded"""
-        return await self.collection_repo.get_by_id(collection_id, load_relations=True)
+    async def find_collection_by_id(self, collection_id: int, load_relations: bool = False) -> Optional[Collection]:
+        """Find a collection by ID with optional relations loading"""
+        return await self.collection_repo.get_by_id(collection_id, load_relations=load_relations)
 
     async def add_album_to_collection(self, collection: Collection, album: Album, album_data: Optional[dict] = None) -> CollectionAlbum:
         """Add an album to a collection with optional album state data"""
@@ -251,40 +251,66 @@ class ExternalReferenceRepository:
                 details={"error": str(e)}
             )
 
+    async def find_artist_in_collection(self, collection_id: int, artist_id: int) -> Optional[dict]:
+        """Find if an artist is already in a collection"""
+        try:
+            from app.models.association_tables import collection_artist
+            
+            query = select(collection_artist).filter(
+                collection_artist.c.collection_id == collection_id,
+                collection_artist.c.artist_id == artist_id
+            )
+            result = await self.db.execute(query)
+            existing = result.scalar_one_or_none()
+            
+            if existing:
+                # Use current timestamp if created_at is not available
+                from datetime import datetime, timezone
+                current_time = datetime.now(timezone.utc)
+                
+                return {
+                    "id": artist_id,
+                    "collection_id": collection_id,
+                    "artist_id": artist_id,
+                    "created_at": getattr(existing, 'created_at', current_time)
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Failed to find artist in collection: {str(e)}")
+            return None
+
     async def add_artist_to_collection(self, collection: Collection, artist: Artist) -> dict:
         """Add an artist to a collection"""
         try:
-            from app.core.logging import logger
+            from app.models.association_tables import collection_artist
             
-            # Debug logging
-            logger.info(f"Adding artist {artist.id} to collection {collection.id}")
-            logger.info(f"Collection artists before: {collection.artists}")
+            # Check if artist is already in collection using the association table
+            existing_query = select(collection_artist).filter(
+                collection_artist.c.collection_id == collection.id,
+                collection_artist.c.artist_id == artist.id
+            )
+            existing_result = await self.db.execute(existing_query)
+            existing = existing_result.scalar_one_or_none()
             
-            # Check if artist is already in collection
-            if collection.artists is None:
-                logger.warning("Collection.artists is None, initializing empty list")
-                collection.artists = []
-            
-            if artist not in collection.artists:
-                logger.info("Artist not in collection, adding...")
-                collection.artists.append(artist)
+            if not existing:
+                # Insert into association table
+                insert_query = collection_artist.insert().values(
+                    collection_id=collection.id,
+                    artist_id=artist.id
+                )
+                await self.db.execute(insert_query)
                 await self.db.commit()
-                logger.info("Artist added successfully")
-            else:
-                logger.info("Artist already in collection")
             
             # Return a dictionary with the necessary information
             return {
-                "id": artist.id,  # Use artist ID as collection item ID
+                "id": artist.id,
                 "collection_id": collection.id,
                 "artist_id": artist.id,
-                "created_at": collection.created_at  # Use collection creation date
+                "created_at": collection.created_at
             }
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Failed to add artist to collection: {str(e)}")
-            logger.error(f"Collection ID: {collection.id}, Artist ID: {artist.id}")
-            logger.error(f"Collection artists: {collection.artists}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add artist to collection",
@@ -316,9 +342,15 @@ class ExternalReferenceRepository:
     async def remove_artist_from_collection(self, collection: Collection, artist: Artist) -> None:
         """Remove an artist from a collection"""
         try:
-            if artist in collection.artists:
-                collection.artists.remove(artist)
-                await self.db.commit()
+            from app.models.association_tables import collection_artist
+            
+            # Delete from association table
+            delete_query = collection_artist.delete().where(
+                collection_artist.c.collection_id == collection.id,
+                collection_artist.c.artist_id == artist.id
+            )
+            await self.db.execute(delete_query)
+            await self.db.commit()
         except Exception as e:
             await self.db.rollback()
             raise ServerError(

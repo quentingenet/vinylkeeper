@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from sqlalchemy.orm import selectinload
 
 from app.models.moderation_request_model import ModerationRequest
 from app.models.place_model import Place
@@ -18,6 +19,11 @@ class ModerationRequestRepository:
     async def get_all_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequest]:
         """Get all moderation requests with optional pagination."""
         query = select(ModerationRequest)
+        query = query.options(
+            selectinload(ModerationRequest.place),
+            selectinload(ModerationRequest.user),
+            selectinload(ModerationRequest.status)
+        )
         
         if offset:
             query = query.offset(offset)
@@ -30,6 +36,11 @@ class ModerationRequestRepository:
     async def get_requests_by_status(self, status_id: int, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequest]:
         """Get moderation requests by status with optional pagination."""
         query = select(ModerationRequest).filter(ModerationRequest.status_id == status_id)
+        query = query.options(
+            selectinload(ModerationRequest.place),
+            selectinload(ModerationRequest.user),
+            selectinload(ModerationRequest.status)
+        )
         
         if offset:
             query = query.offset(offset)
@@ -42,6 +53,11 @@ class ModerationRequestRepository:
     async def get_request_by_id(self, request_id: int) -> ModerationRequest:
         """Get a moderation request by its ID."""
         query = select(ModerationRequest).filter(ModerationRequest.id == request_id)
+        query = query.options(
+            selectinload(ModerationRequest.place),
+            selectinload(ModerationRequest.user),
+            selectinload(ModerationRequest.status)
+        )
         result = await self.db.execute(query)
         request = result.scalar_one_or_none()
         
