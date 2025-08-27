@@ -49,7 +49,7 @@ class CollectionRepository:
             if load_relations:
                 query = query.options(
                     selectinload(Collection.owner),
-                    selectinload(Collection.albums),
+                    selectinload(Collection.collection_albums),
                     selectinload(Collection.artists)
                 )
             
@@ -432,3 +432,16 @@ class CollectionRepository:
         except Exception as e:
             logger.error(f"Error searching collection artists: {str(e)}")
             return []
+
+    async def refresh(self, collection: Collection) -> Collection:
+        """Refresh a collection object from the database."""
+        try:
+            await self.db.refresh(collection)
+            return collection
+        except Exception as e:
+            logger.error(f"Error refreshing collection {collection.id}: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to refresh collection",
+                details={"error": str(e)}
+            )

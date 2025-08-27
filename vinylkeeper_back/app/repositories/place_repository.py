@@ -298,3 +298,22 @@ class PlaceRepository:
         )
         result = await self.db.execute(query)
         return result.scalars().all() 
+
+
+    async def get_moderation_status_by_name(self, status_name: str):
+        """Get moderation status by name."""
+        from app.models.reference_data.moderation_statuses import ModerationStatus
+        query = select(ModerationStatus).filter(ModerationStatus.name == status_name)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_place_type_by_name(self, place_type_name: str):
+        """Get place type by name."""
+        from app.models.reference_data.place_types import PlaceType
+        query = select(PlaceType).filter(PlaceType.name == place_type_name)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none() 
+
+    async def rollback(self):
+        """Rollback the current transaction."""
+        await self.db.rollback() 

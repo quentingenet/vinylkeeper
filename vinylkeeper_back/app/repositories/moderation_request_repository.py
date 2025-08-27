@@ -166,3 +166,9 @@ class ModerationRequestRepository:
             "approved": await self.get_moderation_request_count_by_status(ModerationStatusEnum.APPROVED.value),
             "rejected": await self.get_moderation_request_count_by_status(ModerationStatusEnum.REJECTED.value),
         } 
+
+    async def get_moderation_status_by_name(self, status_name: str):
+        """Get moderation status by name."""
+        query = select(ModerationStatus).filter(ModerationStatus.name == status_name)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none() 

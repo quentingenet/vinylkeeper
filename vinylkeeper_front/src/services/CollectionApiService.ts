@@ -29,9 +29,9 @@ export interface ArtistBase {
 }
 
 export interface AlbumInCollection {
-  state_record?: number;
-  state_cover?: number;
-  acquisition_month_year?: string;
+  state_record?: string | null;
+  state_cover?: string | null;
+  acquisition_month_year?: string | null;
 }
 
 export interface CollectionAlbumResponse extends AlbumBase, AlbumInCollection {

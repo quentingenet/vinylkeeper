@@ -118,13 +118,55 @@ class ExternalReferenceRepository:
                 details={"error": str(e)}
             )
 
-    async def find_album_by_external_id(self, external_id: str) -> Optional[Album]:
-        """Find an album by its external ID"""
-        return await self.album_repo.get_by_external_id(external_id, 1)  # Assuming external_source_id = 1
+    async def find_album_by_external_id(self, external_id: str, external_source_id: int) -> Optional[Album]:
+        """Find an album by its external ID and source"""
+        return await self.album_repo.get_by_external_id(external_id, external_source_id)
 
-    async def find_artist_by_external_id(self, external_id: str) -> Optional[Artist]:
-        """Find an artist by its external ID"""
-        return await self.artist_repo.get_by_external_id(external_id, 1)  # Assuming external_source_id = 1
+    async def find_artist_by_external_id(self, external_id: str, external_source_id: int) -> Optional[Artist]:
+        """Find an artist by its external ID and source"""
+        return await self.artist_repo.get_by_external_id(external_id, external_source_id)
+
+    async def find_collection_album_by_external_id(self, collection_id: int, external_id: str) -> Optional[CollectionAlbum]:
+        """Find a collection album by collection ID and external album ID"""
+        try:
+            from app.models.collection_album import CollectionAlbum
+            from app.models.album_model import Album
+            from sqlalchemy import select
+            
+            query = select(CollectionAlbum).filter(
+                CollectionAlbum.collection_id == collection_id
+            ).join(Album).filter(Album.external_album_id == external_id)
+            
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Error finding collection album by external ID: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to find collection album by external ID",
+                details={"error": str(e)}
+            )
+
+    async def find_collection_artist_by_external_id(self, collection_id: int, external_id: str) -> Optional[Artist]:
+        """Find a collection artist by collection ID and external artist ID"""
+        try:
+            from app.models.association_tables import collection_artist
+            from app.models.artist_model import Artist
+            
+            query = select(Artist).join(collection_artist).filter(
+                collection_artist.c.collection_id == collection_id,
+                Artist.external_artist_id == external_id
+            )
+            
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Error finding collection artist by external ID: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to find collection artist by external ID",
+                details={"error": str(e)}
+            )
 
     async def create_wishlist_item(self, wishlist_data: dict) -> Wishlist:
         """Create a new wishlist item"""
@@ -165,8 +207,8 @@ class ExternalReferenceRepository:
         return await self.wishlist_repo.get_by_user_id(user_id)
 
     async def find_collection_by_id(self, collection_id: int) -> Optional[Collection]:
-        """Find a collection by ID"""
-        return await self.collection_repo.get_by_id(collection_id)
+        """Find a collection by ID with relations loaded"""
+        return await self.collection_repo.get_by_id(collection_id, load_relations=True)
 
     async def add_album_to_collection(self, collection: Collection, album: Album, album_data: Optional[dict] = None) -> CollectionAlbum:
         """Add an album to a collection with optional album state data"""
@@ -212,10 +254,24 @@ class ExternalReferenceRepository:
     async def add_artist_to_collection(self, collection: Collection, artist: Artist) -> dict:
         """Add an artist to a collection"""
         try:
+            from app.core.logging import logger
+            
+            # Debug logging
+            logger.info(f"Adding artist {artist.id} to collection {collection.id}")
+            logger.info(f"Collection artists before: {collection.artists}")
+            
             # Check if artist is already in collection
+            if collection.artists is None:
+                logger.warning("Collection.artists is None, initializing empty list")
+                collection.artists = []
+            
             if artist not in collection.artists:
+                logger.info("Artist not in collection, adding...")
                 collection.artists.append(artist)
                 await self.db.commit()
+                logger.info("Artist added successfully")
+            else:
+                logger.info("Artist already in collection")
             
             # Return a dictionary with the necessary information
             return {
@@ -226,6 +282,9 @@ class ExternalReferenceRepository:
             }
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Failed to add artist to collection: {str(e)}")
+            logger.error(f"Collection ID: {collection.id}, Artist ID: {artist.id}")
+            logger.error(f"Collection artists: {collection.artists}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add artist to collection",

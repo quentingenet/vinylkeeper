@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy import select
+
 
 from app.repositories.place_repository import PlaceRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
@@ -40,7 +40,7 @@ class PlaceService:
         self.repository = repository
         self.moderation_request_repository = moderation_request_repository
 
-    async def create_place(self, place_data: PlaceCreate, user_id: int) -> PlaceResponse:
+    async def create_place(self, place_data: PlaceCreate, user: User) -> PlaceResponse:
         """Create a new place and automatically create a moderation request"""
         try:
             # Validate place data
@@ -52,7 +52,7 @@ class PlaceService:
             # Prepare place data
             place_dict = place_data.model_dump()
             place_dict["place_type_id"] = place_type_id
-            place_dict["submitted_by_id"] = user_id
+            place_dict["submitted_by_id"] = user.id
             place_dict["is_moderated"] = False  # New places are not moderated initially
             
             # Check if coordinates are valid, if not, try to geocode
@@ -83,12 +83,9 @@ class PlaceService:
             created_place = await self.repository.create_place(place_dict)
             
             # Create moderation request automatically
-            moderation_request = await self._create_moderation_request(created_place.id, user_id)
+            moderation_request = await self._create_moderation_request(created_place.id, user.id)
             
-            # Get user info for email
-            query = select(User).filter(User.id == user_id)
-            result = await self.repository.db.execute(query)
-            user = result.scalar_one_or_none()
+            # User info already available from parameter
             
             # Send email notification
             if settings.APP_ENV == "development" or (user.role.name == RoleEnum.ADMIN.value and user.is_superuser):
@@ -357,9 +354,7 @@ class PlaceService:
         """Create a moderation request for a place"""
         try:
             # Get pending status ID
-            query = select(ModerationStatus).filter(ModerationStatus.name == ModerationStatusEnum.PENDING.value)
-            result = await self.repository.db.execute(query)
-            pending_status = result.scalar_one_or_none()
+            pending_status = await self.repository.get_moderation_status_by_name(ModerationStatusEnum.PENDING.value)
             
             if not pending_status:
                 raise ServerError(
@@ -379,7 +374,7 @@ class PlaceService:
             
             return moderation_request
         except Exception as e:
-            await self.repository.db.rollback()
+            await self.repository.rollback()
             logger.error(f"Exception in _create_moderation_request: {str(e)}")
             logger.error(f"Exception type: {type(e)}")
             import traceback
@@ -432,9 +427,7 @@ class PlaceService:
 
     async def _get_place_type_id_by_name(self, place_type_name: str) -> int:
         """Get place type ID from name"""
-        query = select(PlaceType).filter(PlaceType.name == place_type_name)
-        result = await self.repository.db.execute(query)
-        place_type = result.scalar_one_or_none()
+        place_type = await self.repository.get_place_type_by_name(place_type_name)
         
         if not place_type:
             raise ValidationError(

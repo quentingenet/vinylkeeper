@@ -35,7 +35,7 @@ async def create_place(
     service: PlaceService = Depends(get_place_service)
 ):
     """Create a new place"""
-    place = await service.create_place(data, user.id)
+    place = await service.create_place(data, user)
     return {"message": "Place created successfully", "place": place.model_dump()}
 
 

@@ -201,12 +201,26 @@ class CollectionAlbumRepository:
                     value=f"collection_{collection_id}_album_{album_id}"
                 )
             
+            # Convert state names to IDs using VinylStateMapping
+            state_record_id = None
+            state_cover_id = None
+            
+            if metadata.get('state_record'):
+                state_record_id = VinylStateMapping.get_id_from_name(metadata['state_record'])
+                if not state_record_id:
+                    logger.warning(f"Invalid state_record value: {metadata['state_record']}")
+            
+            if metadata.get('state_cover'):
+                state_cover_id = VinylStateMapping.get_id_from_name(metadata['state_cover'])
+                if not state_cover_id:
+                    logger.warning(f"Invalid state_cover value: {metadata['state_cover']}")
+            
             # Create new association
             collection_album = CollectionAlbum(
                 collection_id=collection_id,
                 album_id=album_id,
-                state_record=metadata.get('state_record'),
-                state_cover=metadata.get('state_cover'),
+                state_record=state_record_id,
+                state_cover=state_cover_id,
                 acquisition_month_year=metadata.get('acquisition_month_year')
             )
             
@@ -233,11 +247,25 @@ class CollectionAlbumRepository:
                     details={"collection_id": collection_id, "album_id": album_id}
                 )
             
-            # Update metadata fields
+            # Update metadata fields with conversion for states
             if 'state_record' in metadata:
-                collection_album.state_record = metadata['state_record']
+                if metadata['state_record'] is None:
+                    collection_album.state_record = None
+                else:
+                    state_record_id = VinylStateMapping.get_id_from_name(metadata['state_record'])
+                    if not state_record_id:
+                        logger.warning(f"Invalid state_record value: {metadata['state_record']}")
+                    collection_album.state_record = state_record_id
+                    
             if 'state_cover' in metadata:
-                collection_album.state_cover = metadata['state_cover']
+                if metadata['state_cover'] is None:
+                    collection_album.state_cover = None
+                else:
+                    state_cover_id = VinylStateMapping.get_id_from_name(metadata['state_cover'])
+                    if not state_cover_id:
+                        logger.warning(f"Invalid state_cover value: {metadata['state_cover']}")
+                    collection_album.state_cover = state_cover_id
+                    
             if 'acquisition_month_year' in metadata:
                 collection_album.acquisition_month_year = metadata['acquisition_month_year']
             

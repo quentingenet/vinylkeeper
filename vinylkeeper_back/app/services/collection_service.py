@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy import select
+
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
@@ -144,12 +144,12 @@ class CollectionService:
                 owner_id=user_id
             )
             created_collection = await self.repository.create(collection)
-            await self.repository.db.refresh(created_collection)
+            created_collection = await self.repository.refresh(created_collection)
             if collection_data.album_ids:
                 await self.repository.add_albums(created_collection, collection_data.album_ids)
             if collection_data.artist_ids:
                 await self.repository.add_artists(created_collection, collection_data.artist_ids)
-            await self.repository.db.refresh(created_collection)
+            created_collection = await self.repository.refresh(created_collection)
             return await self._build_collection_response(created_collection, user_id)
         except (DuplicateFieldError, ValidationError) as e:
             raise e
@@ -235,7 +235,7 @@ class CollectionService:
             updated_collection = await self.repository.update(collection)
             
             # Refresh to get updated relationships
-            await self.repository.db.refresh(updated_collection)
+            updated_collection = await self.repository.refresh(updated_collection)
             
             # Convert to response schema
             return await self.get_collection(collection_id)

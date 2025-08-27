@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.place_repository import PlaceRepository
@@ -95,9 +95,7 @@ class ModerationService:
             request = await self.moderation_repository.get_request_by_id(request_id)
 
             # Get the new status
-            query = select(ModerationStatus).filter(ModerationStatus.name == new_status)
-            result = await self.moderation_repository.db.execute(query)
-            new_status_obj = result.scalar_one_or_none()
+            new_status_obj = await self.moderation_repository.get_moderation_status_by_name(new_status)
             
             if not new_status_obj:
                 raise ValidationError(

@@ -35,9 +35,9 @@ export interface IAlbumInCollection {
   artist: string;
   year?: string;
   image_url?: string;
-  state_record?: number;
-  state_cover?: number;
-  acquisition_date?: string;
+  state_record?: string | null;
+  state_cover?: string | null;
+  acquisition_month_year?: string | null;
   created_at: string;
   updated_at: string;
   collections_count: number;

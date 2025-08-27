@@ -17,6 +17,10 @@ class AlbumBase(BaseSchema):
         ...,
         description="Source of the album data (e.g., 'discogs')"
     )
+    external_source: Optional[dict] = Field(
+        None,
+        description="External source information with id and name"
+    )
     title: Optional[str] = Field(
         None,
         description="Cached title of the album"
