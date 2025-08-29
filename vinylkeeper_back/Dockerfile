@@ -28,4 +28,10 @@ COPY . .
 EXPOSE 8000
 
 # Run FastAPI with Uvicorn using uvloop and httptools (single worker for async setup)
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--loop", "uvloop", "--http", "httptools", "--workers", "1"]
+CMD ["poetry", "run", "uvicorn", "app.main:app",
+     "--host", "0.0.0.0", "--port", "8000",
+     "--loop", "uvloop", "--http", "httptools",
+     "--workers", "2",
+     "--timeout-keep-alive", "15",
+     "--limit-max-requests", "5000",
+     "--limit-max-requests-jitter", "500"]
