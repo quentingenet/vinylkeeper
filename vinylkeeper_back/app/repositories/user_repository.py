@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from app.models.user_model import User
 from typing import Optional, List
 from app.core.exceptions import ServerError
+from app.core.logging import logger
 
 
 class UserRepository:
@@ -16,6 +17,7 @@ class UserRepository:
             result = await self.db.execute(select(User).filter(User.email == email))
             return result.scalar_one_or_none()
         except Exception as e:
+            logger.error(f"Error retrieving user by email {email}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get user by email",
@@ -30,6 +32,7 @@ class UserRepository:
             )
             return result.scalar_one_or_none()
         except Exception as e:
+            logger.error(f"Error retrieving user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get user by id",
@@ -42,6 +45,7 @@ class UserRepository:
             result = await self.db.execute(select(User).filter(User.user_uuid == user_uuid))
             return result.scalar_one_or_none()
         except Exception as e:
+            logger.error(f"Error retrieving user by UUID {user_uuid}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get user by uuid",
@@ -57,6 +61,7 @@ class UserRepository:
             return user
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error creating user {user.username}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create user",
@@ -72,6 +77,7 @@ class UserRepository:
             return user
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error updating user {user.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update user",
@@ -87,6 +93,7 @@ class UserRepository:
             return user
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error updating last login for user {user.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update user last login",
@@ -106,6 +113,7 @@ class UserRepository:
             return True
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error updating password for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update user password",
@@ -133,6 +141,7 @@ class UserRepository:
             return True
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error deleting user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete user",
@@ -144,6 +153,7 @@ class UserRepository:
         try:
             return await self.get_user_by_email(email) is not None
         except Exception as e:
+            logger.error(f"Error checking if email {email} is taken: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to check if email is taken",
@@ -156,6 +166,7 @@ class UserRepository:
             result = await self.db.execute(select(User).filter(User.username == username))
             return result.scalar_one_or_none() is not None
         except Exception as e:
+            logger.error(f"Error checking if username {username} is taken: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to check if username is taken",
@@ -168,6 +179,7 @@ class UserRepository:
             result = await self.db.execute(select(User).offset(skip).limit(limit))
             return result.scalars().all()
         except Exception as e:
+            logger.error(f"Error retrieving users (skip: {skip}, limit: {limit}): {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all users",
@@ -180,6 +192,7 @@ class UserRepository:
             result = await self.db.execute(select(func.count(User.id)))
             return result.scalar() or 0
         except Exception as e:
+            logger.error(f"Error counting users: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count users",

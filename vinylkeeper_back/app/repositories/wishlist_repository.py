@@ -109,6 +109,7 @@ class WishlistRepository:
             return wishlist
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error creating wishlist item for user {wishlist.user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
@@ -141,6 +142,7 @@ class WishlistRepository:
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
+            logger.error(f"Error retrieving wishlist item {wishlist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item by ID",
@@ -154,6 +156,7 @@ class WishlistRepository:
             result = await self.db.execute(query)
             return result.scalars().all()
         except Exception as e:
+            logger.error(f"Error retrieving all wishlist items: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all wishlist items",
@@ -171,6 +174,7 @@ class WishlistRepository:
             result = await self.db.execute(query)
             return result.scalars().all()
         except Exception as e:
+            logger.error(f"Error retrieving wishlist items for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist items by user ID",
@@ -186,6 +190,7 @@ class WishlistRepository:
             return wishlist
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error updating wishlist item {wishlist.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update wishlist item",
@@ -203,6 +208,7 @@ class WishlistRepository:
             return False
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error deleting wishlist item {wishlist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete wishlist item",

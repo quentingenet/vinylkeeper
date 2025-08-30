@@ -53,15 +53,21 @@ async def get_places(
 
 
 @router.get("/place-types", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def get_place_types(
     db: AsyncSession = Depends(get_db)
 ):
     """Get all place types (public endpoint)"""
-    from app.models.reference_data.place_types import PlaceType as PlaceTypeModel
-    from sqlalchemy import select
-    result = await db.execute(select(PlaceTypeModel))
-    place_types = result.scalars().all()
-    return [{"id": pt.id, "name": pt.name} for pt in place_types]
+    try:
+        from app.models.reference_data.place_types import PlaceType as PlaceTypeModel
+        from sqlalchemy import select
+        result = await db.execute(select(PlaceTypeModel))
+        place_types = result.scalars().all()
+        return [{"id": pt.id, "name": pt.name} for pt in place_types]
+    except Exception as e:
+        from app.core.logging import logger
+        logger.error(f"Error retrieving place types: {str(e)}")
+        raise
 
 
 @router.get("/{place_id}", status_code=status.HTTP_200_OK)

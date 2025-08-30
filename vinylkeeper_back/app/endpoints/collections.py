@@ -85,6 +85,7 @@ async def get_public_collections(
 
 
 @router.get("/{collection_id}", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def get_collection_by_id(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -144,6 +145,7 @@ async def delete_collection(
 
 
 @router.get("/{collection_id}/details", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
 async def get_collection_details(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),

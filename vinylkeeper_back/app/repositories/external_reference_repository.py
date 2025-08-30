@@ -95,6 +95,7 @@ class ExternalReferenceRepository:
             )
             return await self.album_repo.create(album)
         except Exception as e:
+            logger.error(f"Error creating album with external ID {album_data.external_album_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create album",
@@ -112,6 +113,7 @@ class ExternalReferenceRepository:
             )
             return await self.artist_repo.create(artist)
         except Exception as e:
+            logger.error(f"Error creating artist with external ID {artist_data.external_artist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create artist",
@@ -178,6 +180,7 @@ class ExternalReferenceRepository:
             return wishlist_item
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error creating wishlist item for user {wishlist_data.get('user_id')}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
@@ -196,6 +199,7 @@ class ExternalReferenceRepository:
             return True
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error removing wishlist item {wishlist_item.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove wishlist item",

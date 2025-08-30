@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from app.models.album_model import Album
 from typing import Optional, List
 from app.core.exceptions import ServerError
+from app.core.logging import logger
 
 
 class AlbumRepository:
@@ -19,6 +20,7 @@ class AlbumRepository:
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
+            logger.error(f"Error retrieving album {album_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get album by id",
@@ -37,6 +39,7 @@ class AlbumRepository:
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
+            logger.error(f"Error retrieving album by external ID {external_album_id} from source {external_source_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get album by external id",
@@ -52,6 +55,7 @@ class AlbumRepository:
             return album
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error creating album: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create album",
@@ -67,6 +71,7 @@ class AlbumRepository:
             return album
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error updating album {album.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update album",
@@ -81,6 +86,7 @@ class AlbumRepository:
             return True
         except Exception as e:
             await self.db.rollback()
+            logger.error(f"Error deleting album {album.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete album",
@@ -94,6 +100,7 @@ class AlbumRepository:
             result = await self.db.execute(query)
             return result.scalars().all()
         except Exception as e:
+            logger.error(f"Error retrieving all albums: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all albums",
