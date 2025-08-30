@@ -35,13 +35,15 @@ services:
       - app/.env.production
     environment:
       - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1   # pour avoir les logs non bufferisés
     working_dir: /app
     command: >
-      sh -c "poetry run alembic upgrade head &&
-             poetry run uvicorn app.main:app
-             --host 0.0.0.0 --port 8000
-             --loop uvloop --http httptools
-             --workers 1"
+      sh -eu -c "
+        echo '[boot] running alembic...';
+        poetry run alembic upgrade head;
+        echo '[boot] starting uvicorn...';
+        exec poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers
+      "
     restart: always
 
 networks:
