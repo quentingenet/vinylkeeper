@@ -167,8 +167,23 @@ export default function Dashboard() {
     type: "album" | "artist"
   ): PlaybackItem | null => {
     if (!addition) return null;
+
+    const externalId = addition.external_id
+      ? addition.external_id
+      : addition.id.toString();
+
+    // Validate that external ID is numeric
+    if (!/^\d+$/.test(externalId)) {
+      console.warn(
+        `Non-numeric external ID for ${type}:`,
+        externalId,
+        addition
+      );
+      return null;
+    }
+
     return {
-      id: addition.external_id ? addition.external_id : addition.id.toString(),
+      id: externalId,
       title: addition.name,
       artist: addition.name,
       image_url: addition.image_url,

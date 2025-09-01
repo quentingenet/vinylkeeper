@@ -27,6 +27,12 @@ export class SearchApiService extends BaseApiService {
       throw new Error("Invalid artist ID provided");
     }
 
+    // Validate that artistId is numeric
+    if (!/^\d+$/.test(artistId)) {
+      console.warn("Non-numeric artist ID provided:", artistId);
+      throw new Error("Artist ID must be numeric");
+    }
+
     try {
       return await this.get<ArtistMetadata>(
         `/request-proxy/music-metadata/artist/${artistId}`
@@ -38,6 +44,17 @@ export class SearchApiService extends BaseApiService {
   }
 
   async getAlbumMetadata(albumId: string): Promise<AlbumMetadata> {
+    if (!albumId || albumId.trim() === "") {
+      console.warn("Invalid album ID provided:", albumId);
+      throw new Error("Invalid album ID provided");
+    }
+
+    // Validate that albumId is numeric
+    if (!/^\d+$/.test(albumId)) {
+      console.warn("Non-numeric album ID provided:", albumId);
+      throw new Error("Album ID must be numeric");
+    }
+
     try {
       return await this.get<AlbumMetadata>(
         `/request-proxy/music-metadata/album/${albumId}`

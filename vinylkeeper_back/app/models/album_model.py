@@ -61,8 +61,9 @@ class Album(Base):
 
     @validates('external_album_id')
     def validate_external_album_id(self, key, value):
-        if not value:
-            raise ValueError("External album ID must not be empty")
+        if not value or not value.isdigit():
+            raise ValueError(
+                "External album ID must be a non-empty numeric string")
         return value
 
     def __repr__(self):

@@ -346,6 +346,12 @@ export default function CollectionDetails() {
       return;
     }
 
+    // Validate that external ID is numeric
+    if (!/^\d+$/.test(externalId)) {
+      console.warn(`Non-numeric external ID for ${type}:`, externalId, item);
+      return;
+    }
+
     const playbackItem: PlaybackItem = {
       id: externalId,
       title: item.title || item.name,

@@ -200,8 +200,8 @@ class WishlistService:
             wishlist_item = await self.wishlist_repo.get_by_id(wishlist_id)
             if not wishlist_item or wishlist_item.user_id != user_id:
                 raise ResourceNotFoundError(
-                    error_code=4040,
-                    message=f"Wishlist item {wishlist_id} not found or not owned by user {user_id}"
+                    resource_type="Wishlist item",
+                    resource_id=wishlist_id
                 )
             
             result = await self.wishlist_repo.remove_from_wishlist(user_id, wishlist_id)

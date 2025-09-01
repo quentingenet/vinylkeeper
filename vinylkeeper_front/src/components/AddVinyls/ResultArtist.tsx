@@ -117,6 +117,12 @@ export default function ResultArtist({
   }, []);
 
   const handlePlayClick = useCallback((artist: IArtistRequestResults) => {
+    // Validate that artist ID is numeric
+    if (!/^\d+$/.test(artist.id)) {
+      console.warn("Non-numeric artist ID provided:", artist.id, artist);
+      return;
+    }
+
     const playbackItem: PlaybackItem = {
       id: artist.id,
       title: artist.title || "",

@@ -259,6 +259,15 @@ class SearchService:
                 message="Invalid artist ID provided",
                 details={"artist_id": artist_id}
             )
+        
+        # Validate that artist_id is numeric
+        if not artist_id.isdigit():
+            logger.error(f"Non-numeric artist_id provided: '{artist_id}'")
+            raise ServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="Artist ID must be numeric",
+                details={"artist_id": artist_id}
+            )
 
         url = f"{self.base_url}/artists/{artist_id}"
         
@@ -354,17 +363,58 @@ class SearchService:
         Raises:
             ServerError: If album not found or API communication fails
         """
-        url = f"{self.base_url}/releases/{album_id}"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers={"Authorization": f"Discogs token={self.token}"})
-            response.raise_for_status()
-            data = response.json()
+        if not album_id or not album_id.strip():
+            logger.error(f"Invalid album_id provided: '{album_id}'")
+            raise ServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="Invalid album ID provided",
+                details={"album_id": album_id}
+            )
+        
+        # Validate that album_id is numeric
+        if not album_id.isdigit():
+            logger.error(f"Non-numeric album_id provided: '{album_id}'")
+            raise ServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="Album ID must be numeric",
+                details={"album_id": album_id}
+            )
 
-            if not data:
+        url = f"{self.base_url}/releases/{album_id}"
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url, headers={"Authorization": f"Discogs token={self.token}"})
+                response.raise_for_status()
+                data = response.json()
+
+                if not data:
+                    logger.warning(f"No data returned for album ID: {album_id}")
+                    raise ServerError(
+                        error_code=ErrorCode.RESOURCE_NOT_FOUND,
+                        message="Album not found",
+                        details={"album_id": album_id}
+                    )
+            except httpx.HTTPStatusError as e:
+                logger.error(f"HTTP error fetching album metadata for ID {album_id}: {e.response.status_code} - {e.response.text}")
+                if e.response.status_code == 404:
+                    raise ServerError(
+                        error_code=ErrorCode.RESOURCE_NOT_FOUND,
+                        message="Album not found",
+                        details={"album_id": album_id}
+                    )
+                else:
+                    raise ServerError(
+                        error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+                        message=f"Discogs API error: {e.response.status_code}",
+                        details={"album_id": album_id, "status_code": e.response.status_code}
+                    )
+            except Exception as e:
+                logger.error(f"Unexpected error fetching album metadata for ID {album_id}: {str(e)}")
                 raise ServerError(
-                    error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                    message="Album not found",
-                    details={"album_id": album_id}
+                    error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+                    message="Failed to fetch album metadata",
+                    details={"album_id": album_id, "error": str(e)}
                 )
 
             # Parse tracks
