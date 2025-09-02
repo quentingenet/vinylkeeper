@@ -7,7 +7,8 @@ from app.schemas.collection_schema import (
     CollectionVisibilityUpdate,
     PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
-    CollectionSearchResponse
+    CollectionSearchResponse,
+    CollectionAlbumResponse
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -22,7 +23,7 @@ from app.core.exceptions import (
     ValidationError,
     ServerError,
 )
-from app.schemas.collection_album_schema import CollectionAlbumUpdate, CollectionAlbumMetadataResponse
+from app.schemas.collection_album_schema import CollectionAlbumUpdate
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
@@ -237,7 +238,7 @@ async def unlike_collection(
     )
 
 
-@router.patch("/{collection_id}/albums/{album_id}/metadata", response_model=CollectionAlbumMetadataResponse)
+@router.patch("/{collection_id}/albums/{album_id}/metadata", response_model=CollectionAlbumResponse)
 @handle_app_exceptions
 async def update_album_metadata(
     collection_id: int,
@@ -245,7 +246,7 @@ async def update_album_metadata(
     data: CollectionAlbumUpdate,
     current_user: User = Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service)
-) -> CollectionAlbumMetadataResponse:
+) -> CollectionAlbumResponse:
     updated_metadata = await service.update_album_metadata(
         current_user.id, collection_id, album_id, data
     )
