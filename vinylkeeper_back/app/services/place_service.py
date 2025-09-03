@@ -27,6 +27,7 @@ from app.core.exceptions import (
 )
 from app.core.logging import logger
 from app.core.enums import ModerationStatusEnum, RoleEnum
+
 from app.utils.geocoding import geocode_city
 from app.mails.client_mail import send_mail, MailSubject
 from app.core.config_env import settings
@@ -42,7 +43,7 @@ class PlaceService:
         self.moderation_request_repository = moderation_request_repository
 
     async def create_place(self, place_data: PlaceCreate, user: User) -> PlaceResponse:
-        """Create a new place and automatically create a moderation request"""
+        """Create a new place and automatically create a moderation request with transactional integrity"""
         try:
             # Validate place data
             self._validate_place_data(place_data)
@@ -86,29 +87,8 @@ class PlaceService:
             # Create moderation request automatically
             moderation_request = await self._create_moderation_request(created_place.id, user.id)
             
-            # User info already available from parameter
-            
-            # Send email notification
-            if settings.APP_ENV == "development" or (user.role.name == RoleEnum.ADMIN.value and user.is_superuser):
-                # Skip email notification in development mode or for admin users
-                pass
-            else:
-                try:
-                    await send_mail(
-                        to=settings.EMAIL_ADMIN,
-                        subject=MailSubject.NewPlaceSuggestion,
-                        place_name=created_place.name,
-                        place_city=created_place.city,
-                        place_country=created_place.country,
-                        place_type=created_place.place_type.name if created_place.place_type else "Unknown",
-                        username=user.username if user else "Unknown",
-                        user_email=user.email if user else "Unknown",
-                        place_description=created_place.description
-                    )
-                    logger.info(f"Email notification sent for new place suggestion: {created_place.name}")
-                except Exception as e:
-                    logger.error(f"Failed to send email notification for place suggestion: {str(e)}")
-                    # Don't fail the entire operation if email fails
+            # Commit the transaction
+            await self.repository.db.commit()
             
             # Get likes info for the new place
             likes_count = await self.repository.get_place_likes_count(created_place.id)
@@ -118,6 +98,7 @@ class PlaceService:
             response = self._create_place_response(created_place, likes_count, is_liked)
             
             return response
+            
         except (DuplicateFieldError, ValidationError) as e:
             raise e
         except Exception as e:
@@ -210,6 +191,9 @@ class PlaceService:
             update_dict = place_data.model_dump(exclude_unset=True)
             updated_place = await self.repository.update_place(place_id, update_dict)
             
+            # Commit the transaction to persist the place update
+            await self.repository.db.commit()
+            
             # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
@@ -236,7 +220,10 @@ class PlaceService:
                     message="You don't have permission to delete this place"
                 )
 
-            return await self.repository.delete_place(place_id)
+            result = await self.repository.delete_place(place_id)
+            # Commit the transaction to persist the place deletion
+            await self.repository.db.commit()
+            return result
         except (ResourceNotFoundError, ForbiddenError):
             raise
         except Exception as e:
@@ -247,13 +234,14 @@ class PlaceService:
             )
 
     async def like_place(self, user_id: int, place_id: int) -> dict:
-        """Like a place"""
+        """Like a place with transactional integrity"""
         try:
             # Verify place exists and is moderated
             place = await self.repository.get_moderated_place_by_id(place_id)
             
             # Like the place
             await self.repository.like_place(user_id, place_id)
+            await self.repository.db.commit()  # Commit the transaction
             
             # Get updated likes count
             likes_count = await self.repository.get_place_likes_count(place_id)
@@ -273,13 +261,14 @@ class PlaceService:
             )
 
     async def unlike_place(self, user_id: int, place_id: int) -> dict:
-        """Unlike a place"""
+        """Unlike a place with transactional integrity"""
         try:
             # Verify place exists and is moderated
             place = await self.repository.get_moderated_place_by_id(place_id)
             
             # Unlike the place
             await self.repository.unlike_place(user_id, place_id)
+            await self.repository.db.commit()  # Commit the transaction
             
             # Get updated likes count
             likes_count = await self.repository.get_place_likes_count(place_id)
@@ -391,7 +380,6 @@ class PlaceService:
             
             return moderation_request
         except Exception as e:
-            await self.repository.rollback()
             logger.error(f"Exception in _create_moderation_request: {str(e)}")
             logger.error(f"Exception type: {type(e)}")
             import traceback

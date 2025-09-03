@@ -12,23 +12,22 @@ from app.core.exceptions import (
     DuplicateFieldError
 )
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 
 
-class CollectionAlbumRepository:
+class CollectionAlbumRepository(TransactionalMixin):
     """Repository for managing collection-album associations"""
 
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create(self, collection_album: CollectionAlbum) -> CollectionAlbum:
-        """Create a new collection-album association"""
+        """Create a new collection-album association without committing (transaction managed by service)."""
         try:
-            self.db.add(collection_album)
-            await self.db.commit()
-            await self.db.refresh(collection_album)
+            await self._add_entity(collection_album, flush=True)  # Flush to get the ID
+            await self._refresh_entity(collection_album)
             return collection_album
         except Exception as e:
-            await self.db.rollback()
             logger.error(
                 f"Error creating collection-album association: {str(e)}")
             raise ServerError(
@@ -38,14 +37,12 @@ class CollectionAlbumRepository:
             )
 
     async def update(self, collection_album: CollectionAlbum) -> CollectionAlbum:
-        """Update a collection-album association"""
+        """Update a collection-album association without committing (transaction managed by service)."""
         try:
-            self.db.add(collection_album)
-            await self.db.commit()
-            await self.db.refresh(collection_album)
+            await self._add_entity(collection_album, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(collection_album)
             return collection_album
         except Exception as e:
-            await self.db.rollback()
             logger.error(
                 f"Error updating collection-album association: {str(e)}")
             raise ServerError(
@@ -55,13 +52,11 @@ class CollectionAlbumRepository:
             )
 
     async def delete(self, collection_album: CollectionAlbum) -> bool:
-        """Delete a collection-album association"""
+        """Delete a collection-album association without committing (transaction managed by service)."""
         try:
-            await self.db.delete(collection_album)
-            await self.db.commit()
+            await self._delete_entity(collection_album)
             return True
         except Exception as e:
-            await self.db.rollback()
             logger.error(
                 f"Error deleting collection-album association: {str(e)}")
             raise ServerError(
@@ -208,12 +203,12 @@ class CollectionAlbumRepository:
             if metadata.get('state_record'):
                 state_record_id = VinylStateMapping.get_id_from_name(metadata['state_record'])
                 if not state_record_id:
-                    logger.info(f"Invalid state_record value: {metadata['state_record']}")
+                    logger.warning(f"Invalid state_record value: {metadata['state_record']}")
             
             if metadata.get('state_cover'):
                 state_cover_id = VinylStateMapping.get_id_from_name(metadata['state_cover'])
                 if not state_cover_id:
-                    logger.info(f"Invalid state_cover value: {metadata['state_cover']}")
+                    logger.warning(f"Invalid state_cover value: {metadata['state_cover']}")
             
             # Create new association
             collection_album = CollectionAlbum(
@@ -254,7 +249,7 @@ class CollectionAlbumRepository:
                 else:
                     state_record_id = VinylStateMapping.get_id_from_name(metadata['state_record'])
                     if not state_record_id:
-                        logger.info(f"Invalid state_record value: {metadata['state_record']}")
+                        logger.warning(f"Invalid state_record value: {metadata['state_record']}")
                     collection_album.state_record = state_record_id
                     
             if 'state_cover' in metadata:
@@ -263,7 +258,7 @@ class CollectionAlbumRepository:
                 else:
                     state_cover_id = VinylStateMapping.get_id_from_name(metadata['state_cover'])
                     if not state_cover_id:
-                        logger.info(f"Invalid state_cover value: {metadata['state_cover']}")
+                        logger.warning(f"Invalid state_cover value: {metadata['state_cover']}")
                     collection_album.state_cover = state_cover_id
                     
             if 'acquisition_month_year' in metadata:

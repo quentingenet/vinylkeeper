@@ -5,9 +5,10 @@ from app.models.artist_model import Artist
 from typing import Optional, List
 from app.core.exceptions import ServerError
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 
 
-class ArtistRepository:
+class ArtistRepository(TransactionalMixin):
     """Repository for managing artists"""
 
     def __init__(self, db: AsyncSession):
@@ -47,14 +48,12 @@ class ArtistRepository:
             )
 
     async def create(self, artist: Artist) -> Artist:
-        """Create a new artist"""
+        """Create a new artist without committing (transaction managed by service)."""
         try:
-            self.db.add(artist)
-            await self.db.commit()
-            await self.db.refresh(artist)
+            await self._add_entity(artist, flush=True)  # Flush to get the ID
+            await self._refresh_entity(artist)
             return artist
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating artist: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -63,14 +62,12 @@ class ArtistRepository:
             )
 
     async def update(self, artist: Artist) -> Artist:
-        """Update an artist"""
+        """Update an artist without committing (transaction managed by service)."""
         try:
-            self.db.add(artist)
-            await self.db.commit()
-            await self.db.refresh(artist)
+            await self._add_entity(artist, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(artist)
             return artist
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating artist {artist.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -79,13 +76,11 @@ class ArtistRepository:
             )
 
     async def delete(self, artist: Artist) -> bool:
-        """Delete an artist"""
+        """Delete an artist without committing (transaction managed by service)."""
         try:
-            await self.db.delete(artist)
-            await self.db.commit()
+            await self._delete_entity(artist)
             return True
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error deleting artist {artist.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,

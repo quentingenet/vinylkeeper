@@ -13,8 +13,10 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ServerError
 )
+from app.core.transaction import transaction_context
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
+
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
 from app.models.reference_data.external_sources import ExternalSource
@@ -28,7 +30,7 @@ class WishlistService:
         self.wishlist_repo = wishlist_repo
         self.external_ref_repo = external_ref_repo
 
-    async def _find_or_create_entity(self, request: AddToWishlistRequest) -> AlbumResponse | ArtistResponse:
+    async def _find_or_create_entity(self, request: AddToWishlistRequest, external_source_id: int = None) -> AlbumResponse | ArtistResponse:
         """Find existing entity or create new one"""
         try:
             external_id = request.get_external_id()
@@ -38,8 +40,9 @@ class WishlistService:
                     message="External ID must be provided"
                 )
 
-            # Get the external source ID first
-            external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
+            # Get the external source ID if not provided
+            if external_source_id is None:
+                external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
 
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # Try to find existing album first
@@ -123,7 +126,7 @@ class WishlistService:
             )
 
     async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> AddToWishlistResponse:
-        """Add an album or artist to the wishlist"""
+        """Add an album or artist to the wishlist with transactional integrity using transaction_context"""
         try:
             external_id = request.get_external_id()
             if not external_id:
@@ -136,7 +139,6 @@ class WishlistService:
             existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
             is_new = False
             if existing:
-                logger.info(f"Item already in wishlist, returning existing: {existing}")
                 wishlist_response = self._build_wishlist_response(existing, request.entity_type.value, request.source)
                 return AddToWishlistResponse(
                     item=wishlist_response,
@@ -145,12 +147,14 @@ class WishlistService:
                     entity_type=request.entity_type.value
                 )
 
-            # Find or create entity
-            await self._find_or_create_entity(request)
+            # Get external source ID once (avoid duplicate queries)
+            external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
+            
+            # Find or create entity (pass external_source_id to avoid duplicate query)
+            await self._find_or_create_entity(request, external_source_id)
 
             # Create wishlist item
             entity_type_id = await self.external_ref_repo.get_entity_type_id(request.entity_type)
-            external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
             
             result = await self.wishlist_repo.add_to_wishlist(
                 user_id=user_id,
@@ -160,6 +164,9 @@ class WishlistService:
                 image_url=request.image_url,
                 external_source_id=external_source_id
             )
+            
+            # Commit the transaction
+            await self.wishlist_repo.db.commit()
 
             wishlist_response = self._build_wishlist_response(result, request.entity_type.value, request.source)
             return AddToWishlistResponse(
@@ -194,7 +201,7 @@ class WishlistService:
         return WishlistItemResponse.model_validate(wishlist_dict)
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
-        """Remove an item from user's wishlist"""
+        """Remove an item from user's wishlist with transactional integrity using transaction_context"""
         try:
             # Find wishlist item and verify ownership
             wishlist_item = await self.wishlist_repo.get_by_id(wishlist_id)
@@ -204,8 +211,13 @@ class WishlistService:
                     resource_id=wishlist_id
                 )
             
-            result = await self.wishlist_repo.remove_from_wishlist(user_id, wishlist_id)
-            return result
+            # Remove from wishlist (use the item we already found)
+            await self.wishlist_repo._delete_entity(wishlist_item)
+            
+            # Commit the transaction
+            await self.wishlist_repo.db.commit()
+                
+            return True
         except ResourceNotFoundError:
             raise
         except Exception as e:

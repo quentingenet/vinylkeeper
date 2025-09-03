@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
 
 from app.models.moderation_request_model import ModerationRequest
@@ -9,9 +9,10 @@ from app.models.reference_data.moderation_statuses import ModerationStatus
 from app.core.enums import ModerationStatusEnum
 from app.core.exceptions import ResourceNotFoundError, ServerError
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 
 
-class ModerationRequestRepository:
+class ModerationRequestRepository(TransactionalMixin):
     """Repository for moderation request-related database operations."""
 
     def __init__(self, db: AsyncSession):
@@ -94,15 +95,13 @@ class ModerationRequestRepository:
             )
 
     async def create_request(self, request_data: dict) -> ModerationRequest:
-        """Create a new moderation request."""
+        """Create a new moderation request without committing (transaction managed by service)."""
         try:
             request = ModerationRequest(**request_data)
-            self.db.add(request)
-            await self.db.commit()
-            await self.db.refresh(request)
+            await self._add_entity(request, flush=True)  # Flush to get the ID
+            await self._refresh_entity(request)
             return request
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating moderation request: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -111,7 +110,7 @@ class ModerationRequestRepository:
             )
 
     async def update_request(self, request_id: int, request_data: dict) -> ModerationRequest:
-        """Update an existing moderation request."""
+        """Update an existing moderation request without committing (transaction managed by service)."""
         try:
             request = await self.get_request_by_id(request_id)
             
@@ -119,13 +118,12 @@ class ModerationRequestRepository:
                 if hasattr(request, key):
                     setattr(request, key, value)
             
-            await self.db.commit()
-            await self.db.refresh(request)
+            await self._add_entity(request, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(request)
             return request
         except ResourceNotFoundError:
             raise
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating moderation request {request_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -134,16 +132,14 @@ class ModerationRequestRepository:
             )
 
     async def delete_request(self, request_id: int) -> bool:
-        """Delete a moderation request."""
+        """Delete a moderation request without committing (transaction managed by service)."""
         try:
             request = await self.get_request_by_id(request_id)
-            await self.db.delete(request)
-            await self.db.commit()
+            await self._delete_entity(request)
             return True
         except ResourceNotFoundError:
             raise
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error deleting moderation request {request_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -182,7 +178,7 @@ class ModerationRequestRepository:
     async def get_pending_requests_count(self) -> int:
         """Get the count of pending moderation requests."""
         try:
-            from sqlalchemy import func
+
             query = select(func.count(ModerationRequest.id)).filter(ModerationRequest.status_id == 1)  # Assuming 1 is pending status
             result = await self.db.execute(query)
             return result.scalar()
@@ -213,7 +209,7 @@ class ModerationRequestRepository:
     async def get_moderation_request_stats(self) -> dict:
         """Get moderation request statistics."""
         try:
-            from sqlalchemy import func
+
             
             # Get total count
             total_query = select(func.count(ModerationRequest.id))
@@ -252,7 +248,7 @@ class ModerationRequestRepository:
     async def get_moderation_request_count_by_status(self, status_name: str) -> int:
         """Get count of moderation requests by status."""
         try:
-            from sqlalchemy import func
+
             query = select(func.count(ModerationRequest.id)).join(ModerationStatus).filter(
                 ModerationStatus.name == status_name
             )
@@ -269,7 +265,7 @@ class ModerationRequestRepository:
     async def get_total_moderation_request_count(self) -> int:
         """Get total count of moderation requests."""
         try:
-            from sqlalchemy import func
+
             query = select(func.count(ModerationRequest.id))
             result = await self.db.execute(query)
             return result.scalar()

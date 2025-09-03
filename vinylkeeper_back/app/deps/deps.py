@@ -91,6 +91,25 @@ def get_collection_service(
 ) -> CollectionService:
     return CollectionService(repository, like_repository, collection_album_repository, wishlist_repository, place_repository)
 
+def get_collection_service_with_session(
+    db: AsyncSession,
+    repository: CollectionRepository = Depends(get_collection_repository),
+    like_repository: LikeRepository = Depends(get_like_repository),
+    collection_album_repository: CollectionAlbumRepository = Depends(
+        get_collection_album_repository),
+    wishlist_repository: WishlistRepository = Depends(get_wishlist_repository),
+    place_repository: PlaceRepository = Depends(get_place_repository)
+) -> CollectionService:
+    """Get CollectionService with a specific session for transactional operations"""
+    # Create repositories with the provided session
+    collection_repo = CollectionRepository(db)
+    like_repo = LikeRepository(db)
+    collection_album_repo = CollectionAlbumRepository(db)
+    wishlist_repo = WishlistRepository(db)
+    place_repo = PlaceRepository(db)
+    
+    return CollectionService(collection_repo, like_repo, collection_album_repo, wishlist_repo, place_repo)
+
 
 def get_search_service() -> SearchService:
     return SearchService()

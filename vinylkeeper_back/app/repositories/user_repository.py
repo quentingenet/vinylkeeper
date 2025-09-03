@@ -2,12 +2,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from app.models.user_model import User
+from app.models.moderation_request_model import ModerationRequest
 from typing import Optional, List
 from app.core.exceptions import ServerError
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 
 
-class UserRepository:
+class UserRepository(TransactionalMixin):
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -53,14 +55,12 @@ class UserRepository:
             )
 
     async def create_user(self, user: User) -> User:
-        """Create a new user"""
+        """Create a new user without committing (transaction managed by service)."""
         try:
-            self.db.add(user)
-            await self.db.commit()
-            await self.db.refresh(user)
+            await self._add_entity(user, flush=True)  # Flush to get the ID
+            await self._refresh_entity(user)
             return user
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating user {user.username}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -69,14 +69,12 @@ class UserRepository:
             )
 
     async def update_user(self, user: User) -> User:
-        """Update a user"""
+        """Update a user without committing (transaction managed by service)."""
         try:
-            self.db.add(user)
-            await self.db.commit()
-            await self.db.refresh(user)
+            await self._add_entity(user, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(user)
             return user
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating user {user.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -85,14 +83,12 @@ class UserRepository:
             )
 
     async def update_user_last_login(self, user: User) -> User:
-        """Update user's number of connections and last login"""
+        """Update user's number of connections and last login without committing (transaction managed by service)."""
         try:
-            self.db.add(user)
-            await self.db.commit()
-            await self.db.refresh(user)
+            await self._add_entity(user, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(user)
             return user
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating last login for user {user.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -101,18 +97,16 @@ class UserRepository:
             )
 
     async def update_user_password(self, user_id: int, hashed_password: str) -> bool:
-        """Update user's password"""
+        """Update user's password without committing (transaction managed by service)."""
         try:
             user = await self.get_user_by_id(user_id)
             if not user:
                 return False
 
             user.password = hashed_password
-            self.db.add(user)
-            await self.db.commit()
+            await self._add_entity(user, flush=False)  # No flush needed for simple update
             return True
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating password for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -121,26 +115,20 @@ class UserRepository:
             )
 
     async def delete_user(self, user_id: int) -> bool:
-        """Delete a user"""
+        """Delete a user using batch operations (optimized)."""
         try:
             user = await self.get_user_by_id(user_id)
             if not user:
                 return False
 
-            # Delete moderation requests first (no cascade delete)
-            from app.models.moderation_request_model import ModerationRequest
-            moderation_requests = await self.db.execute(
-                select(ModerationRequest).filter(ModerationRequest.user_id == user_id)
-            )
-            for request in moderation_requests.scalars().all():
-                await self.db.delete(request)
+            # Delete moderation requests in batch (no cascade delete)
+            delete_moderation_query = ModerationRequest.__table__.delete().where(ModerationRequest.user_id == user_id)
+            await self.db.execute(delete_moderation_query)
 
             # Delete the user (other relations have cascade delete)
-            await self.db.delete(user)
-            await self.db.commit()
+            await self._delete_entity(user)
             return True
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error deleting user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,

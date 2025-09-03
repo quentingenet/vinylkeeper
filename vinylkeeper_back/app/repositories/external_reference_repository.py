@@ -175,11 +175,10 @@ class ExternalReferenceRepository:
         try:
             wishlist_item = Wishlist(**wishlist_data)
             self.db.add(wishlist_item)
-            await self.db.commit()
+            # Transaction managed by service layer
             await self.db.refresh(wishlist_item)
             return wishlist_item
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating wishlist item for user {wishlist_data.get('user_id')}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -195,10 +194,9 @@ class ExternalReferenceRepository:
         """Remove a wishlist item"""
         try:
             await self.db.delete(wishlist_item)
-            await self.db.commit()
+            # Transaction managed by service layer
             return True
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error removing wishlist item {wishlist_item.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -210,7 +208,7 @@ class ExternalReferenceRepository:
         """Get a user's wishlist"""
         return await self.wishlist_repo.get_by_user_id(user_id)
 
-    async def find_collection_by_id(self, collection_id: int, load_relations: bool = False) -> Optional[Collection]:
+    async def find_collection_by_id(self, collection_id: int, load_relations: bool = True) -> Optional[Collection]:
         """Find a collection by ID with optional relations loading"""
         return await self.collection_repo.get_by_id(collection_id, load_relations=load_relations)
 
@@ -244,11 +242,16 @@ class ExternalReferenceRepository:
                     collection_album.acquisition_month_year = album_data['acquisition_month_year']
             
             self.db.add(collection_album)
-            await self.db.commit()
+            # Flush to make the object persistent before refresh
+            await self.db.flush()
             await self.db.refresh(collection_album)
             return collection_album
         except Exception as e:
-            await self.db.rollback()
+            logger.error(f"Error adding album {album.id} to collection {collection.id}: {str(e)}")
+            logger.error(f"Album object: {album}")
+            logger.error(f"Collection object: {collection}")
+            logger.error(f"Album data: {album_data}")
+            logger.error(f"Collection ID: {collection.id}, Album ID: {album.id}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add album to collection",
@@ -303,7 +306,7 @@ class ExternalReferenceRepository:
                     artist_id=artist.id
                 )
                 await self.db.execute(insert_query)
-                await self.db.commit()
+                # Transaction managed by service layer
             
             # Return a dictionary with the necessary information
             return {
@@ -313,8 +316,10 @@ class ExternalReferenceRepository:
                 "created_at": collection.created_at
             }
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Failed to add artist to collection: {str(e)}")
+            logger.error(f"Collection ID: {collection.id}, Artist ID: {artist.id}")
+            logger.error(f"Collection object: {collection}")
+            logger.error(f"Artist object: {artist}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add artist to collection",
@@ -334,9 +339,8 @@ class ExternalReferenceRepository:
             
             if collection_album:
                 await self.db.delete(collection_album)
-                await self.db.commit()
+                # Transaction managed by service layer
         except Exception as e:
-            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove album from collection",
@@ -354,9 +358,8 @@ class ExternalReferenceRepository:
                 collection_artist.c.artist_id == artist.id
             )
             await self.db.execute(delete_query)
-            await self.db.commit()
+            # Transaction managed by service layer
         except Exception as e:
-            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove artist from collection",

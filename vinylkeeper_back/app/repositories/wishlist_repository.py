@@ -6,13 +6,14 @@ from app.models.reference_data.entity_types import EntityType
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import ResourceNotFoundError, ServerError
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 from app.models.collection_album import CollectionAlbum
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.association_tables import collection_artist
 
 
-class WishlistRepository:
+class WishlistRepository(TransactionalMixin):
     """Repository for managing wishlist items"""
 
     def __init__(self, db: AsyncSession):
@@ -31,7 +32,7 @@ class WishlistRepository:
         return entity_type_record.id
 
     async def add_to_wishlist(self, user_id: int, external_id: str, entity_type: EntityTypeEnum, title: str, image_url: str, external_source_id: int) -> Wishlist:
-        """Add an item to user's wishlist"""
+        """Add an item to user's wishlist without committing (transaction managed by service)."""
         try:
             entity_type_id = await self._get_entity_type_id(entity_type)
             wishlist_item = Wishlist(
@@ -42,12 +43,10 @@ class WishlistRepository:
                 image_url=image_url,
                 external_source_id=external_source_id
             )
-            self.db.add(wishlist_item)
-            await self.db.commit()
-            await self.db.refresh(wishlist_item)
+            await self._add_entity(wishlist_item, flush=True)  # Flush to get the ID
+            await self._refresh_entity(wishlist_item)
             return wishlist_item
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error adding to wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -56,7 +55,7 @@ class WishlistRepository:
             )
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
-        """Remove an item from user's wishlist"""
+        """Remove an item from user's wishlist without committing (transaction managed by service)."""
         try:
             query = select(Wishlist).filter(
                 Wishlist.id == wishlist_id,
@@ -70,13 +69,11 @@ class WishlistRepository:
                     f"Wishlist item {wishlist_id} not found for user {user_id}")
                 return False
 
-            await self.db.delete(wishlist_item)
-            await self.db.commit()
+            await self._delete_entity(wishlist_item)
             return True
         except Exception as e:
             logger.error(
                 f"Error removing wishlist item {wishlist_id} for user {user_id}: {str(e)}")
-            await self.db.rollback()
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove from wishlist",
@@ -101,14 +98,12 @@ class WishlistRepository:
             )
 
     async def create(self, wishlist: Wishlist) -> Wishlist:
-        """Create a new wishlist item"""
+        """Create a new wishlist item without committing (transaction managed by service)."""
         try:
-            self.db.add(wishlist)
-            await self.db.commit()
-            await self.db.refresh(wishlist)
+            await self._add_entity(wishlist, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(wishlist)
             return wishlist
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating wishlist item for user {wishlist.user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -182,14 +177,12 @@ class WishlistRepository:
             )
 
     async def update(self, wishlist: Wishlist) -> Wishlist:
-        """Update a wishlist item"""
+        """Update a wishlist item without committing (transaction managed by service)."""
         try:
-            self.db.add(wishlist)
-            await self.db.commit()
-            await self.db.refresh(wishlist)
+            await self._add_entity(wishlist, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(wishlist)
             return wishlist
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating wishlist item {wishlist.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -198,16 +191,14 @@ class WishlistRepository:
             )
 
     async def delete(self, wishlist_id: int) -> bool:
-        """Delete a wishlist item"""
+        """Delete a wishlist item without committing (transaction managed by service)."""
         try:
             wishlist = await self.get_by_id(wishlist_id)
             if wishlist:
-                await self.db.delete(wishlist)
-                await self.db.commit()
+                await self._delete_entity(wishlist)
                 return True
             return False
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error deleting wishlist item {wishlist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,

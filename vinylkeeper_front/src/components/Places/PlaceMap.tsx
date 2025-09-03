@@ -222,6 +222,7 @@ interface PlaceAccordionItemProps {
 
 const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
   const [likeBounce, setLikeBounce] = useState(false);
+  const [likeCooldown, setLikeCooldown] = useState(false);
   const [optimisticIsLiked, setOptimisticIsLiked] = useState(place.is_liked);
   const [optimisticLikesCount, setOptimisticLikesCount] = useState(
     place.likes_count
@@ -233,16 +234,24 @@ const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
     setOptimisticLikesCount(place.likes_count);
   };
 
-  const { like, unlike, isLiking, isUnliking } = usePlaceLike(
-    place.id,
-    handleError
-  );
+  const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
+    usePlaceLike(place.id, handleError);
 
-  // Update optimistic state when place data changes
+  // Only update optimistic state when place ID changes (new place loaded)
+  // This prevents conflicts with optimistic updates during like/unlike operations
   React.useEffect(() => {
     setOptimisticIsLiked(place.is_liked);
     setOptimisticLikesCount(place.likes_count);
-  }, [place.is_liked, place.likes_count, place.id]);
+  }, [place.id]);
+
+  // Handle errors by reverting to previous state
+  React.useEffect(() => {
+    if (likeError || unlikeError) {
+      // Revert to original state on error
+      setOptimisticIsLiked(place.is_liked);
+      setOptimisticLikesCount(place.likes_count);
+    }
+  }, [likeError, unlikeError, place.is_liked, place.likes_count]);
 
   // Animation effect for likes count
   React.useEffect(() => {
@@ -255,8 +264,12 @@ const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
   const handleLikeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Prevent multiple clicks while processing
-    if (isLiking || isUnliking) return;
+    // Prevent multiple clicks while processing or in cooldown
+    if (isLiking || isUnliking || likeCooldown) return;
+
+    // Set cooldown to prevent rapid clicks
+    setLikeCooldown(true);
+    setTimeout(() => setLikeCooldown(false), 1000); // 1 second cooldown
 
     if (optimisticIsLiked) {
       // Optimistic update for unlike
@@ -303,7 +316,7 @@ const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
           <IconButton
             size="small"
             onClick={handleLikeClick}
-            disabled={isLiking || isUnliking}
+            disabled={isLiking || isUnliking || likeCooldown}
             sx={{
               color: optimisticIsLiked ? "#FFD700" : "#e4e4e4",
               transition: "transform 0.15s, color 0.15s",

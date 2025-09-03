@@ -156,8 +156,13 @@ export class CollectionApiService extends BaseApiService {
     this.unlikeCollection = this.unlikeCollection.bind(this);
   }
 
-  async createCollection(data: CollectionCreate): Promise<{ message: string }> {
-    return this.post<{ message: string }>("/collections/add", data);
+  async createCollection(
+    data: CollectionCreate
+  ): Promise<{ message: string; collection_id: number }> {
+    return this.post<{ message: string; collection_id: number }>(
+      "/collections/add",
+      data
+    );
   }
 
   async updateCollection(

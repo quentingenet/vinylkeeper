@@ -5,9 +5,10 @@ from app.models.album_model import Album
 from typing import Optional, List
 from app.core.exceptions import ServerError
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 
 
-class AlbumRepository:
+class AlbumRepository(TransactionalMixin):
     """Repository for managing albums"""
 
     def __init__(self, db: AsyncSession):
@@ -47,14 +48,12 @@ class AlbumRepository:
             )
 
     async def create(self, album: Album) -> Album:
-        """Create a new album"""
+        """Create a new album without committing (transaction managed by service)."""
         try:
-            self.db.add(album)
-            await self.db.commit()
-            await self.db.refresh(album)
+            await self._add_entity(album, flush=True)  # Flush to get the ID
+            await self._refresh_entity(album)
             return album
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating album: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -63,14 +62,12 @@ class AlbumRepository:
             )
 
     async def update(self, album: Album) -> Album:
-        """Update an album"""
+        """Update an album without committing (transaction managed by service)."""
         try:
-            self.db.add(album)
-            await self.db.commit()
-            await self.db.refresh(album)
+            await self._add_entity(album, flush=True)  # Flush to ensure changes are persisted
+            await self._refresh_entity(album)
             return album
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error updating album {album.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -79,13 +76,11 @@ class AlbumRepository:
             )
 
     async def delete(self, album: Album) -> bool:
-        """Delete an album"""
+        """Delete an album without committing (transaction managed by service)."""
         try:
-            await self.db.delete(album)
-            await self.db.commit()
+            await self._delete_entity(album)
             return True
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error deleting album {album.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,

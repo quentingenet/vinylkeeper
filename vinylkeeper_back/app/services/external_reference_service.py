@@ -29,7 +29,7 @@ class ExternalReferenceService:
     def __init__(self, repository: ExternalReferenceRepository):
         self.repository = repository
 
-    async def _find_or_create_entity(self, request: AddToWishlistRequest | AddToCollectionRequest) -> AlbumResponse | ArtistResponse:
+    async def _find_or_create_entity(self, request: AddToWishlistRequest | AddToCollectionRequest, external_source_id: int = None) -> AlbumResponse | ArtistResponse:
         """Find existing entity or create new one"""
         try:
             external_id = request.get_external_id()
@@ -39,8 +39,9 @@ class ExternalReferenceService:
                     message="External ID must be provided"
                 )
 
-            # Get the external source ID first
-            external_source_id = await self.repository.get_external_source_id(request.source)
+            # Get the external source ID if not provided
+            if external_source_id is None:
+                external_source_id = await self.repository.get_external_source_id(request.source)
 
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # Try to find existing album first
@@ -80,7 +81,10 @@ class ExternalReferenceService:
                     "created_at": entity.created_at,
                     "updated_at": entity.updated_at
                 }
-                return AlbumResponse.model_validate(entity_dict)
+                # Store the actual entity object separately for later use
+                response = AlbumResponse.model_validate(entity_dict)
+                response._entity = entity  # Store entity for internal use
+                return response
             else:
                 # Try to find existing artist first
                 entity = await self.repository.find_artist_by_external_id(external_id, external_source_id)
@@ -114,12 +118,15 @@ class ExternalReferenceService:
                         "name": entity.external_source.name
                     } if entity.external_source else None,
                     "title": entity.title,
-                    "artist": entity.title,  # For Artist model, artist = title
+                    "artist": entity.title,  # For Artist model, artist = title (string)
                     "image_url": entity.image_url,
                     "created_at": entity.created_at,
                     "updated_at": entity.updated_at
                 }
-                return ArtistResponse.model_validate(entity_dict)
+                # Store the actual entity object separately for later use
+                response = ArtistResponse.model_validate(entity_dict)
+                response._entity = entity  # Store entity for internal use
+                return response
 
         except Exception as e:
             logger.error(f"Failed to find or create entity: {str(e)}")
@@ -167,6 +174,9 @@ class ExternalReferenceService:
             result = await self.repository.create_wishlist_item(wishlist_data)
 
             wishlist_response = self._build_wishlist_response(result, request.entity_type.value, request.source)
+            # Commit the transaction
+            await self.repository.db.commit()
+            
             return AddToWishlistResponse(
                 item=wishlist_response,
                 is_new=True,
@@ -210,11 +220,16 @@ class ExternalReferenceService:
                 )
             
             result = await self.repository.remove_wishlist_item(wishlist_item)
+            
+            # Commit the transaction
+            await self.repository.db.commit()
+            
             return result
         except ResourceNotFoundError:
             raise
         except Exception as e:
             logger.error(f"Failed to remove from wishlist: {str(e)}")
+            logger.error(f"User ID: {user_id}, Wishlist ID: {wishlist_id}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove from wishlist",
@@ -239,23 +254,32 @@ class ExternalReferenceService:
                     message=f"Collection {collection_id} not found or not owned by user {user_id}"
                 )
 
-            # Find or create entity
-            entity_response = await self._find_or_create_entity(request)
-            
-            # Get the external source ID for database queries
+            # Get the external source ID once (avoid duplicate queries)
             external_source_id = await self.repository.get_external_source_id(request.source)
+            
+            # Find or create entity (pass external_source_id to avoid duplicate query)
+            entity_response = await self._find_or_create_entity(request, external_source_id)
             
             # Add to collection using the entity from the response
             collection_item = None
             if request.entity_type == EntityTypeEnum.ALBUM:
-                # Use the album from the entity response instead of searching again
-                album = await self.repository.find_album_by_external_id(external_id, external_source_id)
+                # Use the album from the entity response (no need to search again)
+                album = getattr(entity_response, '_entity', None)
                 if not album:
-                    logger.error(f"Album not found after creation! external_id: {external_id}, source_id: {external_source_id}")
+                    logger.error(f"Album not found in entity response! external_id: {external_id}")
                     raise ValidationError(
                         error_code=4000,
-                        message="Album not found after creation",
+                        message="Album not found in entity response",
                         details={"external_id": external_id}
+                    )
+                
+                # Verify album has required attributes
+                if not hasattr(album, 'id') or not album.id:
+                    logger.error(f"Album entity missing ID! album: {album}")
+                    raise ValidationError(
+                        error_code=4000,
+                        message="Album entity missing ID",
+                        details={"album": str(album)}
                     )
                 
                 # Check if album is already in collection before trying to add
@@ -288,13 +312,13 @@ class ExternalReferenceService:
                         # acquisition_month_year is already in the correct format, no conversion needed
                     collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data)
             else:
-                # Get the artist from the database using the external ID
-                artist = await self.repository.find_artist_by_external_id(external_id, external_source_id)
+                # Use the artist from the entity response (no need to search again)
+                artist = getattr(entity_response, '_entity', None)
                 if not artist:
-                    logger.error(f"Artist not found after creation! external_id: {external_id}, source_id: {external_source_id}")
+                    logger.error(f"Artist not found in entity response! external_id: {external_id}")
                     raise ValidationError(
                         error_code=4000,
-                        message="Artist not found",
+                        message="Artist not found in entity response",
                         details={"external_id": external_id}
                     )
                 
@@ -355,10 +379,15 @@ class ExternalReferenceService:
                 collection_name=collection.name
             )
             
+            # Commit the transaction
+            await self.repository.db.commit()
+            
             return final_response
 
         except Exception as e:
             logger.error(f"Failed to add to collection: {str(e)}")
+            logger.error(f"User ID: {user_id}, Collection ID: {collection_id}")
+            logger.error(f"Request data: {request.model_dump()}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to collection",
@@ -400,6 +429,9 @@ class ExternalReferenceService:
                 
                 await self.repository.remove_artist_from_collection(collection, artist)
 
+            # Commit the transaction
+            await self.repository.db.commit()
+            
             return True
 
         except ResourceNotFoundError:

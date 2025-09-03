@@ -365,6 +365,9 @@ class UserMiniResponse(BaseSchema):
 
 class UserSettingsResponse(BaseSchema):
     """Schema for /me/settings endpoint response - complete user data for settings."""
+    id: int = Field(
+        description="User's ID"
+    )
     username: str = Field(
         description="User's username"
     )
@@ -374,15 +377,47 @@ class UserSettingsResponse(BaseSchema):
     user_uuid: UUID = Field(
         description="User's UUID"
     )
-    created_at: datetime = Field(
-        description="When the user was created"
+    role: str = Field(
+        description="User's role name"
     )
-    terms_accepted_at: Optional[datetime] = Field(
-        None,
-        description="When the user accepted the terms"
+    is_active: bool = Field(
+        description="Whether the user account is active"
+    )
+    is_superuser: bool = Field(
+        description="Whether the user is a superuser"
     )
     is_accepted_terms: bool = Field(
         description="Whether the user has accepted the terms"
+    )
+    timezone: str = Field(
+        description="User's timezone"
+    )
+    created_at: datetime = Field(
+        description="When the user was created"
+    )
+    last_login: Optional[datetime] = Field(
+        None,
+        description="When the user last logged in"
+    )
+    number_of_connections: int = Field(
+        default=0,
+        description="Number of times the user has connected"
+    )
+    collections_count: int = Field(
+        default=0,
+        description="Number of collections owned by the user"
+    )
+    wishlist_count: int = Field(
+        default=0,
+        description="Number of items in user's wishlist"
+    )
+    likes_count: int = Field(
+        default=0,
+        description="Number of likes by the user"
+    )
+    places_count: int = Field(
+        default=0,
+        description="Number of places submitted by the user"
     )
 
 

@@ -38,8 +38,10 @@ from app.core.exceptions import (
     ValidationError,
     ErrorCode
 )
+from app.core.transaction import transaction_context
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
+
 
 
 class CollectionService:
@@ -134,9 +136,11 @@ class CollectionService:
         )
 
     async def create_collection(self, collection_data: CollectionCreate, user_id: int) -> CollectionResponse:
-        """Create a new collection"""
+        """Create a new collection without committing (transaction managed by caller)"""
         try:
             self._validate_collection_data(collection_data)
+            
+            # Create collection
             collection = Collection(
                 name=collection_data.name,
                 description=collection_data.description,
@@ -146,12 +150,16 @@ class CollectionService:
             )
             created_collection = await self.repository.create(collection)
             created_collection = await self.repository.refresh(created_collection)
+            
             if collection_data.album_ids:
                 await self.repository.add_albums(created_collection, collection_data.album_ids)
             if collection_data.artist_ids:
                 await self.repository.add_artists(created_collection, collection_data.artist_ids)
-            created_collection = await self.repository.refresh(created_collection)
+            
+            # No commit here - let the caller manage the transaction
+            # Build response after successful creation
             return await self._build_collection_response(created_collection, user_id)
+                
         except (DuplicateFieldError, ValidationError) as e:
             raise e
         except Exception as e:
@@ -194,10 +202,36 @@ class CollectionService:
             logger.error(f"Error getting user places count: {str(e)}")
             return 0
 
+    async def get_user_counts_batch(self, user_id: int) -> dict:
+        """Get all user counts in a single optimized query to avoid session conflicts"""
+        try:
+            # Execute all count queries sequentially to avoid SQLAlchemy session conflicts
+            # This is safer than parallel execution with the same session
+            collections_count = await self.get_user_collections_count(user_id)
+            wishlist_count = await self.get_user_wishlist_count(user_id)
+            likes_count = await self.get_user_likes_count(user_id)
+            places_count = await self.get_user_places_count(user_id)
+            
+            return {
+                "collections_count": collections_count,
+                "wishlist_count": wishlist_count,
+                "likes_count": likes_count,
+                "places_count": places_count
+            }
+        except Exception as e:
+            logger.error(f"Error getting user counts batch for user {user_id}: {str(e)}")
+            # Return default values on error
+            return {
+                "collections_count": 0,
+                "wishlist_count": 0,
+                "likes_count": 0,
+                "places_count": 0
+            }
+
     async def get_collection(self, collection_id: int) -> CollectionResponse:
         """Get a collection by ID"""
         try:
-            collection = await self.repository.get_by_id(collection_id, load_relations=False)
+            collection = await self.repository.get_by_id(collection_id, load_relations=True)
             return await self._build_collection_response(collection)
         except NoResultFound:
             raise ResourceNotFoundError("Collection", collection_id)
@@ -235,6 +269,9 @@ class CollectionService:
             # Save updated collection
             updated_collection = await self.repository.update(collection)
             
+            # Commit the transaction to persist the collection update
+            await self.repository.db.commit()
+            
             # Refresh to get updated relationships
             updated_collection = await self.repository.refresh(updated_collection)
             
@@ -268,6 +305,8 @@ class CollectionService:
             
             # Delete collection
             await self.repository.delete(collection)
+            # Commit the transaction to persist the collection deletion
+            await self.repository.db.commit()
             return True
             
         except (ResourceNotFoundError, ForbiddenError) as e:
@@ -281,7 +320,7 @@ class CollectionService:
             )
 
     async def add_album_to_collection(self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate) -> CollectionAlbumResponse:
-        """Add an album to a collection"""
+        """Add an album to a collection with transactional integrity using transaction_context"""
         try:
             # Get collection and verify ownership
             collection = await self.repository.get_by_id(collection_id)
@@ -300,7 +339,10 @@ class CollectionService:
                 collection_id, album_data.album_id, album_data.model_dump(exclude={'album_id'})
             )
             
-            # Get the album with metadata
+            # Commit the transaction
+            await self.collection_album_repository.db.commit()
+                
+            # Get the album with metadata after successful transaction
             album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_data.album_id)
             
             # Convert to response schema using the conversion method
@@ -310,6 +352,8 @@ class CollectionService:
             raise e
         except Exception as e:
             logger.error(f"Error adding album to collection: {str(e)}")
+            logger.error(f"User ID: {user_id}, Collection ID: {collection_id}, Album ID: {album_data.album_id}")
+            logger.error(f"Album data: {album_data.model_dump()}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add album to collection",
@@ -317,7 +361,7 @@ class CollectionService:
             )
 
     async def update_album_metadata(self, user_id: int, collection_id: int, album_id: int, metadata: CollectionAlbumUpdate) -> CollectionAlbumResponse:
-        """Update album metadata in a collection"""
+        """Update album metadata in a collection with transactional integrity"""
         try:
             # Get collection and verify ownership
             collection = await self.repository.get_by_id(collection_id)
@@ -336,6 +380,9 @@ class CollectionService:
                 collection_id, album_id, metadata.model_dump(exclude_unset=True)
             )
             
+            # Commit the transaction
+            await self.collection_album_repository.db.commit()
+            
             # Get the album with updated metadata
             album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_id)
             
@@ -353,7 +400,7 @@ class CollectionService:
             )
 
     async def remove_album_from_collection(self, user_id: int, collection_id: int, album_id: int) -> bool:
-        """Remove an album from a collection"""
+        """Remove an album from a collection with transactional integrity"""
         try:
             # Get collection and verify ownership
             collection = await self.repository.get_by_id(collection_id)
@@ -369,12 +416,17 @@ class CollectionService:
             
             # Remove album from collection
             await self.collection_album_repository.remove_album_from_collection(collection_id, album_id)
+            
+            # Commit the transaction
+            await self.collection_album_repository.db.commit()
+            
             return True
             
         except (ResourceNotFoundError, ForbiddenError) as e:
             raise e
         except Exception as e:
             logger.error(f"Error removing album from collection: {str(e)}")
+            logger.error(f"User ID: {user_id}, Collection ID: {collection_id}, Album ID: {album_id}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove album from collection",
@@ -398,12 +450,17 @@ class CollectionService:
             
             # Remove artist from collection
             await self.repository.remove_artist(collection, artist_id)
+            
+            # Commit the transaction
+            await self.repository.db.commit()
+            
             return True
             
         except (ResourceNotFoundError, ForbiddenError) as e:
             raise e
         except Exception as e:
             logger.error(f"Error removing artist from collection: {str(e)}")
+            logger.error(f"User ID: {user_id}, Collection ID: {collection_id}, Artist ID: {artist_id}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove artist from collection",
@@ -504,7 +561,7 @@ class CollectionService:
             )
 
     async def like_collection(self, user_id: int, collection_id: int) -> dict:
-        """Like a collection"""
+        """Like a collection with transactional integrity"""
         try:
             # Check if collection exists
             collection = await self.repository.get_by_id(collection_id)
@@ -520,6 +577,7 @@ class CollectionService:
             
             # Like the collection
             await self.like_repository.create_like(user_id, collection_id)
+            await self.repository.db.commit()  # Commit the transaction
             
             # Get updated likes count
             likes_count = await self.like_repository.count_likes(collection_id)
@@ -541,7 +599,7 @@ class CollectionService:
             )
 
     async def unlike_collection(self, user_id: int, collection_id: int) -> dict:
-        """Unlike a collection"""
+        """Unlike a collection with transactional integrity"""
         try:
             # Check if collection exists
             collection = await self.repository.get_by_id(collection_id)
@@ -554,6 +612,7 @@ class CollectionService:
             
             # Unlike the collection
             await self.like_repository.remove(user_id, collection_id)
+            await self.repository.db.commit()  # Commit the transaction
             
             # Get updated likes count
             likes_count = await self.like_repository.count_likes(collection_id)
@@ -618,7 +677,7 @@ class CollectionService:
     async def get_collection_by_id(self, collection_id: int, user_id: int) -> CollectionResponse:
         """Get a collection by ID with proper access control"""
         try:
-            collection = await self.repository.get_by_id(collection_id, load_relations=False)
+            collection = await self.repository.get_by_id(collection_id, load_relations=True)
             if not collection:
                 raise ResourceNotFoundError("Collection", collection_id)
             if not collection.is_public and collection.owner_id != user_id:

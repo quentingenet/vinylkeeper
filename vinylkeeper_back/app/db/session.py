@@ -13,7 +13,7 @@ engine = create_async_engine(
     pool_pre_ping=True,  # Validate connections before use
     pool_recycle=settings.DB_POOL_RECYCLE,
     pool_timeout=settings.DB_POOL_TIMEOUT,
-    pool_reset_on_return='commit',  # Reset connection state on return
+    pool_reset_on_return='rollback',  # Reset connection state on return (safer for manual transaction management)
     # PostgreSQL specific optimizations
     connect_args={
         "server_settings": {

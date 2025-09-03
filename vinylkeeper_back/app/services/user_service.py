@@ -26,9 +26,11 @@ from app.core.exceptions import (
 )
 from app.services.collection_service import CollectionService
 from app.schemas.collection_schema import CollectionCreate
+from app.core.transaction import transaction_context
 from typing import List, Optional, Tuple
 from app.core.config_env import settings
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +54,8 @@ class UserService:
             user.last_login = datetime.now(timezone.utc)
 
             await self.repository.update_user_last_login(user)
+            # Commit the transaction to persist the last_login update
+            await self.repository.db.commit()
             return user
         except (EmailNotFoundError, InvalidCredentialsError):
             # Let these authentication exceptions bubble up with their details
@@ -92,42 +96,49 @@ class UserService:
             )
 
     async def create_user(self, user_data: UserCreate) -> User:
-        """Create a new user with initial collection"""
+        """Create a new user with initial collection in a single atomic transaction"""
         try:
-            if await self.repository.is_email_taken(user_data.email):
-                raise DuplicateEmailError(user_data.email)
+            # Use transaction context to ensure atomicity
+            async with transaction_context(self.repository.db):
+                if await self.repository.is_email_taken(user_data.email):
+                    raise DuplicateEmailError(user_data.email)
 
-            if await self.repository.is_username_taken(user_data.username):
-                raise DuplicateUsernameError(user_data.username)
+                if await self.repository.is_username_taken(user_data.username):
+                    raise DuplicateUsernameError(user_data.username)
 
-            user = User(
-                user_uuid=uuid.uuid4(),
-                username=user_data.username,
-                email=user_data.email,
-                password=hash_password(user_data.password),
-                role_id=user_data.role_id if user_data.role_id else settings.DEFAULT_ROLE_ID,
-                is_accepted_terms=user_data.is_accepted_terms,
-                timezone=user_data.timezone
-            )
+                # Create user
+                user = User(
+                    user_uuid=uuid.uuid4(),
+                    username=user_data.username,
+                    email=user_data.email,
+                    password=hash_password(user_data.password),
+                    role_id=user_data.role_id if user_data.role_id else settings.DEFAULT_ROLE_ID,
+                    is_accepted_terms=user_data.is_accepted_terms,
+                    timezone=user_data.timezone
+                )
 
-            # Create user
-            created_user = await self.repository.create_user(user)
+                # Create user
+                created_user = await self.repository.create_user(user)
 
-            # Create initial collection
-            first_collection = CollectionCreate(
-                name=f"{created_user.username}'s collection",
-                description=f"My first collection",
-                is_public=False,
-                owner_id=created_user.id,
-            )
-            await self.collection_service.create_collection(
-                collection_data=first_collection,
-                user_id=created_user.id
-            )
+                # Create CollectionService with the same session for atomicity
+                from app.deps.deps import get_collection_service_with_session
+                collection_service = get_collection_service_with_session(self.repository.db)
 
-            return created_user
+                # Create initial collection using the same session
+                first_collection = CollectionCreate(
+                    name=f"{created_user.username}'s collection",
+                    description=f"My first collection",
+                    is_public=False,
+                    owner_id=created_user.id,
+                )
+                await collection_service.create_collection(
+                    collection_data=first_collection,
+                    user_id=created_user.id
+                )
+                
+                # Transaction will be committed automatically by transaction_context
+                return created_user
         except (DuplicateEmailError, DuplicateUsernameError):
-            # Let these exceptions bubble up with their details
             raise
         except Exception as e:
             raise ServerError(
@@ -151,7 +162,10 @@ class UserService:
             for key, value in update_data.items():
                 setattr(user, key, value)
 
-            return await self.repository.update_user(user)
+            updated_user = await self.repository.update_user(user)
+            # Commit the transaction to persist the user update
+            await self.repository.db.commit()
+            return updated_user
         except (DuplicateEmailError, DuplicateUsernameError):
             raise
         except Exception as e:
@@ -198,6 +212,9 @@ class UserService:
             success = await self.repository.update_user_password(user.id, hashed_password)
             if not success:
                 raise PasswordUpdateError("Failed to update password")
+            
+            # Commit the transaction
+            await self.repository.db.commit()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -215,6 +232,9 @@ class UserService:
             success = await self.repository.update_user_password(user.id, hashed_password)
             if not success:
                 raise PasswordUpdateError("Failed to update password")
+            
+            # Commit the transaction
+            await self.repository.db.commit()
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -254,7 +274,10 @@ class UserService:
     async def delete_user(self, user: User) -> bool:
         """Delete a user"""
         try:
-            return await self.repository.delete_user(user.id)
+            result = await self.repository.delete_user(user.id)
+            # Commit the transaction to persist the user deletion
+            await self.repository.db.commit()
+            return result
         except Exception as e:
             raise ServerError(
                 error_code=5000,
@@ -263,19 +286,10 @@ class UserService:
             )
 
     async def get_user_me(self, user: User) -> dict:
-        """Get current user information with calculated counts"""
+        """Get current user information with calculated counts (optimized batch execution)"""
         try:
-            # Get user collections count
-            collections_count = await self.collection_service.get_user_collections_count(user.id)
-            
-            # Get user wishlist count
-            wishlist_count = await self.collection_service.get_user_wishlist_count(user.id)
-            
-            # Get user likes count
-            likes_count = await self.collection_service.get_user_likes_count(user.id)
-            
-            # Get user places count
-            places_count = await self.collection_service.get_user_places_count(user.id)
+            # Get all counts in a single optimized call to avoid session conflicts
+            counts = await self.collection_service.get_user_counts_batch(user.id)
             
             # Build response
             response = {
@@ -284,11 +298,11 @@ class UserService:
                 "role": {"id": user.role.id, "name": user.role.name} if user.role else {"id": 0, "name": "Unknown"},
                 "is_superuser": user.is_superuser,
                 "is_tutorial_seen": False,  # Default value
-                "collections_count": collections_count,
-                "liked_collections_count": likes_count,  # Using likes_count as liked_collections_count
+                "collections_count": counts["collections_count"],
+                "liked_collections_count": counts["likes_count"],  # Using likes_count as liked_collections_count
                 "loans_count": 0,  # Default value
-                "wishlist_items_count": wishlist_count,
-                "liked_places_count": places_count,
+                "wishlist_items_count": counts["wishlist_count"],
+                "liked_places_count": counts["places_count"],
                 "number_of_connections": user.number_of_connections
             }
             return response
@@ -301,12 +315,11 @@ class UserService:
             )
 
     async def get_user_settings(self, user: User) -> dict:
-        """Get current user settings information"""
+        """Get current user settings information (optimized batch execution)"""
         try:
-            collections_count = await self.collection_service.get_user_collections_count(user.id)
-            wishlist_count = await self.collection_service.get_user_wishlist_count(user.id)
-            likes_count = await self.collection_service.get_user_likes_count(user.id)
-            places_count = await self.collection_service.get_user_places_count(user.id)
+            # Get all counts in a single optimized call to avoid session conflicts
+            counts = await self.collection_service.get_user_counts_batch(user.id)
+            
             return {
                 "id": user.id,
                 "user_uuid": str(user.user_uuid),
@@ -320,10 +333,10 @@ class UserService:
                 "created_at": user.created_at,
                 "last_login": user.last_login,
                 "number_of_connections": user.number_of_connections,
-                "collections_count": collections_count,
-                "wishlist_count": wishlist_count,
-                "likes_count": likes_count,
-                "places_count": places_count
+                "collections_count": counts["collections_count"],
+                "wishlist_count": counts["wishlist_count"],
+                "likes_count": counts["likes_count"],
+                "places_count": counts["places_count"]
             }
         except Exception as e:
             raise ServerError(
@@ -339,6 +352,9 @@ class UserService:
             success = await self.repository.update_user_password(user_id, hashed_password)
             if not success:
                 raise PasswordUpdateError("Failed to update password")
+            
+            # Commit the transaction
+            await self.repository.db.commit()
             return True
         except Exception as e:
             raise ServerError(

@@ -23,6 +23,7 @@ from app.core.enums import ModerationStatusEnum
 from app.core.logging import logger
 
 
+
 class ModerationService:
     """Service for managing moderation requests"""
 
@@ -89,7 +90,7 @@ class ModerationService:
             )
 
     async def update_moderation_request_status(self, request_id: int, new_status: str, admin_user_id: int) -> ModerationRequestResponse:
-        """Update moderation request status and handle place moderation."""
+        """Update moderation request status and handle place moderation with transactional integrity."""
         try:
             # Get the moderation request
             request = await self.moderation_repository.get_request_by_id(request_id)
@@ -115,6 +116,9 @@ class ModerationService:
             elif new_status == ModerationStatusEnum.REJECTED.value:
                 # Reject the place (mark as invalid)
                 await self.place_repository.update_place(request.place_id, {"is_moderated": False, "is_valid": False})
+
+            # Commit the transaction
+            await self.moderation_repository.db.commit()
 
             return self._create_moderation_request_response(updated_request)
         except (ResourceNotFoundError, ValidationError):

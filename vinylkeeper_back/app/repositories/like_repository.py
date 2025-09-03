@@ -4,9 +4,10 @@ from sqlalchemy import select, func
 from app.models.like_model import Like
 from app.core.exceptions import ServerError
 from app.core.logging import logger
+from app.core.transaction import TransactionalMixin
 
 
-class LikeRepository:
+class LikeRepository(TransactionalMixin):
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -29,15 +30,19 @@ class LikeRepository:
         return await self.get(user_id, collection_id)
 
     async def create_like(self, user_id: int, collection_id: int) -> Like:
-        """Add a like for the user and collection."""
+        """Add a like for the user and collection without committing (transaction managed by service)."""
         try:
+            # Check if like already exists
+            existing_like = await self.get(user_id, collection_id)
+            if existing_like:
+                logger.warning(f"Like already exists for user {user_id} and collection {collection_id}")
+                return existing_like
+            
             like = Like(user_id=user_id, collection_id=collection_id)
-            self.db.add(like)
-            await self.db.commit()
-            await self.db.refresh(like)
+            await self._add_entity(like, flush=True)  # Flush needed for refresh
+            await self._refresh_entity(like)
             return like
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error creating like for user {user_id} and collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
@@ -46,14 +51,14 @@ class LikeRepository:
             )
 
     async def remove(self, user_id: int, collection_id: int) -> None:
-        """Remove the like if it exists."""
+        """Remove the like if it exists without committing (transaction managed by service)."""
         try:
             like = await self.get(user_id, collection_id)
             if like:
-                await self.db.delete(like)
-                await self.db.commit()
+                await self._delete_entity(like, flush=False)  # No flush needed for deletion
+            else:
+                logger.warning(f"Like not found for user {user_id} and collection {collection_id}")
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Error removing like for user {user_id} and collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,

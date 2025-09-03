@@ -6,6 +6,7 @@ import {
   collectionApiService,
   type CollectionResponse,
 } from "@services/CollectionApiService";
+import { useCollections } from "@hooks/useCollections";
 import { ICollection } from "@models/ICollectionForm";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import {
@@ -96,36 +97,49 @@ export default function CollectionItem({
   const userContext = useUserContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { like, unlike, isLiking, isUnliking } = useCollectionLike(
-    collection.id
-  );
+  const { deleteCollection, isDeletingCollection } = useCollections();
+  const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
+    useCollectionLike(collection.id);
   const [likeBounce, setLikeBounce] = useState(false);
+  const [likeCooldown, setLikeCooldown] = useState(false);
 
-  const deleteMutation = useMutation({
-    mutationFn: () => collectionApiService.deleteCollection(collection.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+  const handleDeleteCollection = () => {
+    // Don't allow deletion of collections with temporary IDs (negative numbers)
+    if (collection.id < 0) {
+      console.warn("Cannot delete collection with temporary ID");
       setOpenDeleteDialog(false);
-    },
-    onError: (error) => {
-      console.error("Error deleting collection:", error);
-    },
-  });
+      return;
+    }
+    deleteCollection(collection.id);
+    setOpenDeleteDialog(false);
+  };
 
   useEffect(() => {
     setLocalIsPublic(collection.is_public);
   }, [collection.is_public]);
 
-  useEffect(() => {
-    setLocalIsLiked(collection.is_liked_by_user);
-    setLocalLikesCount(collection.likes_count);
-  }, [collection.id, collection.is_liked_by_user, collection.likes_count]);
-
-  // Force reset local states when collection ID changes
+  // Only update local state when collection ID changes (new collection)
   useEffect(() => {
     setLocalIsLiked(collection.is_liked_by_user);
     setLocalLikesCount(collection.likes_count);
   }, [collection.id]);
+
+  // Only update local state when collection ID changes (new collection loaded)
+  // This prevents conflicts with optimistic updates during like/unlike operations
+
+  // Handle errors by reverting to previous state
+  useEffect(() => {
+    if (likeError || unlikeError) {
+      // Revert to original state on error
+      setLocalIsLiked(collection.is_liked_by_user);
+      setLocalLikesCount(collection.likes_count);
+    }
+  }, [
+    likeError,
+    unlikeError,
+    collection.is_liked_by_user,
+    collection.likes_count,
+  ]);
 
   useEffect(() => {
     if (likeBounce) return;
@@ -154,7 +168,7 @@ export default function CollectionItem({
   };
 
   const handleDelete = () => {
-    deleteMutation.mutate();
+    handleDeleteCollection();
   };
 
   const handleEdit = (e: React.MouseEvent) => {
@@ -168,11 +182,26 @@ export default function CollectionItem({
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Prevent multiple clicks while processing or in cooldown
+    if (isLiking || isUnliking || likeCooldown) return;
+
+    // Set cooldown to prevent rapid clicks
+    setLikeCooldown(true);
+    setTimeout(() => setLikeCooldown(false), 1000); // 1 second cooldown
+
+    // Store previous state for potential rollback
+    const previousLiked = localIsLiked;
+    const previousCount = localLikesCount;
+
+    // Immediate visual feedback
     if (localIsLiked) {
+      // Optimistic update for unlike - immediate visual change
       setLocalIsLiked(false);
       setLocalLikesCount((prev) => Math.max(0, prev - 1));
       unlike();
     } else {
+      // Optimistic update for like - immediate visual change
       setLocalIsLiked(true);
       setLocalLikesCount((prev) => prev + 1);
       like();
@@ -200,7 +229,7 @@ export default function CollectionItem({
       >
         <IconButton
           onClick={handleLikeClick}
-          disabled={isLiking || isUnliking}
+          disabled={isLiking || isUnliking || likeCooldown}
           sx={{
             color: localIsLiked ? "#FFD700" : "grey.400",
             position: "absolute",
@@ -336,7 +365,11 @@ export default function CollectionItem({
                         e.stopPropagation();
                         setOpenDeleteDialog(true);
                       }}
-                      sx={{ color: "primary.main" }}
+                      disabled={collection.id < 0} // Disable for temporary IDs
+                      sx={{ 
+                        color: collection.id < 0 ? "grey.400" : "primary.main",
+                        opacity: collection.id < 0 ? 0.5 : 1
+                      }}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -421,9 +454,9 @@ export default function CollectionItem({
             onClick={handleDelete}
             color="error"
             variant="contained"
-            disabled={deleteMutation.isPending}
+            disabled={isDeletingCollection}
           >
-            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            {isDeletingCollection ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>

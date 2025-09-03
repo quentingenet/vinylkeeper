@@ -5,8 +5,8 @@ from app.core.config_env import settings
 
 # Determine log level based on environment
 if settings.APP_ENV == "production":
-    default_level = "INFO"
-    app_level = "INFO"
+    default_level = "INFO"     # INFO level in production (already optimized)
+    app_level = "INFO"         # INFO level in production (already optimized)
     uvicorn_level = "ERROR"
 else:
     default_level = "INFO"

@@ -19,6 +19,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { CollectionResponse } from "@services/CollectionApiService";
+import { useCollections } from "@hooks/useCollections";
 
 interface IModalCollectionCreateProps {
   openModal: boolean;
@@ -41,6 +42,7 @@ export default function ModalCollection({
   const userContext = useUserContext();
   const queryClient = useQueryClient();
   const { isMobile } = useDetectMobile();
+  const { createCollection, isCreatingCollection } = useCollections();
 
   const {
     register,
@@ -68,24 +70,12 @@ export default function ModalCollection({
     }
   }, [openModal, collection, setValue]);
 
-  const createMutation = useMutation<
-    { message: string },
-    Error,
-    ICollectionForm
-  >({
-    mutationFn: collectionApiService.createCollection,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
-      onCollectionAdded();
-    },
-    onError: (error) => {
-      console.error("Error creating collection:", error);
-      userContext.setIsLoading(false);
-    },
-    onSettled: () => {
-      handleClose();
-    },
-  });
+  // Use the optimistic create mutation from useCollections hook
+  const handleCreateCollection = (data: ICollectionForm) => {
+    createCollection(data);
+    onCollectionAdded();
+    handleClose();
+  };
 
   const updateMutation = useMutation<
     { message: string },
@@ -140,7 +130,7 @@ export default function ModalCollection({
       };
       updateMutation.mutate({ id: collection.id, data: updateData });
     } else {
-      createMutation.mutate(data);
+      handleCreateCollection(data);
     }
   };
 
@@ -240,8 +230,13 @@ export default function ModalCollection({
                 variant="contained"
                 color="primary"
                 type="submit"
+                disabled={isCreatingCollection}
               >
-                {isUpdatingCollection ? "Update" : "Create"}
+                {isCreatingCollection
+                  ? "Creating..."
+                  : isUpdatingCollection
+                  ? "Update"
+                  : "Create"}
               </Button>
             </Box>
           </Box>

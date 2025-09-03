@@ -4,7 +4,7 @@ import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { CollectionResponse } from "@services/CollectionApiService";
 import ModalCollection from "@components/Collections/ModalCollection";
@@ -12,6 +12,7 @@ import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { useCollections } from "@hooks/useCollections";
 import { useNavigate } from "react-router-dom";
 import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useDebounce } from "@hooks/useDebounce";
 
 export default function Collections() {
   const [modalState, setModalState] = useState({
@@ -21,8 +22,18 @@ export default function Collections() {
     isPublic: false,
   });
   const [page, setPage] = useState(1);
+  const [debouncedPage, setDebouncedPage] = useState(1);
   const itemsPerPage = ITEMS_PER_PAGE;
   const navigate = useNavigate();
+
+  // Debounce page changes to avoid too many requests
+  useDebounce(
+    () => {
+      setDebouncedPage(page);
+    },
+    300,
+    [page]
+  );
 
   const { isMobile } = useDetectMobile();
   const {
@@ -33,7 +44,11 @@ export default function Collections() {
     isError,
     handleSwitchVisibility,
     refreshCollections,
-  } = useCollections(page, itemsPerPage);
+    createCollection,
+    deleteCollection,
+    isCreatingCollection,
+    isDeletingCollection,
+  } = useCollections(debouncedPage, itemsPerPage);
 
   const handleOpenModalCollection = (
     isUpdating: boolean,
@@ -56,6 +71,11 @@ export default function Collections() {
       EGlobalUrls.COLLECTION_DETAILS.replace(":id", collection.id.toString())
     );
   };
+
+  // Memoize pagination change handler to prevent unnecessary re-renders
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+  }, []);
 
   if (isError) {
     return (
@@ -176,7 +196,7 @@ export default function Collections() {
           <PaginationWithEllipsis
             count={totalPages}
             page={page}
-            onChange={(newPage) => setPage(newPage)}
+            onChange={handlePageChange}
             color="primary"
             size={isMobile ? "medium" : "large"}
           />

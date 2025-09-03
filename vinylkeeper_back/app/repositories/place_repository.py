@@ -6,9 +6,10 @@ from sqlalchemy.orm import selectinload
 from app.models.place_model import Place
 from app.models.place_like_model import PlaceLike
 from app.core.exceptions import ResourceNotFoundError, ValidationError
+from app.core.transaction import TransactionalMixin
 
 
-class PlaceRepository:
+class PlaceRepository(TransactionalMixin):
     """Repository for place-related database operations."""
 
     def __init__(self, db: AsyncSession):
@@ -79,30 +80,29 @@ class PlaceRepository:
         return place
 
     async def create_place(self, place_data: dict) -> Place:
-        """Create a new place."""
+        """Create a new place without committing (transaction managed by service)."""
         place = Place(**place_data)
-        self.db.add(place)
-        await self.db.commit()
-        await self.db.refresh(place)
+        await self._add_entity(place, flush=True)  # Flush to get the ID
+        await self._refresh_entity(place)
         return place
 
     async def update_place(self, place_id: int, place_data: dict) -> Place:
-        """Update an existing place."""
+        """Update an existing place without committing (transaction managed by service)."""
         place = await self.get_place_by_id(place_id)
         
         for key, value in place_data.items():
             if hasattr(place, key):
                 setattr(place, key, value)
         
-        await self.db.commit()
-        await self.db.refresh(place)
+        await self._add_entity(place, flush=True)  # Flush to ensure changes are persisted
+        await self._refresh_entity(place)
         return place
 
     async def delete_place(self, place_id: int) -> bool:
-        """Soft delete a place by setting is_valid to False."""
+        """Soft delete a place by setting is_valid to False without committing (transaction managed by service)."""
         place = await self.get_place_by_id(place_id)
         place.is_valid = False
-        await self.db.commit()
+        await self._add_entity(place)
         return True
 
     async def get_places_by_user(self, user_id: int) -> List[Place]:
@@ -238,7 +238,7 @@ class PlaceRepository:
         return result.scalars().all()
 
     async def like_place(self, user_id: int, place_id: int) -> PlaceLike:
-        """Like a place for a user."""
+        """Like a place for a user without committing (transaction managed by service)."""
         # Check if like already exists
         query = select(PlaceLike).filter(
             and_(PlaceLike.user_id == user_id, PlaceLike.place_id == place_id)
@@ -253,13 +253,12 @@ class PlaceRepository:
             )
         
         like = PlaceLike(user_id=user_id, place_id=place_id)
-        self.db.add(like)
-        await self.db.commit()
-        await self.db.refresh(like)
+        await self._add_entity(like, flush=True)  # Flush to get the ID
+        await self._refresh_entity(like)
         return like
 
     async def unlike_place(self, user_id: int, place_id: int) -> bool:
-        """Unlike a place for a user."""
+        """Unlike a place for a user without committing (transaction managed by service)."""
         query = select(PlaceLike).filter(
             and_(PlaceLike.user_id == user_id, PlaceLike.place_id == place_id)
         )
@@ -272,8 +271,7 @@ class PlaceRepository:
                 message="User has not liked this place"
             )
         
-        await self.db.delete(like)
-        await self.db.commit()
+        await self._delete_entity(like)
         return True
 
     async def get_place_likes_count(self, place_id: int) -> int:
@@ -342,6 +340,4 @@ class PlaceRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none() 
 
-    async def rollback(self):
-        """Rollback the current transaction."""
-        await self.db.rollback() 
+ 
