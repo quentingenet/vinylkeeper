@@ -40,7 +40,7 @@ from app.core.exceptions import (
 )
 from app.core.transaction import transaction_context
 from app.core.logging import logger
-from app.core.enums import EntityTypeEnum
+from app.core.enums import EntityTypeEnum, VinylStateEnum
 
 
 
@@ -98,11 +98,11 @@ class CollectionService:
         acquisition_month_year = None
         
         if collection_album:
-            # Use ORM relationships to get state names
+            # Use ORM relationships to get state names and convert to enum
             if collection_album.state_record_ref:
-                state_record = collection_album.state_record_ref.name
+                state_record = VinylStateEnum(collection_album.state_record_ref.name)
             if collection_album.state_cover_ref:
-                state_cover = collection_album.state_cover_ref.name
+                state_cover = VinylStateEnum(collection_album.state_cover_ref.name)
             acquisition_month_year = collection_album.acquisition_month_year
         
         external_source_dict = self._convert_external_source_to_dict(

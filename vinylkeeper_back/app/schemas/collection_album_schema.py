@@ -5,16 +5,17 @@ import re
 from pydantic import Field, model_validator, field_validator
 
 from app.schemas import BaseSchema
+from app.core.enums import VinylStateEnum
 
 
 class CollectionAlbumCreate(BaseSchema):
     """Schema for adding an album to a collection with metadata."""
     album_id: int = Field(..., gt=0, description="ID of the album")
     collection_id: int = Field(..., gt=0, description="ID of the collection")
-    state_record: Optional[str] = Field(
-        None, description="Name of the vinyl record condition (e.g., 'near_mint')")
-    state_cover: Optional[str] = Field(
-        None, description="Name of the album cover condition (e.g., 'near_mint')")
+    state_record: Optional[VinylStateEnum] = Field(
+        None, description="State of the vinyl record (mint, near_mint, very_good_plus, etc.)")
+    state_cover: Optional[VinylStateEnum] = Field(
+        None, description="State of the album cover (mint, near_mint, very_good_plus, etc.)")
     acquisition_month_year: Optional[str] = Field(
         None, description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')")
 
@@ -47,10 +48,10 @@ class CollectionAlbumCreate(BaseSchema):
 
 class CollectionAlbumUpdate(BaseSchema):
     """Schema for updating album metadata in a collection."""
-    state_record: Optional[str] = Field(
-        None, description="Updated vinyl condition name (e.g., 'near_mint')")
-    state_cover: Optional[str] = Field(
-        None, description="Updated cover condition name (e.g., 'near_mint')")
+    state_record: Optional[VinylStateEnum] = Field(
+        None, description="Updated vinyl state (mint, near_mint, very_good_plus, etc.)")
+    state_cover: Optional[VinylStateEnum] = Field(
+        None, description="Updated cover state (mint, near_mint, very_good_plus, etc.)")
     acquisition_month_year: Optional[str] = Field(
         None, description="Updated acquisition month and year in format YYYY-MM (e.g., '2024-06')")
 
@@ -92,6 +93,6 @@ class CollectionAlbumMetadataResponse(BaseSchema):
     """Schema for returning collection-album metadata."""
     collection_id: int = Field(..., gt=0)
     album_id: int = Field(..., gt=0)
-    state_record: Optional[str] = None
-    state_cover: Optional[str] = None
+    state_record: Optional[VinylStateEnum] = None
+    state_cover: Optional[VinylStateEnum] = None
     acquisition_month_year: Optional[str] = None

@@ -5,7 +5,7 @@ import {
   type PaginatedCollectionResponse,
   type CollectionCreate,
 } from "@services/CollectionApiService";
-import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
+import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
 import { HTTPError } from "ky";
 import { useUserContext } from "@contexts/UserContext";
 import { useEffect } from "react";
@@ -293,8 +293,8 @@ export function useUpdateAlbumStates() {
       collectionId: number;
       albumId: number;
       data: {
-        state_record?: string | null;
-        state_cover?: string | null;
+        state_record?: VinylStateEnum | null;
+        state_cover?: VinylStateEnum | null;
         acquisition_month_year?: string | null;
       };
     }) => {

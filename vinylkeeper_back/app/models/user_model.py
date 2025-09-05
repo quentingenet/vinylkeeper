@@ -195,9 +195,3 @@ def set_defaults(mapper, connection, target):
         target.user_uuid = uuid.uuid4()
 
 
-@event.listens_for(User, 'before_update')
-def update_last_login(mapper, connection, target):
-    """Update last_login and number_of_connections before update."""
-    if hasattr(target, 'last_login') and target.last_login is None:
-        target.last_login = func.now()
-        target.number_of_connections += 1

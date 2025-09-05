@@ -49,7 +49,7 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse, isValid } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { truncateText, vinylStates } from "@utils/GlobalUtils";
+import { truncateText, vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
 import { growItem } from "@utils/Animations";
 
 interface AddToCollectionModalProps {
@@ -60,8 +60,8 @@ interface AddToCollectionModalProps {
 }
 
 interface AlbumStateData {
-  state_cover?: string | null;
-  state_record?: string | null;
+  state_cover?: VinylStateEnum | null;
+  state_record?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
 }
 
@@ -543,12 +543,12 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 
   // Album state data
   const [albumStateData, setAlbumStateData] = useState<{
-    state_record: string;
-    state_cover: string;
+    state_record: VinylStateEnum | null;
+    state_cover: VinylStateEnum | null;
     acquisition_month_year: string | null;
   }>({
-    state_record: "",
-    state_cover: "",
+    state_record: null,
+    state_cover: null,
     acquisition_month_year: null,
   });
 
@@ -716,8 +716,8 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     setIsDatePickerOpen(false); // Close date picker when modal closes
     // Reset album state data when modal is closed
     setAlbumStateData({
-      state_cover: "",
-      state_record: "",
+      state_cover: null,
+      state_record: null,
       acquisition_month_year: null,
     });
     onClose();

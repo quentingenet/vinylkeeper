@@ -4,7 +4,7 @@ from pydantic import Field, field_validator
 from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
-from app.core.enums import EntityTypeEnum
+from app.core.enums import EntityTypeEnum, VinylStateEnum
 
 
 class EntityTypeResponse(BaseSchema):
@@ -25,13 +25,13 @@ class ExternalSourceResponse(BaseSchema):
 
 class AlbumStateData(BaseSchema):
     """Schema for album state data when adding to collection."""
-    state_cover: Optional[str] = Field(
+    state_cover: Optional[VinylStateEnum] = Field(
         None, 
-        description="Name of the cover state (e.g., 'near_mint')"
+        description="State of the cover (mint, near_mint, very_good_plus, etc.)"
     )
-    state_record: Optional[str] = Field(
+    state_record: Optional[VinylStateEnum] = Field(
         None, 
-        description="Name of the record state (e.g., 'near_mint')"
+        description="State of the record (mint, near_mint, very_good_plus, etc.)"
     )
     acquisition_month_year: Optional[str] = Field(
         None, 

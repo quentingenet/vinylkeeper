@@ -1,8 +1,9 @@
 import { ExternalItem } from "./BaseTypes";
+import { VinylStateEnum } from "@utils/GlobalUtils";
 
 export interface AlbumStateData {
-  state_cover?: string | null;
-  state_record?: string | null;
+  state_cover?: VinylStateEnum | null;
+  state_record?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
 }
 

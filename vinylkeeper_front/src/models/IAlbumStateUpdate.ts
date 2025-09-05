@@ -1,6 +1,8 @@
+import { VinylStateEnum } from "@utils/GlobalUtils";
+
 export interface IAlbumStateUpdate {
-  state_record?: string | null;
-  state_cover?: string | null;
+  state_record?: VinylStateEnum | null;
+  state_cover?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
 }
 

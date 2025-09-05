@@ -1,3 +1,5 @@
+import { VinylStateEnum } from "@utils/GlobalUtils";
+
 export interface ICollectionForm {
   name: string;
   description?: string;
@@ -6,8 +8,8 @@ export interface ICollectionForm {
   album_ids?: number[];
   artist_ids?: number[];
   albums?: number[];
-  state_record?: string;
-  state_cover?: string;
+  state_record?: VinylStateEnum;
+  state_cover?: VinylStateEnum;
   acquisition_month_year?: string;
 }
 
@@ -35,8 +37,8 @@ export interface IAlbumInCollection {
   artist: string;
   year?: string;
   image_url?: string;
-  state_record?: string | null;
-  state_cover?: string | null;
+  state_record?: VinylStateEnum | null;
+  state_cover?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
   created_at: string;
   updated_at: string;

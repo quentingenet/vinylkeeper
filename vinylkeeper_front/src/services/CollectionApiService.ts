@@ -1,5 +1,5 @@
 import { BaseApiService } from "./BaseApiService";
-import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
+import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
 import { WishlistItemResponse } from "@models/IExternalReference";
 
 export interface UserMiniResponse {
@@ -29,8 +29,8 @@ export interface ArtistBase {
 }
 
 export interface AlbumInCollection {
-  state_record?: string | null;
-  state_cover?: string | null;
+  state_record?: VinylStateEnum | null;
+  state_cover?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
 }
 

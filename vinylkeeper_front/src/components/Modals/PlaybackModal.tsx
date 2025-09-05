@@ -34,7 +34,7 @@ import { useParams } from "react-router-dom";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { vinylStates } from "@utils/GlobalUtils";
+import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
 
 export interface PlaybackItem {
   id: string;
@@ -44,8 +44,8 @@ export interface PlaybackItem {
   itemType: "album" | "artist";
   internalId?: string; // Internal ID for database operations
   albumData?: {
-    state_record?: string;
-    state_cover?: string;
+    state_record?: VinylStateEnum;
+    state_cover?: VinylStateEnum;
     acquisition_month_year?: string;
   };
 }
@@ -72,8 +72,8 @@ export default function PlaybackModal({
   const updateAlbumStatesMutation = useUpdateAlbumStates();
 
   // States for album conditions
-  const [coverState, setCoverState] = useState<string | null>(null);
-  const [discState, setDiscState] = useState<string | null>(null);
+  const [coverState, setCoverState] = useState<VinylStateEnum | null>(null);
+  const [discState, setDiscState] = useState<VinylStateEnum | null>(null);
   const [purchaseDate, setPurchaseDate] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);

@@ -303,11 +303,15 @@ class ExternalReferenceService:
 
                         state_record = processed_album_data.pop('state_record', None)
                         if state_record:
-                            processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(state_record)
+                            # Convert VinylStateEnum to string for mapping
+                            state_record_str = state_record.value if hasattr(state_record, 'value') else str(state_record)
+                            processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(state_record_str)
 
                         state_cover = processed_album_data.pop('state_cover', None)
                         if state_cover:
-                            processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover)
+                            # Convert VinylStateEnum to string for mapping
+                            state_cover_str = state_cover.value if hasattr(state_cover, 'value') else str(state_cover)
+                            processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover_str)
                         
                         # acquisition_month_year is already in the correct format, no conversion needed
                     collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data)

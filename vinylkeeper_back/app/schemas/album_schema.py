@@ -44,13 +44,13 @@ class AlbumBase(BaseSchema):
 
 class AlbumInCollection(BaseSchema):
     """Schema for album data in a collection context."""
-    state_record: Optional[str] = Field(
+    state_record: Optional[VinylStateEnum] = Field(
         None,
-        description="Name of the vinyl record condition (e.g., 'near_mint')"
+        description="State of the vinyl record (mint, near_mint, very_good_plus, etc.)"
     )
-    state_cover: Optional[str] = Field(
+    state_cover: Optional[VinylStateEnum] = Field(
         None,
-        description="Name of the album cover condition (e.g., 'near_mint')"
+        description="State of the album cover (mint, near_mint, very_good_plus, etc.)"
     )
     acquisition_month_year: Optional[str] = Field(
         None,

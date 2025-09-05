@@ -17,17 +17,30 @@ export const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
-// Vinyl states enum to match backend
+// Vinyl states enum to match backend VinylStateEnum
+export enum VinylStateEnum {
+  MINT = "mint",
+  NEAR_MINT = "near_mint",
+  VERY_GOOD_PLUS = "very_good_plus",
+  VERY_GOOD = "very_good",
+  GOOD_PLUS = "good_plus",
+  GOOD = "good",
+  FAIR = "fair",
+  POOR = "poor",
+  NOT_DEFINED = "not_defined",
+}
+
+// Vinyl states array for UI components (keeping backward compatibility)
 export const vinylStates = [
-  { id: "not_defined", name: "Not defined" },
-  { id: "mint", name: "Mint" },
-  { id: "near_mint", name: "Near Mint" },
-  { id: "very_good_plus", name: "Very Good Plus" },
-  { id: "very_good", name: "Very Good" },
-  { id: "good_plus", name: "Good Plus" },
-  { id: "good", name: "Good" },
-  { id: "fair", name: "Fair" },
-  { id: "poor", name: "Poor" },
+  { id: VinylStateEnum.NOT_DEFINED, name: "Not defined" },
+  { id: VinylStateEnum.MINT, name: "Mint" },
+  { id: VinylStateEnum.NEAR_MINT, name: "Near Mint" },
+  { id: VinylStateEnum.VERY_GOOD_PLUS, name: "Very Good Plus" },
+  { id: VinylStateEnum.VERY_GOOD, name: "Very Good" },
+  { id: VinylStateEnum.GOOD_PLUS, name: "Good Plus" },
+  { id: VinylStateEnum.GOOD, name: "Good" },
+  { id: VinylStateEnum.FAIR, name: "Fair" },
+  { id: VinylStateEnum.POOR, name: "Poor" },
 ];
 
 export enum PlaceType {
