@@ -11,8 +11,12 @@ export const registerValidationSchema = yup.object({
     .string()
     .min(3, "Username must contain at least 3 characters")
     .matches(
-      /^[a-z0-9]+$/,
-      "Only lowercase letters and numbers allowed (no spaces or special characters)"
+      /^[a-z0-9._-]+$/,
+      "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)"
+    )
+    .matches(
+      /^[a-z0-9].*[a-z0-9]$|^[a-z0-9]$/,
+      "Username cannot start or end with dots, hyphens, or underscores"
     )
     .required("Enter your username"),
   email: yup

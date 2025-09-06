@@ -148,6 +148,15 @@ class User(Base):
                 raise ValueError("Username must contain at least 3 characters")
             if len(value) > 50:
                 raise ValueError("Username must not exceed 50 characters")
+            
+            # Allow only alphanumeric characters, dots, hyphens, and underscores
+            import re
+            if not re.match(r'^[a-zA-Z0-9._-]+$', value):
+                raise ValueError("Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+            
+            # Username cannot start or end with special characters
+            if value.startswith(('.', '-', '_')) or value.endswith(('.', '-', '_')):
+                raise ValueError("Username cannot start or end with dots, hyphens, or underscores")
         
         return value
 
