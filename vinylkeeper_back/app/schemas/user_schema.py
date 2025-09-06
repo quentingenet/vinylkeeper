@@ -32,7 +32,19 @@ class UserBase(BaseSchema):
         """Validate username format and content."""
         if not v:
             raise ValueError("Username cannot be empty")
-        return v.strip()
+        
+        v = v.strip()
+        
+        # Allow only alphanumeric characters, dots, hyphens, and underscores
+        import re
+        if not re.match(r'^[a-zA-Z0-9._-]+$', v):
+            raise ValueError("Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+        
+        # Username cannot start or end with special characters
+        if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
+            raise ValueError("Username cannot start or end with dots, hyphens, or underscores")
+        
+        return v
 
     @field_validator("email")
     @classmethod
@@ -104,7 +116,19 @@ class UserUpdate(BaseSchema):
         if v is not None:
             if not v or len(v.strip()) == 0:
                 raise ValueError("Username cannot be empty")
-            return v.strip()
+            
+            v = v.strip()
+            
+            # Allow only alphanumeric characters, dots, hyphens, and underscores
+            import re
+            if not re.match(r'^[a-zA-Z0-9._-]+$', v):
+                raise ValueError("Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+            
+            # Username cannot start or end with special characters
+            if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
+                raise ValueError("Username cannot start or end with dots, hyphens, or underscores")
+            
+            return v
         return v
 
     @field_validator("email")
