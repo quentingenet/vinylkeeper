@@ -1,50 +1,73 @@
 import requestService from "@utils/RequestService";
 import { API_VK_URL } from "@utils/GlobalUtils";
-import { ApiResponse, PaginatedResponse } from "@models/BaseTypes";
+import { PaginatedResponse } from "@models/BaseTypes";
 
 export abstract class BaseApiService {
   protected readonly baseUrl: string = API_VK_URL;
 
-  protected async get<T>(endpoint: string): Promise<T> {
+  protected async get<T>(
+    endpoint: string,
+    skipRefresh: boolean = false
+  ): Promise<T> {
     return requestService<T>({
       apiTarget: this.baseUrl,
       method: "GET",
       endpoint,
+      skipRefresh,
     });
   }
 
-  protected async post<T>(endpoint: string, body?: any): Promise<T> {
+  protected async post<T>(
+    endpoint: string,
+    body?: any,
+    skipRefresh: boolean = false
+  ): Promise<T> {
     return requestService<T>({
       apiTarget: this.baseUrl,
       method: "POST",
       endpoint,
       body,
+      skipRefresh,
     });
   }
 
-  protected async put<T>(endpoint: string, body?: any): Promise<T> {
+  protected async put<T>(
+    endpoint: string,
+    body?: any,
+    skipRefresh: boolean = false
+  ): Promise<T> {
     return requestService<T>({
       apiTarget: this.baseUrl,
       method: "PUT",
       endpoint,
       body,
+      skipRefresh,
     });
   }
 
-  protected async patch<T>(endpoint: string, body?: any): Promise<T> {
+  protected async patch<T>(
+    endpoint: string,
+    body?: any,
+    skipRefresh: boolean = false
+  ): Promise<T> {
     return requestService<T>({
       apiTarget: this.baseUrl,
       method: "PATCH",
       endpoint,
       body,
+      skipRefresh,
     });
   }
 
-  protected async delete<T>(endpoint: string): Promise<T> {
+  protected async delete<T>(
+    endpoint: string,
+    skipRefresh: boolean = false
+  ): Promise<T> {
     return requestService<T>({
       apiTarget: this.baseUrl,
       method: "DELETE",
       endpoint,
+      skipRefresh,
     });
   }
 
@@ -54,12 +77,5 @@ export abstract class BaseApiService {
     limit: number
   ): string {
     return `${baseEndpoint}?page=${page}&limit=${limit}`;
-  }
-
-  protected handleStandardResponse<T>(response: ApiResponse<T>): T {
-    if (!response.success) {
-      throw new Error(response.message || "API request failed");
-    }
-    return response.data!;
   }
 }

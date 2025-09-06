@@ -83,11 +83,3 @@ export interface ICollectionResponse {
   limit: number;
   total_pages: number;
 }
-
-export interface BackendResponse<T> {
-  data: {
-    data: T;
-    message?: string;
-    status: string;
-  };
-}

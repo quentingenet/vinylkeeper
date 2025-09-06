@@ -76,10 +76,14 @@ export interface ContactMessageResponse {
 export class UserApiService extends BaseApiService {
   async login(data: ILoginForm): Promise<LoginResponse> {
     try {
-      const response = await this.post<LoginResponse>("/users/auth", {
-        email: data.email,
-        password: data.password,
-      });
+      const response = await this.post<LoginResponse>(
+        "/users/auth",
+        {
+          email: data.email,
+          password: data.password,
+        },
+        true
+      );
       return response;
     } catch (error) {
       console.error("Login failed:", error);
@@ -89,13 +93,17 @@ export class UserApiService extends BaseApiService {
 
   async register(data: IRegisterForm): Promise<RegisterResponse> {
     try {
-      return await this.post<RegisterResponse>("/users/register", {
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        is_accepted_terms: data.isAcceptedTerms,
-        timezone: data.timezone,
-      });
+      return await this.post<RegisterResponse>(
+        "/users/register",
+        {
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          is_accepted_terms: data.isAcceptedTerms,
+          timezone: data.timezone,
+        },
+        true
+      );
     } catch (error) {
       // Propagate the original error message from the backend
       throw error;
@@ -104,9 +112,13 @@ export class UserApiService extends BaseApiService {
 
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
     try {
-      return await this.post<ForgotPasswordResponse>("/users/forgot-password", {
-        email,
-      });
+      return await this.post<ForgotPasswordResponse>(
+        "/users/forgot-password",
+        {
+          email,
+        },
+        true
+      );
     } catch (error) {
       console.error("Forgot password request failed:", error);
       throw new Error("Failed to process forgot password request.");
