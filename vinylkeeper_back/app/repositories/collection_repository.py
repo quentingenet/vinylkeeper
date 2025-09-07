@@ -71,6 +71,23 @@ class CollectionRepository(TransactionalMixin):
                 details={"error": str(e)}
             )
 
+    async def find_by_name_and_owner(self, name: str, owner_id: int) -> Optional[Collection]:
+        """Find a collection by name and owner ID."""
+        try:
+            query = select(Collection).filter(
+                Collection.name == name,
+                Collection.owner_id == owner_id
+            )
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Error finding collection by name and owner: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to find collection",
+                details={"error": str(e)}
+            )
+
     async def get_by_owner(self, owner_id: int) -> List[Collection]:
         """Get all collections owned by a user with optimized relation loading."""
         try:

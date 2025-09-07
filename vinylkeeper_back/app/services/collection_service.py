@@ -34,6 +34,7 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ForbiddenError,
     DuplicateFieldError,
+    DuplicateCollectionNameError,
     ServerError,
     ValidationError,
     ErrorCode
@@ -140,6 +141,11 @@ class CollectionService:
         try:
             self._validate_collection_data(collection_data)
             
+            # Check if collection name already exists for this user
+            existing_collection = await self.repository.find_by_name_and_owner(collection_data.name, user_id)
+            if existing_collection:
+                raise DuplicateCollectionNameError(collection_data.name)
+            
             # Create collection
             collection = Collection(
                 name=collection_data.name,
@@ -160,7 +166,7 @@ class CollectionService:
             # Build response after successful creation
             return await self._build_collection_response(created_collection, user_id)
                 
-        except (DuplicateFieldError, ValidationError) as e:
+        except (DuplicateFieldError, DuplicateCollectionNameError, ValidationError) as e:
             raise e
         except Exception as e:
             logger.error(f"Error creating collection: {str(e)}")
@@ -261,6 +267,12 @@ class CollectionService:
             # Validate update data
             self._validate_update_data(collection_data)
             
+            # Check if collection name already exists for this user (if name is being updated)
+            if collection_data.name is not None and collection_data.name != collection.name:
+                existing_collection = await self.repository.find_by_name_and_owner(collection_data.name, user_id)
+                if existing_collection and existing_collection.id != collection_id:
+                    raise DuplicateCollectionNameError(collection_data.name)
+            
             # Update collection fields (only basic fields)
             update_data = collection_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
@@ -278,7 +290,7 @@ class CollectionService:
             # Convert to response schema
             return await self.get_collection(collection_id)
             
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+        except (ResourceNotFoundError, ForbiddenError, ValidationError, DuplicateCollectionNameError) as e:
             raise e
         except Exception as e:
             logger.error(f"Error updating collection: {str(e)}")

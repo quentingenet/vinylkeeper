@@ -195,6 +195,14 @@ class DuplicateUsernameError(DuplicateFieldError):
         )
 
 
+class DuplicateCollectionNameError(DuplicateFieldError):
+    def __init__(self, collection_name: str):
+        super().__init__(
+            field="Collection name",
+            value=collection_name
+        )
+
+
 class ForbiddenError(AppException):
     def __init__(self, error_code: int = 4030, message: str = "You are not allowed to access this resource", details: Optional[Dict[str, Any]] = None):
         super().__init__(

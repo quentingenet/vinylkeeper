@@ -6,7 +6,8 @@ from sqlalchemy import (
     ForeignKey,
     Boolean,
     func,
-    CheckConstraint
+    CheckConstraint,
+    UniqueConstraint
 )
 from sqlalchemy.orm import relationship, validates
 
@@ -60,6 +61,11 @@ class Collection(Base):
         CheckConstraint(
             "length(name) >= 1",
             name="check_collection_name_length"
+        ),
+        UniqueConstraint(
+            "owner_id",
+            "name",
+            name="uq_user_collection_name"
         ),
     )
 
