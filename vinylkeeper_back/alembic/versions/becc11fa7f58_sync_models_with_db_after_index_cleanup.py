@@ -26,8 +26,8 @@ def upgrade() -> None:
     op.drop_index(op.f('ix_collection_artist_collection_id'), table_name='collection_artist')
     op.drop_index(op.f('ix_places_is_moderated'), table_name='places')
     op.drop_index(op.f('ix_wishlist_user_id_entity_type'), table_name='wishlist')
-    # Create unique constraint for collection_album
-    op.create_unique_constraint('uq_collection_album', 'collection_album', ['collection_id', 'album_id'])
+    # Note: uq_collection_album already exists as primary key composite constraint
+    # No need to create it again
     # ### end Alembic commands ###
 
 
@@ -37,6 +37,7 @@ def downgrade() -> None:
     op.create_index(op.f('ix_wishlist_user_id_entity_type'), 'wishlist', ['user_id', 'entity_type_id'], unique=False)
     op.create_index(op.f('ix_places_is_moderated'), 'places', ['is_moderated'], unique=False)
     op.create_index(op.f('ix_collection_artist_collection_id'), 'collection_artist', ['collection_id'], unique=False)
-    op.drop_constraint('uq_collection_album', 'collection_album', type_='unique')
+    # Note: uq_collection_album is a primary key constraint, not a unique constraint
+    # Cannot drop primary key constraint in downgrade
     op.create_index(op.f('ix_collection_album_collection_id'), 'collection_album', ['collection_id'], unique=False)
     # ### end Alembic commands ###
