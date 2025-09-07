@@ -19,7 +19,7 @@ class Place(Base):
 
     __tablename__ = "places"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
 
     name = Column(String(255), nullable=False, index=True)
     address = Column(String(255), nullable=True)

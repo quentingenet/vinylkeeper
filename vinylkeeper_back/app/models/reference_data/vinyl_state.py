@@ -8,7 +8,7 @@ from app.models.base import Base
 class VinylState(Base):
     __tablename__ = "vinyl_states"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False, index=True)
     description = Column(String(255), nullable=True)
     

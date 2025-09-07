@@ -23,7 +23,7 @@ class Artist(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
 
     external_artist_id = Column(
         String(255),

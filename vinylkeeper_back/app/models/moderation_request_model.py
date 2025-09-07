@@ -8,7 +8,7 @@ class ModerationRequest(Base):
 
     __tablename__ = "moderation_requests"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     place_id = Column(Integer, ForeignKey("places.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status_id = Column(Integer, ForeignKey(

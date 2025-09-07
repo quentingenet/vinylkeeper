@@ -18,13 +18,9 @@ python-dotenv = "^1.0.1"
 pydantic-settings = "^2.7.1"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 email-validator = "^2.2.0"
-requests = "^2.32.3"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 bcrypt = "^4.3.0"
 httpx = "^0.28.1"
-aiohttp = "^3.12.13"
-uvloop = "^0.21.0"
-httptools = "^0.6.4"
 psycopg2-binary = "^2.9.6"
 
 [tool.poetry.group.dev.dependencies]

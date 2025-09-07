@@ -16,13 +16,6 @@ from app.models.reference_data.vinyl_state import VinylState
 
 class CollectionAlbum(Base):
     __tablename__ = "collection_album"
-    __table_args__ = (
-        UniqueConstraint(
-            "collection_id",
-            "album_id",
-            name="uq_collection_album"
-        ),
-    )
 
     collection_id = Column(Integer, ForeignKey(
         "collections.id", ondelete="CASCADE"), primary_key=True)

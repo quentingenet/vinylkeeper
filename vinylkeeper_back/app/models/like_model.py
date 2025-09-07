@@ -15,7 +15,7 @@ class Like(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False, index=True)
     collection_id = Column(Integer, ForeignKey(

@@ -20,7 +20,7 @@ class Loan(Base):
 
     __tablename__ = "loans"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
 
     user_id = Column(
         Integer,

@@ -19,7 +19,7 @@ class Album(Base):
                          name="uq_external_album_id_source"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
 
     external_album_id = Column(
         String(255),
