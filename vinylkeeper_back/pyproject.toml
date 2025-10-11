@@ -7,8 +7,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.14"
-fastapi = "^0.115.8"
-uvicorn = {extras = ["standard"], version = "^0.34.0"}
+fastapi = "^0.118.3"
+uvicorn = {extras = ["standard"], version = "^0.37.0"}
 alembic = "^1.14.1"
 sqlalchemy = "^2.0.37"
 asyncpg = "^0.30.0"
@@ -19,7 +19,7 @@ pydantic-settings = "^2.7.1"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 email-validator = "^2.2.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-bcrypt = "^4.3.0"
+bcrypt = "^5.0.0"
 httpx = "^0.28.1"
 psycopg2-binary = "^2.9.6"
 
