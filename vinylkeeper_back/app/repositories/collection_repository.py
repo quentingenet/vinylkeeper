@@ -312,23 +312,69 @@ class CollectionRepository(TransactionalMixin):
                 details={"error": str(e)}
             )
 
-    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: Optional[int] = None) -> Tuple[List[Collection], int]:
-        """Get all public collections with pagination."""
+    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: Optional[int] = None, sort_by: str = "updated_at") -> Tuple[List[Collection], int]:
+        """Get all public collections with pagination and sorting.
+        Only returns collections with at least one album, artist, or wishlist item."""
         try:
+            from app.models.like_model import Like
+            from app.models.association_tables import collection_artist
+            from app.models.wishlist_model import Wishlist
+            
             # Build base query
             query = select(Collection).filter(Collection.is_public == True)
             
             if exclude_user_id:
                 query = query.filter(Collection.owner_id != exclude_user_id)
             
-            # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            # Add subqueries for filtering collections with content
+            # Collections must have at least one album, artist, or wishlist item
+            has_albums = select(1).where(
+                CollectionAlbum.collection_id == Collection.id
+            ).exists()
+            
+            has_artists = select(1).where(
+                collection_artist.c.collection_id == Collection.id
+            ).exists()
+            
+            # For wishlist, we need to check if the owner has any wishlist items
+            # This is more complex as wishlist is user-scoped, not collection-scoped
+            # We'll simplify by checking if collection has albums or artists
+            
+            # Combine filters: collection must have albums OR artists
+            query = query.filter(has_albums | has_artists)
+            
+            # Get total count BEFORE applying grouping for likes_count
+            from sqlalchemy import distinct
+            count_query = select(func.count(distinct(Collection.id)))
+            count_query = count_query.filter(Collection.is_public == True)
+            if exclude_user_id:
+                count_query = count_query.filter(Collection.owner_id != exclude_user_id)
+            count_query = count_query.filter(has_albums | has_artists)
+            
             count_result = await self.db.execute(count_query)
             total = count_result.scalar()
             
+            # Apply sorting based on sort_by parameter
+            if sort_by == "likes_count":
+                # Use LEFT JOIN with likes and COUNT to get all collections (even with 0 likes)
+                query = query.outerjoin(
+                    Like,
+                    Collection.id == Like.collection_id
+                )
+                # Group by collection and count likes, then order by count descending
+                query = query.group_by(
+                    Collection.id
+                ).order_by(
+                    func.coalesce(func.count(Like.id), 0).desc()
+                )
+            elif sort_by == "created_at":
+                query = query.order_by(Collection.created_at.desc())
+            else:  # default to updated_at
+                query = query.order_by(Collection.updated_at.desc())
+            
             # Apply pagination
             offset = (page - 1) * limit
-            query = query.order_by(Collection.updated_at.desc()).offset(offset).limit(limit)
+            query = query.offset(offset).limit(limit)
             
             # Preload relations to avoid N+1 queries
             query = query.options(

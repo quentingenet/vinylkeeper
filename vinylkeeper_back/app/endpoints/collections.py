@@ -87,9 +87,10 @@ async def get_public_collections(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
     page: int = Query(1, gt=0),
-    limit: int = Query(10, gt=0, le=100)
+    limit: int = Query(10, gt=0, le=100),
+    sort_by: str = Query("updated_at", description="Sort by: updated_at, created_at, or likes_count")
 ):
-    collections, total = await service.get_public_collections(page, limit, exclude_user_id=user.id, user_id=user.id)
+    collections, total = await service.get_public_collections(page, limit, exclude_user_id=user.id, user_id=user.id, sort_by=sort_by)
     return {
         "items": [c.model_dump() for c in collections],
         "total": total,

@@ -519,11 +519,11 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
-    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None, user_id: int = None) -> Tuple[List[CollectionResponse], int]:
+    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None, user_id: int = None, sort_by: str = "updated_at") -> Tuple[List[CollectionResponse], int]:
         """Get public collections with pagination, filtered to only those with at least one album, artist, or wishlist item"""
         try:
             self._validate_pagination_params(page, limit)
-            collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id)
+            collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id, sort_by)
             
             if not collections:
                 return [], 0
@@ -552,16 +552,14 @@ class CollectionService:
                         user_likes.get(collection.id, False)
                     )
                     
-                    # Only include collections with at least one album, artist, or wishlist item
-                    if (len(response.albums) > 0) or (len(response.artists) > 0) or (len(response.wishlist) > 0):
-                        collection_responses.append(response)
+                    # All collections returned by repository already have albums or artists
+                    collection_responses.append(response)
                 except Exception as collection_error:
                     logger.error(f"Error processing collection {collection.id}: {str(collection_error)}")
                     continue
                     
-            # Adjust total for pagination (actual number after filtering)
-            filtered_total = len(collection_responses)
-            return collection_responses, filtered_total
+            # Return total from repository (already filtered)
+            return collection_responses, total
         except ValidationError as e:
             raise e
         except Exception as e:

@@ -221,10 +221,15 @@ export class CollectionApiService extends BaseApiService {
 
   async getPublicCollections(
     page: number = 1,
-    itemsPerPage: number = ITEMS_PER_PAGE
+    itemsPerPage: number = ITEMS_PER_PAGE,
+    sortBy: string = "updated_at"
   ): Promise<PaginatedCollectionResponse> {
     return this.get<PaginatedCollectionResponse>(
-      this.buildPaginatedEndpoint("/collections/public", page, itemsPerPage)
+      `${this.buildPaginatedEndpoint(
+        "/collections/public",
+        page,
+        itemsPerPage
+      )}&sort_by=${sortBy}`
     );
   }
 
@@ -314,8 +319,14 @@ export const collectionApiService = {
     collectionApiServiceInstance.getCollections(page, itemsPerPage),
   getPublicCollections: (
     page: number = 1,
-    itemsPerPage: number = ITEMS_PER_PAGE
-  ) => collectionApiServiceInstance.getPublicCollections(page, itemsPerPage),
+    itemsPerPage: number = ITEMS_PER_PAGE,
+    sortBy: string = "updated_at"
+  ) =>
+    collectionApiServiceInstance.getPublicCollections(
+      page,
+      itemsPerPage,
+      sortBy
+    ),
   getCollectionById: (collectionId: number) =>
     collectionApiServiceInstance.getCollectionById(collectionId),
   switchCollectionVisibility: (collectionId: number, isPublic: boolean) =>
