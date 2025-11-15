@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -21,14 +21,12 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  useMediaQuery,
 } from "@mui/material";
 import {
   CheckCircle,
   Cancel,
   Visibility,
   AdminPanelSettings,
-  Warning,
 } from "@mui/icons-material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApiService, ModerationRequest } from "@services/AdminApiService";
@@ -56,6 +54,8 @@ const Admin: React.FC = () => {
     queryKey: ["moderation-requests"],
     queryFn: () => adminApiService.getModerationRequests(),
     enabled: isAdmin,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
   });
 
   // Fetch pending requests
@@ -63,6 +63,8 @@ const Admin: React.FC = () => {
     queryKey: ["pending-moderation-requests"],
     queryFn: () => adminApiService.getPendingModerationRequests(),
     enabled: isAdmin,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
   });
 
   // Fetch stats
@@ -70,19 +72,35 @@ const Admin: React.FC = () => {
     queryKey: ["moderation-stats"],
     queryFn: () => adminApiService.getModerationStats(),
     enabled: isAdmin,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
   });
 
   // Approve mutation
   const approveMutation = useMutation({
     mutationFn: (requestId: number) =>
       adminApiService.approveModerationRequest(requestId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["moderation-requests"] });
-      queryClient.invalidateQueries({
-        queryKey: ["pending-moderation-requests"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["moderation-stats"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["moderation-requests"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["pending-moderation-requests"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["moderation-stats"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["places"],
+          refetchType: "active",
+        }),
+      ]);
       setDetailDialogOpen(false);
+      setSelectedRequest(null);
     },
   });
 
@@ -90,13 +108,27 @@ const Admin: React.FC = () => {
   const rejectMutation = useMutation({
     mutationFn: (requestId: number) =>
       adminApiService.rejectModerationRequest(requestId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["moderation-requests"] });
-      queryClient.invalidateQueries({
-        queryKey: ["pending-moderation-requests"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["moderation-stats"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["moderation-requests"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["pending-moderation-requests"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["moderation-stats"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["places"],
+          refetchType: "active",
+        }),
+      ]);
       setDetailDialogOpen(false);
+      setSelectedRequest(null);
     },
   });
 

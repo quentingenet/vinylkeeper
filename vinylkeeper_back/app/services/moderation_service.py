@@ -23,7 +23,6 @@ from app.core.enums import ModerationStatusEnum
 from app.core.logging import logger
 
 
-
 class ModerationService:
     """Service for managing moderation requests"""
 
@@ -36,11 +35,12 @@ class ModerationService:
         try:
             requests = await self.moderation_repository.get_all_requests(limit, offset)
             stats = await self.moderation_repository.get_moderation_request_stats()
-            
+
             response_requests = []
             for request in requests:
-                response_requests.append(self._create_moderation_request_response(request))
-            
+                response_requests.append(
+                    self._create_moderation_request_response(request))
+
             return ModerationRequestListResponse(
                 items=response_requests,
                 total=stats["total"],
@@ -74,15 +74,18 @@ class ModerationService:
     async def get_pending_moderation_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequestResponse]:
         """Get pending moderation requests."""
         try:
-            requests = await self.moderation_repository.get_requests_by_status(1, limit, offset)  # Assuming 1 is pending status
-            
+            # Assuming 1 is pending status
+            requests = await self.moderation_repository.get_requests_by_status(1, limit, offset)
+
             response_requests = []
             for request in requests:
-                response_requests.append(self._create_moderation_request_response(request))
-            
+                response_requests.append(
+                    self._create_moderation_request_response(request))
+
             return response_requests
         except Exception as e:
-            logger.error(f"Error getting pending moderation requests: {str(e)}")
+            logger.error(
+                f"Error getting pending moderation requests: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get pending moderation requests",
@@ -97,7 +100,7 @@ class ModerationService:
 
             # Get the new status
             new_status_obj = await self.moderation_repository.get_moderation_status_by_name(new_status)
-            
+
             if not new_status_obj:
                 raise ValidationError(
                     error_code=4000,
@@ -105,7 +108,7 @@ class ModerationService:
                 )
 
             # Update the moderation request status
-            updated_request = await self.moderation_repository.update_request(
+            await self.moderation_repository.update_request(
                 request_id, {"status_id": new_status_obj.id}
             )
 
@@ -120,7 +123,10 @@ class ModerationService:
             # Commit the transaction
             await self.moderation_repository.db.commit()
 
-            return self._create_moderation_request_response(updated_request)
+            # Reload the moderation request to ensure relationships are hydrated
+            reloaded_request = await self.moderation_repository.get_request_by_id(request_id)
+
+            return self._create_moderation_request_response(reloaded_request)
         except (ResourceNotFoundError, ValidationError):
             raise
         except Exception as e:
@@ -153,4 +159,16 @@ class ModerationService:
 
     def _create_moderation_request_response(self, request: ModerationRequest) -> ModerationRequestResponse:
         """Create a ModerationRequestResponse from a ModerationRequest model."""
-        return ModerationRequestResponse.model_validate(request) 
+        response_data = {
+            "id": request.id,
+            "place_id": request.place_id,
+            "user_id": request.user_id,
+            "status_id": request.status_id,
+            "created_at": request.created_at,
+            "submitted_at": request.submitted_at,
+            "place": request.place,
+            "user": request.user,
+            "status": request.status,
+        }
+
+        return ModerationRequestResponse.model_validate(response_data)

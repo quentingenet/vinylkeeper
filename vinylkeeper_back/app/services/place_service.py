@@ -47,58 +47,82 @@ class PlaceService:
         try:
             # Validate place data
             self._validate_place_data(place_data)
-            
+
             # Get place type ID from name
             place_type_id = await self._get_place_type_id_by_name(place_data.place_type_id)
-            
+
             # Prepare place data
             place_dict = place_data.model_dump()
             place_dict["place_type_id"] = place_type_id
             place_dict["submitted_by_id"] = user.id
-            place_dict["is_moderated"] = False  # New places are not moderated initially
-            
+            # New places are not moderated initially
+            place_dict["is_moderated"] = False
+
             # Check if coordinates are valid, if not, try to geocode
             latitude = place_dict.get("latitude")
             longitude = place_dict.get("longitude")
-            
+
             # Force geocoding if coordinates are missing or invalid
-            if (latitude is None or 
+            if (latitude is None or
                 longitude is None or
                 not (-90 <= latitude <= 90) or
-                not (-180 <= longitude <= 180)):
-                
+                    not (-180 <= longitude <= 180)):
+
                 # Try to geocode the city
                 coordinates = await geocode_city(place_data.city, place_data.country)
-                
+
                 if coordinates:
                     place_dict["latitude"] = coordinates[0]
                     place_dict["longitude"] = coordinates[1]
                 else:
-                    logger.error(f"Failed to geocode {place_data.city}, {place_data.country}. Cannot create place without valid coordinates.")
+                    logger.error(
+                        f"Failed to geocode {place_data.city}, {place_data.country}. Cannot create place without valid coordinates.")
                     raise ValidationError(
                         error_code=4000,
                         message=f"Could not find coordinates for {place_data.city}, {place_data.country}. Please check the city and country names."
                     )
             # Coordinates are already valid, no action needed
-            
+
             # Create place
             created_place = await self.repository.create_place(place_dict)
-            
+
             # Create moderation request automatically
             moderation_request = await self._create_moderation_request(created_place.id, user.id)
-            
+
+            # Notify admins about the new place suggestion
+            try:
+                email_sent = await send_mail(
+                    to=settings.EMAIL_ADMIN,
+                    subject=MailSubject.NewPlaceSuggestion,
+                    place_name=created_place.name,
+                    place_city=created_place.city,
+                    place_country=created_place.country,
+                    place_type=place_data.place_type_id,
+                    username=user.username,
+                    user_email=user.email,
+                    place_description=created_place.description,
+                )
+                if not email_sent:
+                    logger.warning(
+                        "New place suggestion email could not be sent for place_id=%s", created_place.id
+                    )
+            except Exception as mail_error:
+                logger.error(
+                    "New place suggestion email failed for place_id=%s: %s", created_place.id, mail_error
+                )
             # Commit the transaction
             await self.repository.db.commit()
-            
+
             # Get likes info for the new place
             likes_count = await self.repository.get_place_likes_count(created_place.id)
             is_liked = False  # New place, so not liked by anyone yet
-            
+
             # Create response with all data
-            response = self._create_place_response(created_place, likes_count, is_liked)
-            
+            response = self._create_place_response(
+                created_place, likes_count, is_liked)
+
             return response
-            
+
         except (DuplicateFieldError, ValidationError) as e:
             raise e
         except Exception as e:
@@ -113,13 +137,13 @@ class PlaceService:
         """Get a place by ID (only moderated places)."""
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
-            
+
             # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = False
             if user_id:
                 is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
-            
+
             return self._create_public_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:
             raise
@@ -134,13 +158,13 @@ class PlaceService:
         """Get all places with optional pagination (only moderated places)."""
         try:
             places = await self.repository.get_all_moderated_places(limit, offset)
-            
+
             if not places:
                 return []
-            
+
             # Get all place IDs
             place_ids = [place.id for place in places]
-            
+
             # Get likes info for all places in parallel (2 queries executed simultaneously)
             if user_id:
                 # Execute both queries in parallel for better performance
@@ -152,20 +176,23 @@ class PlaceService:
                 # Only get likes counts if no user (no need for user_likes)
                 likes_counts = await self.repository.get_places_likes_counts(place_ids)
                 user_likes = {}
-            
+
             # Build responses efficiently
             response_places = []
             for place in places:
                 try:
                     likes_count = likes_counts.get(place.id, 0)
-                    is_liked = user_likes.get(place.id, False) if user_id else False
-                    
-                    response_places.append(self._create_public_place_response(place, likes_count, is_liked))
+                    is_liked = user_likes.get(
+                        place.id, False) if user_id else False
+
+                    response_places.append(self._create_public_place_response(
+                        place, likes_count, is_liked))
                 except Exception as place_error:
-                    logger.error(f"Error processing place {place.id}: {str(place_error)}")
+                    logger.error(
+                        f"Error processing place {place.id}: {str(place_error)}")
                     # Continue with other places even if one fails
                     continue
-            
+
             return response_places
         except Exception as e:
             logger.error(f"Error in get_all_places: {str(e)}")
@@ -179,7 +206,7 @@ class PlaceService:
         """Update an existing place"""
         try:
             place = await self.repository.get_place_by_id(place_id)
-            
+
             # Check if user can update this place (owner or admin)
             if place.submitted_by_id != user_id:
                 raise ForbiddenError(
@@ -190,14 +217,14 @@ class PlaceService:
             # Update place
             update_dict = place_data.model_dump(exclude_unset=True)
             updated_place = await self.repository.update_place(place_id, update_dict)
-            
+
             # Commit the transaction to persist the place update
             await self.repository.db.commit()
-            
+
             # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
-            
+
             return self._create_place_response(updated_place, likes_count, is_liked)
         except (ResourceNotFoundError, ForbiddenError):
             raise
@@ -212,7 +239,7 @@ class PlaceService:
         """Soft delete a place"""
         try:
             place = await self.repository.get_place_by_id(place_id)
-            
+
             # Check if user can delete this place (owner or admin)
             if place.submitted_by_id != user_id:
                 raise ForbiddenError(
@@ -238,14 +265,14 @@ class PlaceService:
         try:
             # Verify place exists and is moderated
             place = await self.repository.get_moderated_place_by_id(place_id)
-            
+
             # Like the place
             await self.repository.like_place(user_id, place_id)
             await self.repository.db.commit()  # Commit the transaction
-            
+
             # Get updated likes count
             likes_count = await self.repository.get_place_likes_count(place_id)
-            
+
             return {
                 "message": f"Successfully liked {place.name}",
                 "likes_count": likes_count,
@@ -265,14 +292,14 @@ class PlaceService:
         try:
             # Verify place exists and is moderated
             place = await self.repository.get_moderated_place_by_id(place_id)
-            
+
             # Unlike the place
             await self.repository.unlike_place(user_id, place_id)
             await self.repository.db.commit()  # Commit the transaction
-            
+
             # Get updated likes count
             likes_count = await self.repository.get_place_likes_count(place_id)
-            
+
             return {
                 "message": f"Successfully unliked {place.name}",
                 "likes_count": likes_count,
@@ -291,7 +318,7 @@ class PlaceService:
         """Search places by name, city, or country (only moderated places)."""
         try:
             places = await self.repository.search_moderated_places(search_term)
-            
+
             # Get likes info for each place
             response_places = []
             for place in places:
@@ -299,9 +326,10 @@ class PlaceService:
                 is_liked = False
                 if user_id:
                     is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
-                
-                response_places.append(self._create_public_place_response(place, likes_count, is_liked))
-            
+
+                response_places.append(self._create_public_place_response(
+                    place, likes_count, is_liked))
+
             return response_places
         except Exception as e:
             raise ServerError(
@@ -314,7 +342,7 @@ class PlaceService:
         """Get places by type (only moderated places)."""
         try:
             places = await self.repository.get_moderated_places_by_type(place_type_id)
-            
+
             # Get likes info for each place
             response_places = []
             for place in places:
@@ -322,9 +350,10 @@ class PlaceService:
                 is_liked = False
                 if user_id:
                     is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
-                
-                response_places.append(self._create_public_place_response(place, likes_count, is_liked))
-            
+
+                response_places.append(self._create_public_place_response(
+                    place, likes_count, is_liked))
+
             return response_places
         except Exception as e:
             raise ServerError(
@@ -337,7 +366,7 @@ class PlaceService:
         """Get places within a geographic region (only moderated places)."""
         try:
             places = await self.repository.get_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng)
-            
+
             # Get likes info for each place
             response_places = []
             for place in places:
@@ -345,9 +374,10 @@ class PlaceService:
                 is_liked = False
                 if user_id:
                     is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
-                
-                response_places.append(self._create_public_place_response(place, likes_count, is_liked))
-            
+
+                response_places.append(self._create_public_place_response(
+                    place, likes_count, is_liked))
+
             return response_places
         except Exception as e:
             raise ServerError(
@@ -361,23 +391,23 @@ class PlaceService:
         try:
             # Get pending status ID
             pending_status = await self.repository.get_moderation_status_by_name(ModerationStatusEnum.PENDING.value)
-            
+
             if not pending_status:
                 raise ServerError(
                     error_code=5000,
                     message="Pending moderation status not found in database"
                 )
-            
+
             # Create moderation request using Pydantic schema
             moderation_request_data = ModerationRequestCreate(
                 place_id=place_id,
                 user_id=user_id,
                 status_id=pending_status.id
             )
-            
+
             # Create the moderation request in database
             moderation_request = await self.moderation_request_repository.create_request(moderation_request_data.model_dump())
-            
+
             return moderation_request
         except Exception as e:
             logger.error(f"Exception in _create_moderation_request: {str(e)}")
@@ -411,19 +441,19 @@ class PlaceService:
                 error_code=4000,
                 message="Place name is required"
             )
-        
+
         if not data.city or len(data.city.strip()) == 0:
             raise ValidationError(
                 error_code=4000,
                 message="City is required"
             )
-        
+
         if not data.country or len(data.country.strip()) == 0:
             raise ValidationError(
                 error_code=4000,
                 message="Country is required"
             )
-        
+
         if not data.place_type_id or len(data.place_type_id.strip()) == 0:
             raise ValidationError(
                 error_code=4000,
@@ -433,20 +463,20 @@ class PlaceService:
     async def _get_place_type_id_by_name(self, place_type_name: str) -> int:
         """Get place type ID from name"""
         place_type = await self.repository.get_place_type_by_name(place_type_name)
-        
+
         if not place_type:
             raise ValidationError(
                 error_code=4000,
                 message=f"Place type '{place_type_name}' not found"
             )
-        
+
         return place_type.id
 
     async def get_all_places_admin(self, user_id: Optional[int] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PlaceResponse]:
         """Get all places (admin only - includes non-moderated places)."""
         try:
             places = await self.repository.get_all_places(limit, offset)
-            
+
             # Get likes info for each place
             response_places = []
             for place in places:
@@ -454,9 +484,10 @@ class PlaceService:
                 is_liked = False
                 if user_id:
                     is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
-                
-                response_places.append(self._create_place_response(place, likes_count, is_liked))
-            
+
+                response_places.append(self._create_place_response(
+                    place, likes_count, is_liked))
+
             return response_places
         except Exception as e:
             raise ServerError(
@@ -469,13 +500,13 @@ class PlaceService:
         """Get a place by ID (admin only - includes non-moderated places)."""
         try:
             place = await self.repository.get_place_by_id(place_id)
-            
+
             # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = False
             if user_id:
                 is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
-            
+
             return self._create_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:
             raise
@@ -484,4 +515,4 @@ class PlaceService:
                 error_code=5000,
                 message="Failed to get place",
                 details={"error": str(e)}
-            ) 
+            )
