@@ -39,6 +39,8 @@ export default function Explore() {
     queryFn: () =>
       collectionApiService.getPublicCollections(page, itemsPerPage, sortBy),
     refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 30 * 1000, // 30 seconds - allows refetch after invalidation while preventing excessive requests
   });
 
   const publicCollections: CollectionResponse[] =

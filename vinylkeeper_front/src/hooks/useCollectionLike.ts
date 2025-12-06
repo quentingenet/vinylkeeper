@@ -10,12 +10,13 @@ export function useCollectionLike(collectionId: number) {
     mutationFn: () => collectionApiService.likeCollection(collectionId),
     onSuccess: async () => {
       // Invalidate specific queries to sync with backend
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-      // Invalidate collections queries for background sync
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
-      queryClient.invalidateQueries({ queryKey: ["publicCollections"] });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["collectionDetails", collectionId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["collections"] }),
+        queryClient.invalidateQueries({ queryKey: ["publicCollections"] }),
+      ]);
     },
     onError: (error) => {
       console.error("Error liking collection:", error);
@@ -27,12 +28,13 @@ export function useCollectionLike(collectionId: number) {
     mutationFn: () => collectionApiService.unlikeCollection(collectionId),
     onSuccess: async () => {
       // Invalidate specific queries to sync with backend
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-      // Invalidate collections queries for background sync
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
-      queryClient.invalidateQueries({ queryKey: ["publicCollections"] });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["collectionDetails", collectionId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["collections"] }),
+        queryClient.invalidateQueries({ queryKey: ["publicCollections"] }),
+      ]);
     },
     onError: (error) => {
       console.error("Error unliking collection:", error);

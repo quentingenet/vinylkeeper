@@ -46,7 +46,7 @@ export const useCollections = (
         page,
       ]);
       if (!currentData) {
-        queryClient.invalidateQueries({ queryKey: ["collections"] });
+        void queryClient.invalidateQueries({ queryKey: ["collections"] });
       }
     }
   }, [currentUser?.user_uuid, queryClient, page]);
@@ -78,11 +78,19 @@ export const useCollections = (
         collectionId,
         newIsPublic
       ),
-    onSuccess: () => {
-      // Only invalidate the current page for visibility changes
-      queryClient.invalidateQueries({
-        queryKey: ["collections", currentUser?.user_uuid, page],
-      });
+    onSuccess: async (_, variables) => {
+      // Invalidate all collection queries to ensure UI consistency
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["collections", currentUser?.user_uuid],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["publicCollections"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["collectionDetails", variables.collectionId],
+        }),
+      ]);
     },
     onError: (error) => {
       console.error("Error updating collection visibility:", error.message);
@@ -165,7 +173,7 @@ export const useCollections = (
         );
       }
     },
-    onSuccess: (data, _newCollection, context) => {
+    onSuccess: async (data, _newCollection, context) => {
       // Replace the temporary ID with the real ID from the server
       if (
         context &&
@@ -196,10 +204,16 @@ export const useCollections = (
         }
       }
 
-      // Only invalidate the current page, not all pages
-      queryClient.invalidateQueries({
-        queryKey: ["collections", currentUser?.user_uuid, page],
-      });
+      // Invalidate collections and public collections
+      // (invalidate public collections in case the new collection is public)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["collections", currentUser?.user_uuid, page],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["publicCollections"],
+        }),
+      ]);
     },
   });
 
@@ -255,11 +269,16 @@ export const useCollections = (
         );
       }
     },
-    onSuccess: () => {
-      // Only invalidate the current page, not all pages
-      queryClient.invalidateQueries({
-        queryKey: ["collections", currentUser?.user_uuid, page],
-      });
+    onSuccess: async () => {
+      // Invalidate collections and public collections (deleted collection might have been public)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["collections", currentUser?.user_uuid, page],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["publicCollections"],
+        }),
+      ]);
     },
   });
 
@@ -270,10 +289,11 @@ export const useCollections = (
     error: error || null,
     isError,
     handleSwitchVisibility,
-    refreshCollections: () =>
-      queryClient.invalidateQueries({
+    refreshCollections: () => {
+      void queryClient.invalidateQueries({
         queryKey: ["collections", currentUser?.user_uuid, page],
-      }),
+      });
+    },
     createCollection: createCollectionMutation.mutate,
     deleteCollection: deleteCollectionMutation.mutate,
     isCreatingCollection: createCollectionMutation.isPending,
@@ -304,9 +324,11 @@ export function useUpdateAlbumStates() {
         data
       );
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collectionDetails"] });
-      queryClient.invalidateQueries({ queryKey: ["collectionAlbums"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["collectionDetails"] }),
+        queryClient.invalidateQueries({ queryKey: ["collectionAlbums"] }),
+      ]);
     },
     onError: (error) => {
       console.error("Error updating album states:", error);
