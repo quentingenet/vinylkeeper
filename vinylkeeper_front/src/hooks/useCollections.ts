@@ -79,7 +79,7 @@ export const useCollections = (
         newIsPublic
       ),
     onSuccess: async (_, variables) => {
-      // Invalidate all collection queries to ensure UI consistency
+      // Invalidate and refetch all collection queries to ensure UI consistency
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["collections", currentUser?.user_uuid],
@@ -91,6 +91,10 @@ export const useCollections = (
           queryKey: ["collectionDetails", variables.collectionId],
         }),
       ]);
+      // Force refetch of active publicCollections queries to update UI immediately
+      await queryClient.refetchQueries({
+        queryKey: ["publicCollections"],
+      });
     },
     onError: (error) => {
       console.error("Error updating collection visibility:", error.message);
@@ -214,6 +218,10 @@ export const useCollections = (
           queryKey: ["publicCollections"],
         }),
       ]);
+      // Force refetch of active publicCollections queries to update UI immediately
+      await queryClient.refetchQueries({
+        queryKey: ["publicCollections"],
+      });
     },
   });
 
@@ -279,6 +287,10 @@ export const useCollections = (
           queryKey: ["publicCollections"],
         }),
       ]);
+      // Force refetch of active publicCollections queries to update UI immediately
+      await queryClient.refetchQueries({
+        queryKey: ["publicCollections"],
+      });
     },
   });
 

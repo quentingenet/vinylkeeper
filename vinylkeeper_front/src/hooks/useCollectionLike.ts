@@ -17,6 +17,10 @@ export function useCollectionLike(collectionId: number) {
         queryClient.invalidateQueries({ queryKey: ["collections"] }),
         queryClient.invalidateQueries({ queryKey: ["publicCollections"] }),
       ]);
+      // Force refetch of active publicCollections queries to update sorting immediately
+      await queryClient.refetchQueries({
+        queryKey: ["publicCollections"],
+      });
     },
     onError: (error) => {
       console.error("Error liking collection:", error);
@@ -35,6 +39,10 @@ export function useCollectionLike(collectionId: number) {
         queryClient.invalidateQueries({ queryKey: ["collections"] }),
         queryClient.invalidateQueries({ queryKey: ["publicCollections"] }),
       ]);
+      // Force refetch of active publicCollections queries to update sorting immediately
+      await queryClient.refetchQueries({
+        queryKey: ["publicCollections"],
+      });
     },
     onError: (error) => {
       console.error("Error unliking collection:", error);
