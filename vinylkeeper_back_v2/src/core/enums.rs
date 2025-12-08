@@ -1,0 +1,2 @@
+// Enums definitions
+

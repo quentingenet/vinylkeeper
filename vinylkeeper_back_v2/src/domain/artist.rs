@@ -1,0 +1,2 @@
+// Artist domain model
+

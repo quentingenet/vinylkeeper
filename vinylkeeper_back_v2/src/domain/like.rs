@@ -1,0 +1,2 @@
+// Like domain model
+

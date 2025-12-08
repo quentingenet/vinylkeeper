@@ -1,0 +1,2 @@
+// User domain model
+

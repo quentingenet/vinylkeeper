@@ -1,0 +1,2 @@
+// External reference domain model
+

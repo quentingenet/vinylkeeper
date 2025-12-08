@@ -1,0 +1,2 @@
+// Wishlist domain model
+
