@@ -2,6 +2,8 @@ import { BaseApiService } from "./BaseApiService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
+import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { capacitorHttpService } from "@utils/CapacitorHttpService";
 
 export interface UserMini {
   id: number;
@@ -74,8 +76,22 @@ export interface ContactMessageResponse {
 }
 
 export class UserApiService extends BaseApiService {
+  private useCapacitorHttp(): boolean {
+    return isCapacitorPlatform();
+  }
+
   async login(data: ILoginForm): Promise<LoginResponse> {
     try {
+      if (this.useCapacitorHttp()) {
+        return await capacitorHttpService.post<LoginResponse>(
+          "/users/auth",
+          {
+            email: data.email,
+            password: data.password,
+          },
+          true
+        );
+      }
       const response = await this.post<LoginResponse>(
         "/users/auth",
         {
@@ -92,8 +108,8 @@ export class UserApiService extends BaseApiService {
   }
 
   async register(data: IRegisterForm): Promise<RegisterResponse> {
-    try {
-      return await this.post<RegisterResponse>(
+    if (this.useCapacitorHttp()) {
+      return await capacitorHttpService.post<RegisterResponse>(
         "/users/register",
         {
           username: data.username,
@@ -104,14 +120,31 @@ export class UserApiService extends BaseApiService {
         },
         true
       );
-    } catch (error) {
-      // Propagate the original error message from the backend
-      throw error;
     }
+    return await this.post<RegisterResponse>(
+      "/users/register",
+      {
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        is_accepted_terms: data.isAcceptedTerms,
+        timezone: data.timezone,
+      },
+      true
+    );
   }
 
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
     try {
+      if (this.useCapacitorHttp()) {
+        return await capacitorHttpService.post<ForgotPasswordResponse>(
+          "/users/forgot-password",
+          {
+            email,
+          },
+          true
+        );
+      }
       return await this.post<ForgotPasswordResponse>(
         "/users/forgot-password",
         {
@@ -129,6 +162,12 @@ export class UserApiService extends BaseApiService {
     data: IResetPasswordToBackend
   ): Promise<ResetPasswordResponse> {
     try {
+      if (this.useCapacitorHttp()) {
+        return await capacitorHttpService.post<ResetPasswordResponse>(
+          "/users/reset-password",
+          data
+        );
+      }
       return await this.post<ResetPasswordResponse>(
         "/users/reset-password",
         data

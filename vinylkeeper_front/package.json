@@ -7,10 +7,22 @@
     "dev": "vite --mode development --host 127.0.0.1",
     "build": "tsc && vite build",
     "build:prod": "tsc && vite build --mode production",
+    "preview": "vite preview",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "build:mobile": "tsc && vite build --mode mobile",
+    "mobile:dev:sync": "npx cap sync android",
+    "mobile:dev": "npm run build:mobile && npm run mobile:dev:sync && npx cap open android",
+    "mobile:prod:sync": "npx cap sync android",
+    "mobile:prod": "npm run build:prod && npm run mobile:prod:sync && npx cap open android",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@hookform/resolvers": "^5.1.1",

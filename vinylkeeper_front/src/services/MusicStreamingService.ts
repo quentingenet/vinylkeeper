@@ -1,3 +1,5 @@
+import { getPlatform } from "@utils/CapacitorUtils";
+
 export interface StreamingPlatform {
   name: string;
   icon: string;
@@ -33,9 +35,8 @@ class MusicStreamingService {
   ];
 
   private isMobile(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
+    const platform = getPlatform();
+    return platform === "android" || platform === "ios";
   }
 
   private buildSearchQuery(query: StreamingQuery): string {

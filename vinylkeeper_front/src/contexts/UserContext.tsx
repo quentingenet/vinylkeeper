@@ -1,6 +1,8 @@
 import { API_VK_URL } from "@utils/GlobalUtils";
 import requestService from "@utils/RequestService";
 import { userApiService, type UserResponse } from "@services/UserApiService";
+import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { capacitorHttpService } from "@utils/CapacitorHttpService";
 import {
   createContext,
   useContext,
@@ -85,12 +87,23 @@ export function UserContextProvider({
     }
 
     try {
-      const response = await requestService<{ isLoggedIn: boolean }>({
-        apiTarget: API_VK_URL,
-        method: "POST",
-        endpoint: "/users/refresh-token",
-        skipRefresh: true,
-      });
+      let response: { isLoggedIn: boolean };
+
+      if (isCapacitorPlatform()) {
+        response = await capacitorHttpService.post<{ isLoggedIn: boolean }>(
+          "/users/refresh-token",
+          undefined,
+          true
+        );
+      } else {
+        response = await requestService<{ isLoggedIn: boolean }>({
+          apiTarget: API_VK_URL,
+          method: "POST",
+          endpoint: "/users/refresh-token",
+          skipRefresh: true,
+        });
+      }
+
       setIsUserLoggedIn(response.isLoggedIn);
       setHasCheckedAuth(true);
 
@@ -117,11 +130,20 @@ export function UserContextProvider({
 
   const logout = useCallback(async () => {
     try {
-      const response = await requestService({
-        apiTarget: API_VK_URL,
-        method: "POST",
-        endpoint: "/users/logout",
-      });
+      let response: { isLoggedIn: boolean };
+
+      if (isCapacitorPlatform()) {
+        response = await capacitorHttpService.post<{ isLoggedIn: boolean }>(
+          "/users/logout"
+        );
+      } else {
+        response = await requestService<{ isLoggedIn: boolean }>({
+          apiTarget: API_VK_URL,
+          method: "POST",
+          endpoint: "/users/logout",
+        });
+      }
+
       setIsUserLoggedIn(response.isLoggedIn);
     } catch (error) {
       console.error("Error while logging out:", error);
