@@ -41,10 +41,11 @@ export default function ResetPasswordForm() {
     height: isMobile ? "280px" : "300px",
     width: "300px",
     bgcolor: "#fffbf9",
-    border: "none",
+    border: "2px solid black",
     borderRadius: "5px",
     padding: "20px",
-    opacity: "0.5",
+    opacity: isMobile ? 0.9 : 0.7,
+    boxShadow: 6,
   };
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);

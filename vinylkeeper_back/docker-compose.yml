@@ -1,15 +1,15 @@
 services:
   vinylkeeper-db:
-    image: postgres:16.3
+    image: postgres:17
     container_name: vinylkeeper-db
     env_file:
       - .env
+    ports:
+      - "127.0.0.1:5432:5432"
     networks:
       - vk_network
     volumes:
       - vinylkeeper_postgres_db:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
