@@ -25,14 +25,17 @@ import { collectionApiService } from "@services/CollectionApiService";
 import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { CollectionResponse } from "@services/CollectionApiService";
+import {
+  CollectionResponse,
+  CollectionListItemResponse,
+} from "@services/CollectionApiService";
 
 interface IModalCollectionProps {
   openModal: boolean;
   isUpdatingCollection: boolean;
   handleClose: () => void;
   onCollectionAdded: () => void;
-  collection?: CollectionResponse;
+  collection?: CollectionResponse | CollectionListItemResponse;
   isPublic: boolean;
   setIsPublic: (isPublic: boolean) => void;
 }
@@ -54,6 +57,12 @@ export default function ModalCollection({
     message: "",
   });
 
+  const isFullCollection = (
+    c?: CollectionResponse | CollectionListItemResponse
+  ): c is CollectionResponse => {
+    return c !== undefined && "albums" in c && "artists" in c;
+  };
+
   const {
     register,
     handleSubmit,
@@ -64,8 +73,12 @@ export default function ModalCollection({
     defaultValues: {
       name: collection?.name ?? "",
       description: collection?.description ?? "",
-      album_ids: collection?.albums?.map((album) => album.id) ?? [],
-      artist_ids: collection?.artists?.map((artist) => artist.id) ?? [],
+      album_ids: isFullCollection(collection)
+        ? collection.albums.map((album) => album.id)
+        : [],
+      artist_ids: isFullCollection(collection)
+        ? collection.artists.map((artist) => artist.id)
+        : [],
       is_public: collection?.is_public ?? isPublic,
     },
     resolver: yupResolver(collectionValidationSchema),

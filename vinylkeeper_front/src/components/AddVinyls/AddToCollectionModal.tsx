@@ -32,7 +32,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   collectionApiService,
-  CollectionResponse,
+  CollectionListItemResponse,
 } from "@services/CollectionApiService";
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import {
@@ -71,7 +71,7 @@ interface CollectionSelectionModalProps {
   onBack: () => void;
   item: IAlbumRequestResults | IArtistRequestResults;
   itemType: "album" | "artist";
-  collections: CollectionResponse[];
+  collections: CollectionListItemResponse[];
   onAddToCollection: (collectionId: number) => void;
   successMessage?: string;
   messageType?: "success" | "warning" | "info" | "error";

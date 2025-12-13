@@ -6,7 +6,10 @@ import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { useState, useCallback, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { CollectionResponse } from "@services/CollectionApiService";
+import {
+  CollectionResponse,
+  CollectionListItemResponse,
+} from "@services/CollectionApiService";
 import ModalCollection from "@components/Collections/ModalCollection";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { useCollections } from "@hooks/useCollections";
@@ -57,7 +60,7 @@ export default function Collections() {
     setModalState({
       isOpen: true,
       isUpdating,
-      collection,
+      collection: collection as CollectionResponse | undefined,
       isPublic: false,
     });
   };
@@ -66,7 +69,9 @@ export default function Collections() {
     setModalState((prev) => ({ ...prev, isOpen: false, isUpdating: false }));
   };
 
-  const handleCollectionClick = (collection: CollectionResponse) => {
+  const handleCollectionClick = (
+    collection: CollectionResponse | CollectionListItemResponse
+  ) => {
     navigate(
       EGlobalUrls.COLLECTION_DETAILS.replace(":id", collection.id.toString())
     );
@@ -162,7 +167,7 @@ export default function Collections() {
             },
           }}
         >
-          {collections.map((collection: CollectionResponse) => (
+          {collections.map((collection: CollectionListItemResponse) => (
             <CollectionItem
               key={collection.id}
               collection={collection}
@@ -170,7 +175,7 @@ export default function Collections() {
                 handleSwitchVisibility(collection.id, newIsPublic);
               }}
               handleOpenModalCollection={(collection) => {
-                handleOpenModalCollection(true, collection);
+                handleOpenModalCollection(true, collection as CollectionResponse);
               }}
               onCollectionClick={handleCollectionClick}
               isOwner={true}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import { Icon } from "leaflet";
 import {
@@ -6,20 +6,27 @@ import {
   Typography,
   IconButton,
   Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  CircularProgress,
   Modal,
   Fade,
   Backdrop,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Favorite,
   FavoriteBorder,
-  ExpandMore,
   Close,
+  ExpandMore,
 } from "@mui/icons-material";
 import { usePlaceLike } from "@hooks/usePlaceLike";
+import { useQuery } from "@tanstack/react-query";
+import {
+  placeApiService,
+  Place,
+  PlaceMapResponse,
+} from "@services/PlaceApiService";
 import "leaflet/dist/leaflet.css";
 
 // Fix for default markers in React Leaflet
@@ -31,85 +38,74 @@ Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
 });
 
-interface Place {
-  id: number;
-  name: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  latitude: number;
-  longitude: number;
-  description?: string;
-  place_type: {
-    name: string;
-  };
-  likes_count: number;
-  is_liked?: boolean;
-}
-
 interface PlaceMapProps {
-  places: Place[];
+  mapPlaces: PlaceMapResponse[];
 }
 
-const PlaceMap: React.FC<PlaceMapProps> = ({ places }) => {
+const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
   const defaultZoom = 5;
-  const [selectedCity, setSelectedCity] = useState<{
-    cityKey: string;
-    places: Place[];
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
   } | null>(null);
 
-  // Group places by city
-  const placesByCity = useMemo(() => {
-    const grouped: { [key: string]: Place[] } = {};
-
-    places.forEach((place) => {
-      if (place.city) {
-        const cityKey = `${place.city}, ${place.country || "Unknown"}`;
-        if (!grouped[cityKey]) {
-          grouped[cityKey] = [];
-        }
-        grouped[cityKey].push(place);
+  // Group places by coordinates (key: "lat,lng")
+  const groupedPlaces = useMemo(() => {
+    const groups = new Map<string, PlaceMapResponse[]>();
+    mapPlaces.forEach((place) => {
+      const key = `${place.latitude},${place.longitude}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
       }
+      groups.get(key)!.push(place);
     });
+    return groups;
+  }, [mapPlaces]);
 
-    return grouped;
-  }, [places]);
-
-  // Calculate center point for each city
-  const cityCenters = useMemo(() => {
-    const centers: { [key: string]: [number, number] } = {};
-
-    Object.entries(placesByCity).forEach(([cityKey, cityPlaces]) => {
-      if (cityPlaces.length > 0) {
-        const avgLat =
-          cityPlaces.reduce((sum, place) => sum + place.latitude, 0) /
-          cityPlaces.length;
-        const avgLng =
-          cityPlaces.reduce((sum, place) => sum + place.longitude, 0) /
-          cityPlaces.length;
-        centers[cityKey] = [avgLat, avgLng];
-      }
+  // Get unique coordinates for markers (one marker per coordinate)
+  const uniqueCoordinates = useMemo(() => {
+    return Array.from(groupedPlaces.entries()).map(([key, places]) => {
+      const [lat, lng] = key.split(",").map(Number);
+      // Get city from first place in the group (all places at same coordinates should be in same city)
+      const city = places[0]?.city;
+      return { latitude: lat, longitude: lng, key, places, city };
     });
+  }, [groupedPlaces]);
 
-    return centers;
-  }, [placesByCity]);
+  // Fetch all places at selected coordinates when a marker is clicked
+  const { data: placesAtCoordinates, isLoading: isLoadingPlaces } = useQuery<
+    Place[]
+  >({
+    queryKey: [
+      "places-coordinates",
+      selectedCoordinates?.latitude,
+      selectedCoordinates?.longitude,
+    ],
+    queryFn: () =>
+      placeApiService.getPlacesByCoordinates(
+        selectedCoordinates!.latitude,
+        selectedCoordinates!.longitude
+      ),
+    enabled: selectedCoordinates !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  const handleCityClick = (cityKey: string, cityPlaces: Place[]) => {
-    setSelectedCity({ cityKey, places: cityPlaces });
+  const handleMarkerClick = (latitude: number, longitude: number) => {
+    setSelectedCoordinates({ latitude, longitude });
   };
 
   const handleCloseModal = () => {
-    setSelectedCity(null);
+    setSelectedCoordinates(null);
   };
 
   const modalStyle = {
     position: "absolute",
-    top: "40%",
+    top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: { xs: "85dvw", sm: "85dvw", md: "70dvw", lg: "25dvw" },
-    maxWidth: { xs: "95dvw", sm: "85dvw", md: "70dvw", lg: "60dvw" },
+    width: { xs: "85dvw", sm: "70dvw", md: "50dvw", lg: "30dvw" },
+    maxWidth: { xs: "95dvw", sm: "85dvw", md: "70dvw", lg: "50dvw" },
     maxHeight: { xs: "85dvh", sm: "80dvh", md: "70dvh", lg: "80dvh" },
     bgcolor: "#3f3f41",
     borderRadius: 2,
@@ -117,16 +113,18 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ places }) => {
     p: 3,
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden", // Prevent modal from overflowing
   };
 
   return (
     <>
       <Box
         sx={{
-          width: "80dvw",
-          height: { xs: "60dvh", md: "60vh" },
+          width: { xs: "98dvw", md: "60dvw" },
+          height: { xs: "75dvh", md: "60vh" },
           position: "relative",
           maxWidth: { md: "100%" },
+          marginX: "auto",
         }}
       >
         <MapContainer
@@ -139,32 +137,27 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ places }) => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
 
-          {/* City markers */}
-          {Object.entries(placesByCity).map(([cityKey, cityPlaces]) => {
-            const center = cityCenters[cityKey];
-            if (!center) return null;
-
-            return (
-              <Marker
-                key={`city-${cityKey}`}
-                position={center}
-                eventHandlers={{
-                  click: () => handleCityClick(cityKey, cityPlaces),
-                }}
-              />
-            );
-          })}
+          {/* One marker per unique coordinate */}
+          {uniqueCoordinates.map((coord) => (
+            <Marker
+              key={coord.key}
+              position={[coord.latitude, coord.longitude]}
+              eventHandlers={{
+                click: () => handleMarkerClick(coord.latitude, coord.longitude),
+              }}
+            />
+          ))}
         </MapContainer>
       </Box>
 
-      {/* City Modal */}
+      {/* Places at Coordinates Modal with Accordion */}
       <Modal
-        open={!!selectedCity}
+        open={selectedCoordinates !== null}
         onClose={handleCloseModal}
         closeAfterTransition
         slots={{ backdrop: Backdrop }}
       >
-        <Fade in={!!selectedCity}>
+        <Fade in={selectedCoordinates !== null}>
           <Box sx={modalStyle}>
             <Box
               display="flex"
@@ -177,37 +170,78 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ places }) => {
                 component="h2"
                 sx={{ color: "#C9A726", fontWeight: "bold" }}
               >
-                🏙️ {selectedCity?.cityKey}
+                {isLoadingPlaces
+                  ? "Loading..."
+                  : placesAtCoordinates && placesAtCoordinates.length > 0
+                  ? `🏙️ ${placesAtCoordinates[0].city || "Unknown city"}`
+                  : "🏙️ Places at this location"}
               </Typography>
               <IconButton onClick={handleCloseModal} size="small">
-                <Close sx={{ color: "#fffbf9" }} />
+                <Close sx={{ color: "#C9A726" }} />
               </IconButton>
             </Box>
 
-            <Typography
-              variant="body1"
-              sx={{
-                mb: 3,
-                color: "#e4e4e4",
-                textAlign: "center",
-              }}
-            >
-              {selectedCity?.places.length} place
-              {selectedCity?.places.length !== 1 ? "s" : ""} found
-            </Typography>
-
-            <Box
-              sx={{
-                flex: 1,
-                overflowY: "auto",
-                width: "100%",
-                pr: 1, // Add padding right for scrollbar space
-              }}
-            >
-              {selectedCity?.places.map((place) => (
-                <PlaceAccordionItem key={place.id} place={place} />
-              ))}
-            </Box>
+            {isLoadingPlaces ? (
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight="200px"
+              >
+                <CircularProgress sx={{ color: "#C9A726" }} />
+              </Box>
+            ) : placesAtCoordinates && placesAtCoordinates.length > 0 ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                  overflow: "auto",
+                  flex: 1,
+                  pr: 1, // Padding right for scrollbar
+                }}
+              >
+                {placesAtCoordinates.map((place) => (
+                  <Accordion
+                    key={place.id}
+                    sx={{
+                      backgroundColor: "#2d2d2f",
+                      color: "#fffbf9",
+                      "&:before": {
+                        display: "none",
+                      },
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMore sx={{ color: "#C9A726" }} />}
+                      sx={{
+                        "& .MuiAccordionSummary-content": {
+                          margin: "12px 0",
+                        },
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          color: "#C9A726",
+                          fontWeight: "bold",
+                          fontSize: "1.1rem",
+                        }}
+                      >
+                        🎯 {place.name}
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ overflow: "hidden" }}>
+                      <PlaceDetailsContent place={place} />
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+              </Box>
+            ) : (
+              <Typography sx={{ color: "#fffbf9" }}>
+                No places found at this location.
+              </Typography>
+            )}
           </Box>
         </Fade>
       </Modal>
@@ -215,12 +249,12 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ places }) => {
   );
 };
 
-// Separate component for place accordion item with like functionality
-interface PlaceAccordionItemProps {
+// Separate component for place details with like functionality
+interface PlaceDetailsContentProps {
   place: Place;
 }
 
-const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
+const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
   const [optimisticIsLiked, setOptimisticIsLiked] = useState(place.is_liked);
@@ -237,17 +271,15 @@ const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
   const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
     usePlaceLike(place.id, handleError);
 
-  // Only update optimistic state when place ID changes (new place loaded)
-  // This prevents conflicts with optimistic updates during like/unlike operations
+  // Update optimistic state when place changes
   React.useEffect(() => {
-    setOptimisticIsLiked(place.is_liked);
-    setOptimisticLikesCount(place.likes_count);
-  }, [place.id]);
+    setOptimisticIsLiked(place.is_liked ?? false);
+    setOptimisticLikesCount(place.likes_count ?? 0);
+  }, [place.id, place.is_liked, place.likes_count]);
 
   // Handle errors by reverting to previous state
   React.useEffect(() => {
     if (likeError || unlikeError) {
-      // Revert to original state on error
       setOptimisticIsLiked(place.is_liked);
       setOptimisticLikesCount(place.likes_count);
     }
@@ -259,25 +291,22 @@ const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
     setLikeBounce(true);
     const timeout = setTimeout(() => setLikeBounce(false), 350);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [optimisticLikesCount]);
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Prevent multiple clicks while processing or in cooldown
     if (isLiking || isUnliking || likeCooldown) return;
 
-    // Set cooldown to prevent rapid clicks
     setLikeCooldown(true);
-    setTimeout(() => setLikeCooldown(false), 1000); // 1 second cooldown
+    setTimeout(() => setLikeCooldown(false), 1000);
 
     if (optimisticIsLiked) {
-      // Optimistic update for unlike
       setOptimisticIsLiked(false);
       setOptimisticLikesCount((prev) => Math.max(0, prev - 1));
       unlike();
     } else {
-      // Optimistic update for like
       setOptimisticIsLiked(true);
       setOptimisticLikesCount((prev) => prev + 1);
       like();
@@ -285,125 +314,94 @@ const PlaceAccordionItem: React.FC<PlaceAccordionItemProps> = ({ place }) => {
   };
 
   return (
-    <Accordion
-      sx={{
-        backgroundColor: "#3f3f41",
-        color: "#fffbf9",
-        mb: 2,
-        "&:before": { display: "none" },
-        "& .MuiAccordionSummary-root": {
-          backgroundColor: "#1F1F1F",
-          color: "#C9A726",
-          fontWeight: "bold",
-          minHeight: "56px",
-        },
-        "& .MuiAccordionSummary-expandIconWrapper": {
-          color: "#C9A726",
-        },
-        "& .MuiAccordionDetails-root": {
-          backgroundColor: "#2a2a2a",
-          padding: "16px",
-        },
-      }}
-    >
-      <AccordionSummary expandIcon={<ExpandMore />}>
-        <Box
-          sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {place.address && (
+        <Typography
+          variant="body1"
+          sx={{
+            color: "#e4e4e4",
+            fontSize: "1rem",
+          }}
         >
-          <Typography variant="h6" fontWeight="bold">
-            {place.name}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={handleLikeClick}
-            disabled={isLiking || isUnliking || likeCooldown}
+          📍 {place.address}
+          {place.city && place.country && `, ${place.city}, ${place.country}`}
+        </Typography>
+      )}
+
+      {place.description && (
+        <Typography
+          variant="body1"
+          sx={{
+            color: "#fffbf9",
+            fontSize: "1rem",
+            lineHeight: 1.5,
+          }}
+        >
+          {place.description}
+        </Typography>
+      )}
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          mt: 1,
+          flexWrap: "wrap",
+        }}
+      >
+        {place.place_type && (
+          <Chip
+            label={place.place_type.name}
+            size="medium"
             sx={{
-              color: optimisticIsLiked ? "#FFD700" : "#e4e4e4",
-              transition: "transform 0.15s, color 0.15s",
+              backgroundColor: "#C9A726",
+              color: "#fffbf9",
+              fontSize: "0.9rem",
+              fontWeight: "bold",
+              padding: "8px 12px",
               "&:hover": {
-                transform: "scale(1.15)",
-                color: "#FFD700",
-              },
-              "&:active": {
-                transform: "scale(0.95)",
+                backgroundColor: "#b38f1f",
               },
             }}
-          >
-            {optimisticIsLiked ? <Favorite /> : <FavoriteBorder />}
-          </IconButton>
-        </Box>
-      </AccordionSummary>
-      <AccordionDetails>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {place.address && (
-            <Typography
-              variant="body1"
-              sx={{
-                color: "#e4e4e4",
-                fontSize: "1rem",
-              }}
-            >
-              📍 {place.address}
-            </Typography>
-          )}
-
-          {place.description && (
-            <Typography
-              variant="body1"
-              sx={{
-                color: "#fffbf9",
-                fontSize: "1rem",
-                lineHeight: 1.5,
-              }}
-            >
-              {place.description}
-            </Typography>
-          )}
-
-          <Box
+          />
+        )}
+        <IconButton
+          size="small"
+          onClick={handleLikeClick}
+          disabled={isLiking || isUnliking || likeCooldown}
+          sx={{
+            color: optimisticIsLiked ? "#FFD700" : "#e4e4e4",
+            transition: "transform 0.15s, color 0.15s",
+            "&:hover": {
+              transform: "scale(1.1)",
+              color: "#FFD700",
+            },
+            "&:active": {
+              transform: "scale(0.95)",
+            },
+          }}
+        >
+          {optimisticIsLiked ? <Favorite /> : <FavoriteBorder />}
+        </IconButton>
+        {optimisticLikesCount > 0 && (
+          <Typography
+            variant="body1"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              mt: 1,
+              color: "#fffbf9",
+              fontWeight: 600,
+              fontSize: "1rem",
+              transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",
+              transform: likeBounce ? "scale(1.35)" : "scale(1)",
+              display: "inline-block",
             }}
           >
-            {place.place_type && (
-              <Chip
-                label={place.place_type.name}
-                size="medium"
-                sx={{
-                  backgroundColor: "#C9A726",
-                  color: "#fffbf9",
-                  fontSize: "0.9rem",
-                  fontWeight: "bold",
-                  padding: "8px 12px",
-                  "&:hover": {
-                    backgroundColor: "#b38f1f",
-                  },
-                }}
-              />
-            )}
-            {optimisticLikesCount > 0 && (
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "#fffbf9",
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",
-                  transform: likeBounce ? "scale(1.35)" : "scale(1)",
-                  display: "inline-block",
-                }}
-              >
-                +{optimisticLikesCount}{" "}
-                {optimisticLikesCount === 1 ? "like" : "likes"}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-      </AccordionDetails>
-    </Accordion>
+            {optimisticLikesCount}{" "}
+            {optimisticLikesCount === 1 ? "like" : "likes"}
+          </Typography>
+        )}
+      </Box>
+    </Box>
   );
 };
 

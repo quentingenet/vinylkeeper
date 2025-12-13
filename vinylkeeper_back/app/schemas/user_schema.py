@@ -335,11 +335,8 @@ class UserMeResponse(BaseModel):
     user_uuid: UUID = Field(
         description="User's UUID"
     )
-    role: RoleResponse = Field(
-        description="User's role information"
-    )
-    is_superuser: bool = Field(
-        description="Whether the user is a superuser"
+    is_admin: bool = Field(
+        description="Whether the user has admin privileges"
     )
     is_tutorial_seen: bool = Field(
         default=False,

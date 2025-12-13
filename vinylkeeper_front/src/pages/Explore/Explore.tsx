@@ -10,8 +10,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
   collectionApiService,
-  type PaginatedCollectionResponse,
-  type CollectionResponse,
+  type PaginatedCollectionListResponse,
+  type CollectionListItemResponse,
 } from "@services/CollectionApiService";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
@@ -34,7 +34,7 @@ export default function Explore() {
     data: publicCollectionsData,
     isLoading,
     error,
-  } = useQuery<PaginatedCollectionResponse>({
+  } = useQuery<PaginatedCollectionListResponse>({
     queryKey: ["publicCollections", page, sortBy],
     queryFn: () =>
       collectionApiService.getPublicCollections(page, itemsPerPage, sortBy),
@@ -43,7 +43,7 @@ export default function Explore() {
     staleTime: 0, // Always consider data stale to allow immediate refetch after invalidation
   });
 
-  const publicCollections: CollectionResponse[] =
+  const publicCollections: CollectionListItemResponse[] =
     publicCollectionsData?.items || [];
   const totalPages = publicCollectionsData?.total_pages || 0;
 
@@ -131,7 +131,7 @@ export default function Explore() {
             gap={4}
             marginY={isMobile ? 1 : 3}
           >
-            {publicCollections.map((collection: CollectionResponse) => (
+            {publicCollections.map((collection: CollectionListItemResponse) => (
               <CollectionItem
                 key={`${collection.id}-${page}-${sortBy}`}
                 collection={collection}

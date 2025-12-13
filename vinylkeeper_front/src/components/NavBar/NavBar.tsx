@@ -71,8 +71,7 @@ const NavBar: React.FC<NavBarProps> = ({
   const sizeIcons = "large";
 
   // Check if user has admin permissions
-  const isAdmin =
-    currentUser?.role?.name === "admin" && currentUser?.is_superuser === true;
+  const isAdmin = currentUser?.is_admin === true;
 
   const menuItems = [
     {

@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   collectionApiService,
   type CollectionResponse,
+  type CollectionListItemResponse,
 } from "@services/CollectionApiService";
 import { useCollections } from "@hooks/useCollections";
 import { ICollection } from "@models/ICollectionForm";
@@ -69,10 +70,14 @@ const formatDate = (dateString: string) => {
  */
 
 interface CollectionItemProps {
-  collection: CollectionResponse;
+  collection: CollectionResponse | CollectionListItemResponse;
   onSwitchArea: (isPublic: boolean) => void;
-  handleOpenModalCollection: (collection: CollectionResponse) => void;
-  onCollectionClick: (collection: CollectionResponse) => void;
+  handleOpenModalCollection: (
+    collection: CollectionResponse | CollectionListItemResponse
+  ) => void;
+  onCollectionClick: (
+    collection: CollectionResponse | CollectionListItemResponse
+  ) => void;
   isOwner: boolean;
   showOwner: boolean;
 }
@@ -366,9 +371,9 @@ export default function CollectionItem({
                         setOpenDeleteDialog(true);
                       }}
                       disabled={collection.id < 0} // Disable for temporary IDs
-                      sx={{ 
+                      sx={{
                         color: collection.id < 0 ? "grey.400" : "primary.main",
-                        opacity: collection.id < 0 ? 0.5 : 1
+                        opacity: collection.id < 0 ? 0.5 : 1,
                       }}
                     >
                       <DeleteIcon />

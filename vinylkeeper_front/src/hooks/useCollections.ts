@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   collectionApiService,
-  type CollectionResponse,
-  type PaginatedCollectionResponse,
+  type CollectionListItemResponse,
+  type PaginatedCollectionListResponse,
   type CollectionCreate,
 } from "@services/CollectionApiService";
 import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
@@ -16,7 +16,7 @@ interface ICollectionVisibilityUpdate {
 }
 
 interface UseCollectionsReturn {
-  collections: CollectionResponse[];
+  collections: CollectionListItemResponse[];
   totalPages: number;
   collectionsLoading: boolean;
   error: HTTPError | null;
@@ -56,7 +56,7 @@ export const useCollections = (
     isLoading: collectionsLoading,
     error,
     isError,
-  } = useQuery<PaginatedCollectionResponse, HTTPError>({
+  } = useQuery<PaginatedCollectionListResponse, HTTPError>({
     queryKey: ["collections", currentUser?.user_uuid, page],
     queryFn: () => collectionApiService.getCollections(page, itemsPerPage),
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -123,7 +123,7 @@ export const useCollections = (
 
       // Snapshot the previous value
       const previousCollections =
-        queryClient.getQueryData<PaginatedCollectionResponse>([
+        queryClient.getQueryData<PaginatedCollectionListResponse>([
           "collections",
           currentUser?.user_uuid,
           page,
@@ -131,7 +131,7 @@ export const useCollections = (
 
       // Optimistically update to the new value
       if (previousCollections) {
-        const optimisticCollection: CollectionResponse = {
+        const optimisticCollection: CollectionListItemResponse = {
           id: -Math.floor(Math.random() * 1000000), // Temporary negative ID (safe for int32)
           name: newCollection.name,
           description: newCollection.description,
@@ -139,8 +139,8 @@ export const useCollections = (
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           owner_id: 0, // Will be set by server
-          albums: [],
-          artists: [],
+          albums_count: 0,
+          artists_count: 0,
           likes_count: 0,
           is_liked_by_user: false,
           owner: {
@@ -148,10 +148,10 @@ export const useCollections = (
             username: currentUser!.username,
             user_uuid: currentUser!.user_uuid,
           },
-          wishlist: [],
+          image_preview: null,
         };
 
-        queryClient.setQueryData<PaginatedCollectionResponse>(
+        queryClient.setQueryData<PaginatedCollectionListResponse>(
           ["collections", currentUser?.user_uuid, page],
           {
             ...previousCollections,
@@ -186,7 +186,7 @@ export const useCollections = (
         context.previousCollections
       ) {
         const currentData =
-          queryClient.getQueryData<PaginatedCollectionResponse>([
+          queryClient.getQueryData<PaginatedCollectionListResponse>([
             "collections",
             currentUser?.user_uuid,
             page,
@@ -198,7 +198,7 @@ export const useCollections = (
             item.id < 0 ? { ...item, id: data.collection_id } : item
           );
 
-          queryClient.setQueryData<PaginatedCollectionResponse>(
+          queryClient.setQueryData<PaginatedCollectionListResponse>(
             ["collections", currentUser?.user_uuid, page],
             {
               ...currentData,
@@ -241,7 +241,7 @@ export const useCollections = (
 
       // Snapshot the previous value
       const previousCollections =
-        queryClient.getQueryData<PaginatedCollectionResponse>([
+        queryClient.getQueryData<PaginatedCollectionListResponse>([
           "collections",
           currentUser?.user_uuid,
           page,
@@ -249,7 +249,7 @@ export const useCollections = (
 
       // Optimistically update to the new value
       if (previousCollections) {
-        queryClient.setQueryData<PaginatedCollectionResponse>(
+        queryClient.setQueryData<PaginatedCollectionListResponse>(
           ["collections", currentUser?.user_uuid, page],
           {
             ...previousCollections,

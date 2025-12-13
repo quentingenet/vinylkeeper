@@ -94,6 +94,22 @@ export interface CollectionResponse {
   wishlist: WishlistItemResponse[];
 }
 
+export interface CollectionListItemResponse {
+  id: number;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  owner_id: number;
+  created_at: string;
+  updated_at: string;
+  owner?: UserMiniResponse;
+  likes_count: number;
+  is_liked_by_user: boolean;
+  albums_count: number;
+  artists_count: number;
+  image_preview?: string | null;
+}
+
 export interface CollectionDetailResponse extends CollectionResponse {
   liked_by: UserMiniResponse[];
 }
@@ -130,6 +146,14 @@ export interface CollectionSearchResponse {
 
 export interface PaginatedCollectionResponse {
   items: CollectionResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface PaginatedCollectionListResponse {
+  items: CollectionListItemResponse[];
   total: number;
   page: number;
   limit: number;
@@ -213,8 +237,8 @@ export class CollectionApiService extends BaseApiService {
   async getCollections(
     page: number = 1,
     itemsPerPage: number = ITEMS_PER_PAGE
-  ): Promise<PaginatedCollectionResponse> {
-    return this.get<PaginatedCollectionResponse>(
+  ): Promise<PaginatedCollectionListResponse> {
+    return this.get<PaginatedCollectionListResponse>(
       this.buildPaginatedEndpoint("/collections", page, itemsPerPage)
     );
   }
@@ -223,8 +247,8 @@ export class CollectionApiService extends BaseApiService {
     page: number = 1,
     itemsPerPage: number = ITEMS_PER_PAGE,
     sortBy: string = "updated_at"
-  ): Promise<PaginatedCollectionResponse> {
-    return this.get<PaginatedCollectionResponse>(
+  ): Promise<PaginatedCollectionListResponse> {
+    return this.get<PaginatedCollectionListResponse>(
       `${this.buildPaginatedEndpoint(
         "/collections/public",
         page,

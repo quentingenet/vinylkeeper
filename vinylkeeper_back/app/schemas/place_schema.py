@@ -87,8 +87,10 @@ class PlaceResponse(PlaceInDB):
     """Schema for place data in API responses (includes all fields for admins)."""
     submitted_by: Optional[UserMiniResponse] = None
     place_type: Optional[PlaceTypeResponse] = None
-    likes_count: int = Field(default=0, description="Number of likes for this place")
-    is_liked: bool = Field(default=False, description="Whether the current user has liked this place")
+    likes_count: int = Field(
+        default=0, description="Number of likes for this place")
+    is_liked: bool = Field(
+        default=False, description="Whether the current user has liked this place")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -97,9 +99,22 @@ class PublicPlaceResponse(PlaceBase):
     """Schema for public place data (only moderated places)."""
     id: int = Field(gt=0)
     place_type: Optional[PlaceTypeResponse] = None
-    likes_count: int = Field(default=0, description="Number of likes for this place")
-    is_liked: bool = Field(default=False, description="Whether the current user has liked this place")
+    likes_count: int = Field(
+        default=0, description="Number of likes for this place")
+    is_liked: bool = Field(
+        default=False, description="Whether the current user has liked this place")
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PlaceMapResponse(BaseModel):
+    """Ultra-lightweight schema for map markers (only geographic data + city)."""
+    id: int = Field(gt=0, description="Place ID")
+    latitude: float = Field(ge=-90, le=90, description="Latitude coordinate")
+    longitude: float = Field(
+        ge=-180, le=180, description="Longitude coordinate")
+    city: Optional[str] = Field(None, description="City name")
 
     model_config = ConfigDict(from_attributes=True)

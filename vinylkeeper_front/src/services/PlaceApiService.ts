@@ -7,6 +7,13 @@ export interface PlaceTypeData {
   name: string;
 }
 
+export interface PlaceMapResponse {
+  id: number;
+  latitude: number;
+  longitude: number;
+  city?: string;
+}
+
 export interface Place {
   id: number;
   name: string;
@@ -57,6 +64,19 @@ export interface GeocodingResult {
 }
 
 class PlaceApiService extends BaseApiService {
+  async getPlacesMap(): Promise<PlaceMapResponse[]> {
+    return this.get<PlaceMapResponse[]>("/places/map");
+  }
+
+  async getPlacesByCoordinates(
+    latitude: number,
+    longitude: number
+  ): Promise<Place[]> {
+    return this.get<Place[]>(
+      `/places/coordinates?latitude=${latitude}&longitude=${longitude}`
+    );
+  }
+
   async getPlaces(): Promise<Place[]> {
     return this.get<Place[]>("/places/");
   }

@@ -6,7 +6,8 @@ from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
     PlaceResponse,
-    PublicPlaceResponse
+    PublicPlaceResponse,
+    PlaceMapResponse
 )
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
 from app.services.place_service import PlaceService
@@ -49,6 +50,30 @@ async def get_places(
 ):
     """Get all places with optional pagination (only moderated places)"""
     places = await service.get_all_places(user.id, limit, offset)
+    return [place.model_dump() for place in places]
+
+
+@router.get("/map", status_code=status.HTTP_200_OK, response_model=List[PlaceMapResponse])
+@handle_app_exceptions
+async def get_map_places(
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Get all moderated places with coordinates for map markers (ultra-lightweight response)."""
+    places = await service.get_map_places()
+    return places
+
+
+@router.get("/coordinates", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def get_places_by_coordinates(
+    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
+    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Get all moderated places at exact coordinates (with full details including likes)."""
+    places = await service.get_places_by_coordinates(latitude, longitude, user.id)
     return [place.model_dump() for place in places]
 
 
@@ -180,8 +205,10 @@ async def get_places_by_type(
 async def get_places_in_region(
     min_lat: float = Query(..., ge=-90, le=90, description="Minimum latitude"),
     max_lat: float = Query(..., ge=-90, le=90, description="Maximum latitude"),
-    min_lng: float = Query(..., ge=-180, le=180, description="Minimum longitude"),
-    max_lng: float = Query(..., ge=-180, le=180, description="Maximum longitude"),
+    min_lng: float = Query(..., ge=-180, le=180,
+                           description="Minimum longitude"),
+    max_lng: float = Query(..., ge=-180, le=180,
+                           description="Maximum longitude"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):

@@ -4,9 +4,11 @@ from app.schemas.collection_schema import (
     CollectionDetailResponse,
     CollectionUpdate,
     CollectionResponse,
+    CollectionListItemResponse,
     CollectionVisibilityUpdate,
     PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
+    PaginatedCollectionListResponse,
     CollectionSearchResponse,
     CollectionAlbumResponse
 )
@@ -49,12 +51,13 @@ async def create_collection(
             "collection_id": collection.id
         }
     except Exception as e:
-        logger.error(f"Failed to create collection for user {user.id}: {str(e)}")
+        logger.error(
+            f"Failed to create collection for user {user.id}: {str(e)}")
         logger.error(f"Collection data: {data.model_dump()}")
         raise
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/", status_code=status.HTTP_200_OK, response_model=PaginatedCollectionListResponse)
 @handle_app_exceptions
 async def get_user_collections(
     user=Depends(get_current_user),
@@ -62,42 +65,36 @@ async def get_user_collections(
     page: int = Query(1, gt=0),
     limit: int = Query(10, gt=0, le=100)
 ):
+    """Get user's collections with pagination (optimized list view, lightweight response)."""
     collections, total = await service.get_user_collections(user.id, page, limit)
-    
-    # Serialize collections with error handling
-    items = []
-    for i, collection in enumerate(collections):
-        try:
-            items.append(collection.model_dump())
-        except Exception as e:
-            continue
-    
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "total_pages": (total + limit - 1) // limit
-    }
+    return PaginatedCollectionListResponse(
+        items=collections,
+        total=total,
+        page=page,
+        limit=limit,
+        total_pages=(total + limit - 1) // limit
+    )
 
 
-@router.get("/public", status_code=status.HTTP_200_OK)
+@router.get("/public", status_code=status.HTTP_200_OK, response_model=PaginatedCollectionListResponse)
 @handle_app_exceptions
 async def get_public_collections(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
     page: int = Query(1, gt=0),
     limit: int = Query(10, gt=0, le=100),
-    sort_by: str = Query("updated_at", description="Sort by: updated_at, created_at, or likes_count")
+    sort_by: str = Query(
+        "updated_at", description="Sort by: updated_at, created_at, or likes_count")
 ):
+    """Get public collections (optimized list view with lightweight response)."""
     collections, total = await service.get_public_collections(page, limit, exclude_user_id=user.id, user_id=user.id, sort_by=sort_by)
-    return {
-        "items": [c.model_dump() for c in collections],
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "total_pages": (total + limit - 1) // limit
-    }
+    return PaginatedCollectionListResponse(
+        items=collections,
+        total=total,
+        page=page,
+        limit=limit,
+        total_pages=(total + limit - 1) // limit
+    )
 
 
 @router.get("/{collection_id}", status_code=status.HTTP_200_OK)
@@ -176,7 +173,8 @@ async def get_collection_details(
 async def get_collection_albums_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     page: int = Query(1, gt=0, description="Page number"),
-    limit: int = Query(12, gt=0, le=50, description="Number of items per page"),
+    limit: int = Query(
+        12, gt=0, le=50, description="Number of items per page"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
@@ -189,7 +187,8 @@ async def get_collection_albums_paginated(
 async def get_collection_artists_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     page: int = Query(1, gt=0, description="Page number"),
-    limit: int = Query(12, gt=0, le=50, description="Number of items per page"),
+    limit: int = Query(
+        12, gt=0, le=50, description="Number of items per page"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
@@ -207,10 +206,12 @@ async def remove_album_from_collection(
 ):
     try:
         await service.remove_album_from_collection(user.id, collection_id, album_id)
-        logger.info(f"Album {album_id} removed from collection {collection_id} by user {user.id}")
+        logger.info(
+            f"Album {album_id} removed from collection {collection_id} by user {user.id}")
         return {"message": "Album removed from collection successfully"}
     except Exception as e:
-        logger.error(f"Failed to remove album {album_id} from collection {collection_id} for user {user.id}: {str(e)}")
+        logger.error(
+            f"Failed to remove album {album_id} from collection {collection_id} for user {user.id}: {str(e)}")
         raise
 
 
@@ -224,10 +225,12 @@ async def remove_artist_from_collection(
 ):
     try:
         await service.remove_artist_from_collection(user.id, collection_id, artist_id)
-        logger.info(f"Artist {artist_id} removed from collection {collection_id} by user {user.id}")
+        logger.info(
+            f"Artist {artist_id} removed from collection {collection_id} by user {user.id}")
         return {"message": "Artist removed from collection successfully"}
     except Exception as e:
-        logger.error(f"Failed to remove artist {artist_id} from collection {collection_id} for user {user.id}: {str(e)}")
+        logger.error(
+            f"Failed to remove artist {artist_id} from collection {collection_id} for user {user.id}: {str(e)}")
         raise
 
 
@@ -240,7 +243,8 @@ async def like_collection(
 ):
     try:
         result = await service.like_collection(user.id, collection_id)
-        logger.info(f"Collection {collection_id} liked by user {user.id}, likes: {result['likes_count']}")
+        logger.info(
+            f"Collection {collection_id} liked by user {user.id}, likes: {result['likes_count']}")
         return LikeStatusResponse(
             collection_id=collection_id,
             liked=True,
@@ -248,7 +252,8 @@ async def like_collection(
             message=result["message"]
         )
     except Exception as e:
-        logger.error(f"Failed to like collection {collection_id} for user {user.id}: {str(e)}")
+        logger.error(
+            f"Failed to like collection {collection_id} for user {user.id}: {str(e)}")
         raise
 
 
@@ -261,7 +266,8 @@ async def unlike_collection(
 ):
     try:
         result = await service.unlike_collection(user.id, collection_id)
-        logger.info(f"Collection {collection_id} unliked by user {user.id}, likes: {result['likes_count']}")
+        logger.info(
+            f"Collection {collection_id} unliked by user {user.id}, likes: {result['likes_count']}")
         return LikeStatusResponse(
             collection_id=collection_id,
             liked=False,
@@ -269,7 +275,8 @@ async def unlike_collection(
             message=result["message"]
         )
     except Exception as e:
-        logger.error(f"Failed to unlike collection {collection_id} for user {user.id}: {str(e)}")
+        logger.error(
+            f"Failed to unlike collection {collection_id} for user {user.id}: {str(e)}")
         raise
 
 
@@ -293,7 +300,8 @@ async def update_album_metadata(
 async def search_collection_items(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     q: str = Query(..., min_length=1, description="Search term"),
-    search_type: str = Query("both", description="Search type: 'album', 'artist', 'albums', 'artists', or 'both'"),
+    search_type: str = Query(
+        "both", description="Search type: 'album', 'artist', 'albums', 'artists', or 'both'"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):

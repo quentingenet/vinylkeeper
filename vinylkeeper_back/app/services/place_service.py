@@ -15,7 +15,8 @@ from app.schemas.place_schema import (
     PlaceUpdate,
     PlaceResponse,
     PublicPlaceResponse,
-    PlaceInDB
+    PlaceInDB,
+    PlaceMapResponse
 )
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -151,6 +152,64 @@ class PlaceService:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",
+                details={"error": str(e)}
+            )
+
+    async def get_map_places(self) -> List[PlaceMapResponse]:
+        """Get all moderated places with coordinates for map markers (ultra-lightweight, no relations or likes)."""
+        try:
+            places_tuples = await self.repository.get_map_places()
+
+            if not places_tuples:
+                return []
+
+            # Build lightweight responses directly from tuples (id, latitude, longitude, city)
+            return [
+                PlaceMapResponse(
+                    id=place_id,
+                    latitude=latitude,
+                    longitude=longitude,
+                    city=city
+                )
+                for place_id, latitude, longitude, city in places_tuples
+            ]
+        except Exception as e:
+            logger.error(f"Error in get_map_places: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get map places",
+                details={"error": str(e)}
+            )
+
+    async def get_places_by_coordinates(self, latitude: float, longitude: float, user_id: int) -> List[PublicPlaceResponse]:
+        """Get all moderated places at exact coordinates (with full details including likes)."""
+        try:
+            places = await self.repository.get_places_by_coordinates(latitude, longitude)
+
+            if not places:
+                return []
+
+            place_ids = [place.id for place in places]
+
+            # Get likes info in batch (user_id is always provided since auth is required)
+            likes_counts, user_likes = await asyncio.gather(
+                self.repository.get_places_likes_counts(place_ids),
+                self.repository.get_user_places_likes(user_id, place_ids)
+            )
+
+            response_places = []
+            for place in places:
+                likes_count = likes_counts.get(place.id, 0)
+                is_liked = user_likes.get(place.id, False)
+                response_places.append(self._create_public_place_response(
+                    place, likes_count, is_liked))
+
+            return response_places
+        except Exception as e:
+            logger.error(f"Error in get_places_by_coordinates: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get places by coordinates",
                 details={"error": str(e)}
             )
 

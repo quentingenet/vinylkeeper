@@ -6,6 +6,7 @@ from app.schemas.dashboard_schema import DashboardStatsResponse, TimeSeriesData,
 from app.core.exceptions import ServerError
 import logging
 
+
 class DashboardService:
     def __init__(self, dashboard_repository: DashboardRepository, collection_repository: CollectionRepository):
         self.dashboard_repository = dashboard_repository
@@ -37,16 +38,13 @@ class DashboardService:
                 self.collection_repository.count_by_owner(user.id)
             )
 
-            # Total global places (hardcoded for now)
-            global_places_total = 12
-
-
-
-            # Get latest additions and places count in parallel
-            latest_album_result, latest_artist_result, moderated_places_total = await asyncio.gather(
+            # Get latest additions and places counts in parallel
+            latest_album_result, latest_artist_result, moderated_places_total, global_places_total = await asyncio.gather(
                 self.dashboard_repository.get_latest_album(),
                 self.dashboard_repository.get_latest_artist(),
-                self.dashboard_repository.count_places(is_moderated=True, is_valid=True)
+                self.dashboard_repository.count_places(
+                    is_moderated=True, is_valid=True),
+                self.dashboard_repository.count_places(is_valid=True)
             )
 
             # Process latest album

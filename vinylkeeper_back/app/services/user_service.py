@@ -291,12 +291,18 @@ class UserService:
             # Get all counts in a single optimized call to avoid session conflicts
             counts = await self.collection_service.get_user_counts_batch(user.id)
             
+            # Check if user is admin (role name is "admin" AND is_superuser is True)
+            is_admin = (
+                user.role and 
+                user.role.name == "admin" and 
+                user.is_superuser
+            )
+            
             # Build response
             response = {
                 "username": user.username,
                 "user_uuid": str(user.user_uuid),
-                "role": {"id": user.role.id, "name": user.role.name} if user.role else {"id": 0, "name": "Unknown"},
-                "is_superuser": user.is_superuser,
+                "is_admin": is_admin,
                 "is_tutorial_seen": False,  # Default value
                 "collections_count": counts["collections_count"],
                 "liked_collections_count": counts["likes_count"],  # Using likes_count as liked_collections_count

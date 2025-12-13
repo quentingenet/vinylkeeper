@@ -21,12 +21,12 @@ class PlaceRepository(TransactionalMixin):
             selectinload(Place.place_type),
             selectinload(Place.submitted_by)
         ).filter(Place.is_valid == True)
-        
+
         if offset:
             query = query.offset(offset)
         if limit:
             query = query.limit(limit)
-        
+
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -38,12 +38,47 @@ class PlaceRepository(TransactionalMixin):
         ).filter(
             and_(Place.is_valid == True, Place.is_moderated == True)
         )
-        
+
         if offset:
             query = query.offset(offset)
         if limit:
             query = query.limit(limit)
-        
+
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_map_places(self) -> List[tuple]:
+        """Get all moderated places with coordinates for map markers (ultra-lightweight, only essential columns)."""
+        query = select(
+            Place.id,
+            Place.latitude,
+            Place.longitude,
+            Place.city
+        ).filter(
+            and_(
+                Place.is_valid == True,
+                Place.is_moderated == True,
+                Place.latitude.isnot(None),
+                Place.longitude.isnot(None)
+            )
+        )
+
+        result = await self.db.execute(query)
+        return result.all()
+
+    async def get_places_by_coordinates(self, latitude: float, longitude: float) -> List[Place]:
+        """Get all moderated places at exact coordinates (with relations for details)."""
+        query = select(Place).options(
+            selectinload(Place.place_type),
+            selectinload(Place.submitted_by)
+        ).filter(
+            and_(
+                Place.is_valid == True,
+                Place.is_moderated == True,
+                Place.latitude == latitude,
+                Place.longitude == longitude
+            )
+        )
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -57,10 +92,10 @@ class PlaceRepository(TransactionalMixin):
         )
         result = await self.db.execute(query)
         place = result.scalar_one_or_none()
-        
+
         if not place:
             raise ResourceNotFoundError("Place", place_id)
-        
+
         return place
 
     async def get_moderated_place_by_id(self, place_id: int) -> Place:
@@ -69,14 +104,15 @@ class PlaceRepository(TransactionalMixin):
             selectinload(Place.place_type),
             selectinload(Place.submitted_by)
         ).filter(
-            and_(Place.id == place_id, Place.is_valid == True, Place.is_moderated == True)
+            and_(Place.id == place_id, Place.is_valid ==
+                 True, Place.is_moderated == True)
         )
         result = await self.db.execute(query)
         place = result.scalar_one_or_none()
-        
+
         if not place:
             raise ResourceNotFoundError("Place", place_id)
-        
+
         return place
 
     async def create_place(self, place_data: dict) -> Place:
@@ -89,12 +125,13 @@ class PlaceRepository(TransactionalMixin):
     async def update_place(self, place_id: int, place_data: dict) -> Place:
         """Update an existing place without committing (transaction managed by service)."""
         place = await self.get_place_by_id(place_id)
-        
+
         for key, value in place_data.items():
             if hasattr(place, key):
                 setattr(place, key, value)
-        
-        await self._add_entity(place, flush=True)  # Flush to ensure changes are persisted
+
+        # Flush to ensure changes are persisted
+        await self._add_entity(place, flush=True)
         await self._refresh_entity(place)
         return place
 
@@ -122,7 +159,8 @@ class PlaceRepository(TransactionalMixin):
             selectinload(Place.place_type),
             selectinload(Place.submitted_by)
         ).filter(
-            and_(Place.submitted_by_id == user_id, Place.is_valid == True, Place.is_moderated == True)
+            and_(Place.submitted_by_id == user_id,
+                 Place.is_valid == True, Place.is_moderated == True)
         )
         result = await self.db.execute(query)
         return result.scalars().all()
@@ -138,7 +176,8 @@ class PlaceRepository(TransactionalMixin):
     async def count_moderated_places_by_user(self, user_id: int) -> int:
         """Count all moderated places submitted by a specific user."""
         query = select(func.count(Place.id)).filter(
-            and_(Place.submitted_by_id == user_id, Place.is_valid == True, Place.is_moderated == True)
+            and_(Place.submitted_by_id == user_id,
+                 Place.is_valid == True, Place.is_moderated == True)
         )
         result = await self.db.execute(query)
         return result.scalar()
@@ -160,7 +199,8 @@ class PlaceRepository(TransactionalMixin):
             selectinload(Place.place_type),
             selectinload(Place.submitted_by)
         ).filter(
-            and_(Place.place_type_id == place_type_id, Place.is_valid == True, Place.is_moderated == True)
+            and_(Place.place_type_id == place_type_id,
+                 Place.is_valid == True, Place.is_moderated == True)
         )
         result = await self.db.execute(query)
         return result.scalars().all()
@@ -245,13 +285,13 @@ class PlaceRepository(TransactionalMixin):
         )
         result = await self.db.execute(query)
         existing_like = result.scalar_one_or_none()
-        
+
         if existing_like:
             raise ValidationError(
                 error_code=4000,
                 message="User has already liked this place"
             )
-        
+
         like = PlaceLike(user_id=user_id, place_id=place_id)
         await self._add_entity(like, flush=True)  # Flush to get the ID
         await self._refresh_entity(like)
@@ -264,19 +304,20 @@ class PlaceRepository(TransactionalMixin):
         )
         result = await self.db.execute(query)
         like = result.scalar_one_or_none()
-        
+
         if not like:
             raise ValidationError(
                 error_code=4000,
                 message="User has not liked this place"
             )
-        
+
         await self._delete_entity(like)
         return True
 
     async def get_place_likes_count(self, place_id: int) -> int:
         """Get the number of likes for a place."""
-        query = select(func.count(PlaceLike.id)).filter(PlaceLike.place_id == place_id)
+        query = select(func.count(PlaceLike.id)).filter(
+            PlaceLike.place_id == place_id)
         result = await self.db.execute(query)
         return result.scalar()
 
@@ -285,26 +326,27 @@ class PlaceRepository(TransactionalMixin):
         query = select(PlaceLike.place_id, func.count(PlaceLike.id)).filter(
             PlaceLike.place_id.in_(place_ids)
         ).group_by(PlaceLike.place_id)
-        
+
         result = await self.db.execute(query)
         likes_counts = {place_id: count for place_id, count in result.all()}
-        
+
         # Ensure all place_ids have a count (even if 0)
         for place_id in place_ids:
             if place_id not in likes_counts:
                 likes_counts[place_id] = 0
-                
+
         return likes_counts
 
     async def get_user_places_likes(self, user_id: int, place_ids: List[int]) -> dict:
         """Get which places are liked by a user in one query."""
         query = select(PlaceLike.place_id).filter(
-            and_(PlaceLike.user_id == user_id, PlaceLike.place_id.in_(place_ids))
+            and_(PlaceLike.user_id == user_id,
+                 PlaceLike.place_id.in_(place_ids))
         )
-        
+
         result = await self.db.execute(query)
         liked_place_ids = {row[0] for row in result.all()}
-        
+
         # Create a dict mapping place_id to is_liked boolean
         return {place_id: place_id in liked_place_ids for place_id in place_ids}
 
@@ -323,13 +365,13 @@ class PlaceRepository(TransactionalMixin):
             and_(PlaceLike.user_id == user_id, Place.is_valid == True)
         )
         result = await self.db.execute(query)
-        return result.scalars().all() 
-
+        return result.scalars().all()
 
     async def get_moderation_status_by_name(self, status_name: str):
         """Get moderation status by name."""
         from app.models.reference_data.moderation_statuses import ModerationStatus
-        query = select(ModerationStatus).filter(ModerationStatus.name == status_name)
+        query = select(ModerationStatus).filter(
+            ModerationStatus.name == status_name)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -338,6 +380,4 @@ class PlaceRepository(TransactionalMixin):
         from app.models.reference_data.place_types import PlaceType
         query = select(PlaceType).filter(PlaceType.name == place_type_name)
         result = await self.db.execute(query)
-        return result.scalar_one_or_none() 
-
- 
+        return result.scalar_one_or_none()

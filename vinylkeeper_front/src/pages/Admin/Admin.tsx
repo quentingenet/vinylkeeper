@@ -42,8 +42,7 @@ const Admin: React.FC = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   // Check if user has admin permissions
-  const isAdmin =
-    currentUser?.role?.name === "admin" && currentUser?.is_superuser === true;
+  const isAdmin = currentUser?.is_admin === true;
 
   // Fetch moderation requests
   const {

@@ -74,8 +74,16 @@ class ModerationService:
     async def get_pending_moderation_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequestResponse]:
         """Get pending moderation requests."""
         try:
-            # Assuming 1 is pending status
-            requests = await self.moderation_repository.get_requests_by_status(1, limit, offset)
+            # Get pending status ID from database
+            pending_status = await self.moderation_repository.get_moderation_status_by_name(ModerationStatusEnum.PENDING.value)
+
+            if not pending_status:
+                raise ServerError(
+                    error_code=5000,
+                    message="Pending moderation status not found in database"
+                )
+
+            requests = await self.moderation_repository.get_requests_by_status(pending_status.id, limit, offset)
 
             response_requests = []
             for request in requests:
@@ -83,6 +91,8 @@ class ModerationService:
                     self._create_moderation_request_response(request))
 
             return response_requests
+        except ServerError:
+            raise
         except Exception as e:
             logger.error(
                 f"Error getting pending moderation requests: {str(e)}")
