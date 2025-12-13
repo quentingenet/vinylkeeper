@@ -31,7 +31,8 @@ class CollectionArtistResponse(BaseSchema):
     external_artist_id: str = Field(..., description="External Artist ID")
     title: str = Field(..., description="Artist title")
     image_url: Optional[str] = Field(None, description="Artist image URL")
-    external_source: dict = Field(..., description="External source information")
+    external_source: dict = Field(...,
+                                  description="External source information")
     created_at: datetime
     updated_at: datetime
     collections_count: int = Field(default=0)
@@ -163,6 +164,27 @@ class CollectionResponse(CollectionInDB):
     wishlist: List[WishlistItemResponse] = Field(default_factory=list)
 
 
+class CollectionListItemResponse(BaseSchema):
+    """Lightweight schema for collection list views (optimized for performance)."""
+    id: int = Field(gt=0)
+    name: str
+    description: Optional[str] = Field(
+        None, description="Truncated description for list view")
+    is_public: bool
+    owner_id: int = Field(gt=0)
+    owner: Optional[UserMiniResponse] = None
+    likes_count: int = Field(default=0)
+    is_liked_by_user: bool = Field(default=False)
+    albums_count: int = Field(
+        default=0, description="Number of albums in collection")
+    artists_count: int = Field(
+        default=0, description="Number of artists in collection")
+    created_at: datetime
+    updated_at: datetime
+    image_preview: Optional[str] = Field(
+        None, description="First album image URL if available")
+
+
 class CollectionDetailResponse(CollectionResponse):
     """Detailed collection response including all related data."""
     liked_by: List[UserMiniResponse] = Field(default_factory=list)
@@ -203,3 +225,10 @@ class PaginatedCollectionResponse(BaseSchema):
     total_pages: int = Field(ge=0, description="Total number of pages")
 
 
+class PaginatedCollectionListResponse(BaseSchema):
+    """Schema for paginated collection list response (optimized for performance)."""
+    items: List[CollectionListItemResponse] = Field(default_factory=list)
+    total: int = Field(ge=0, description="Total number of collections")
+    page: int = Field(gt=0, description="Current page number")
+    limit: int = Field(gt=0, description="Number of items per page")
+    total_pages: int = Field(ge=0, description="Total number of pages")

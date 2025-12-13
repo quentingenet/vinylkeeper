@@ -19,11 +19,7 @@ export interface UserResponse {
   liked_collections_count: number;
   loans_count: number;
   wishlist_items_count: number;
-  role: {
-    id: number;
-    name: string;
-  };
-  is_superuser: boolean;
+  is_admin: boolean;
   liked_places_count: number;
   number_of_connections: number;
 }
