@@ -139,25 +139,10 @@ export default function Dashboard() {
   });
 
   // Show tutorial for new users who haven't seen it yet
+  // is_tutorial_seen is calculated by backend based on number_of_connections > 2
   useEffect(() => {
-    if (currentUser) {
-      // If user has 1 or more connections, mark tutorial as seen in localStorage
-      if (currentUser.number_of_connections >= 1) {
-        localStorage.setItem(`tutorial_seen_${currentUser.user_uuid}`, "true");
-      }
-
-      // Show tutorial only for new users
-      if (
-        !currentUser.is_tutorial_seen &&
-        currentUser.number_of_connections <= 1
-      ) {
-        const hasSeenTutorial = localStorage.getItem(
-          `tutorial_seen_${currentUser.user_uuid}`
-        );
-        if (!hasSeenTutorial) {
-          setShowTutorial(true);
-        }
-      }
+    if (currentUser && !currentUser.is_tutorial_seen) {
+      setShowTutorial(true);
     }
   }, [currentUser]);
 
@@ -377,13 +362,8 @@ export default function Dashboard() {
         open={showTutorial}
         onClose={() => {
           setShowTutorial(false);
-          // Mark tutorial as seen for this user in localStorage
-          if (currentUser) {
-            localStorage.setItem(
-              `tutorial_seen_${currentUser.user_uuid}`,
-              "true"
-            );
-          }
+          // Tutorial seen status is managed by backend based on number_of_connections
+          // No need to store in localStorage anymore
         }}
       />
     </Box>

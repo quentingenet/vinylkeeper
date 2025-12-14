@@ -212,6 +212,21 @@ class CollectionService:
             logger.error(f"Error getting user places count: {str(e)}")
             return 0
 
+    async def get_user_me_counts(self, user_id: int) -> dict:
+        """Get only counts needed for /me endpoint (optimized - only collections)"""
+        try:
+            collections_count = await self.get_user_collections_count(user_id)
+
+            return {
+                "collections_count": collections_count
+            }
+        except Exception as e:
+            logger.error(
+                f"Error getting user me counts for user {user_id}: {str(e)}")
+            return {
+                "collections_count": 0
+            }
+
     async def get_user_counts_batch(self, user_id: int) -> dict:
         """Get all user counts in a single optimized query to avoid session conflicts"""
         try:
@@ -525,7 +540,8 @@ class CollectionService:
             # Get likes info for all collections in batch (2 queries instead of N*2)
             likes_counts, user_likes = await asyncio.gather(
                 self.repository.get_collections_likes_counts(collection_ids),
-                self.repository.get_user_collections_likes(user_id, collection_ids)
+                self.repository.get_user_collections_likes(
+                    user_id, collection_ids)
             )
 
             collection_responses = []
@@ -576,8 +592,10 @@ class CollectionService:
             # Get likes info for all collections in batch (2 queries instead of N*2)
             if user_id:
                 likes_counts, user_likes = await asyncio.gather(
-                    self.repository.get_collections_likes_counts(collection_ids),
-                    self.repository.get_user_collections_likes(user_id, collection_ids)
+                    self.repository.get_collections_likes_counts(
+                        collection_ids),
+                    self.repository.get_user_collections_likes(
+                        user_id, collection_ids)
                 )
             else:
                 likes_counts = await self.repository.get_collections_likes_counts(collection_ids)

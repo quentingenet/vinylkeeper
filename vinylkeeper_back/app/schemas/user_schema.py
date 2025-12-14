@@ -32,18 +32,20 @@ class UserBase(BaseSchema):
         """Validate username format and content."""
         if not v:
             raise ValueError("Username cannot be empty")
-        
+
         v = v.strip()
-        
+
         # Allow only alphanumeric characters, dots, hyphens, and underscores
         import re
         if not re.match(r'^[a-zA-Z0-9._-]+$', v):
-            raise ValueError("Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
-        
+            raise ValueError(
+                "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+
         # Username cannot start or end with special characters
         if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
-            raise ValueError("Username cannot start or end with dots, hyphens, or underscores")
-        
+            raise ValueError(
+                "Username cannot start or end with dots, hyphens, or underscores")
+
         return v
 
     @field_validator("email")
@@ -116,18 +118,20 @@ class UserUpdate(BaseSchema):
         if v is not None:
             if not v or len(v.strip()) == 0:
                 raise ValueError("Username cannot be empty")
-            
+
             v = v.strip()
-            
+
             # Allow only alphanumeric characters, dots, hyphens, and underscores
             import re
             if not re.match(r'^[a-zA-Z0-9._-]+$', v):
-                raise ValueError("Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
-            
+                raise ValueError(
+                    "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+
             # Username cannot start or end with special characters
             if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
-                raise ValueError("Username cannot start or end with dots, hyphens, or underscores")
-            
+                raise ValueError(
+                    "Username cannot start or end with dots, hyphens, or underscores")
+
             return v
         return v
 
@@ -194,26 +198,9 @@ class UserResponse(UserInDB):
         default=0,
         description="Number of collections owned by the user"
     )
-    liked_collections_count: int = Field(
-        default=0,
-        description="Number of collections liked by the user"
-    )
     loans_count: int = Field(
         default=0,
         description="Number of loans made by the user"
-    )
-    wishlist_items_count: int = Field(
-        default=0,
-        description="Number of items in user's wishlist"
-    )
-    terms_accepted_at: Optional[datetime] = Field(
-        None,
-        description="When the user accepted the terms (same as created_at if terms were accepted at registration)"
-    )
-
-    liked_places_count: int = Field(
-        default=0,
-        description="Number of places liked by the user"
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -238,10 +225,9 @@ class UserDetailResponse(UserResponse):
         description="List of items in user's wishlist"
     )
     liked_places: List[dict] = Field(
-    default_factory=list,
-    description="List of places liked by the user"
+        default_factory=list,
+        description="List of places liked by the user"
     )
-
 
 
 class UserAuthSchema(BaseModel):
@@ -282,16 +268,16 @@ class ResetPasswordSchema(BaseModel):
         """Validate new password complexity"""
         if not v:
             raise ValueError("New password cannot be empty")
-        
+
         if len(v) < 4:
             raise ValueError("Password must contain at least 4 characters")
-        
+
         if not any(c.isalpha() for c in v):
             raise ValueError("Password must contain at least one letter")
-        
+
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
-        
+
         return v
 
 
@@ -314,16 +300,16 @@ class PasswordChangeSchema(BaseModel):
         """Validate new password complexity"""
         if not v:
             raise ValueError("New password cannot be empty")
-        
+
         if len(v) < 4:
             raise ValueError("Password must contain at least 4 characters")
-        
+
         if not any(c.isalpha() for c in v):
             raise ValueError("Password must contain at least one letter")
-        
+
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
-        
+
         return v
 
 
@@ -346,21 +332,9 @@ class UserMeResponse(BaseModel):
         default=0,
         description="Number of collections owned by the user"
     )
-    liked_collections_count: int = Field(
-        default=0,
-        description="Number of collections liked by the user"
-    )
     loans_count: int = Field(
         default=0,
         description="Number of loans made by the user"
-    )
-    wishlist_items_count: int = Field(
-        default=0,
-        description="Number of items in user's wishlist"
-    )
-    liked_places_count: int = Field(
-        default=0,
-        description="Number of places liked by the user"
     )
     number_of_connections: int = Field(
         default=0,
@@ -385,10 +359,7 @@ class UserMiniResponse(BaseSchema):
 
 
 class UserSettingsResponse(BaseSchema):
-    """Schema for /me/settings endpoint response - complete user data for settings."""
-    id: int = Field(
-        description="User's ID"
-    )
+    """Schema for /me/settings endpoint response - only fields used by frontend."""
     username: str = Field(
         description="User's username"
     )
@@ -398,54 +369,20 @@ class UserSettingsResponse(BaseSchema):
     user_uuid: UUID = Field(
         description="User's UUID"
     )
-    role: str = Field(
-        description="User's role name"
-    )
-    is_active: bool = Field(
-        description="Whether the user account is active"
-    )
-    is_superuser: bool = Field(
-        description="Whether the user is a superuser"
-    )
-    is_accepted_terms: bool = Field(
-        description="Whether the user has accepted the terms"
-    )
-    timezone: str = Field(
-        description="User's timezone"
-    )
     created_at: datetime = Field(
         description="When the user was created"
     )
-    last_login: Optional[datetime] = Field(
-        None,
-        description="When the user last logged in"
-    )
-    number_of_connections: int = Field(
-        default=0,
-        description="Number of times the user has connected"
-    )
-    collections_count: int = Field(
-        default=0,
-        description="Number of collections owned by the user"
-    )
-    wishlist_count: int = Field(
-        default=0,
-        description="Number of items in user's wishlist"
-    )
-    likes_count: int = Field(
-        default=0,
-        description="Number of likes by the user"
-    )
-    places_count: int = Field(
-        default=0,
-        description="Number of places submitted by the user"
+    is_accepted_terms: bool = Field(
+        description="Whether the user has accepted the terms"
     )
 
 
 class ContactMessageRequest(BaseSchema):
     """Schema for contact message request."""
-    subject: str = Field(..., min_length=1, max_length=200, description="Message subject")
-    message: str = Field(..., min_length=1, max_length=2000, description="Message content")
+    subject: str = Field(..., min_length=1, max_length=200,
+                         description="Message subject")
+    message: str = Field(..., min_length=1, max_length=2000,
+                         description="Message content")
 
 
 class ContactMessageResponse(BaseModel):

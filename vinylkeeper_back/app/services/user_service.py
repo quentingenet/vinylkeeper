@@ -122,7 +122,8 @@ class UserService:
 
                 # Create CollectionService with the same session for atomicity
                 from app.deps.deps import get_collection_service_with_session
-                collection_service = get_collection_service_with_session(self.repository.db)
+                collection_service = get_collection_service_with_session(
+                    self.repository.db)
 
                 # Create initial collection using the same session
                 first_collection = CollectionCreate(
@@ -135,7 +136,11 @@ class UserService:
                     collection_data=first_collection,
                     user_id=created_user.id
                 )
-                
+
+                # Increment number_of_connections for first connection (register = first login)
+                created_user.number_of_connections = 1
+                created_user.last_login = datetime.now(timezone.utc)
+
                 # Transaction will be committed automatically by transaction_context
                 return created_user
         except (DuplicateEmailError, DuplicateUsernameError):
@@ -190,7 +195,8 @@ class UserService:
                 token=reset_token
             )
             if not email_sent:
-                logger.error(f"Failed to send password reset email to {user.email}")
+                logger.error(
+                    f"Failed to send password reset email to {user.email}")
             else:
                 logger.info(f"Password reset email sent to {user.email}")
         except Exception as e:
@@ -212,7 +218,7 @@ class UserService:
             success = await self.repository.update_user_password(user.id, hashed_password)
             if not success:
                 raise PasswordUpdateError("Failed to update password")
-            
+
             # Commit the transaction
             await self.repository.db.commit()
         except Exception as e:
@@ -232,7 +238,7 @@ class UserService:
             success = await self.repository.update_user_password(user.id, hashed_password)
             if not success:
                 raise PasswordUpdateError("Failed to update password")
-            
+
             # Commit the transaction
             await self.repository.db.commit()
         except Exception as e:
@@ -252,9 +258,11 @@ class UserService:
                 user_email=user.email
             )
             if not email_sent:
-                logger.error(f"Failed to send new user email to admin for user {user.username}")
+                logger.error(
+                    f"Failed to send new user email to admin for user {user.username}")
             else:
-                logger.info(f"New user email sent to admin for user {user.username}")
+                logger.info(
+                    f"New user email sent to admin for user {user.username}")
         except Exception as e:
             logger.error(f"Failed to send new user email: {str(e)}")
 
@@ -286,29 +294,31 @@ class UserService:
             )
 
     async def get_user_me(self, user: User) -> dict:
-        """Get current user information with calculated counts (optimized batch execution)"""
+        """Get current user information with calculated counts (optimized - only necessary counts)"""
         try:
-            # Get all counts in a single optimized call to avoid session conflicts
-            counts = await self.collection_service.get_user_counts_batch(user.id)
-            
+            # Get only counts needed for /me endpoint (collections and wishlist)
+            # Avoids expensive likes_count and places_count calculations
+            counts = await self.collection_service.get_user_me_counts(user.id)
+
             # Check if user is admin (role name is "admin" AND is_superuser is True)
             is_admin = (
-                user.role and 
-                user.role.name == "admin" and 
+                user.role and
+                user.role.name == "admin" and
                 user.is_superuser
             )
-            
+
+            # Tutorial is considered seen if user has more than 2 connections
+            # This gives new users a chance to see the tutorial on their first visits
+            is_tutorial_seen = user.number_of_connections > 2
+
             # Build response
             response = {
                 "username": user.username,
                 "user_uuid": str(user.user_uuid),
                 "is_admin": is_admin,
-                "is_tutorial_seen": False,  # Default value
+                "is_tutorial_seen": is_tutorial_seen,
                 "collections_count": counts["collections_count"],
-                "liked_collections_count": counts["likes_count"],  # Using likes_count as liked_collections_count
                 "loans_count": 0,  # Default value
-                "wishlist_items_count": counts["wishlist_count"],
-                "liked_places_count": counts["places_count"],
                 "number_of_connections": user.number_of_connections
             }
             return response
@@ -321,28 +331,14 @@ class UserService:
             )
 
     async def get_user_settings(self, user: User) -> dict:
-        """Get current user settings information (optimized batch execution)"""
+        """Get current user settings information (only fields used by frontend)"""
         try:
-            # Get all counts in a single optimized call to avoid session conflicts
-            counts = await self.collection_service.get_user_counts_batch(user.id)
-            
             return {
-                "id": user.id,
-                "user_uuid": str(user.user_uuid),
                 "username": user.username,
                 "email": user.email,
-                "role": user.role.name if user.role else "Unknown",
-                "is_active": user.is_active,
-                "is_superuser": user.is_superuser,
-                "is_accepted_terms": user.is_accepted_terms,
-                "timezone": user.timezone,
+                "user_uuid": str(user.user_uuid),
                 "created_at": user.created_at,
-                "last_login": user.last_login,
-                "number_of_connections": user.number_of_connections,
-                "collections_count": counts["collections_count"],
-                "wishlist_count": counts["wishlist_count"],
-                "likes_count": counts["likes_count"],
-                "places_count": counts["places_count"]
+                "is_accepted_terms": user.is_accepted_terms
             }
         except Exception as e:
             raise ServerError(
@@ -358,7 +354,7 @@ class UserService:
             success = await self.repository.update_user_password(user_id, hashed_password)
             if not success:
                 raise PasswordUpdateError("Failed to update password")
-            
+
             # Commit the transaction
             await self.repository.db.commit()
             return True
@@ -381,15 +377,18 @@ class UserService:
                 user_id=user.id,
                 subject_line="Contact message from VinylKeeper",
                 message=message_data.message,
-                sent_at=user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else "Unknown"
+                sent_at=user.created_at.strftime(
+                    "%Y-%m-%d %H:%M:%S") if user.created_at else "Unknown"
             )
-            logger.info(f"Contact message sent to admin from user {user.username}")
+            logger.info(
+                f"Contact message sent to admin from user {user.username}")
             return ContactMessageResponse(
                 message="Contact message sent successfully",
                 sent_at=user.created_at if user.created_at else datetime.now()
             )
         except Exception as e:
-            logger.error(f"Failed to send contact message from user {user.username}: {str(e)}")
+            logger.error(
+                f"Failed to send contact message from user {user.username}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to send contact message",

@@ -16,11 +16,8 @@ export interface UserResponse {
   user_uuid: string;
   is_tutorial_seen: boolean;
   collections_count: number;
-  liked_collections_count: number;
   loans_count: number;
-  wishlist_items_count: number;
   is_admin: boolean;
-  liked_places_count: number;
   number_of_connections: number;
 }
 
@@ -29,7 +26,6 @@ export interface UserSettingsResponse {
   email: string;
   user_uuid: string;
   created_at: string;
-  terms_accepted_at?: string;
   is_accepted_terms: boolean;
 }
 

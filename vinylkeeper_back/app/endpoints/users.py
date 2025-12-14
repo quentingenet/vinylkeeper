@@ -79,7 +79,7 @@ async def register(
         set_token_cookie(response, access_token, TokenType.ACCESS)
         set_token_cookie(response, refresh_token, TokenType.REFRESH)
         logger.info(f"New user registered: {user.username} - {user.email}")
-        
+
         # Send email to ADMIN if in development mode or user is superuser
         if settings.APP_ENV == "development" or (user.role.name == RoleEnum.ADMIN.value and user.is_superuser):
             pass
@@ -87,7 +87,8 @@ async def register(
             try:
                 await user_service.send_new_user_registered_email(user)
             except Exception as e:
-                logger.error(f"Failed to send registered email to ADMIN for user {user.username}: {e}")
+                logger.error(
+                    f"Failed to send registered email to ADMIN for user {user.username}: {e}")
         return {"message": "User registered successfully", "isLoggedIn": True}
     except (DuplicateEmailError, DuplicateUsernameError) as e:
         raise
@@ -193,7 +194,8 @@ async def delete_my_account(
 ):
     """Delete current user account"""
     success = await user_service.delete_user(current_user)
-    logger.info(f"User deleted: {current_user.username} - {current_user.email}")
+    logger.info(
+        f"User deleted: {current_user.username} - {current_user.email}")
     if not success:
         raise UserNotFoundError(str(current_user.user_uuid))
     return {"message": "Account deleted successfully"}
