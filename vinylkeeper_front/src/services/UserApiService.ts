@@ -15,8 +15,6 @@ export interface UserResponse {
   username: string;
   user_uuid: string;
   is_tutorial_seen: boolean;
-  collections_count: number;
-  loans_count: number;
   is_admin: boolean;
   number_of_connections: number;
 }

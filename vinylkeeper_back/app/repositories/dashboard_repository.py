@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, extract, select
 from app.models.album_model import Album
@@ -16,12 +17,17 @@ class DashboardRepository:
 
     async def get_albums_added_per_month(self, year: int):
         try:
+            # Use date range instead of extract() to leverage index on created_at
+            start_date = datetime(year, 1, 1)
+            end_date = datetime(year + 1, 1, 1)  # Start of next year (exclusive)
+            
             query = (
                 select(
                     extract('month', Album.created_at).label('month'),
                     func.count(Album.id).label('count')
                 )
-                .filter(extract('year', Album.created_at) == year)
+                .filter(Album.created_at >= start_date)
+                .filter(Album.created_at < end_date)
                 .group_by('month')
                 .order_by('month')
             )
@@ -37,12 +43,17 @@ class DashboardRepository:
 
     async def get_artists_added_per_month(self, year: int):
         try:
+            # Use date range instead of extract() to leverage index on created_at
+            start_date = datetime(year, 1, 1)
+            end_date = datetime(year + 1, 1, 1)  # Start of next year (exclusive)
+            
             query = (
                 select(
                     extract('month', Artist.created_at).label('month'),
                     func.count(Artist.id).label('count')
                 )
-                .filter(extract('year', Artist.created_at) == year)
+                .filter(Artist.created_at >= start_date)
+                .filter(Artist.created_at < end_date)
                 .group_by('month')
                 .order_by('month')
             )
@@ -137,8 +148,10 @@ class DashboardRepository:
     async def count_user_albums_total(self, user_id: int) -> int:
         """Count total albums in all collections of a user in one query"""
         try:
+            # Count all album-collection relationships (same album in multiple collections counts multiple times)
+            # This matches the behavior of counting all vinyl records owned by the user
             query = (
-                select(func.count(CollectionAlbum.collection_id))
+                select(func.count(CollectionAlbum.album_id))
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .filter(Collection.owner_id == user_id)
             )

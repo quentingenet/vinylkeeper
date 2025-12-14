@@ -328,14 +328,6 @@ class UserMeResponse(BaseModel):
         default=False,
         description="Whether the user has seen the tutorial"
     )
-    collections_count: int = Field(
-        default=0,
-        description="Number of collections owned by the user"
-    )
-    loans_count: int = Field(
-        default=0,
-        description="Number of loans made by the user"
-    )
     number_of_connections: int = Field(
         default=0,
         description="Number of times the user has connected"

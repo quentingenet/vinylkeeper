@@ -294,12 +294,8 @@ class UserService:
             )
 
     async def get_user_me(self, user: User) -> dict:
-        """Get current user information with calculated counts (optimized - only necessary counts)"""
+        """Get current user information (optimized - no expensive calculations)"""
         try:
-            # Get only counts needed for /me endpoint (collections and wishlist)
-            # Avoids expensive likes_count and places_count calculations
-            counts = await self.collection_service.get_user_me_counts(user.id)
-
             # Check if user is admin (role name is "admin" AND is_superuser is True)
             is_admin = (
                 user.role and
@@ -317,8 +313,6 @@ class UserService:
                 "user_uuid": str(user.user_uuid),
                 "is_admin": is_admin,
                 "is_tutorial_seen": is_tutorial_seen,
-                "collections_count": counts["collections_count"],
-                "loans_count": 0,  # Default value
                 "number_of_connections": user.number_of_connections
             }
             return response
