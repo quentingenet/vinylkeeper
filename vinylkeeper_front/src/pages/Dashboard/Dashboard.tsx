@@ -28,6 +28,7 @@ import { dashboardApiService } from "@services/DashboardApiService";
 import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { truncateText } from "@utils/GlobalUtils";
+import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import TutorialModal from "@components/Modals/TutorialModal";
 import { useUserContext } from "@contexts/UserContext";
@@ -87,7 +88,7 @@ const LatestAdditionCard = ({
           >
             {data.image_url && (
               <img
-                src={data.image_url}
+                src={buildProxyImageUrl(data.image_url, isMobile ? 300 : 200, isMobile ? 300 : 200, 85)}
                 alt={data.name}
                 style={{
                   width: isMobile ? "150px" : "100px",

@@ -35,6 +35,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 
 export interface PlaybackItem {
   id: string;
@@ -288,8 +289,8 @@ export default function PlaybackModal({
                     <img
                       src={
                         item?.itemType === "album"
-                          ? albumMetadata?.image_url
-                          : item?.image_url
+                          ? buildProxyImageUrl(albumMetadata?.image_url || "", 240, 240, 85)
+                          : buildProxyImageUrl(item?.image_url || "", 240, 240, 85)
                       }
                       alt={item.title}
                       style={{

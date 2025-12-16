@@ -31,6 +31,7 @@ services:
     volumes:
       - ./:/app
       - ./app/keys:/app/keys
+      - vinylkeeper_image_cache:/app/cache/images
     env_file:
       - app/.env.production
     environment:
@@ -52,3 +53,4 @@ networks:
 
 volumes:
   vinylkeeper_postgres_db:
+  vinylkeeper_image_cache:

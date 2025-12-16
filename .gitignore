@@ -148,3 +148,11 @@ local_settings.py
 # Miscellaneous
 *.tmp
 *.swp
+
+
+# Cache images from proxy
+cache/
+*.webp
+*.jpeg
+*.jpg
+*.png

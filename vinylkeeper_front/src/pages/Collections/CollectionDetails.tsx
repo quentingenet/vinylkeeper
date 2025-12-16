@@ -44,6 +44,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { Album } from "@mui/icons-material";
 import { truncateText } from "@utils/GlobalUtils";
+import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import styles from "../../styles/pages/Collection.module.scss";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
@@ -738,7 +739,14 @@ export default function CollectionDetails() {
                           component="img"
                           height={250}
                           sx={{ objectFit: "contain" }}
-                          image={album.image_url}
+                          image={
+                            buildProxyImageUrl(
+                              album.image_url || "",
+                              300,
+                              300,
+                              75
+                            ) || undefined
+                          }
                           alt={album.title}
                         />
                       ) : (
@@ -927,7 +935,14 @@ export default function CollectionDetails() {
                         component="img"
                         height={250}
                         sx={{ objectFit: "contain" }}
-                        image={album.image_url}
+                        image={
+                          buildProxyImageUrl(
+                            album.image_url || "",
+                            500,
+                            500,
+                            85
+                          ) || undefined
+                        }
                         alt={album.title}
                       />
                     ) : (
@@ -1147,7 +1162,14 @@ export default function CollectionDetails() {
                           component="img"
                           height={250}
                           sx={{ objectFit: "contain" }}
-                          image={artist.image_url}
+                          image={
+                            buildProxyImageUrl(
+                              artist.image_url || "",
+                              300,
+                              300,
+                              75
+                            ) || undefined
+                          }
                           alt={artist.title}
                         />
                       ) : (
@@ -1316,7 +1338,14 @@ export default function CollectionDetails() {
                         component="img"
                         height={250}
                         sx={{ objectFit: "contain" }}
-                        image={artist.image_url}
+                        image={
+                          buildProxyImageUrl(
+                            artist.image_url || "",
+                            500,
+                            500,
+                            85
+                          ) || undefined
+                        }
                         alt={artist.title}
                       />
                     ) : (
@@ -1515,7 +1544,14 @@ export default function CollectionDetails() {
                           component="img"
                           height={250}
                           sx={{ objectFit: "contain" }}
-                          image={item.image_url}
+                          image={
+                            buildProxyImageUrl(
+                              item.image_url || "",
+                              300,
+                              300,
+                              75
+                            ) || undefined
+                          }
                           alt={item.title}
                         />
                       ) : (
@@ -1688,7 +1724,14 @@ export default function CollectionDetails() {
                         component="img"
                         height={250}
                         sx={{ objectFit: "contain" }}
-                        image={item.image_url}
+                        image={
+                          buildProxyImageUrl(
+                            item.image_url || "",
+                            300,
+                            300,
+                            75
+                          ) || undefined
+                        }
                         alt={item.title}
                       />
                     ) : (

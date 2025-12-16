@@ -13,6 +13,7 @@ import PlayButton from "@components/UI/PlayButton";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { useState, useCallback, memo } from "react";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
+import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 
 interface IResultArtistProps {
   data: IArtistRequestResults[];
@@ -47,7 +48,7 @@ const ArtistCard = memo(
       <CardMedia
         component="img"
         height="250"
-        image={artist.picture || vinylKeeperImg}
+        image={artist.picture ? buildProxyImageUrl(artist.picture, 500, 500, 80) : vinylKeeperImg}
         alt={artist.title || "Artist"}
         sx={{
           objectFit: "cover",

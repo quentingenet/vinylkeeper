@@ -39,7 +39,8 @@ class ImageFetcher:
             resp = await self._make_request(f"{self.base_url}/artists/{artist_id}", client)
             images = resp.get("images", [])
             if images:
-                primary = next((i for i in images if i.get("type") == "primary"), images[0])
+                primary = next((i for i in images if i.get(
+                    "type") == "primary"), images[0])
                 return primary.get("uri"), primary.get("uri150") or thumb
         except Exception as e:
             logger.warning(f"Failed to fetch artist images: {str(e)}")
@@ -57,7 +58,8 @@ class ImageFetcher:
             images = resp.get("images", [])
             if images:
                 front = next(
-                    (i for i in images if i.get("type") in ("primary", "secondary")),
+                    (i for i in images if i.get("type")
+                     in ("primary", "secondary")),
                     images[0],
                 )
                 return front.get("uri"), front.get("uri150") or thumb
@@ -196,13 +198,15 @@ class SearchService:
 
                 for item in response_data[:10]:  # Limit to 10 results
                     try:
-                        discogs_data = self._create_discogs_data(item, entity == "artist")
+                        discogs_data = self._create_discogs_data(
+                            item, entity == "artist")
                         if not search_query.is_artist and not self._is_vinyl_format(item.get("format")):
                             continue
 
                         title = item.get("title") or ""
                         artist_name = item.get("artist") or ""
-                        key = (self.normalize(title), self.normalize(artist_name))
+                        key = (self.normalize(title),
+                               self.normalize(artist_name))
                         if not search_query.is_artist and key in seen_keys:
                             continue
 
@@ -218,13 +222,16 @@ class SearchService:
                             )
                             discogs_data.picture = img_uri or img_thumb
                             if img_uri:
-                                discogs_data.picture_medium = self.resize_to_medium(img_uri)
+                                discogs_data.picture_medium = self.resize_to_medium(
+                                    img_uri)
                         except Exception as e:
-                            logger.warning(f"Failed to fetch images for {discogs_data.id}: {str(e)}")
+                            logger.warning(
+                                f"Failed to fetch images for {discogs_data.id}: {str(e)}")
 
                         results.append(discogs_data)
                     except Exception as e:
-                        logger.warning(f"Failed to parse search result: {str(e)}")
+                        logger.warning(
+                            f"Failed to parse search result: {str(e)}")
                         continue
 
                 return results
@@ -259,7 +266,7 @@ class SearchService:
                 message="Invalid artist ID provided",
                 details={"artist_id": artist_id}
             )
-        
+
         # Validate that artist_id is numeric
         if not artist_id.isdigit():
             logger.error(f"Non-numeric artist_id provided: '{artist_id}'")
@@ -270,7 +277,7 @@ class SearchService:
             )
 
         url = f"{self.base_url}/artists/{artist_id}"
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(url, headers={"Authorization": f"Discogs token={self.token}"})
@@ -278,14 +285,16 @@ class SearchService:
                 data = response.json()
 
                 if not data:
-                    logger.warning(f"No data returned for artist ID: {artist_id}")
+                    logger.warning(
+                        f"No data returned for artist ID: {artist_id}")
                     raise ServerError(
                         error_code=ErrorCode.RESOURCE_NOT_FOUND,
                         message="Artist not found",
                         details={"artist_id": artist_id}
                     )
             except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error fetching artist metadata for ID {artist_id}: {e.response.status_code} - {e.response.text}")
+                logger.error(
+                    f"HTTP error fetching artist metadata for ID {artist_id}: {e.response.status_code} - {e.response.text}")
                 if e.response.status_code == 404:
                     raise ServerError(
                         error_code=ErrorCode.RESOURCE_NOT_FOUND,
@@ -296,10 +305,12 @@ class SearchService:
                     raise ServerError(
                         error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                         message=f"Discogs API error: {e.response.status_code}",
-                        details={"artist_id": artist_id, "status_code": e.response.status_code}
+                        details={"artist_id": artist_id,
+                                 "status_code": e.response.status_code}
                     )
             except Exception as e:
-                logger.error(f"Unexpected error fetching artist metadata for ID {artist_id}: {str(e)}")
+                logger.error(
+                    f"Unexpected error fetching artist metadata for ID {artist_id}: {str(e)}")
                 raise ServerError(
                     error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                     message="Failed to fetch artist metadata",
@@ -311,11 +322,12 @@ class SearchService:
                 releases_data = await client.get(f"{self.base_url}/artists/{artist_id}/releases")
                 releases_data.raise_for_status()
                 releases_data = releases_data.json()
-                
+
                 # Parse releases
                 releases = []
                 if releases_data and "releases" in releases_data:
-                    for release in releases_data["releases"][:10]:  # Limit to 10 releases
+                    # Limit to 10 releases
+                    for release in releases_data["releases"][:10]:
                         try:
                             release_info = DiscogsData(
                                 id=str(release.get("id", "")),
@@ -326,10 +338,12 @@ class SearchService:
                             )
                             releases.append(release_info)
                         except Exception as e:
-                            logger.warning(f"Failed to parse release: {str(e)}")
+                            logger.warning(
+                                f"Failed to parse release: {str(e)}")
                             continue
             except Exception as e:
-                logger.warning(f"Failed to fetch artist releases for ID {artist_id}: {str(e)}")
+                logger.warning(
+                    f"Failed to fetch artist releases for ID {artist_id}: {str(e)}")
                 releases = []
 
             # Build artist metadata
@@ -343,9 +357,11 @@ class SearchService:
                 genres=data.get("genres", []),
                 country=data.get("country", ""),
                 wikipedia_url=None,
-                members=[member.get("name", "") for member in data.get("members", [])],
+                members=[member.get("name", "")
+                         for member in data.get("members", [])],
                 active_years=data.get("active_years", ""),
-                aliases=[alias.get("name", "") for alias in data.get("aliases", [])]
+                aliases=[alias.get("name", "")
+                         for alias in data.get("aliases", [])]
             )
 
             return artist_metadata
@@ -370,7 +386,7 @@ class SearchService:
                 message="Invalid album ID provided",
                 details={"album_id": album_id}
             )
-        
+
         # Validate that album_id is numeric
         if not album_id.isdigit():
             logger.error(f"Non-numeric album_id provided: '{album_id}'")
@@ -381,7 +397,7 @@ class SearchService:
             )
 
         url = f"{self.base_url}/releases/{album_id}"
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(url, headers={"Authorization": f"Discogs token={self.token}"})
@@ -389,14 +405,16 @@ class SearchService:
                 data = response.json()
 
                 if not data:
-                    logger.warning(f"No data returned for album ID: {album_id}")
+                    logger.warning(
+                        f"No data returned for album ID: {album_id}")
                     raise ServerError(
                         error_code=ErrorCode.RESOURCE_NOT_FOUND,
                         message="Album not found",
                         details={"album_id": album_id}
                     )
             except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error fetching album metadata for ID {album_id}: {e.response.status_code} - {e.response.text}")
+                logger.error(
+                    f"HTTP error fetching album metadata for ID {album_id}: {e.response.status_code} - {e.response.text}")
                 if e.response.status_code == 404:
                     raise ServerError(
                         error_code=ErrorCode.RESOURCE_NOT_FOUND,
@@ -407,10 +425,12 @@ class SearchService:
                     raise ServerError(
                         error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                         message=f"Discogs API error: {e.response.status_code}",
-                        details={"album_id": album_id, "status_code": e.response.status_code}
+                        details={"album_id": album_id,
+                                 "status_code": e.response.status_code}
                     )
             except Exception as e:
-                logger.error(f"Unexpected error fetching album metadata for ID {album_id}: {str(e)}")
+                logger.error(
+                    f"Unexpected error fetching album metadata for ID {album_id}: {str(e)}")
                 raise ServerError(
                     error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                     message="Failed to fetch album metadata",
@@ -439,7 +459,8 @@ class SearchService:
                     try:
                         artist_info = Artist(
                             id=str(artist.get("id", "")),
-                            title=artist.get("name", ""),  # Frontend expects 'title', not 'name'
+                            # Frontend expects 'title', not 'name'
+                            title=artist.get("name", ""),
                             type=artist.get("type", "")
                         )
                         artists.append(artist_info)
@@ -448,12 +469,13 @@ class SearchService:
                         continue
 
             # Build album metadata
+            raw_image_url = data.get("images", [{}])[0].get("uri", "")
             album_metadata = AlbumMetadata(
                 id=str(data.get("id", "")),
                 title=data.get("title", ""),
                 artist=data.get("artists", [{}])[0].get("name", ""),
                 year=str(data.get("year", "")),
-                image_url=data.get("images", [{}])[0].get("uri", ""),
+                image_url=raw_image_url,
                 genres=data.get("genres", []),
                 styles=data.get("styles", []),
                 tracklist=tracks,
