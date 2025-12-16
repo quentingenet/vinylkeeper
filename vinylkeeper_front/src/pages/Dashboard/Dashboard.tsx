@@ -88,7 +88,7 @@ const LatestAdditionCard = ({
           >
             {data.image_url && (
               <img
-                src={buildProxyImageUrl(data.image_url, isMobile ? 300 : 200, isMobile ? 300 : 200, 85)}
+                src={buildProxyImageUrl(data.image_url, isMobile ? 300 : 200, isMobile ? 300 : 200, 85, true)}
                 alt={data.name}
                 style={{
                   width: isMobile ? "150px" : "100px",

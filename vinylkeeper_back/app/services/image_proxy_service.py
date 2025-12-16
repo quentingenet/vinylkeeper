@@ -157,7 +157,8 @@ class ImageProxyService:
         width: int,
         height: int,
         quality: Optional[int] = None,
-        accept_webp: bool = True
+        accept_webp: bool = True,
+        cacheable: bool = False
     ) -> Tuple[bytes, str]:
         quality = quality or self.DEFAULT_QUALITY
 
@@ -166,17 +167,22 @@ class ImageProxyService:
         self._validate_quality(quality)
 
         format = "webp" if accept_webp else "jpeg"
-        cache_key = self._generate_cache_key(
-            src, width, height, quality, format)
 
-        if self._is_cached(cache_key, format):
-            cached_data = self._load_from_cache(cache_key, format)
-            return cached_data, f"image/{format}"
+        if cacheable:
+            cache_key = self._generate_cache_key(
+                src, width, height, quality, format)
+
+            if self._is_cached(cache_key, format):
+                cached_data = self._load_from_cache(cache_key, format)
+                return cached_data, f"image/{format}"
 
         image_data = await self._fetch_image(src)
         processed_data = self._process_image(
             image_data, width, height, quality, format)
 
-        self._save_to_cache(cache_key, format, processed_data)
+        if cacheable:
+            cache_key = self._generate_cache_key(
+                src, width, height, quality, format)
+            self._save_to_cache(cache_key, format, processed_data)
 
         return processed_data, f"image/{format}"

@@ -48,7 +48,7 @@ const ArtistCard = memo(
       <CardMedia
         component="img"
         height="250"
-        image={artist.picture ? buildProxyImageUrl(artist.picture, 500, 500, 80) : vinylKeeperImg}
+        image={artist.picture ? buildProxyImageUrl(artist.picture, 500, 500, 80, false) : vinylKeeperImg}
         alt={artist.title || "Artist"}
         sx={{
           objectFit: "cover",

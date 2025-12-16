@@ -21,19 +21,22 @@ async def proxy_image(
     w: int = Query(..., description="Width in pixels", gt=0),
     h: int = Query(..., description="Height in pixels", gt=0),
     q: int = Query(85, description="Quality (1-100)", ge=1, le=100),
+    cache: bool = Query(
+        False, description="Whether to cache the image on disk"),
     service: ImageProxyService = Depends(get_image_proxy_service)
 ):
     """
     Proxy endpoint for Discogs images with resizing and optimization.
 
     Fetches images from Discogs CDN, resizes them to requested dimensions,
-    converts to WebP by default (with JPEG fallback), and caches results on disk.
+    converts to WebP by default (with JPEG fallback), and optionally caches results on disk.
 
     Args:
         src: Source image URL (must be from i.discogs.com)
         w: Target width in pixels
         h: Target height in pixels
         q: Quality (1-100, default 85)
+        cache: Whether to cache the image on disk (default False)
         request: FastAPI request object (for Accept header)
         service: Injected image proxy service
 
@@ -52,7 +55,8 @@ async def proxy_image(
         width=w,
         height=h,
         quality=q,
-        accept_webp=accept_webp
+        accept_webp=accept_webp,
+        cacheable=cache
     )
 
     etag = hashlib.md5(image_data).hexdigest()

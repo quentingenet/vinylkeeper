@@ -289,8 +289,8 @@ export default function PlaybackModal({
                     <img
                       src={
                         item?.itemType === "album"
-                          ? buildProxyImageUrl(albumMetadata?.image_url || "", 240, 240, 85)
-                          : buildProxyImageUrl(item?.image_url || "", 240, 240, 85)
+                          ? buildProxyImageUrl(albumMetadata?.image_url || "", 240, 240, 85, true)
+                          : buildProxyImageUrl(item?.image_url || "", 240, 240, 85, true)
                       }
                       alt={item.title}
                       style={{

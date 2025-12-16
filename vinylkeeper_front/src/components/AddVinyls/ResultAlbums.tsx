@@ -48,7 +48,11 @@ const AlbumCard = memo(
       <CardMedia
         component="img"
         height="250"
-        image={album.picture ? buildProxyImageUrl(album.picture, 500, 500, 80) : vinylKeeperImg}
+        image={
+          album.picture
+            ? buildProxyImageUrl(album.picture, 500, 500, 80, false)
+            : vinylKeeperImg
+        }
         alt={album.title || "Album"}
         sx={{
           objectFit: "cover",

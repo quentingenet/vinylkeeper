@@ -744,7 +744,8 @@ export default function CollectionDetails() {
                               album.image_url || "",
                               300,
                               300,
-                              75
+                              75,
+                              true
                             ) || undefined
                           }
                           alt={album.title}
@@ -940,7 +941,8 @@ export default function CollectionDetails() {
                             album.image_url || "",
                             500,
                             500,
-                            85
+                            85,
+                            true
                           ) || undefined
                         }
                         alt={album.title}
@@ -1167,7 +1169,8 @@ export default function CollectionDetails() {
                               artist.image_url || "",
                               300,
                               300,
-                              75
+                              75,
+                              true
                             ) || undefined
                           }
                           alt={artist.title}
@@ -1343,7 +1346,8 @@ export default function CollectionDetails() {
                             artist.image_url || "",
                             500,
                             500,
-                            85
+                            85,
+                            true
                           ) || undefined
                         }
                         alt={artist.title}
@@ -1549,7 +1553,8 @@ export default function CollectionDetails() {
                               item.image_url || "",
                               300,
                               300,
-                              75
+                              75,
+                              true
                             ) || undefined
                           }
                           alt={item.title}
@@ -1729,7 +1734,8 @@ export default function CollectionDetails() {
                             item.image_url || "",
                             300,
                             300,
-                            75
+                            75,
+                            true
                           ) || undefined
                         }
                         alt={item.title}
