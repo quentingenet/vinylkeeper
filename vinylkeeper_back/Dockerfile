@@ -4,10 +4,17 @@ FROM python:3.12-slim
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Install system dependencies for PostgreSQL and building packages
+# Install system dependencies for PostgreSQL, Pillow, and building packages
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libtiff-dev \
+    libwebp-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
