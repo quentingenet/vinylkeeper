@@ -67,7 +67,8 @@ async def proxy_image(
         headers={
             "Cache-Control": "public, max-age=31536000, immutable",
             "Content-Length": str(len(image_data)),
-            "ETag": f'"{etag}"'
+            "ETag": f'"{etag}"',
+            "Vary": "Accept"
         }
     )
 

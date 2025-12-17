@@ -67,7 +67,7 @@ class ExternalReferenceService:
                             raise create_error
                         else:
                             pass
-
+                
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
                     "id": entity.id,
@@ -111,7 +111,7 @@ class ExternalReferenceService:
                             raise create_error
                         else:
                             pass
-
+                
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
                     "id": entity.id,
@@ -176,14 +176,14 @@ class ExternalReferenceService:
                 "title": request.title,
                 "image_url": request.image_url
             }
-
+            
             result = await self.repository.create_wishlist_item(wishlist_data)
 
             wishlist_response = self._build_wishlist_response(
                 result, request.entity_type.value, request.source)
             # Commit the transaction
             await self.repository.db.commit()
-
+            
             return AddToWishlistResponse(
                 item=wishlist_response,
                 is_new=True,
@@ -225,12 +225,12 @@ class ExternalReferenceService:
                     error_code=4040,
                     message=f"Wishlist item {wishlist_id} not found or not owned by user {user_id}"
                 )
-
+            
             result = await self.repository.remove_wishlist_item(wishlist_item)
-
+            
             # Commit the transaction
             await self.repository.db.commit()
-
+            
             return result
         except ResourceNotFoundError:
             raise
@@ -263,10 +263,10 @@ class ExternalReferenceService:
 
             # Get the external source ID once (avoid duplicate queries)
             external_source_id = await self.repository.get_external_source_id(request.source)
-
+            
             # Find or create entity (pass external_source_id to avoid duplicate query)
             entity_response = await self._find_or_create_entity(request, external_source_id)
-
+            
             # Add to collection using the entity from the response
             collection_item = None
             if request.entity_type == EntityTypeEnum.ALBUM:
@@ -280,7 +280,7 @@ class ExternalReferenceService:
                         message="Album not found in entity response",
                         details={"external_id": external_id}
                     )
-
+                
                 # Verify album has required attributes
                 if not hasattr(album, 'id') or not album.id:
                     logger.error(f"Album entity missing ID! album: {album}")
@@ -289,14 +289,14 @@ class ExternalReferenceService:
                         message="Album entity missing ID",
                         details={"album": str(album)}
                     )
-
+                
                 # Check if album is already in collection before trying to add
                 existing_collection_album = None
                 for ca in collection.collection_albums:
                     if ca.album_id == album.id:
                         existing_collection_album = ca
                         break
-
+                
                 is_new_album = False
                 if existing_collection_album:
                     # Album already in collection, return existing info
@@ -325,7 +325,7 @@ class ExternalReferenceService:
                             state_cover_str = state_cover.value if hasattr(
                                 state_cover, 'value') else str(state_cover)
                             processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover_str)
-
+                        
                         # acquisition_month_year is already in the correct format, no conversion needed
                     collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data)
             else:
@@ -339,11 +339,11 @@ class ExternalReferenceService:
                         message="Artist not found in entity response",
                         details={"external_id": external_id}
                     )
-
+                
                 # Check if artist is already in collection before trying to add
                 is_new_artist = False
                 existing_artist = await self.repository.find_artist_in_collection(collection.id, artist.id)
-
+                
                 if existing_artist:
                     # Artist already in collection, return existing info
                     collection_item = {
@@ -359,7 +359,7 @@ class ExternalReferenceService:
             # Build response with data from the created collection item
             # Determine if item is new or existing
             is_new = is_new_album if request.entity_type == EntityTypeEnum.ALBUM else is_new_artist
-
+            
             # Build the collection item response
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # For albums, collection_item is a CollectionAlbum object with composite primary key
@@ -385,10 +385,10 @@ class ExternalReferenceService:
                     source=request.source,
                     created_at=collection_item["created_at"]
                 )
-
+            
             # Build the final response with status information
             message = f"{'Added' if is_new else 'Already have'} {request.entity_type.value} '{request.title}' in collection '{collection.name}'"
-
+            
             final_response = AddToCollectionResponse(
                 item=item_response,
                 is_new=is_new,
@@ -396,10 +396,10 @@ class ExternalReferenceService:
                 entity_type=request.entity_type.value,
                 collection_name=collection.name
             )
-
+            
             # Commit the transaction
             await self.repository.db.commit()
-
+            
             return final_response
 
         except Exception as e:
@@ -427,29 +427,29 @@ class ExternalReferenceService:
             if entity_type == EntityTypeEnum.ALBUM:
                 # For albums, find the collection album first
                 collection_album = await self.repository.find_collection_album_by_external_id(collection_id, external_id)
-
+                
                 if not collection_album:
                     raise ResourceNotFoundError(
                         error_code=4040,
                         message=f"Album with external ID {external_id} not found in collection {collection_id}"
                     )
-
+                
                 await self.repository.remove_album_from_collection(collection, collection_album.album)
             else:
                 # For artists, find the collection artist first
                 artist = await self.repository.find_collection_artist_by_external_id(collection_id, external_id)
-
+                
                 if not artist:
                     raise ResourceNotFoundError(
                         error_code=4040,
                         message=f"Artist with external ID {external_id} not found in collection {collection_id}"
                     )
-
+                
                 await self.repository.remove_artist_from_collection(collection, artist)
 
             # Commit the transaction
             await self.repository.db.commit()
-
+            
             return True
 
         except ResourceNotFoundError:
@@ -466,20 +466,20 @@ class ExternalReferenceService:
         """Get user's wishlist"""
         try:
             wishlist_items = await self.repository.get_user_wishlist(user_id)
-
+            
             # Build responses with additional fields
             responses = []
             for item in wishlist_items:
                 # Get entity type name
                 entity_type_name = item.entity_type.name if item.entity_type else "Unknown"
-
+                
                 # Get source name
                 source_name = item.external_source.name if item.external_source else "Unknown"
-
+                
                 response = self._build_wishlist_response(
                     item, entity_type_name, source_name)
                 responses.append(response)
-
+            
             return responses
 
         except Exception as e:
