@@ -88,7 +88,13 @@ const LatestAdditionCard = ({
           >
             {data.image_url && (
               <img
-                src={buildProxyImageUrl(data.image_url, isMobile ? 300 : 200, isMobile ? 300 : 200, 85, true)}
+                src={buildProxyImageUrl(
+                  data.image_url,
+                  isMobile ? 300 : 200,
+                  isMobile ? 300 : 200,
+                  85,
+                  true
+                )}
                 alt={data.name}
                 style={{
                   width: isMobile ? "150px" : "100px",
@@ -297,21 +303,6 @@ export default function Dashboard() {
         )}
 
         <div className={styles.rowCenter}>
-          <div className={styles.chart}>
-            <Paper className={styles.card}>
-              <Typography
-                className={styles.textTitleShadow}
-                variant="h6"
-                gutterBottom
-              >
-                Global added on {new Date().getFullYear()}
-              </Typography>
-              <Line data={chartData} options={chartOptions} />
-            </Paper>
-          </div>
-        </div>
-
-        <div className={styles.rowCenter}>
           <div
             style={{
               display: "flex",
@@ -351,6 +342,21 @@ export default function Dashboard() {
                 }}
               />
             </div>
+          </div>
+        </div>
+
+        <div className={styles.rowCenter}>
+          <div className={styles.chart}>
+            <Paper className={styles.card}>
+              <Typography
+                className={styles.textTitleShadow}
+                variant="h6"
+                gutterBottom
+              >
+                Global added on {new Date().getFullYear()}
+              </Typography>
+              <Line data={chartData} options={chartOptions} />
+            </Paper>
           </div>
         </div>
       </div>
