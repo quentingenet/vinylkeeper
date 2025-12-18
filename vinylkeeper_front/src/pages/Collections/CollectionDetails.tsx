@@ -8,6 +8,7 @@ import {
 } from "@services/CollectionApiService";
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import { type WishlistItemResponse } from "@models/IExternalReference";
+import { useWishlist } from "@hooks/useWishlist";
 import {
   Typography,
   Box,
@@ -98,7 +99,9 @@ export default function CollectionDetails() {
   // Pagination states
   const [albumsPage, setAlbumsPage] = useState(1);
   const [artistsPage, setArtistsPage] = useState(1);
+  const [wishlistPage, setWishlistPage] = useState(1);
   const limit = 8;
+  const wishlistLimit = 8;
 
   // Modal states
   const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
@@ -158,8 +161,20 @@ export default function CollectionDetails() {
     enabled: !!collectionId && tabValue === 1,
   });
 
-  // Wishlist query - use owner's wishlist from collection details
-  const ownerWishlistItems = collectionDetails?.wishlist || [];
+  // Wishlist query - load collection owner's wishlist with pagination (public)
+  const shouldLoadWishlist = tabValue === 2 && !!collectionDetails?.owner_id;
+  const ownerId = collectionDetails?.owner_id;
+  
+  const {
+    wishlistItems: ownerWishlistItems,
+    totalPages: wishlistTotalPages,
+    wishlistLoading: isLoadingWishlist,
+  } = useWishlist(
+    wishlistPage,
+    wishlistLimit,
+    shouldLoadWishlist,
+    ownerId
+  );
 
   // Search query with debounced term
   const {
@@ -185,6 +200,22 @@ export default function CollectionDetails() {
       tabValue !== 2, // Disable for wishlist tab
   });
 
+  // Convert WishlistItemListResponse to WishlistItemResponse for compatibility
+  const wishlistItemsAsResponse: WishlistItemResponse[] = useMemo(() => {
+    return ownerWishlistItems.map((item) => ({
+      id: item.id,
+      user_id: collectionDetails?.owner_id || 0,
+      external_id: item.external_id,
+      entity_type_id: item.entity_type === "album" ? 1 : 2,
+      external_source_id: 0,
+      title: item.title,
+      image_url: item.image_url || "",
+      created_at: item.created_at,
+      entity_type: item.entity_type,
+      source: "",
+    }));
+  }, [ownerWishlistItems, collectionDetails?.owner_id]);
+
   // Filter wishlist items for search (client-side filtering)
   const filteredWishlistItems = useMemo(() => {
     if (
@@ -192,13 +223,13 @@ export default function CollectionDetails() {
       !debouncedSearchTerm.trim() ||
       debouncedSearchTerm.length < 2
     ) {
-      return ownerWishlistItems;
+      return wishlistItemsAsResponse;
     }
 
-    return ownerWishlistItems.filter((item) =>
+    return wishlistItemsAsResponse.filter((item) =>
       item.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
-  }, [ownerWishlistItems, debouncedSearchTerm, tabValue]);
+  }, [wishlistItemsAsResponse, debouncedSearchTerm, tabValue]);
 
   const removeAlbumMutation = useMutation({
     mutationFn: (albumId: number) =>
@@ -238,6 +269,9 @@ export default function CollectionDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["collectionDetails", collectionId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["wishlist"],
       });
     },
   });
@@ -553,7 +587,7 @@ export default function CollectionDetails() {
             (tabValue === 1 &&
               artistsData?.items &&
               artistsData.items.length > 0) ||
-            (tabValue === 2 && ownerWishlistItems.length > 0)) && (
+            (tabValue === 2 && wishlistItemsAsResponse.length > 0)) && (
             <FormControl sx={{ width: isMobile ? 320 : 150 }}>
               <InputLabel sx={{ color: "text.secondary" }}>
                 Sort Order
@@ -1419,7 +1453,16 @@ export default function CollectionDetails() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          {searchTerm.trim() && searchTerm.length < 2 ? (
+          {isLoadingWishlist && tabValue === 2 ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="200px"
+            >
+              <VinylSpinner />
+            </Box>
+          ) : searchTerm.trim() && searchTerm.length < 2 ? (
             <Box
               display="flex"
               justifyContent="center"
@@ -1621,7 +1664,7 @@ export default function CollectionDetails() {
                 </div>
               </>
             )
-          ) : ownerWishlistItems.length === 0 ? (
+          ) : wishlistItemsAsResponse.length === 0 ? (
             <Box
               display="flex"
               justifyContent="center"
@@ -1800,6 +1843,15 @@ export default function CollectionDetails() {
                   </Card>
                 ))}
               </div>
+              {wishlistTotalPages > 1 && !debouncedSearchTerm.trim() && (
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                  <PaginationWithEllipsis
+                    count={wishlistTotalPages}
+                    page={wishlistPage}
+                    onChange={(newPage) => setWishlistPage(newPage)}
+                  />
+                </Box>
+              )}
             </>
           )}
         </TabPanel>

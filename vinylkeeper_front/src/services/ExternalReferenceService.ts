@@ -2,6 +2,8 @@ import {
   AddToWishlistRequest,
   AddToCollectionRequest,
   WishlistItemResponse,
+  WishlistItemListResponse,
+  PaginatedWishlistResponse,
   CollectionItemResponse,
   AddToWishlistResponse,
   AddToCollectionResponse,
@@ -66,14 +68,32 @@ export class ExternalReferenceService extends BaseApiService {
     }
   }
 
-  async getUserWishlist(): Promise<WishlistItemResponse[]> {
+  async getUserWishlistPaginated(
+    page: number = 1,
+    limit: number = 8,
+    userId?: number
+  ): Promise<PaginatedWishlistResponse> {
     try {
-      return await this.get<WishlistItemResponse[]>(
-        `${this.endpoint}/wishlist`
+      const url = userId 
+        ? `${this.endpoint}/wishlist?page=${page}&limit=${limit}&user_id=${userId}`
+        : `${this.endpoint}/wishlist?page=${page}&limit=${limit}`;
+      return await this.get<PaginatedWishlistResponse>(url);
+    } catch (error) {
+      console.error("Error fetching paginated wishlist:", error);
+      throw new Error("Failed to fetch wishlist items");
+    }
+  }
+
+  async getWishlistItemDetail(
+    wishlistId: number
+  ): Promise<WishlistItemResponse> {
+    try {
+      return await this.get<WishlistItemResponse>(
+        `${this.endpoint}/wishlist/${wishlistId}`
       );
     } catch (error) {
-      console.error("Error fetching wishlist:", error);
-      throw new Error("Failed to fetch wishlist items");
+      console.error("Error fetching wishlist item detail:", error);
+      throw new Error("Failed to fetch wishlist item detail");
     }
   }
 
@@ -108,7 +128,10 @@ export const externalReferenceApiService = {
       externalId,
       entityType
     ),
-  getUserWishlist: () => externalReferenceServiceInstance.getUserWishlist(),
+  getUserWishlistPaginated: (page: number = 1, limit: number = 8, userId?: number) =>
+    externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userId),
+  getWishlistItemDetail: (wishlistId: number) =>
+    externalReferenceServiceInstance.getWishlistItemDetail(wishlistId),
   getCollectionItems: () =>
     externalReferenceServiceInstance.getCollectionItems(),
 };

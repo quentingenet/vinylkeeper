@@ -6,6 +6,10 @@ from app.schemas.external_reference_schema import (
     WishlistItemResponse,
     AddToWishlistResponse
 )
+from app.schemas.wishlist_schema import (
+    WishlistItemListResponse,
+    PaginatedWishlistResponse
+)
 from app.schemas.album_schema import AlbumResponse, AlbumCreate
 from app.schemas.artist_schema import ArtistResponse, ArtistCreate
 from app.core.exceptions import (
@@ -228,39 +232,86 @@ class WishlistService:
                 details={"error": str(e)}
             )
 
-    async def get_user_wishlist(self, user_id: int) -> List[WishlistItemResponse]:
-        """Get user's wishlist items"""
+    def _validate_pagination_params(self, page: int, limit: int):
+        """Validate pagination parameters"""
+        if page < 1:
+            raise ValidationError(
+                error_code=4000,
+                message="Page number must be greater than 0"
+            )
+        if limit < 1 or limit > 50:
+            raise ValidationError(
+                error_code=4000,
+                message="Limit must be between 1 and 50"
+            )
+
+    async def get_user_wishlist_paginated(self, user_id: int, page: int = 1, limit: int = 8) -> PaginatedWishlistResponse:
+        """Get paginated wishlist items for a user (lightweight DTO)"""
         try:
-            items = await self.wishlist_repo.get_user_wishlist(user_id)
+            self._validate_pagination_params(page, limit)
             
-            responses = []
+            items, total = await self.wishlist_repo.get_user_wishlist_paginated(user_id, page, limit)
+            
+            list_responses = []
             for item in items:
                 try:
-                    # Create a dictionary with the item data and computed fields
-                    item_dict = {
-                        "id": item.id,
-                        "user_id": item.user_id,
-                        "external_id": item.external_id,
-                        "entity_type_id": item.entity_type_id,
-                        "external_source_id": item.external_source_id,
-                        "title": item.title,
-                        "image_url": item.image_url,
-                        "created_at": item.created_at,
-                        "entity_type": item.entity_type.name.lower() if item.entity_type else "unknown",
-                        "source": item.external_source.name.lower() if item.external_source else "unknown"
-                    }
-                    wishlist_response = WishlistItemResponse.model_validate(item_dict)
-                    responses.append(wishlist_response)
+                    entity_type_str = "unknown"
+                    if item.entity_type_id == 1:
+                        entity_type_str = "album"
+                    elif item.entity_type_id == 2:
+                        entity_type_str = "artist"
+                    
+                    list_response = WishlistItemListResponse(
+                        id=item.id,
+                        entity_type=entity_type_str,
+                        external_id=item.external_id,
+                        title=item.title or "",
+                        image_url=item.image_url,
+                        created_at=item.created_at
+                    )
+                    list_responses.append(list_response)
                 except Exception as e:
                     logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
                     continue
             
-            return responses
+            total_pages = (total + limit - 1) // limit if total > 0 else 0
             
+            return PaginatedWishlistResponse(
+                items=list_responses,
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=total_pages
+            )
+            
+        except ValidationError:
+            raise
         except Exception as e:
-            logger.error(f"Failed to get user wishlist: {str(e)}")
+            logger.error(f"Failed to get paginated wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
-                message="Failed to get user wishlist",
+                message="Failed to get paginated wishlist",
                 details={"error": str(e)}
-            ) 
+            )
+
+    async def get_wishlist_item_detail(self, wishlist_id: int) -> WishlistItemResponse:
+        """Get detailed wishlist item by ID (public - any user can view any wishlist item)"""
+        try:
+            item = await self.wishlist_repo.get_by_id_with_relations(wishlist_id)
+            if not item:
+                raise ResourceNotFoundError("Wishlist item", wishlist_id)
+            
+            entity_type_str = item.entity_type.name.lower() if item.entity_type else "unknown"
+            source_str = item.external_source.name.lower() if item.external_source else "unknown"
+            
+            return self._build_wishlist_response(item, entity_type_str, source_str)
+            
+        except ResourceNotFoundError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get wishlist item detail: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get wishlist item detail",
+                details={"error": str(e)}
+            )

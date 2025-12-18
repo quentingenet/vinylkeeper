@@ -204,10 +204,6 @@ class ExternalReferenceRepository:
                 details={"error": str(e)}
             )
 
-    async def get_user_wishlist(self, user_id: int) -> List[Wishlist]:
-        """Get a user's wishlist"""
-        return await self.wishlist_repo.get_by_user_id(user_id)
-
     async def find_collection_by_id(self, collection_id: int, load_relations: bool = True) -> Optional[Collection]:
         """Find a collection by ID with optional relations loading"""
         return await self.collection_repo.get_by_id(collection_id, load_relations=load_relations)

@@ -12,12 +12,6 @@ export interface BaseItem extends BaseEntity {
   pictureBig?: string;
 }
 
-export interface ExternalItem extends BaseItem {
-  externalId: string;
-  externalSource: string;
-  itemType: string;
-}
-
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;

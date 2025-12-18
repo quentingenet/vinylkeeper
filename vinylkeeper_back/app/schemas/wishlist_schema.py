@@ -152,3 +152,24 @@ class WishlistDetailResponse(WishlistResponse):
         None,
         description="User who owns this wishlist item"
     )
+
+
+class WishlistItemListResponse(BaseSchema):
+    """Lightweight schema for wishlist list view (optimized for performance)."""
+    id: int = Field(gt=0, description="Unique identifier")
+    entity_type: str = Field(...,
+                             description="Entity type name (album or artist)")
+    external_id: str = Field(..., description="External ID")
+    title: str = Field(..., description="Title of the album or artist")
+    image_url: Optional[str] = Field(None, description="URL of the image")
+    created_at: datetime = Field(...,
+                                 description="When the wishlist item was created")
+
+
+class PaginatedWishlistResponse(BaseSchema):
+    """Schema for paginated wishlist response."""
+    items: List[WishlistItemListResponse] = Field(default_factory=list)
+    total: int = Field(ge=0, description="Total number of wishlist items")
+    page: int = Field(gt=0, description="Current page number")
+    limit: int = Field(gt=0, description="Number of items per page")
+    total_pages: int = Field(ge=0, description="Total number of pages")

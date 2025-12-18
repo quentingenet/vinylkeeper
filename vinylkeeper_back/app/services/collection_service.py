@@ -982,38 +982,6 @@ class CollectionService:
         elif hasattr(collection, 'owner_id'):
             is_liked = await self.like_repository.is_liked_by_user(collection.id, collection.owner_id)
 
-        # Wishlist (pour le owner)
-        wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
-        wishlist = []
-        for item in wishlist_items:
-            try:
-                item_dict = item.__dict__.copy()
-                # Robust mapping for entity_type
-                entity_type_str = None
-                if hasattr(item, 'entity_type') and item.entity_type is not None:
-                    entity_type = item.entity_type
-                    if hasattr(entity_type, 'value'):
-                        entity_type_str = entity_type.value
-                    elif hasattr(entity_type, 'name'):
-                        entity_type_str = entity_type.name.lower()
-                    else:
-                        entity_type_str = str(entity_type).lower()
-                elif hasattr(item, 'entity_type_id') and item.entity_type_id:
-                    # Fallback: map id to enum
-                    try:
-                        if item.entity_type_id == 1:
-                            entity_type_str = EntityTypeEnum.ALBUM.value
-                        elif item.entity_type_id == 2:
-                            entity_type_str = EntityTypeEnum.ARTIST.value
-                    except Exception:
-                        entity_type_str = None
-                item_dict['entity_type'] = entity_type_str
-                wishlist.append(WishlistItemResponse.model_validate(item_dict))
-            except Exception as e:
-                logger.error(
-                    f"Error processing wishlist item {getattr(item, 'id', '?')}: {str(e)}")
-                continue
-
         return CollectionResponse(
             id=collection.id,
             name=collection.name,
@@ -1028,7 +996,7 @@ class CollectionService:
             artists=artists,
             likes_count=likes_count,
             is_liked_by_user=is_liked,
-            wishlist=wishlist
+            wishlist=[]
         )
 
     async def _build_collection_response_optimized(self, collection, user_id=None, likes_count=None, is_liked=None) -> CollectionResponse:
@@ -1060,38 +1028,6 @@ class CollectionService:
         elif is_liked is None:
             is_liked = False
 
-        # Wishlist (pour le owner) - still need to query this
-        wishlist_items = await self.wishlist_repository.get_by_user_id(collection.owner_id)
-        wishlist = []
-        for item in wishlist_items:
-            try:
-                item_dict = item.__dict__.copy()
-                # Robust mapping for entity_type
-                entity_type_str = None
-                if hasattr(item, 'entity_type') and item.entity_type is not None:
-                    entity_type = item.entity_type
-                    if hasattr(entity_type, 'value'):
-                        entity_type_str = entity_type.value
-                    elif hasattr(entity_type, 'name'):
-                        entity_type_str = entity_type.name.lower()
-                    else:
-                        entity_type_str = str(entity_type).lower()
-                elif hasattr(item, 'entity_type_id') and item.entity_type_id:
-                    # Fallback: map id to enum
-                    try:
-                        if item.entity_type_id == 1:
-                            entity_type_str = EntityTypeEnum.ALBUM.value
-                        elif item.entity_type_id == 2:
-                            entity_type_str = EntityTypeEnum.ARTIST.value
-                    except Exception:
-                        entity_type_str = None
-                item_dict['entity_type'] = entity_type_str
-                wishlist.append(WishlistItemResponse.model_validate(item_dict))
-            except Exception as e:
-                logger.error(
-                    f"Error processing wishlist item {getattr(item, 'id', '?')}: {str(e)}")
-                continue
-
         return CollectionResponse(
             id=collection.id,
             name=collection.name,
@@ -1106,7 +1042,7 @@ class CollectionService:
             artists=artists,
             likes_count=likes_count,
             is_liked_by_user=is_liked,
-            wishlist=wishlist
+            wishlist=[]
         )
 
     def _build_collection_list_item(self, collection, user_id=None, likes_count=None, is_liked=None, albums_count=0, artists_count=0) -> CollectionListItemResponse:

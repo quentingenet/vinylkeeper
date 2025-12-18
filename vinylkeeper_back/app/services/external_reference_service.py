@@ -462,34 +462,6 @@ class ExternalReferenceService:
                 details={"error": str(e)}
             )
 
-    async def get_user_wishlist(self, user_id: int) -> List[WishlistItemResponse]:
-        """Get user's wishlist"""
-        try:
-            wishlist_items = await self.repository.get_user_wishlist(user_id)
-            
-            # Build responses with additional fields
-            responses = []
-            for item in wishlist_items:
-                # Get entity type name
-                entity_type_name = item.entity_type.name if item.entity_type else "Unknown"
-                
-                # Get source name
-                source_name = item.external_source.name if item.external_source else "Unknown"
-                
-                response = self._build_wishlist_response(
-                    item, entity_type_name, source_name)
-                responses.append(response)
-            
-            return responses
-
-        except Exception as e:
-            logger.error(f"Failed to get user wishlist: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get user wishlist",
-                details={"error": str(e)}
-            )
-
     async def get_collection_items(self, user_id: int) -> List[CollectionItemResponse]:
         """Get user's collection items"""
         try:

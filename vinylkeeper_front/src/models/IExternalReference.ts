@@ -1,4 +1,3 @@
-import { ExternalItem } from "./BaseTypes";
 import { VinylStateEnum } from "@utils/GlobalUtils";
 
 export interface AlbumStateData {
@@ -35,6 +34,23 @@ export interface WishlistItemResponse {
   created_at: string;
   entity_type: string;
   source: string;
+}
+
+export interface WishlistItemListResponse {
+  id: number;
+  entity_type: string;
+  external_id: string;
+  title: string;
+  image_url: string | null;
+  created_at: string;
+}
+
+export interface PaginatedWishlistResponse {
+  items: WishlistItemListResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }
 
 export interface CollectionItemResponse {

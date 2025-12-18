@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.utils.auth_utils.auth import get_current_user
@@ -13,6 +13,9 @@ from app.schemas.external_reference_schema import (
     CollectionItemResponse,
     AddToWishlistResponse,
     AddToCollectionResponse
+)
+from app.schemas.wishlist_schema import (
+    PaginatedWishlistResponse
 )
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -88,18 +91,31 @@ async def remove_from_collection(
     return result
 
 
-@router.get("/wishlist", response_model=list[WishlistItemResponse])
+@router.get("/wishlist", response_model=PaginatedWishlistResponse)
 @handle_app_exceptions
-async def get_user_wishlist(
-    user_id: int = None,
+async def get_user_wishlist_paginated(
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(8, gt=0, le=50, description="Number of items per page"),
+    user_id: int = Query(None, gt=0, description="User ID to get wishlist for (public, defaults to current user)"),
     current_user: User = Depends(get_current_user),
     service: WishlistService = Depends(get_wishlist_service)
 ):
-    """Get user's wishlist items. If user_id is provided, get that user's wishlist (for public viewing)"""
-    # If no user_id provided, use current user's ID
+    """Get wishlist items with pagination (public - any user can view any wishlist)"""
     target_user_id = user_id if user_id is not None else current_user.id
-    items = await service.get_user_wishlist(target_user_id)
-    return items
+    response = await service.get_user_wishlist_paginated(target_user_id, page, limit)
+    return response.model_dump()
+
+
+@router.get("/wishlist/{wishlist_id}", response_model=WishlistItemResponse)
+@handle_app_exceptions
+async def get_wishlist_item_detail(
+    wishlist_id: int = Path(..., gt=0, title="Wishlist Item ID"),
+    current_user: User = Depends(get_current_user),
+    service: WishlistService = Depends(get_wishlist_service)
+):
+    """Get detailed wishlist item by ID (public - any authenticated user can view)"""
+    item = await service.get_wishlist_item_detail(wishlist_id)
+    return item.model_dump()
 
 
 @router.get("/collection", response_model=list[CollectionItemResponse])
