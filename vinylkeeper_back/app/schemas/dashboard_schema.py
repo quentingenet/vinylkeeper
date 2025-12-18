@@ -39,3 +39,5 @@ class DashboardStatsResponse(BaseModel):
         None, description="Latest album added to any collection")
     latest_artist: Optional[LatestAddition] = Field(
         None, description="Latest artist added to any collection")
+    recent_albums: List[LatestAddition] = Field(
+        default_factory=list, description="Recent albums for mosaic display (3-5 items)")

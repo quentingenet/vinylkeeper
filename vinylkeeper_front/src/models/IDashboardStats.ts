@@ -23,4 +23,5 @@ export interface IDashboardStats {
   moderated_places_total: number;
   latest_album?: LatestAddition;
   latest_artist?: LatestAddition;
+  recent_albums?: LatestAddition[];
 }

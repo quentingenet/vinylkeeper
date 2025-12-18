@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, extract, select
 from app.models.album_model import Album
@@ -11,6 +12,7 @@ from app.models.association_tables import collection_artist
 from app.core.exceptions import ServerError
 from app.core.logging import logger
 
+
 class DashboardRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -19,8 +21,9 @@ class DashboardRepository:
         try:
             # Use date range instead of extract() to leverage index on created_at
             start_date = datetime(year, 1, 1)
-            end_date = datetime(year + 1, 1, 1)  # Start of next year (exclusive)
-            
+            # Start of next year (exclusive)
+            end_date = datetime(year + 1, 1, 1)
+
             query = (
                 select(
                     extract('month', Album.created_at).label('month'),
@@ -34,7 +37,8 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.all()
         except Exception as e:
-            logger.error(f"Error getting albums added per month for year {year}: {str(e)}")
+            logger.error(
+                f"Error getting albums added per month for year {year}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get albums added per month",
@@ -45,8 +49,9 @@ class DashboardRepository:
         try:
             # Use date range instead of extract() to leverage index on created_at
             start_date = datetime(year, 1, 1)
-            end_date = datetime(year + 1, 1, 1)  # Start of next year (exclusive)
-            
+            # Start of next year (exclusive)
+            end_date = datetime(year + 1, 1, 1)
+
             query = (
                 select(
                     extract('month', Artist.created_at).label('month'),
@@ -60,7 +65,8 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.all()
         except Exception as e:
-            logger.error(f"Error getting artists added per month for year {year}: {str(e)}")
+            logger.error(
+                f"Error getting artists added per month for year {year}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get artists added per month",
@@ -79,7 +85,8 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.scalar() or 0
         except Exception as e:
-            logger.error(f"Error counting user artists for user {user_id}: {str(e)}")
+            logger.error(
+                f"Error counting user artists for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count user artists",
@@ -104,6 +111,31 @@ class DashboardRepository:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get latest album",
+                details={"error": str(e)}
+            )
+
+    async def get_recent_albums(self, limit: int = 5, exclude_ids: Optional[List[int]] = None):
+        """Get recent albums added to any collection (for mosaic display), excluding specified IDs"""
+        try:
+            query = (
+                select(Album, User.username)
+                .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
+                .join(Collection, CollectionAlbum.collection_id == Collection.id)
+                .join(User, Collection.owner_id == User.id)
+                .order_by(Album.created_at.desc())
+            )
+
+            if exclude_ids:
+                query = query.filter(~Album.id.in_(exclude_ids))
+
+            query = query.limit(limit)
+            result = await self.db.execute(query)
+            return result.all()
+        except Exception as e:
+            logger.error(f"Error getting recent albums: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get recent albums",
                 details={"error": str(e)}
             )
 
@@ -138,7 +170,8 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.scalar()
         except Exception as e:
-            logger.error(f"Error counting places (is_moderated: {is_moderated}, is_valid: {is_valid}): {str(e)}")
+            logger.error(
+                f"Error counting places (is_moderated: {is_moderated}, is_valid: {is_valid}): {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count places",
@@ -158,7 +191,8 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.scalar() or 0
         except Exception as e:
-            logger.error(f"Error counting user albums total for user {user_id}: {str(e)}")
+            logger.error(
+                f"Error counting user albums total for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count user albums total",

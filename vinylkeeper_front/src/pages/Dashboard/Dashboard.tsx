@@ -345,6 +345,111 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Recently Added Mosaic */}
+        {data.recent_albums && data.recent_albums.length > 0 && (
+          <div className={styles.rowCenter}>
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: "800px",
+                mt: 2,
+                mb: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  color: "#C9A726",
+                  mb: 2,
+                  fontSize: isMobile ? "1rem" : "1.25rem",
+                  fontWeight: 600,
+                  textAlign: "center",
+                  width: "100%",
+                }}
+              >
+                Recently added by the community
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile
+                    ? "repeat(3, 1fr)"
+                    : "repeat(6, 1fr)",
+                  gap: 1.5,
+                  width: "100%",
+                  justifyItems: "center",
+                }}
+              >
+                {data.recent_albums.slice(0, 12).map((album) => (
+                  <Box
+                    key={album.id}
+                    onClick={() => {
+                      const item = toPlaybackItem(album, "album");
+                      if (item) {
+                        setSelectedPlaybackItem(item);
+                        setPlaybackModalOpen(true);
+                      }
+                    }}
+                    sx={{
+                      cursor: "pointer",
+                      transition: "transform 0.2s ease-in-out",
+                      width: "100%",
+                      maxWidth: isMobile ? "100px" : "120px",
+                      aspectRatio: "1",
+                      "&:hover": {
+                        transform: "scale(1.05)",
+                      },
+                    }}
+                  >
+                    {album.image_url ? (
+                      <img
+                        src={buildProxyImageUrl(
+                          album.image_url,
+                          200,
+                          200,
+                          85,
+                          true
+                        )}
+                        alt={album.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                          boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          backgroundColor: "#2c2c2e",
+                          borderRadius: "4px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                        }}
+                      >
+                        <Album
+                          sx={{
+                            color: "#b0b0b0",
+                            fontSize: isMobile ? "1.5rem" : "2rem",
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </div>
+        )}
+
         <div className={styles.rowCenter}>
           <div className={styles.chart}>
             <Paper className={styles.card}>
