@@ -157,15 +157,16 @@ async def delete_collection(
     return {"message": "Collection deleted successfully"}
 
 
-@router.get("/{collection_id}/details", status_code=status.HTTP_200_OK)
+@router.get("/{collection_id}/details", status_code=status.HTTP_200_OK, response_model=CollectionDetailResponse)
 @handle_app_exceptions
 async def get_collection_details(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    details = await service.get_collection_by_id(collection_id, user.id)
-    return CollectionDetailResponse.model_validate(details).model_dump()
+    """Get lightweight collection details (optimized - no albums/artists loaded)."""
+    details = await service.get_collection_details_lightweight(collection_id, user.id)
+    return details
 
 
 @router.get("/{collection_id}/albums", status_code=status.HTTP_200_OK)

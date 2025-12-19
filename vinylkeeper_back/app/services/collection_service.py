@@ -18,6 +18,7 @@ from app.schemas.collection_schema import (
     CollectionUpdate,
     CollectionResponse,
     CollectionListItemResponse,
+    CollectionDetailResponse,
     CollectionAlbumResponse,
     CollectionArtistResponse,
     PaginatedAlbumsResponse,
@@ -40,7 +41,6 @@ from app.core.exceptions import (
     ValidationError,
     ErrorCode
 )
-from app.core.transaction import transaction_context
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum, VinylStateEnum
 
@@ -133,9 +133,8 @@ class CollectionService:
         )
 
     def _convert_user_to_mini_response(self, user) -> UserMiniResponse:
-        """Convert user SQLAlchemy object to UserMiniResponse schema"""
+        """Convert user SQLAlchemy object to UserMiniResponse schema (no id - only UUID)"""
         return UserMiniResponse(
-            id=user.id,
             username=user.username,
             user_uuid=user.user_uuid
         )
@@ -167,6 +166,8 @@ class CollectionService:
                 await self.repository.add_artists(created_collection, collection_data.artist_ids)
 
             # No commit here - let the caller manage the transaction
+            # Reload collection with relations for optimized response building
+            created_collection = await self.repository.get_by_id(created_collection.id, load_relations=True)
             # Build response after successful creation
             return await self._build_collection_response(created_collection, user_id)
 
@@ -352,7 +353,7 @@ class CollectionService:
             )
 
     async def add_album_to_collection(self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate) -> CollectionAlbumResponse:
-        """Add an album to a collection with transactional integrity using transaction_context"""
+        """Add an album to a collection with transactional integrity"""
         try:
             # Get collection and verify ownership
             collection = await self.repository.get_by_id(collection_id)
@@ -774,6 +775,60 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
+    async def get_collection_details_lightweight(self, collection_id: int, user_id: int) -> CollectionDetailResponse:
+        """
+        Get lightweight collection details (optimized - no albums/artists loaded).
+        Uses aggregated queries for counts and likes.
+        """
+        try:
+            # Load collection with minimal relations (only owner, no albums/artists/likes)
+            collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+
+            # Check access
+            if not collection.is_public and collection.owner_id != user_id:
+                raise ForbiddenError(
+                    error_code=4003,
+                    message="You don't have permission to view this collection",
+                    details={"collection_id": collection_id}
+                )
+
+            # Get likes info via single optimized query
+            likes_info = await self.like_repository.get_likes_info(collection_id, user_id)
+
+            # Build owner response
+            owner = None
+            owner_uuid = None
+            if hasattr(collection, 'owner') and collection.owner:
+                owner = self._convert_user_to_mini_response(collection.owner)
+                owner_uuid = collection.owner.user_uuid
+
+            # Build lightweight response
+            return CollectionDetailResponse(
+                id=collection.id,
+                name=collection.name,
+                description=collection.description,
+                is_public=collection.is_public,
+                mood_id=collection.mood_id,
+                owner_uuid=owner_uuid,
+                owner=owner,
+                likes_count=likes_info["count"],
+                is_liked_by_user=likes_info["is_liked"],
+                created_at=collection.created_at,
+                updated_at=collection.updated_at
+            )
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+            raise e
+        except Exception as e:
+            logger.error(
+                f"Error getting collection details lightweight: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get collection details",
+                details={"error": str(e)}
+            )
+
     async def get_collection_albums_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedAlbumsResponse:
         """Get paginated albums from a collection"""
         try:
@@ -953,54 +1008,8 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
-    async def _build_collection_response(self, collection, user_id=None) -> CollectionResponse:
-        """Helper to build a CollectionResponse from a Collection instance."""
-        # Load artists
-        artists = []
-        artists_data, _ = await self.repository.get_collection_artists_paginated(collection.id, 1, 1000)
-        for artist in artists_data:
-            artists.append(
-                self._convert_artist_to_collection_artist_response(artist))
-
-        # Load albums
-        albums = []
-        albums_data = await self.collection_album_repository.get_collection_albums(collection.id)
-        for album, collection_album in albums_data:
-            albums.append(self._convert_album_to_collection_album_response(
-                album, collection_album))
-
-        # Owner
-        owner = None
-        if hasattr(collection, 'owner') and collection.owner:
-            owner = self._convert_user_to_mini_response(collection.owner)
-
-        # Likes
-        likes_count = await self.like_repository.count_likes(collection.id)
-        is_liked = False
-        if user_id is not None:
-            is_liked = await self.like_repository.is_liked_by_user(collection.id, user_id)
-        elif hasattr(collection, 'owner_id'):
-            is_liked = await self.like_repository.is_liked_by_user(collection.id, collection.owner_id)
-
-        return CollectionResponse(
-            id=collection.id,
-            name=collection.name,
-            description=collection.description,
-            is_public=collection.is_public,
-            mood_id=collection.mood_id,
-            owner_id=collection.owner_id,
-            created_at=collection.created_at,
-            updated_at=collection.updated_at,
-            owner=owner,
-            albums=albums,
-            artists=artists,
-            likes_count=likes_count,
-            is_liked_by_user=is_liked,
-            wishlist=[]
-        )
-
-    async def _build_collection_response_optimized(self, collection, user_id=None, likes_count=None, is_liked=None) -> CollectionResponse:
-        """Optimized version that uses preloaded data and pre-fetched likes info."""
+    async def _build_collection_response(self, collection, user_id=None, likes_count=None, is_liked=None) -> CollectionResponse:
+        """Build a CollectionResponse from a Collection instance using preloaded data and pre-fetched likes info."""
         # Use preloaded artists and albums (no additional queries)
         artists = []
         if hasattr(collection, 'artists') and collection.artists:

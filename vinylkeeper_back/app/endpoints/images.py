@@ -8,8 +8,10 @@ from app.utils.endpoint_utils import handle_app_exceptions
 router = APIRouter()
 
 
-def get_image_proxy_service() -> ImageProxyService:
-    return ImageProxyService()
+def get_image_proxy_service(request: Request) -> ImageProxyService:
+    """Get ImageProxyService with shared HTTP client from app state."""
+    http_client = request.app.state.http_client
+    return ImageProxyService(http_client)
 
 
 @router.get("/proxy")

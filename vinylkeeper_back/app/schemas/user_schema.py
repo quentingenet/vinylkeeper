@@ -337,11 +337,7 @@ class UserMeResponse(BaseModel):
 
 
 class UserMiniResponse(BaseSchema):
-    """Minimal user response schema."""
-    id: int = Field(
-        gt=0,
-        description="User's ID"
-    )
+    """Minimal user response schema (no id - only UUID for frontend security)."""
     username: str = Field(
         description="User's username"
     )

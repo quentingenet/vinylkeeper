@@ -21,13 +21,13 @@ export const useWishlist = (
   page: number = 1,
   itemsPerPage: number = 8,
   enabled: boolean = true,
-  userId?: number
+  userUuid?: string
 ): UseWishlistReturn => {
   const queryClient = useQueryClient();
   const { currentUser } = useUserContext();
 
-  const cacheKey = userId
-    ? ["wishlist", userId, page]
+  const cacheKey = userUuid
+    ? ["wishlist", userUuid, page]
     : ["wishlist", currentUser?.user_uuid, page];
 
   const {
@@ -41,13 +41,13 @@ export const useWishlist = (
       externalReferenceApiService.getUserWishlistPaginated(
         page,
         itemsPerPage,
-        userId
+        userUuid
       ),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
     retryDelay: 1000,
-    enabled: enabled && (!!userId || !!currentUser?.user_uuid),
+    enabled: enabled && (!!userUuid || !!currentUser?.user_uuid),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -61,7 +61,7 @@ export const useWishlist = (
     isError,
     refreshWishlist: () => {
       void queryClient.invalidateQueries({
-        queryKey: userId ? ["wishlist", userId] : ["wishlist"],
+        queryKey: userUuid ? ["wishlist", userUuid] : ["wishlist"],
       });
     },
   };

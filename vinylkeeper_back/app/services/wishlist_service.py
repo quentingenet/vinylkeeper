@@ -17,7 +17,6 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ServerError
 )
-from app.core.transaction import transaction_context
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
 
@@ -62,12 +61,13 @@ class WishlistService:
                         ))
                     except Exception as create_error:
                         # If creation fails (e.g., due to race condition), try to find again
-                        logger.warning(f"Failed to create album, trying to find existing: {str(create_error)}")
+                        logger.warning(
+                            f"Failed to create album, trying to find existing: {str(create_error)}")
                         entity = await self.external_ref_repo.find_album_by_external_id(external_id, external_source_id)
                         if not entity:
                             # Still not found, re-raise the original error
                             raise create_error
-                
+
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
                     "id": entity.id,
@@ -98,12 +98,13 @@ class WishlistService:
                         ))
                     except Exception as create_error:
                         # If creation fails (e.g., due to race condition), try to find again
-                        logger.warning(f"Failed to create artist, trying to find existing: {str(create_error)}")
+                        logger.warning(
+                            f"Failed to create artist, trying to find existing: {str(create_error)}")
                         entity = await self.external_ref_repo.find_artist_by_external_id(external_id, external_source_id)
                         if not entity:
                             # Still not found, re-raise the original error
                             raise create_error
-                
+
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
                     "id": entity.id,
@@ -130,7 +131,7 @@ class WishlistService:
             )
 
     async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> AddToWishlistResponse:
-        """Add an album or artist to the wishlist with transactional integrity using transaction_context"""
+        """Add an album or artist to the wishlist with transactional integrity"""
         try:
             external_id = request.get_external_id()
             if not external_id:
@@ -143,7 +144,8 @@ class WishlistService:
             existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
             is_new = False
             if existing:
-                wishlist_response = self._build_wishlist_response(existing, request.entity_type.value, request.source)
+                wishlist_response = self._build_wishlist_response(
+                    existing, request.entity_type.value, request.source)
                 return AddToWishlistResponse(
                     item=wishlist_response,
                     is_new=False,
@@ -153,13 +155,13 @@ class WishlistService:
 
             # Get external source ID once (avoid duplicate queries)
             external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
-            
+
             # Find or create entity (pass external_source_id to avoid duplicate query)
             await self._find_or_create_entity(request, external_source_id)
 
             # Create wishlist item
             entity_type_id = await self.external_ref_repo.get_entity_type_id(request.entity_type)
-            
+
             result = await self.wishlist_repo.add_to_wishlist(
                 user_id=user_id,
                 external_id=external_id,
@@ -168,11 +170,12 @@ class WishlistService:
                 image_url=request.image_url,
                 external_source_id=external_source_id
             )
-            
+
             # Commit the transaction
             await self.wishlist_repo.db.commit()
 
-            wishlist_response = self._build_wishlist_response(result, request.entity_type.value, request.source)
+            wishlist_response = self._build_wishlist_response(
+                result, request.entity_type.value, request.source)
             return AddToWishlistResponse(
                 item=wishlist_response,
                 is_new=True,
@@ -205,7 +208,7 @@ class WishlistService:
         return WishlistItemResponse.model_validate(wishlist_dict)
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
-        """Remove an item from user's wishlist with transactional integrity using transaction_context"""
+        """Remove an item from user's wishlist with transactional integrity"""
         try:
             # Find wishlist item and verify ownership
             wishlist_item = await self.wishlist_repo.get_by_id(wishlist_id)
@@ -214,13 +217,13 @@ class WishlistService:
                     resource_type="Wishlist item",
                     resource_id=wishlist_id
                 )
-            
+
             # Remove from wishlist (use the item we already found)
             await self.wishlist_repo._delete_entity(wishlist_item)
-            
+
             # Commit the transaction
             await self.wishlist_repo.db.commit()
-                
+
             return True
         except ResourceNotFoundError:
             raise
@@ -249,9 +252,9 @@ class WishlistService:
         """Get paginated wishlist items for a user (lightweight DTO)"""
         try:
             self._validate_pagination_params(page, limit)
-            
+
             items, total = await self.wishlist_repo.get_user_wishlist_paginated(user_id, page, limit)
-            
+
             list_responses = []
             for item in items:
                 try:
@@ -260,7 +263,7 @@ class WishlistService:
                         entity_type_str = "album"
                     elif item.entity_type_id == 2:
                         entity_type_str = "artist"
-                    
+
                     list_response = WishlistItemListResponse(
                         id=item.id,
                         entity_type=entity_type_str,
@@ -271,11 +274,12 @@ class WishlistService:
                     )
                     list_responses.append(list_response)
                 except Exception as e:
-                    logger.error(f"Error processing wishlist item {item.id}: {str(e)}")
+                    logger.error(
+                        f"Error processing wishlist item {item.id}: {str(e)}")
                     continue
-            
+
             total_pages = (total + limit - 1) // limit if total > 0 else 0
-            
+
             return PaginatedWishlistResponse(
                 items=list_responses,
                 total=total,
@@ -283,7 +287,7 @@ class WishlistService:
                 limit=limit,
                 total_pages=total_pages
             )
-            
+
         except ValidationError:
             raise
         except Exception as e:
@@ -300,12 +304,12 @@ class WishlistService:
             item = await self.wishlist_repo.get_by_id_with_relations(wishlist_id)
             if not item:
                 raise ResourceNotFoundError("Wishlist item", wishlist_id)
-            
+
             entity_type_str = item.entity_type.name.lower() if item.entity_type else "unknown"
             source_str = item.external_source.name.lower() if item.external_source else "unknown"
-            
+
             return self._build_wishlist_response(item, entity_type_str, source_str)
-            
+
         except ResourceNotFoundError:
             raise
         except Exception as e:

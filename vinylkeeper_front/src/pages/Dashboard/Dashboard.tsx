@@ -195,7 +195,7 @@ export default function Dashboard() {
       </Box>
     );
   }
-  if (isError || !data) {
+  if (!isLoading && isError) {
     return (
       <Box
         display="flex"
@@ -204,6 +204,14 @@ export default function Dashboard() {
         minHeight="300px"
       >
         <Typography color="error">Failed to load dashboard data.</Typography>
+      </Box>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Box display="flex" justifyContent="center" my={4}>
+        <VinylSpinner />
       </Box>
     );
   }

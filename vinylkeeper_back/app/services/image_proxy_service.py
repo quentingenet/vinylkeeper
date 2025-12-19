@@ -17,7 +17,7 @@ class ImageProxyService:
     REQUEST_TIMEOUT = 10.0
     DEFAULT_QUALITY = 85
 
-    def __init__(self):
+    def __init__(self, http_client: Optional[httpx.AsyncClient] = None):
         cache_path = os.getenv("IMAGE_CACHE_DIR")
         if cache_path:
             self.cache_dir = Path(cache_path)
@@ -25,6 +25,7 @@ class ImageProxyService:
             self.cache_dir = Path(
                 __file__).parent.parent.parent / "cache" / "images"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.http_client = http_client
 
     def _validate_domain(self, url: str) -> None:
         if not url or not url.strip():
@@ -94,8 +95,23 @@ class ImageProxyService:
 
     async def _fetch_image(self, url: str) -> bytes:
         try:
-            async with httpx.AsyncClient(timeout=self.REQUEST_TIMEOUT) as client:
-                response = await client.get(url)
+            client_to_use = self.http_client
+            if not client_to_use:
+                # Fallback: create temporary client if shared client not available
+                async with httpx.AsyncClient(timeout=self.REQUEST_TIMEOUT) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+
+                    content_length = response.headers.get("content-length")
+                    if content_length and int(content_length) > self.MAX_IMAGE_SIZE:
+                        raise ValidationError(
+                            error_code=ErrorCode.INVALID_INPUT,
+                            message="Image size exceeds maximum allowed size",
+                            details={"max_size": self.MAX_IMAGE_SIZE}
+                        )
+                    return response.content
+            else:
+                response = await client_to_use.get(url)
                 response.raise_for_status()
 
                 content_length = response.headers.get("content-length")

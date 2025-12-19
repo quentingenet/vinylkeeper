@@ -71,11 +71,11 @@ export class ExternalReferenceService extends BaseApiService {
   async getUserWishlistPaginated(
     page: number = 1,
     limit: number = 8,
-    userId?: number
+    userUuid?: string
   ): Promise<PaginatedWishlistResponse> {
     try {
-      const url = userId 
-        ? `${this.endpoint}/wishlist?page=${page}&limit=${limit}&user_id=${userId}`
+      const url = userUuid 
+        ? `${this.endpoint}/wishlist?page=${page}&limit=${limit}&user_uuid=${userUuid}`
         : `${this.endpoint}/wishlist?page=${page}&limit=${limit}`;
       return await this.get<PaginatedWishlistResponse>(url);
     } catch (error) {
@@ -128,8 +128,8 @@ export const externalReferenceApiService = {
       externalId,
       entityType
     ),
-  getUserWishlistPaginated: (page: number = 1, limit: number = 8, userId?: number) =>
-    externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userId),
+  getUserWishlistPaginated: (page: number = 1, limit: number = 8, userUuid?: string) =>
+    externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userUuid),
   getWishlistItemDetail: (wishlistId: number) =>
     externalReferenceServiceInstance.getWishlistItemDetail(wishlistId),
   getCollectionItems: () =>

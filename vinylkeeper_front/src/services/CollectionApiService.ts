@@ -3,7 +3,6 @@ import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
 import { WishlistItemResponse } from "@models/IExternalReference";
 
 export interface UserMiniResponse {
-  id: number;
   username: string;
   user_uuid: string;
 }
@@ -110,8 +109,18 @@ export interface CollectionListItemResponse {
   image_preview?: string | null;
 }
 
-export interface CollectionDetailResponse extends CollectionResponse {
-  liked_by: UserMiniResponse[];
+export interface CollectionDetailResponse {
+  id: number;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  mood_id: number | null;
+  owner_uuid: string;
+  owner: UserMiniResponse | null;
+  likes_count: number;
+  is_liked_by_user: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LikeStatusResponse {
@@ -140,7 +149,7 @@ export interface PaginatedArtistsResponse {
 export interface CollectionSearchResponse {
   albums: CollectionAlbumResponse[];
   artists: CollectionArtistResponse[];
-  search_term: string;
+  query: string;
   search_type: string;
 }
 

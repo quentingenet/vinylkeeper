@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
 
@@ -185,9 +186,20 @@ class CollectionListItemResponse(BaseSchema):
         None, description="First album image URL if available")
 
 
-class CollectionDetailResponse(CollectionResponse):
-    """Detailed collection response including all related data."""
-    liked_by: List[UserMiniResponse] = Field(default_factory=list)
+class CollectionDetailResponse(BaseSchema):
+    """Lightweight collection detail response (optimized - no albums/artists loaded)."""
+    id: int = Field(gt=0)
+    name: str
+    description: Optional[str] = None
+    is_public: bool
+    mood_id: Optional[int] = None
+    owner_uuid: UUID = Field(
+        description="Owner's UUID (no id exposed to frontend)")
+    owner: Optional[UserMiniResponse] = None
+    likes_count: int = Field(default=0)
+    is_liked_by_user: bool = Field(default=False)
+    created_at: datetime
+    updated_at: datetime
 
 
 class PaginatedAlbumsResponse(BaseSchema):

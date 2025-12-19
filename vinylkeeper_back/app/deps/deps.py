@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Repositories
@@ -91,6 +91,7 @@ def get_collection_service(
 ) -> CollectionService:
     return CollectionService(repository, like_repository, collection_album_repository, wishlist_repository, place_repository)
 
+
 def get_collection_service_with_session(
     db: AsyncSession,
     repository: CollectionRepository = Depends(get_collection_repository),
@@ -107,12 +108,14 @@ def get_collection_service_with_session(
     collection_album_repo = CollectionAlbumRepository(db)
     wishlist_repo = WishlistRepository(db)
     place_repo = PlaceRepository(db)
-    
+
     return CollectionService(collection_repo, like_repo, collection_album_repo, wishlist_repo, place_repo)
 
 
-def get_search_service() -> SearchService:
-    return SearchService()
+def get_search_service(request: Request) -> SearchService:
+    """Get SearchService with shared HTTP client from app state."""
+    http_client = request.app.state.http_client
+    return SearchService(http_client)
 
 
 def get_external_reference_service(
@@ -124,14 +127,16 @@ def get_external_reference_service(
 
 def get_wishlist_service(
     wishlist_repo: WishlistRepository = Depends(get_wishlist_repository),
-    external_ref_repo: ExternalReferenceRepository = Depends(get_external_reference_repository)
+    external_ref_repo: ExternalReferenceRepository = Depends(
+        get_external_reference_repository)
 ) -> WishlistService:
     return WishlistService(wishlist_repo, external_ref_repo)
 
 
 def get_place_service(
     place_repo: PlaceRepository = Depends(get_place_repository),
-    moderation_request_repo: ModerationRequestRepository = Depends(get_moderation_request_repository)
+    moderation_request_repo: ModerationRequestRepository = Depends(
+        get_moderation_request_repository)
 ) -> PlaceService:
     return PlaceService(place_repo, moderation_request_repo)
 
@@ -144,14 +149,17 @@ def get_user_service(
 
 
 def get_dashboard_service(
-    dashboard_repository: DashboardRepository = Depends(get_dashboard_repository),
-    collection_repository: CollectionRepository = Depends(get_collection_repository),
+    dashboard_repository: DashboardRepository = Depends(
+        get_dashboard_repository),
+    collection_repository: CollectionRepository = Depends(
+        get_collection_repository),
 ) -> DashboardService:
     return DashboardService(dashboard_repository, collection_repository)
 
 
 def get_moderation_service(
-    moderation_repo: ModerationRequestRepository = Depends(get_moderation_request_repository),
+    moderation_repo: ModerationRequestRepository = Depends(
+        get_moderation_request_repository),
     place_repo: PlaceRepository = Depends(get_place_repository)
 ) -> ModerationService:
     """Get moderation service instance."""

@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
@@ -5,6 +6,8 @@ from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.external_reference_service import ExternalReferenceService
 from app.services.wishlist_service import WishlistService
+from app.services.user_service import UserService
+from app.services.collection_service import CollectionService
 from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
     AddToCollectionRequest,
@@ -23,7 +26,7 @@ from app.core.exceptions import (
     ForbiddenError,
     ServerError
 )
-from app.deps.deps import get_external_reference_service, get_wishlist_service
+from app.deps.deps import get_external_reference_service, get_wishlist_service, get_user_service, get_collection_service
 from app.core.enums import EntityTypeEnum
 from app.utils.endpoint_utils import handle_app_exceptions
 
@@ -86,7 +89,7 @@ async def remove_from_collection(
             error_code=3002,
             message=f"Invalid entity_type: {entity_type}"
         )
-    
+
     result = await service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
     return result
 
@@ -96,12 +99,52 @@ async def remove_from_collection(
 async def get_user_wishlist_paginated(
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(8, gt=0, le=50, description="Number of items per page"),
-    user_id: int = Query(None, gt=0, description="User ID to get wishlist for (public, defaults to current user)"),
+    user_uuid: Optional[str] = Query(
+        None, description="User UUID to get wishlist for (defaults to current user)"),
     current_user: User = Depends(get_current_user),
-    service: WishlistService = Depends(get_wishlist_service)
+    service: WishlistService = Depends(get_wishlist_service),
+    user_service: UserService = Depends(get_user_service),
+    collection_service: CollectionService = Depends(get_collection_service)
 ):
-    """Get wishlist items with pagination (public - any user can view any wishlist)"""
-    target_user_id = user_id if user_id is not None else current_user.id
+    """
+    Get wishlist items with pagination.
+    Wishlist visibility follows collection visibility:
+    - If user has at least one public collection → wishlist is public
+    - If all collections are private → wishlist is private (only owner can view)
+    """
+    if user_uuid:
+        # Convert UUID to user_id
+        target_user = await user_service.get_user_by_uuid(user_uuid)
+        target_user_id = target_user.id
+
+        # Check if target user has at least one public collection
+        # If not, only the owner can view their wishlist
+        if target_user_id != current_user.id:
+            # Check if user has any public collection using collection_service
+            from sqlalchemy import select
+            from app.models.collection_model import Collection
+
+            # Get database session from collection_service
+            db = collection_service.repository.db
+
+            # Check if user has at least one public collection
+            query = select(Collection).filter(
+                Collection.owner_id == target_user_id,
+                Collection.is_public == True
+            ).limit(1)
+            result = await db.execute(query)
+            has_public_collection = result.scalar_one_or_none() is not None
+
+            if not has_public_collection:
+                # All collections are private, so wishlist is private
+                raise ForbiddenError(
+                    error_code=4003,
+                    message="You don't have permission to view this wishlist (user has no public collections)",
+                    details={"user_uuid": user_uuid}
+                )
+    else:
+        target_user_id = current_user.id
+
     response = await service.get_user_wishlist_paginated(target_user_id, page, limit)
     return response.model_dump()
 

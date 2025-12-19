@@ -144,7 +144,6 @@ export const useCollections = (
           likes_count: 0,
           is_liked_by_user: false,
           owner: {
-            id: 0, // Will be set by server
             username: currentUser!.username,
             user_uuid: currentUser!.user_uuid,
           },

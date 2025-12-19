@@ -162,19 +162,14 @@ export default function CollectionDetails() {
   });
 
   // Wishlist query - load collection owner's wishlist with pagination (public)
-  const shouldLoadWishlist = tabValue === 2 && !!collectionDetails?.owner_id;
-  const ownerId = collectionDetails?.owner_id;
-  
+  const shouldLoadWishlist = tabValue === 2 && !!collectionDetails?.owner_uuid;
+  const ownerUuid = collectionDetails?.owner_uuid;
+
   const {
     wishlistItems: ownerWishlistItems,
     totalPages: wishlistTotalPages,
     wishlistLoading: isLoadingWishlist,
-  } = useWishlist(
-    wishlistPage,
-    wishlistLimit,
-    shouldLoadWishlist,
-    ownerId
-  );
+  } = useWishlist(wishlistPage, wishlistLimit, shouldLoadWishlist, ownerUuid);
 
   // Search query with debounced term
   const {
@@ -204,7 +199,7 @@ export default function CollectionDetails() {
   const wishlistItemsAsResponse: WishlistItemResponse[] = useMemo(() => {
     return ownerWishlistItems.map((item) => ({
       id: item.id,
-      user_id: collectionDetails?.owner_id || 0,
+      user_id: 0, // Not used in frontend, kept for compatibility
       external_id: item.external_id,
       entity_type_id: item.entity_type === "album" ? 1 : 2,
       external_source_id: 0,
@@ -214,7 +209,7 @@ export default function CollectionDetails() {
       entity_type: item.entity_type,
       source: "",
     }));
-  }, [ownerWishlistItems, collectionDetails?.owner_id]);
+  }, [ownerWishlistItems, collectionDetails?.owner_uuid]);
 
   // Filter wishlist items for search (client-side filtering)
   const filteredWishlistItems = useMemo(() => {
@@ -482,12 +477,25 @@ export default function CollectionDetails() {
     );
   }
 
-  if (detailsError || !collectionDetails) {
+  if (!isLoadingDetails && detailsError) {
     return (
       <Box>
         <Typography variant="h6" color="error">
           Collection not found
         </Typography>
+      </Box>
+    );
+  }
+
+  if (!collectionDetails) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <VinylSpinner />
       </Box>
     );
   }
@@ -866,7 +874,7 @@ export default function CollectionDetails() {
             >
               <VinylSpinner />
             </Box>
-          ) : albumsError ? (
+          ) : !isLoadingAlbums && albumsError ? (
             <Typography variant="h6" color="error">
               Error loading albums
             </Typography>
@@ -1271,7 +1279,7 @@ export default function CollectionDetails() {
             >
               <VinylSpinner />
             </Box>
-          ) : artistsError ? (
+          ) : !isLoadingArtists && artistsError ? (
             <Typography variant="h6" color="error">
               Error loading artists
             </Typography>

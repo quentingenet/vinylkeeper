@@ -16,7 +16,7 @@ from app.core.exceptions import (
 )
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 
 class CollectionRepository(TransactionalMixin):
@@ -42,12 +42,21 @@ class CollectionRepository(TransactionalMixin):
                 details={"error": str(e)}
             )
 
-    async def get_by_id(self, collection_id: int, load_relations: bool = True) -> Collection:
-        """Get a collection by its ID with optimized relation loading."""
+    async def get_by_id(self, collection_id: int, load_relations: bool = True, load_minimal: bool = False) -> Collection:
+        """
+        Get a collection by its ID with optimized relation loading.
+        
+        Args:
+            load_relations: If True, load all relations (albums, artists, likes, etc.)
+            load_minimal: If True, load only owner (optimized for lightweight responses)
+        """
         try:
             query = select(Collection).filter(Collection.id == collection_id)
 
-            if load_relations:
+            if load_minimal:
+                # Only load owner for lightweight responses
+                query = query.options(selectinload(Collection.owner))
+            elif load_relations:
                 query = query.options(
                     selectinload(Collection.owner),
                     selectinload(Collection.collection_albums).selectinload(
@@ -457,6 +466,40 @@ class CollectionRepository(TransactionalMixin):
                 likes_counts[collection_id] = 0
 
         return likes_counts
+
+    async def get_collection_counts(self, collection_id: int) -> Dict[str, int]:
+        """
+        Get albums_count and artists_count for a single collection (optimized with aggregation).
+        
+        Returns:
+            dict: {"albums_count": int, "artists_count": int}
+        """
+        try:
+            # Albums count (CollectionAlbum uses composite primary key, so count album_id)
+            albums_count_query = select(func.count(CollectionAlbum.album_id)).filter(
+                CollectionAlbum.collection_id == collection_id
+            )
+            albums_result = await self.db.execute(albums_count_query)
+            albums_count = albums_result.scalar() or 0
+            
+            # Artists count
+            artists_count_query = select(func.count(collection_artist.c.artist_id)).filter(
+                collection_artist.c.collection_id == collection_id
+            )
+            artists_result = await self.db.execute(artists_count_query)
+            artists_count = artists_result.scalar() or 0
+            
+            return {
+                "albums_count": albums_count,
+                "artists_count": artists_count
+            }
+        except Exception as e:
+            logger.error(f"Error getting collection counts for collection {collection_id}: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get collection counts",
+                details={"error": str(e)}
+            )
 
     async def get_user_collections_likes(self, user_id: int, collection_ids: List[int]) -> dict:
         """Get which collections are liked by a user in one query."""

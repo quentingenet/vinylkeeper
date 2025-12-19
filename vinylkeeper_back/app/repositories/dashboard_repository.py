@@ -23,7 +23,7 @@ class DashboardRepository:
             start_date = datetime(year, 1, 1)
             # Start of next year (exclusive)
             end_date = datetime(year + 1, 1, 1)
-
+            
             query = (
                 select(
                     extract('month', Album.created_at).label('month'),
@@ -51,7 +51,7 @@ class DashboardRepository:
             start_date = datetime(year, 1, 1)
             # Start of next year (exclusive)
             end_date = datetime(year + 1, 1, 1)
-
+            
             query = (
                 select(
                     extract('month', Artist.created_at).label('month'),
