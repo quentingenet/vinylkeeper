@@ -170,15 +170,17 @@ def set_token_cookie(
     else:
         max_age = custom_max_age or REFRESH_TOKEN_EXPIRE_MINUTES * 60
 
+    is_production = settings.APP_ENV != "development"
+    
     response.set_cookie(
         key=f"{token_type.value}_token",
         value=token,
         max_age=max_age,
         httponly=True,
-        secure=settings.APP_ENV != "development",
-        samesite="lax",
+        secure=is_production,
+        samesite="none" if is_production else "lax",
         path="/",
-        domain=settings.COOKIE_DOMAIN if settings.APP_ENV != "development" else None
+        domain=None
     )
 
 

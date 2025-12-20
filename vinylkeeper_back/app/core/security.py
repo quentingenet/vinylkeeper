@@ -7,8 +7,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def configure_cors(app: FastAPI):
-    origins = settings.ALLOWED_ORIGINS.split(",")
+    origins = [origin.strip()
+               for origin in settings.ALLOWED_ORIGINS.split(",")]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -21,11 +23,13 @@ def configure_cors(app: FastAPI):
             "Origin",
             "X-Requested-With",
             "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
+            "Access-Control-Request-Headers",
+            "Cookie"
         ],
         expose_headers=[
             "Content-Type",
-            "Authorization"
+            "Authorization",
+            "Set-Cookie"
         ],
         max_age=3600,
     )
