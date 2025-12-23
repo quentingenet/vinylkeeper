@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, or_, select, func
+from sqlalchemy import and_, or_, select, func, case
 from sqlalchemy.orm import selectinload
 
 from app.models.place_model import Place
@@ -349,6 +349,41 @@ class PlaceRepository(TransactionalMixin):
 
         # Create a dict mapping place_id to is_liked boolean
         return {place_id: place_id in liked_place_ids for place_id in place_ids}
+
+    async def get_places_likes_info_batch(self, user_id: Optional[int], place_ids: List[int]) -> dict:
+        """Get both likes counts and user likes status in a single optimized query."""
+        if not place_ids:
+            return {'counts': {}, 'user_likes': {}}
+        
+        # Single query with aggregation: counts and user like status
+        query = select(
+            PlaceLike.place_id,
+            func.count(PlaceLike.id).label('count'),
+            func.max(case((PlaceLike.user_id == user_id, 1), else_=0)).label('is_liked')
+        ).filter(
+            PlaceLike.place_id.in_(place_ids)
+        ).group_by(PlaceLike.place_id)
+        
+        result = await self.db.execute(query)
+        rows = result.all()
+        
+        # Build dictionaries
+        counts = {}
+        user_likes = {}
+        
+        for row in rows:
+            place_id = row.place_id
+            counts[place_id] = row.count
+            user_likes[place_id] = bool(row.is_liked) if user_id else False
+        
+        # Ensure all place_ids have entries (even if 0)
+        for place_id in place_ids:
+            if place_id not in counts:
+                counts[place_id] = 0
+            if place_id not in user_likes:
+                user_likes[place_id] = False
+        
+        return {'counts': counts, 'user_likes': user_likes}
 
     async def is_place_liked_by_user(self, user_id: int, place_id: int) -> bool:
         """Check if a place is liked by a specific user."""

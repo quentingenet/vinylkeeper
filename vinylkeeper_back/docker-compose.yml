@@ -43,7 +43,7 @@ services:
         echo '[boot] running alembic...';
         poetry run alembic upgrade head;
         echo '[boot] starting gunicorn with uvicorn workers...';
-        exec poetry run gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --proxy-headers --access-logfile - --error-logfile -
+        exec poetry run gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -
       "
     restart: always
 

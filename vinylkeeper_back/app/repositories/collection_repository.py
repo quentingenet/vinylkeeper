@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, case
 from sqlalchemy.exc import IntegrityError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
@@ -513,6 +513,41 @@ class CollectionRepository(TransactionalMixin):
 
         # Create a dict mapping collection_id to is_liked boolean
         return {collection_id: collection_id in liked_collection_ids for collection_id in collection_ids}
+
+    async def get_collections_likes_info_batch(self, user_id: Optional[int], collection_ids: List[int]) -> dict:
+        """Get both likes counts and user likes status in a single optimized query."""
+        if not collection_ids:
+            return {'counts': {}, 'user_likes': {}}
+        
+        # Single query with aggregation: counts and user like status
+        query = select(
+            Like.collection_id,
+            func.count(Like.id).label('count'),
+            func.max(case((Like.user_id == user_id, 1), else_=0)).label('is_liked')
+        ).filter(
+            Like.collection_id.in_(collection_ids)
+        ).group_by(Like.collection_id)
+        
+        result = await self.db.execute(query)
+        rows = result.all()
+        
+        # Build dictionaries
+        counts = {}
+        user_likes = {}
+        
+        for row in rows:
+            collection_id = row.collection_id
+            counts[collection_id] = row.count
+            user_likes[collection_id] = bool(row.is_liked) if user_id else False
+        
+        # Ensure all collection_ids have entries (even if 0)
+        for collection_id in collection_ids:
+            if collection_id not in counts:
+                counts[collection_id] = 0
+            if collection_id not in user_likes:
+                user_likes[collection_id] = False
+        
+        return {'counts': counts, 'user_likes': user_likes}
 
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Collection], int]:
         """Get user's collections with pagination and optimized relation loading (list view)."""

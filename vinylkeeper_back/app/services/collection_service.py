@@ -2,7 +2,6 @@ from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
-import asyncio
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
@@ -538,12 +537,10 @@ class CollectionService:
             # Get all collection IDs for batch operations
             collection_ids = [collection.id for collection in collections]
 
-            # Get likes info for all collections in batch (2 queries instead of N*2)
-            likes_counts, user_likes = await asyncio.gather(
-                self.repository.get_collections_likes_counts(collection_ids),
-                self.repository.get_user_collections_likes(
-                    user_id, collection_ids)
-            )
+            # Get likes info in a single optimized query (reduces from 2 queries to 1)
+            likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
+            likes_counts = likes_info['counts']
+            user_likes = likes_info['user_likes']
 
             collection_responses = []
             for collection in collections:
@@ -590,17 +587,10 @@ class CollectionService:
             # Get all collection IDs for batch operations
             collection_ids = [collection.id for collection in collections]
 
-            # Get likes info for all collections in batch (2 queries instead of N*2)
-            if user_id:
-                likes_counts, user_likes = await asyncio.gather(
-                    self.repository.get_collections_likes_counts(
-                        collection_ids),
-                    self.repository.get_user_collections_likes(
-                        user_id, collection_ids)
-                )
-            else:
-                likes_counts = await self.repository.get_collections_likes_counts(collection_ids)
-                user_likes = {}
+            # Get likes info in a single optimized query (reduces from 2 queries to 1)
+            likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
+            likes_counts = likes_info['counts']
+            user_likes = likes_info['user_likes']
 
             collection_responses = []
             for collection in collections:

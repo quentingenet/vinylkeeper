@@ -1,4 +1,3 @@
-import asyncio
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.collection_repository import CollectionRepository
 from app.models.user_model import User
@@ -18,11 +17,9 @@ class DashboardService:
                 "January", "February", "March", "April", "May", "June", "July",
                 "August", "September", "October", "November", "December"
             ]
-            # Get monthly stats in parallel
-            albums, artists = await asyncio.gather(
-                self.dashboard_repository.get_albums_added_per_month(year),
-                self.dashboard_repository.get_artists_added_per_month(year)
-            )
+            # Get monthly stats sequentially to avoid concurrent queries on same session
+            albums = await self.dashboard_repository.get_albums_added_per_month(year)
+            artists = await self.dashboard_repository.get_artists_added_per_month(year)
 
             albums_data = [0] * 12
             artists_data = [0] * 12
@@ -31,21 +28,20 @@ class DashboardService:
             for row in artists:
                 artists_data[int(row.month) - 1] = row.count
 
-            # Total user stats - optimized with batch queries
-            user_albums_total, user_artists_total, user_collections_total = await asyncio.gather(
-                self.dashboard_repository.count_user_albums_total(user.id),
-                self.dashboard_repository.count_user_artists(user.id),
-                self.collection_repository.count_by_owner(user.id)
-            )
+            # Get user stats using optimized batch query (reduces from 3 queries to 2)
+            user_stats = await self.dashboard_repository.get_user_stats_batch(user.id)
+            user_albums_total = user_stats['albums_total']
+            user_artists_total = user_stats['artists_total']
+            user_collections_total = await self.collection_repository.count_by_owner(user.id)
 
-            # Get latest additions and places counts in parallel
-            latest_album_result, latest_artist_result, moderated_places_total, global_places_total = await asyncio.gather(
-                self.dashboard_repository.get_latest_album(),
-                self.dashboard_repository.get_latest_artist(),
-                self.dashboard_repository.count_places(
-                    is_moderated=True, is_valid=True),
-                self.dashboard_repository.count_places(is_valid=True)
-            )
+            # Get latest additions sequentially
+            latest_album_result = await self.dashboard_repository.get_latest_album()
+            latest_artist_result = await self.dashboard_repository.get_latest_artist()
+
+            # Get places counts using optimized batch query (reduces from 2 queries to 1)
+            places_counts = await self.dashboard_repository.get_places_counts_batch()
+            moderated_places_total = places_counts['moderated_total']
+            global_places_total = places_counts['global_total']
 
             # Process latest album
             latest_album = None
@@ -87,9 +83,9 @@ class DashboardService:
                 exclude_ids.append(latest_album_id)
             if latest_artist_id:
                 exclude_ids.append(latest_artist_id)
-            
+
             recent_albums_result = await self.dashboard_repository.get_recent_albums(
-                limit=12, 
+                limit=12,
                 exclude_ids=exclude_ids if exclude_ids else None
             )
 

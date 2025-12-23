@@ -1,4 +1,3 @@
-import asyncio
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -191,11 +190,10 @@ class PlaceService:
 
             place_ids = [place.id for place in places]
 
-            # Get likes info in batch (user_id is always provided since auth is required)
-            likes_counts, user_likes = await asyncio.gather(
-                self.repository.get_places_likes_counts(place_ids),
-                self.repository.get_user_places_likes(user_id, place_ids)
-            )
+            # Get likes info in a single optimized query (reduces from 2 queries to 1)
+            likes_info = await self.repository.get_places_likes_info_batch(user_id, place_ids)
+            likes_counts = likes_info['counts']
+            user_likes = likes_info['user_likes']
 
             response_places = []
             for place in places:
@@ -224,17 +222,10 @@ class PlaceService:
             # Get all place IDs
             place_ids = [place.id for place in places]
 
-            # Get likes info for all places in parallel (2 queries executed simultaneously)
-            if user_id:
-                # Execute both queries in parallel for better performance
-                likes_counts, user_likes = await asyncio.gather(
-                    self.repository.get_places_likes_counts(place_ids),
-                    self.repository.get_user_places_likes(user_id, place_ids)
-                )
-            else:
-                # Only get likes counts if no user (no need for user_likes)
-                likes_counts = await self.repository.get_places_likes_counts(place_ids)
-                user_likes = {}
+            # Get likes info in a single optimized query (reduces from 2 queries to 1)
+            likes_info = await self.repository.get_places_likes_info_batch(user_id, place_ids)
+            likes_counts = likes_info['counts']
+            user_likes = likes_info['user_likes']
 
             # Build responses efficiently
             response_places = []
