@@ -82,5 +82,24 @@
             max-width: 100%;
             width: 100%;
         }
+
+        :global {
+            canvas {
+                cursor: pointer;
+            }
+
+            .chartjs-legend {
+                li {
+                    cursor: pointer;
+                    transition: all 0.2s ease-in-out;
+                    opacity: 0.8;
+
+                    &:hover {
+                        opacity: 1;
+                        transform: scale(1.02);
+                    }
+                }
+            }
+        }
     }
 }

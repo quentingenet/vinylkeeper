@@ -2,19 +2,13 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
-  CircularProgress,
   Card,
   CardContent,
   Avatar,
 } from "@mui/material";
-import { Line } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
   ArcElement,
   Tooltip,
   Legend,
@@ -32,19 +26,11 @@ import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import TutorialModal from "@components/Modals/TutorialModal";
 import { useUserContext } from "@contexts/UserContext";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 
-ChartJS.register(
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const LatestAdditionCard = ({
   title,
@@ -145,6 +131,46 @@ export default function Dashboard() {
     staleTime: 0, // Always consider data stale to refetch on mount
   });
 
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chartContainerRef.current && data) {
+      const legendItems =
+        chartContainerRef.current.querySelectorAll(".chartjs-legend li");
+
+      const cleanupFunctions: Array<() => void> = [];
+
+      legendItems.forEach((item) => {
+        const htmlItem = item as HTMLElement;
+        htmlItem.style.cursor = "pointer";
+        htmlItem.style.transition = "all 0.2s ease-in-out";
+        htmlItem.style.opacity = "0.8";
+
+        const handleMouseEnter = () => {
+          htmlItem.style.opacity = "1";
+          htmlItem.style.transform = "scale(1.02)";
+        };
+
+        const handleMouseLeave = () => {
+          htmlItem.style.opacity = "0.8";
+          htmlItem.style.transform = "scale(1)";
+        };
+
+        htmlItem.addEventListener("mouseenter", handleMouseEnter);
+        htmlItem.addEventListener("mouseleave", handleMouseLeave);
+
+        cleanupFunctions.push(() => {
+          htmlItem.removeEventListener("mouseenter", handleMouseEnter);
+          htmlItem.removeEventListener("mouseleave", handleMouseLeave);
+        });
+      });
+
+      return () => {
+        cleanupFunctions.forEach((cleanup) => cleanup());
+      };
+    }
+  }, [data]);
+
   // Show tutorial for new users who haven't seen it yet
   // is_tutorial_seen is calculated by backend based on number_of_connections > 2
   useEffect(() => {
@@ -217,39 +243,65 @@ export default function Dashboard() {
   }
 
   const chartData = {
-    labels: data.labels,
-    datasets: data.datasets.map((ds, idx) => ({
-      label: ds.label,
-      data: ds.data,
-      borderColor: idx === 0 ? "#c9a726" : "#b0b0b0",
-      backgroundColor: "transparent",
-      tension: 0.1,
-    })),
+    labels: ["Albums", "Artists", "Places"],
+    datasets: [
+      {
+        label: "Global Totals",
+        data: [
+          data.global_albums_total,
+          data.global_artists_total,
+          data.global_places_total,
+        ],
+        backgroundColor: ["#c9a726", "#b0b0b0", "#d4a574"],
+        borderColor: "grey",
+        borderWidth: 0.2,
+        borderAlign: "inner" as const,
+      },
+    ],
   };
 
-  const chartOptions: ChartOptions<"line"> = {
+  const chartOptions: ChartOptions<"doughnut"> = {
     responsive: true,
-    plugins: {
-      legend: { display: true, labels: { color: "#FFFFFF" } },
-      tooltip: { enabled: true },
+    maintainAspectRatio: true,
+    onHover: (event, activeElements) => {
+      const target = event.native?.target as HTMLElement;
+      if (target) {
+        target.style.cursor = activeElements.length > 0 ? "pointer" : "default";
+      }
     },
-    scales: {
-      x: {
-        ticks: { color: "#FFFFFF" },
-        grid: { color: "rgba(255, 255, 255, 0.1)" },
-      },
-      y: {
-        type: "linear",
-        beginAtZero: true,
-        suggestedMin: 0,
-        ticks: {
+    interaction: {
+      intersect: false,
+      mode: "index",
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: "bottom",
+        labels: {
           color: "#FFFFFF",
-          stepSize: 1,
-          callback: function (value: any) {
-            return Number.isInteger(Number(value)) ? value : null;
+          padding: 15,
+          font: {
+            size: 14,
+          },
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      },
+      tooltip: {
+        enabled: true,
+        callbacks: {
+          label: function (context: any) {
+            const label = context.label || "";
+            const value = context.parsed || context.raw || 0;
+            const total = context.dataset.data.reduce(
+              (a: number, b: number) => a + b,
+              0
+            );
+            const percentage =
+              total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            return `${label}: ${value.toLocaleString()} (${percentage}%)`;
           },
         },
-        grid: { color: "rgba(255, 255, 255, 0.1)" },
       },
     },
   };
@@ -466,9 +518,96 @@ export default function Dashboard() {
                 variant="h6"
                 gutterBottom
               >
-                Global added on {new Date().getFullYear()}
+                Global collections overview
               </Typography>
-              <Line data={chartData} options={chartOptions} />
+              <Box
+                ref={chartContainerRef}
+                sx={{
+                  position: "relative",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  maxWidth: "400px",
+                  margin: "0 auto",
+                  padding: 2,
+                  minHeight: "300px",
+                  "& canvas": {
+                    cursor: "pointer",
+                  },
+                }}
+              >
+                <Doughnut data={chartData} options={chartOptions} />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: "47%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    textAlign: "center",
+                    pointerEvents: "none",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      color: "#c9a726",
+                      fontWeight: "bold",
+                      textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                    }}
+                  >
+                    {(
+                      data.global_albums_total +
+                      data.global_artists_total +
+                      data.global_places_total
+                    ).toLocaleString()}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#e4e4e4",
+                      mt: 0.5,
+                      textShadow: "1px 1px 2px rgba(0, 0, 0, 0.5)",
+                    }}
+                  >
+                    items
+                  </Typography>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  mt: 2,
+                  mb: 2,
+                }}
+              >
+                <Link
+                  to="/explore"
+                  style={{
+                    color: "#c9a726",
+                    textDecoration: "none",
+                    fontSize: "1.25rem",
+                    fontWeight: 500,
+                    fontFamily:
+                      "Roboto,Oswald,  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+                    textShadow: "1px 1px 2px rgba(0, 0, 0, 0.5)",
+                    transition: "all 0.2s ease-in-out",
+                    display: "inline-block",
+                    transform: "scale(1)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  Discover community collections
+                </Link>
+              </Box>
             </Paper>
           </div>
         </div>

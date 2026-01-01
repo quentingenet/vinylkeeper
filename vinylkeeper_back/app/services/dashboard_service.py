@@ -1,7 +1,7 @@
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.collection_repository import CollectionRepository
 from app.models.user_model import User
-from app.schemas.dashboard_schema import DashboardStatsResponse, TimeSeriesData, LatestAddition
+from app.schemas.dashboard_schema import DashboardStatsResponse, LatestAddition
 from app.core.exceptions import ServerError
 import logging
 
@@ -11,28 +11,18 @@ class DashboardService:
         self.dashboard_repository = dashboard_repository
         self.collection_repository = collection_repository
 
-    async def get_dashboard_stats(self, year: int, user: User) -> DashboardStatsResponse:
+    async def get_dashboard_stats(self, user: User) -> DashboardStatsResponse:
         try:
-            months = [
-                "January", "February", "March", "April", "May", "June", "July",
-                "August", "September", "October", "November", "December"
-            ]
-            # Get monthly stats sequentially to avoid concurrent queries on same session
-            albums = await self.dashboard_repository.get_albums_added_per_month(year)
-            artists = await self.dashboard_repository.get_artists_added_per_month(year)
-
-            albums_data = [0] * 12
-            artists_data = [0] * 12
-            for row in albums:
-                albums_data[int(row.month) - 1] = row.count
-            for row in artists:
-                artists_data[int(row.month) - 1] = row.count
-
             # Get user stats using optimized batch query (reduces from 3 queries to 2)
             user_stats = await self.dashboard_repository.get_user_stats_batch(user.id)
             user_albums_total = user_stats['albums_total']
             user_artists_total = user_stats['artists_total']
             user_collections_total = await self.collection_repository.count_by_owner(user.id)
+
+            # Get global collections counts (albums and artists across all collections)
+            global_counts = await self.dashboard_repository.get_global_collections_counts()
+            global_albums_total = global_counts['albums_total']
+            global_artists_total = global_counts['artists_total']
 
             # Get latest additions sequentially
             latest_album_result = await self.dashboard_repository.get_latest_album()
@@ -104,14 +94,11 @@ class DashboardService:
                     ))
 
             return DashboardStatsResponse(
-                labels=months,
-                datasets=[
-                    TimeSeriesData(label="Albums Added", data=albums_data),
-                    TimeSeriesData(label="Artists Added", data=artists_data),
-                ],
                 user_albums_total=user_albums_total,
                 user_artists_total=user_artists_total,
                 user_collections_total=user_collections_total,
+                global_albums_total=global_albums_total,
+                global_artists_total=global_artists_total,
                 global_places_total=global_places_total,
                 moderated_places_total=moderated_places_total,
                 latest_album=latest_album,

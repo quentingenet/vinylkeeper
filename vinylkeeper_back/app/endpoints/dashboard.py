@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends
 from app.schemas.dashboard_schema import DashboardStatsResponse
 from app.services.dashboard_service import DashboardService
 from app.deps.deps import get_dashboard_service
@@ -11,8 +11,7 @@ router = APIRouter()
 @router.get("/stats", response_model=DashboardStatsResponse)
 @handle_app_exceptions
 async def get_dashboard_stats(
-    year: int = Query(default=2025, description="Year for stats"),
     dashboard_service: DashboardService = Depends(get_dashboard_service),
     user=Depends(get_current_user)
 ):
-    return await dashboard_service.get_dashboard_stats(year, user)
+    return await dashboard_service.get_dashboard_stats(user)

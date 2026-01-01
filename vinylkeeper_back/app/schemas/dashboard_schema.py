@@ -3,11 +3,6 @@ from typing import List, Optional
 from datetime import datetime
 
 
-class TimeSeriesData(BaseModel):
-    label: str
-    data: List[int]
-
-
 class LatestAddition(BaseModel):
     id: int
     name: str
@@ -21,16 +16,16 @@ class LatestAddition(BaseModel):
 
 
 class DashboardStatsResponse(BaseModel):
-    labels: List[str] = Field(...,
-                              description="List of time labels (e.g. months)")
-    datasets: List[TimeSeriesData] = Field(
-        ..., description="List of datasets for the dashboard chart")
     user_albums_total: int = Field(...,
                                    description="Total albums in user's collections")
     user_artists_total: int = Field(...,
                                     description="Total artists in user's collections")
     user_collections_total: int = Field(...,
                                         description="Total collections of the user")
+    global_albums_total: int = Field(...,
+                                     description="Total albums across all collections")
+    global_artists_total: int = Field(...,
+                                     description="Total artists across all collections")
     global_places_total: int = Field(...,
                                      description="Total places (all users)")
     moderated_places_total: int = Field(
