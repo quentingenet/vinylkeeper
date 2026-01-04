@@ -24,7 +24,7 @@ class DashboardRepository:
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .order_by(Album.created_at.desc())
+                .order_by(Album.updated_at.desc())
                 .limit(1)
             )
             result = await self.db.execute(query)
@@ -40,20 +40,35 @@ class DashboardRepository:
     async def get_recent_albums(self, limit: int = 5, exclude_ids: Optional[List[int]] = None):
         """Get recent albums added to any collection (for mosaic display), excluding specified IDs"""
         try:
+            # Simple approach: query albums and filter duplicates in Python
+            # This is more reliable than complex SQL with DISTINCT ON
             query = (
                 select(Album, User.username)
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .order_by(Album.created_at.desc())
+                .order_by(Album.updated_at.desc())
             )
 
             if exclude_ids:
                 query = query.filter(~Album.id.in_(exclude_ids))
 
-            query = query.limit(limit)
+            # Get more results than needed to account for duplicates
+            query = query.limit(limit * 3)
             result = await self.db.execute(query)
-            return result.all()
+            all_albums = result.all()
+
+            # Filter duplicates by album.id, keeping the first occurrence (most recent)
+            seen_ids = set()
+            unique_albums = []
+            for album, username in all_albums:
+                if album.id not in seen_ids:
+                    seen_ids.add(album.id)
+                    unique_albums.append((album, username))
+                if len(unique_albums) >= limit:
+                    break
+
+            return unique_albums
         except Exception as e:
             logger.error(f"Error getting recent albums: {str(e)}")
             raise ServerError(
@@ -70,7 +85,7 @@ class DashboardRepository:
                 .join(collection_artist, Artist.id == collection_artist.c.artist_id)
                 .join(Collection, collection_artist.c.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .order_by(Artist.created_at.desc())
+                .order_by(Artist.updated_at.desc())
                 .limit(1)
             )
             result = await self.db.execute(query)

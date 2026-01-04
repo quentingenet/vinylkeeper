@@ -1,4 +1,5 @@
 from typing import List
+from sqlalchemy import func
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
@@ -13,14 +14,17 @@ from app.schemas.artist_schema import ArtistResponse, ArtistCreate
 from app.core.exceptions import (
     ValidationError,
     ResourceNotFoundError,
-    ServerError
+    ServerError,
+    ForbiddenError
 )
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
 from app.models.reference_data.entity_types import EntityType
 from app.models.reference_data.external_sources import ExternalSource
 from app.models.wishlist_model import Wishlist
-from datetime import datetime
+from app.models.artist_model import Artist
+from app.models.album_model import Album
+from app.models.collection_model import Collection
 
 
 class ExternalReferenceService:
@@ -28,6 +32,19 @@ class ExternalReferenceService:
 
     def __init__(self, repository: ExternalReferenceRepository):
         self.repository = repository
+
+    async def _verify_collection_access(self, collection_id: int, user_id: int) -> Collection:
+        """Verify collection exists and user has access to it"""
+        collection = await self.repository.find_collection_by_id(collection_id, load_relations=True)
+        if not collection:
+            raise ResourceNotFoundError("Collection", collection_id)
+        if collection.owner_id != user_id:
+            raise ForbiddenError(
+                error_code=4030,
+                message=f"Collection {collection_id} is not owned by user {user_id}",
+                details={"collection_id": collection_id, "user_id": user_id}
+            )
+        return collection
 
     async def _find_or_create_entity(self, request: AddToWishlistRequest | AddToCollectionRequest, external_source_id: int = None) -> AlbumResponse | ArtistResponse:
         """Find existing entity or create new one"""
@@ -46,8 +63,10 @@ class ExternalReferenceService:
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # Try to find existing album first
                 entity = await self.repository.find_album_by_external_id(external_id, external_source_id)
+                is_new_entity = False
                 if not entity:
                     # Album doesn't exist, create it
+                    is_new_entity = True
                     try:
                         entity = await self.repository.create_album(AlbumCreate(
                             external_album_id=external_id,
@@ -66,8 +85,8 @@ class ExternalReferenceService:
                                 f"Failed to create album and could not find existing: {str(create_error)}")
                             raise create_error
                         else:
-                            pass
-                
+                            is_new_entity = False
+
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
                     "id": entity.id,
@@ -86,12 +105,15 @@ class ExternalReferenceService:
                 # Store the actual entity object separately for later use
                 response = AlbumResponse.model_validate(entity_dict)
                 response._entity = entity  # Store entity for internal use
+                response._is_new_entity = is_new_entity  # Store flag for internal use
                 return response
             else:
                 # Try to find existing artist first
                 entity = await self.repository.find_artist_by_external_id(external_id, external_source_id)
+                is_new_entity = False
                 if not entity:
                     # Artist doesn't exist, create it
+                    is_new_entity = True
                     try:
                         entity = await self.repository.create_artist(ArtistCreate(
                             external_artist_id=external_id,
@@ -110,8 +132,8 @@ class ExternalReferenceService:
                                 f"Failed to create artist and could not find existing: {str(create_error)}")
                             raise create_error
                         else:
-                            pass
-                
+                            is_new_entity = False
+
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
                     "id": entity.id,
@@ -131,6 +153,7 @@ class ExternalReferenceService:
                 # Store the actual entity object separately for later use
                 response = ArtistResponse.model_validate(entity_dict)
                 response._entity = entity  # Store entity for internal use
+                response._is_new_entity = is_new_entity  # Store flag for internal use
                 return response
 
         except Exception as e:
@@ -176,14 +199,14 @@ class ExternalReferenceService:
                 "title": request.title,
                 "image_url": request.image_url
             }
-            
+
             result = await self.repository.create_wishlist_item(wishlist_data)
 
             wishlist_response = self._build_wishlist_response(
                 result, request.entity_type.value, request.source)
             # Commit the transaction
             await self.repository.db.commit()
-            
+
             return AddToWishlistResponse(
                 item=wishlist_response,
                 is_new=True,
@@ -221,16 +244,13 @@ class ExternalReferenceService:
             # Find wishlist item and verify ownership
             wishlist_item = await self.repository.wishlist_repo.get_by_id(wishlist_id)
             if not wishlist_item or wishlist_item.user_id != user_id:
-                raise ResourceNotFoundError(
-                    error_code=4040,
-                    message=f"Wishlist item {wishlist_id} not found or not owned by user {user_id}"
-                )
-            
+                raise ResourceNotFoundError("Wishlist item", wishlist_id)
+
             result = await self.repository.remove_wishlist_item(wishlist_item)
-            
+
             # Commit the transaction
             await self.repository.db.commit()
-            
+
             return result
         except ResourceNotFoundError:
             raise
@@ -254,19 +274,14 @@ class ExternalReferenceService:
                 )
 
             # Get collection and verify ownership
-            collection = await self.repository.find_collection_by_id(collection_id, load_relations=True)
-            if not collection or collection.owner_id != user_id:
-                raise ResourceNotFoundError(
-                    error_code=4040,
-                    message=f"Collection {collection_id} not found or not owned by user {user_id}"
-                )
+            collection = await self._verify_collection_access(collection_id, user_id)
 
             # Get the external source ID once (avoid duplicate queries)
             external_source_id = await self.repository.get_external_source_id(request.source)
-            
+
             # Find or create entity (pass external_source_id to avoid duplicate query)
             entity_response = await self._find_or_create_entity(request, external_source_id)
-            
+
             # Add to collection using the entity from the response
             collection_item = None
             if request.entity_type == EntityTypeEnum.ALBUM:
@@ -280,7 +295,7 @@ class ExternalReferenceService:
                         message="Album not found in entity response",
                         details={"external_id": external_id}
                     )
-                
+
                 # Verify album has required attributes
                 if not hasattr(album, 'id') or not album.id:
                     logger.error(f"Album entity missing ID! album: {album}")
@@ -289,17 +304,24 @@ class ExternalReferenceService:
                         message="Album entity missing ID",
                         details={"album": str(album)}
                     )
-                
-                # Check if album is already in collection before trying to add
-                existing_collection_album = None
-                for ca in collection.collection_albums:
-                    if ca.album_id == album.id:
-                        existing_collection_album = ca
-                        break
-                
+
+                is_new_entity = getattr(
+                    entity_response, '_is_new_entity', False)
+
+                # Check if album is already in collection using a direct query
+                from app.models.collection_album import CollectionAlbum
+                from sqlalchemy import select
+                check_query = select(CollectionAlbum).filter(
+                    CollectionAlbum.collection_id == collection.id,
+                    CollectionAlbum.album_id == album.id
+                )
+                check_result = await self.repository.db.execute(check_query)
+                existing_collection_album = check_result.scalar_one_or_none()
+
                 is_new_album = False
                 if existing_collection_album:
-                    # Album already in collection, return existing info
+                    if not is_new_entity:
+                        await self.repository._update_album_timestamp(album.id)
                     collection_item = existing_collection_album
                 else:
                     is_new_album = True
@@ -325,9 +347,11 @@ class ExternalReferenceService:
                             state_cover_str = state_cover.value if hasattr(
                                 state_cover, 'value') else str(state_cover)
                             processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover_str)
-                        
+
                         # acquisition_month_year is already in the correct format, no conversion needed
-                    collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data)
+
+                    # Add album to collection (method will update albums.updated_at if entity existed before)
+                    collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data, is_new_entity)
             else:
                 # Use the artist from the entity response (no need to search again)
                 artist = getattr(entity_response, '_entity', None)
@@ -339,13 +363,16 @@ class ExternalReferenceService:
                         message="Artist not found in entity response",
                         details={"external_id": external_id}
                     )
-                
+
                 # Check if artist is already in collection before trying to add
                 is_new_artist = False
                 existing_artist = await self.repository.find_artist_in_collection(collection.id, artist.id)
-                
+                is_new_entity = getattr(
+                    entity_response, '_is_new_entity', False)
+
                 if existing_artist:
-                    # Artist already in collection, return existing info
+                    if not is_new_entity:
+                        await self.repository._update_artist_timestamp(artist.id)
                     collection_item = {
                         "id": artist.id,
                         "collection_id": collection.id,
@@ -354,12 +381,12 @@ class ExternalReferenceService:
                     }
                 else:
                     is_new_artist = True
-                    collection_item = await self.repository.add_artist_to_collection(collection, artist)
+                    collection_item = await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
 
             # Build response with data from the created collection item
             # Determine if item is new or existing
             is_new = is_new_album if request.entity_type == EntityTypeEnum.ALBUM else is_new_artist
-            
+
             # Build the collection item response
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # For albums, collection_item is a CollectionAlbum object with composite primary key
@@ -385,10 +412,10 @@ class ExternalReferenceService:
                     source=request.source,
                     created_at=collection_item["created_at"]
                 )
-            
+
             # Build the final response with status information
             message = f"{'Added' if is_new else 'Already have'} {request.entity_type.value} '{request.title}' in collection '{collection.name}'"
-            
+
             final_response = AddToCollectionResponse(
                 item=item_response,
                 is_new=is_new,
@@ -396,10 +423,10 @@ class ExternalReferenceService:
                 entity_type=request.entity_type.value,
                 collection_name=collection.name
             )
-            
+
             # Commit the transaction
             await self.repository.db.commit()
-            
+
             return final_response
 
         except Exception as e:
@@ -416,40 +443,29 @@ class ExternalReferenceService:
         """Remove an album or artist from a collection"""
         try:
             # Get collection and verify ownership
-            collection = await self.repository.find_collection_by_id(collection_id, load_relations=True)
-            if not collection or collection.owner_id != user_id:
-                raise ResourceNotFoundError(
-                    error_code=4040,
-                    message=f"Collection {collection_id} not found or not owned by user {user_id}"
-                )
+            collection = await self._verify_collection_access(collection_id, user_id)
 
             # Find entity directly in the collection to avoid external_source_id issues
             if entity_type == EntityTypeEnum.ALBUM:
                 # For albums, find the collection album first
                 collection_album = await self.repository.find_collection_album_by_external_id(collection_id, external_id)
-                
+
                 if not collection_album:
-                    raise ResourceNotFoundError(
-                        error_code=4040,
-                        message=f"Album with external ID {external_id} not found in collection {collection_id}"
-                    )
-                
+                    raise ResourceNotFoundError("Album", external_id)
+
                 await self.repository.remove_album_from_collection(collection, collection_album.album)
             else:
                 # For artists, find the collection artist first
                 artist = await self.repository.find_collection_artist_by_external_id(collection_id, external_id)
-                
+
                 if not artist:
-                    raise ResourceNotFoundError(
-                        error_code=4040,
-                        message=f"Artist with external ID {external_id} not found in collection {collection_id}"
-                    )
-                
+                    raise ResourceNotFoundError("Artist", external_id)
+
                 await self.repository.remove_artist_from_collection(collection, artist)
 
             # Commit the transaction
             await self.repository.db.commit()
-            
+
             return True
 
         except ResourceNotFoundError:

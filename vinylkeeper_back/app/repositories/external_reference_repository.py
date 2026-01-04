@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update, func
+from datetime import datetime, timezone
 from app.models.wishlist_model import Wishlist
 from app.models.album_model import Album
 from app.models.artist_model import Artist
@@ -11,8 +12,8 @@ from app.schemas.album_schema import AlbumCreate
 from app.schemas.artist_schema import ArtistCreate
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import (
-    ResourceNotFoundError, 
-    ValidationError, 
+    ResourceNotFoundError,
+    ValidationError,
     ServerError,
     AppException
 )
@@ -47,12 +48,26 @@ class ExternalReferenceRepository:
         self._external_source_cache: Dict[str, int] = {}
         self._vinyl_state_cache: Dict[str, int] = {}
 
+    async def _update_album_timestamp(self, album_id: int) -> None:
+        """Update album's updated_at timestamp (helper method)"""
+        stmt = update(Album).where(Album.id == album_id).values(
+            updated_at=datetime.now(timezone.utc))
+        await self.db.execute(stmt)
+        await self.db.flush()
+
+    async def _update_artist_timestamp(self, artist_id: int) -> None:
+        """Update artist's updated_at timestamp (helper method)"""
+        stmt = update(Artist).where(Artist.id == artist_id).values(
+            updated_at=datetime.now(timezone.utc))
+        await self.db.execute(stmt)
+        await self.db.flush()
+
     async def get_entity_type_id(self, entity_type: EntityTypeEnum) -> int:
         """Get the entity type ID from the database with caching"""
         cache_key = entity_type.value
         if cache_key in self._entity_type_cache:
             return self._entity_type_cache[cache_key]
-        
+
         query = select(EntityType).filter(EntityType.name == cache_key)
         result = await self.db.execute(query)
         entity_type_record = result.scalar_one_or_none()
@@ -61,7 +76,7 @@ class ExternalReferenceRepository:
                 error_code=4000,
                 message=f"Entity type {cache_key} not found in database"
             )
-        
+
         self._entity_type_cache[cache_key] = entity_type_record.id
         return entity_type_record.id
 
@@ -70,7 +85,7 @@ class ExternalReferenceRepository:
         cache_key = source_name
         if cache_key in self._external_source_cache:
             return self._external_source_cache[cache_key]
-        
+
         query = select(ExternalSource).filter(ExternalSource.name == cache_key)
         result = await self.db.execute(query)
         external_source = result.scalar_one_or_none()
@@ -80,7 +95,7 @@ class ExternalReferenceRepository:
                 message=f"External source {cache_key} not found",
                 details={"source": source_name}
             )
-        
+
         self._external_source_cache[cache_key] = external_source.id
         return external_source.id
 
@@ -95,7 +110,8 @@ class ExternalReferenceRepository:
             )
             return await self.album_repo.create(album)
         except Exception as e:
-            logger.error(f"Error creating album with external ID {album_data.external_album_id}: {str(e)}")
+            logger.error(
+                f"Error creating album with external ID {album_data.external_album_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create album",
@@ -113,7 +129,8 @@ class ExternalReferenceRepository:
             )
             return await self.artist_repo.create(artist)
         except Exception as e:
-            logger.error(f"Error creating artist with external ID {artist_data.external_artist_id}: {str(e)}")
+            logger.error(
+                f"Error creating artist with external ID {artist_data.external_artist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create artist",
@@ -134,15 +151,16 @@ class ExternalReferenceRepository:
             from app.models.collection_album import CollectionAlbum
             from app.models.album_model import Album
             from sqlalchemy import select
-            
+
             query = select(CollectionAlbum).filter(
                 CollectionAlbum.collection_id == collection_id
             ).join(Album).filter(Album.external_album_id == external_id)
-            
+
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
-            logger.error(f"Error finding collection album by external ID: {str(e)}")
+            logger.error(
+                f"Error finding collection album by external ID: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find collection album by external ID",
@@ -154,16 +172,17 @@ class ExternalReferenceRepository:
         try:
             from app.models.association_tables import collection_artist
             from app.models.artist_model import Artist
-            
+
             query = select(Artist).join(collection_artist).filter(
                 collection_artist.c.collection_id == collection_id,
                 Artist.external_artist_id == external_id
             )
-            
+
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
-            logger.error(f"Error finding collection artist by external ID: {str(e)}")
+            logger.error(
+                f"Error finding collection artist by external ID: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find collection artist by external ID",
@@ -179,7 +198,8 @@ class ExternalReferenceRepository:
             await self.db.refresh(wishlist_item)
             return wishlist_item
         except Exception as e:
-            logger.error(f"Error creating wishlist item for user {wishlist_data.get('user_id')}: {str(e)}")
+            logger.error(
+                f"Error creating wishlist item for user {wishlist_data.get('user_id')}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
@@ -197,7 +217,8 @@ class ExternalReferenceRepository:
             # Transaction managed by service layer
             return True
         except Exception as e:
-            logger.error(f"Error removing wishlist item {wishlist_item.id}: {str(e)}")
+            logger.error(
+                f"Error removing wishlist item {wishlist_item.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove wishlist item",
@@ -208,7 +229,7 @@ class ExternalReferenceRepository:
         """Find a collection by ID with optional relations loading"""
         return await self.collection_repo.get_by_id(collection_id, load_relations=load_relations)
 
-    async def add_album_to_collection(self, collection: Collection, album: Album, album_data: Optional[dict] = None) -> CollectionAlbum:
+    async def add_album_to_collection(self, collection: Collection, album: Album, album_data: Optional[dict] = None, is_new_entity: bool = False) -> CollectionAlbum:
         """Add an album to a collection with optional album state data"""
         try:
             # Check if album is already in collection
@@ -218,16 +239,18 @@ class ExternalReferenceRepository:
             )
             result = await self.db.execute(query)
             existing = result.scalar_one_or_none()
-            
+
             if existing:
+                if not is_new_entity:
+                    await self._update_album_timestamp(album.id)
                 return existing
-            
+
             # Create new collection album association
             collection_album = CollectionAlbum(
                 collection_id=collection.id,
                 album_id=album.id
             )
-            
+
             # Add album state data if provided
             if album_data:
                 if album_data.get('state_record_id') is not None:
@@ -236,18 +259,21 @@ class ExternalReferenceRepository:
                     collection_album.state_cover = album_data['state_cover_id']
                 if album_data.get('acquisition_month_year') is not None:
                     collection_album.acquisition_month_year = album_data['acquisition_month_year']
-            
+
             self.db.add(collection_album)
-            # Flush to make the object persistent before refresh
+            if not is_new_entity:
+                await self._update_album_timestamp(album.id)
             await self.db.flush()
             await self.db.refresh(collection_album)
             return collection_album
         except Exception as e:
-            logger.error(f"Error adding album {album.id} to collection {collection.id}: {str(e)}")
+            logger.error(
+                f"Error adding album {album.id} to collection {collection.id}: {str(e)}")
             logger.error(f"Album object: {album}")
             logger.error(f"Collection object: {collection}")
             logger.error(f"Album data: {album_data}")
-            logger.error(f"Collection ID: {collection.id}, Album ID: {album.id}")
+            logger.error(
+                f"Collection ID: {collection.id}, Album ID: {album.id}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add album to collection",
@@ -258,19 +284,19 @@ class ExternalReferenceRepository:
         """Find if an artist is already in a collection"""
         try:
             from app.models.association_tables import collection_artist
-            
+
             query = select(collection_artist).filter(
                 collection_artist.c.collection_id == collection_id,
                 collection_artist.c.artist_id == artist_id
             )
             result = await self.db.execute(query)
             existing = result.scalar_one_or_none()
-            
+
             if existing:
                 # Use current timestamp if created_at is not available
                 from datetime import datetime, timezone
                 current_time = datetime.now(timezone.utc)
-                
+
                 return {
                     "id": artist_id,
                     "collection_id": collection_id,
@@ -282,11 +308,11 @@ class ExternalReferenceRepository:
             logger.error(f"Failed to find artist in collection: {str(e)}")
             return None
 
-    async def add_artist_to_collection(self, collection: Collection, artist: Artist) -> dict:
+    async def add_artist_to_collection(self, collection: Collection, artist: Artist, is_new_entity: bool = False) -> dict:
         """Add an artist to a collection"""
         try:
             from app.models.association_tables import collection_artist
-            
+
             # Check if artist is already in collection using the association table
             existing_query = select(collection_artist).filter(
                 collection_artist.c.collection_id == collection.id,
@@ -294,7 +320,10 @@ class ExternalReferenceRepository:
             )
             existing_result = await self.db.execute(existing_query)
             existing = existing_result.scalar_one_or_none()
-            
+
+            if not is_new_entity:
+                await self._update_artist_timestamp(artist.id)
+
             if not existing:
                 # Insert into association table
                 insert_query = collection_artist.insert().values(
@@ -303,7 +332,7 @@ class ExternalReferenceRepository:
                 )
                 await self.db.execute(insert_query)
                 # Transaction managed by service layer
-            
+
             # Return a dictionary with the necessary information
             return {
                 "id": artist.id,
@@ -313,7 +342,8 @@ class ExternalReferenceRepository:
             }
         except Exception as e:
             logger.error(f"Failed to add artist to collection: {str(e)}")
-            logger.error(f"Collection ID: {collection.id}, Artist ID: {artist.id}")
+            logger.error(
+                f"Collection ID: {collection.id}, Artist ID: {artist.id}")
             logger.error(f"Collection object: {collection}")
             logger.error(f"Artist object: {artist}")
             raise ServerError(
@@ -332,7 +362,7 @@ class ExternalReferenceRepository:
             )
             result = await self.db.execute(query)
             collection_album = result.scalar_one_or_none()
-            
+
             if collection_album:
                 await self.db.delete(collection_album)
                 # Transaction managed by service layer
@@ -347,7 +377,7 @@ class ExternalReferenceRepository:
         """Remove an artist from a collection"""
         try:
             from app.models.association_tables import collection_artist
-            
+
             # Delete from association table
             delete_query = collection_artist.delete().where(
                 collection_artist.c.collection_id == collection.id,

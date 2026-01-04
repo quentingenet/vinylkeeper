@@ -44,7 +44,7 @@ class DashboardService:
                     id=album.id,
                     name=album.title,
                     username=display_username,
-                    created_at=album.created_at,
+                    created_at=album.updated_at,
                     type="album",
                     image_url=album.image_url,
                     external_id=album.external_album_id,
@@ -61,7 +61,7 @@ class DashboardService:
                     id=artist.id,
                     name=artist.title,
                     username=display_username,
-                    created_at=artist.created_at,
+                    created_at=artist.updated_at,
                     type="artist",
                     image_url=artist.image_url,
                     external_id=artist.external_artist_id
@@ -79,7 +79,7 @@ class DashboardService:
                 exclude_ids=exclude_ids if exclude_ids else None
             )
 
-            # Process recent albums for mosaic
+            # Process recent albums for mosaic (duplicates already filtered in repository)
             recent_albums = []
             if recent_albums_result:
                 for album, username in recent_albums_result:
@@ -87,7 +87,7 @@ class DashboardService:
                         id=album.id,
                         name=album.title,
                         username=username,
-                        created_at=album.created_at,
+                        created_at=album.updated_at,
                         type="album",
                         image_url=album.image_url,
                         external_id=album.external_album_id,

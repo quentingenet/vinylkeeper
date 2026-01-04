@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update, func
 from sqlalchemy.orm import selectinload
 from app.models.collection_album import CollectionAlbum
 from app.models.album_model import Album
@@ -191,6 +191,9 @@ class CollectionAlbumRepository(TransactionalMixin):
             # Check if association already exists
             existing = await self.find_by_collection_and_album(collection_id, album_id)
             if existing:
+                # Album already in collection, update album's updated_at
+                stmt = update(Album).where(Album.id == album_id).values(updated_at=func.now())
+                await self.db.execute(stmt)
                 raise DuplicateFieldError(
                     field="album",
                     value=f"collection_{collection_id}_album_{album_id}"
@@ -219,6 +222,10 @@ class CollectionAlbumRepository(TransactionalMixin):
                 acquisition_month_year=metadata.get('acquisition_month_year')
             )
             
+            # Update album's updated_at when adding to collection
+            stmt = update(Album).where(Album.id == album_id).values(updated_at=func.now())
+            await self.db.execute(stmt)
+            
             return await self.create(collection_album)
             
         except DuplicateFieldError:
@@ -236,11 +243,7 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             collection_album = await self.find_by_collection_and_album(collection_id, album_id)
             if not collection_album:
-                raise ResourceNotFoundError(
-                    error_code=4004,
-                    message="Album not found in collection",
-                    details={"collection_id": collection_id, "album_id": album_id}
-                )
+                raise ResourceNotFoundError("Album", album_id)
             
             # Update metadata fields with conversion for states
             if 'state_record' in metadata:
@@ -281,11 +284,7 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             collection_album = await self.find_by_collection_and_album(collection_id, album_id)
             if not collection_album:
-                raise ResourceNotFoundError(
-                    error_code=4004,
-                    message="Album not found in collection",
-                    details={"collection_id": collection_id, "album_id": album_id}
-                )
+                raise ResourceNotFoundError("Album", album_id)
             
             await self.delete(collection_album)
             return True

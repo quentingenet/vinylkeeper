@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import select, func, or_, and_, case
+from sqlalchemy import select, func, or_, and_, case, update
 from sqlalchemy.exc import IntegrityError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
@@ -45,7 +45,7 @@ class CollectionRepository(TransactionalMixin):
     async def get_by_id(self, collection_id: int, load_relations: bool = True, load_minimal: bool = False) -> Collection:
         """
         Get a collection by its ID with optimized relation loading.
-        
+
         Args:
             load_relations: If True, load all relations (albums, artists, likes, etc.)
             load_minimal: If True, load only owner (optimized for lightweight responses)
@@ -216,6 +216,10 @@ class CollectionRepository(TransactionalMixin):
 
             if collection_albums:
                 self.db.add_all(collection_albums)
+                # Update albums' updated_at when adding to collection
+                stmt = update(Album).where(Album.id.in_(
+                    valid_album_ids)).values(updated_at=func.now())
+                await self.db.execute(stmt)
                 await self.db.flush()  # Flush without commit (transaction managed by service)
 
         except Exception as e:
@@ -261,6 +265,10 @@ class CollectionRepository(TransactionalMixin):
                 ]
                 insert_query = collection_artist.insert().values(insert_values)
                 await self.db.execute(insert_query)
+                # Update artists' updated_at when adding to collection
+                stmt = update(Artist).where(Artist.id.in_(
+                    valid_artist_ids)).values(updated_at=func.now())
+                await self.db.execute(stmt)
                 await self.db.flush()  # Flush without commit (transaction managed by service)
 
         except Exception as e:
@@ -429,10 +437,10 @@ class CollectionRepository(TransactionalMixin):
             result = await self.db.execute(query)
             # Handle result with counts: result is a list of tuples (Collection, albums_count, artists_count)
             rows = result.all()
-            
+
             if not rows:
                 return [], total
-            
+
             collections = [row[0] for row in rows]
 
             # Attach counts to collection objects for easy access
@@ -470,7 +478,7 @@ class CollectionRepository(TransactionalMixin):
     async def get_collection_counts(self, collection_id: int) -> Dict[str, int]:
         """
         Get albums_count and artists_count for a single collection (optimized with aggregation).
-        
+
         Returns:
             dict: {"albums_count": int, "artists_count": int}
         """
@@ -481,20 +489,21 @@ class CollectionRepository(TransactionalMixin):
             )
             albums_result = await self.db.execute(albums_count_query)
             albums_count = albums_result.scalar() or 0
-            
+
             # Artists count
             artists_count_query = select(func.count(collection_artist.c.artist_id)).filter(
                 collection_artist.c.collection_id == collection_id
             )
             artists_result = await self.db.execute(artists_count_query)
             artists_count = artists_result.scalar() or 0
-            
+
             return {
                 "albums_count": albums_count,
                 "artists_count": artists_count
             }
         except Exception as e:
-            logger.error(f"Error getting collection counts for collection {collection_id}: {str(e)}")
+            logger.error(
+                f"Error getting collection counts for collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection counts",
@@ -518,35 +527,37 @@ class CollectionRepository(TransactionalMixin):
         """Get both likes counts and user likes status in a single optimized query."""
         if not collection_ids:
             return {'counts': {}, 'user_likes': {}}
-        
+
         # Single query with aggregation: counts and user like status
         query = select(
             Like.collection_id,
             func.count(Like.id).label('count'),
-            func.max(case((Like.user_id == user_id, 1), else_=0)).label('is_liked')
+            func.max(case((Like.user_id == user_id, 1), else_=0)
+                     ).label('is_liked')
         ).filter(
             Like.collection_id.in_(collection_ids)
         ).group_by(Like.collection_id)
-        
+
         result = await self.db.execute(query)
         rows = result.all()
-        
+
         # Build dictionaries
         counts = {}
         user_likes = {}
-        
+
         for row in rows:
             collection_id = row.collection_id
             counts[collection_id] = row.count
-            user_likes[collection_id] = bool(row.is_liked) if user_id else False
-        
+            user_likes[collection_id] = bool(
+                row.is_liked) if user_id else False
+
         # Ensure all collection_ids have entries (even if 0)
         for collection_id in collection_ids:
             if collection_id not in counts:
                 counts[collection_id] = 0
             if collection_id not in user_likes:
                 user_likes[collection_id] = False
-        
+
         return {'counts': counts, 'user_likes': user_likes}
 
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Collection], int]:
