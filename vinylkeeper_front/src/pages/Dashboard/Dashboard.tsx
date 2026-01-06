@@ -14,9 +14,10 @@ import {
   Legend,
   ChartOptions,
 } from "chart.js";
-import { Album, Person } from "@mui/icons-material";
+import { Album, Person, ArrowForward } from "@mui/icons-material";
 import styles from "../../styles/pages/Dashboard.module.scss";
 import Counter from "@utils/Counter";
+import { growItem } from "@utils/Animations";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApiService } from "@services/DashboardApiService";
 import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
@@ -511,6 +512,138 @@ export default function Dashboard() {
         )}
 
         <div className={styles.rowCenter}>
+          <Box
+            sx={{
+              width: "100%",
+              maxWidth: "800px",
+              mb: 0,
+            }}
+          >
+            <Card
+              sx={{
+                backgroundColor: "#2c2c2e",
+                color: "#e4e4e4",
+                boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                cursor: "pointer",
+                transition:
+                  "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  boxShadow: "4px 4px 8px rgba(0, 0, 0, 0.7)",
+                },
+              }}
+              onClick={() => navigate("/explore")}
+            >
+              <CardContent
+                sx={{
+                  padding: isMobile ? 3 : 4,
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: "#c9a726",
+                    mb: 2,
+                    fontSize: isMobile ? "1.25rem" : "1.5rem",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                  }}
+                >
+                  <span>🌍</span>
+                  Community collections
+                </Typography>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    color: "#e4e4e4",
+                    fontWeight: "bold",
+                    mb: 1,
+                    fontSize: isMobile ? "2rem" : "3rem",
+                    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                  }}
+                >
+                  {data?.public_collections_total === 0 ? (
+                    "-"
+                  ) : (
+                    <Counter
+                      target={data?.public_collections_total ?? 0}
+                      duration={1100}
+                    />
+                  )}{" "}
+                  <Typography
+                    component="span"
+                    variant="h6"
+                    sx={{
+                      fontSize: isMobile ? "1rem" : "1.25rem",
+                      color: "#b0b0b0",
+                      fontWeight: 400,
+                    }}
+                  >
+                    shared collections
+                  </Typography>
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "#b0b0b0",
+                    mb: 3,
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                  }}
+                >
+                  from vinyl lovers worldwide
+                </Typography>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 1,
+                    color: "#c9a726",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    fontWeight: 500,
+                    fontFamily: "Oswald, sans-serif",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      gap: 1.5,
+                    },
+                  }}
+                >
+                  Explore collections now{" "}
+                  <ArrowForward
+                    sx={{
+                      color: "#c9a726",
+                      fontSize: isMobile ? "1.25rem" : "1.5rem",
+                      animation: `${growItem} 2s ease-in-out infinite`,
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+            {data?.user_collections_total > 0 &&
+              data?.user_public_collections_total === 0 && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: "block",
+                    textAlign: "center",
+                    mt: 3,
+                    mb: 3,
+                    color: "#b0b0b0",
+                    fontSize: isMobile ? "0.875rem" : "0.9375rem",
+                    fontWeight: 400,
+                    opacity: 0.9,
+                  }}
+                >
+                  Make one of your collections public and inspire others...
+                </Typography>
+              )}
+          </Box>
+        </div>
+
+        <div className={styles.rowCenter}>
           <div className={styles.chart}>
             <Paper className={styles.card}>
               <Typography
@@ -518,7 +651,7 @@ export default function Dashboard() {
                 variant="h6"
                 gutterBottom
               >
-                Global collections overview
+                Community activity overview
               </Typography>
               <Box
                 ref={chartContainerRef}

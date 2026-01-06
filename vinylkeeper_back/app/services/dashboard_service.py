@@ -18,6 +18,7 @@ class DashboardService:
             user_albums_total = user_stats['albums_total']
             user_artists_total = user_stats['artists_total']
             user_collections_total = await self.collection_repository.count_by_owner(user.id)
+            user_public_collections_total = await self.collection_repository.count_public_by_owner(user.id)
 
             # Get global collections counts (albums and artists across all collections)
             global_counts = await self.dashboard_repository.get_global_collections_counts()
@@ -32,6 +33,9 @@ class DashboardService:
             places_counts = await self.dashboard_repository.get_places_counts_batch()
             moderated_places_total = places_counts['moderated_total']
             global_places_total = places_counts['global_total']
+
+            # Get public collections count
+            public_collections_total = await self.dashboard_repository.get_public_collections_count()
 
             # Process latest album
             latest_album = None
@@ -97,10 +101,12 @@ class DashboardService:
                 user_albums_total=user_albums_total,
                 user_artists_total=user_artists_total,
                 user_collections_total=user_collections_total,
+                user_public_collections_total=user_public_collections_total,
                 global_albums_total=global_albums_total,
                 global_artists_total=global_artists_total,
                 global_places_total=global_places_total,
                 moderated_places_total=moderated_places_total,
+                public_collections_total=public_collections_total,
                 latest_album=latest_album,
                 latest_artist=latest_artist,
                 recent_albums=recent_albums

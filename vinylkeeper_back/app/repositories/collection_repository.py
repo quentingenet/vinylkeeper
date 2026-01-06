@@ -142,6 +142,40 @@ class CollectionRepository(TransactionalMixin):
             logger.error(
                 f"Error counting collections for owner {owner_id}: {str(e)}")
             raise ServerError(
+                error_code=5000,
+                message="Failed to count collections by owner",
+                details={"error": str(e)}
+            )
+
+    async def count_public_by_owner(self, owner_id: int) -> int:
+        """Count public collections owned by a user."""
+        try:
+            query = select(func.count(Collection.id)).filter(
+                and_(
+                    Collection.owner_id == owner_id,
+                    Collection.is_public == True
+                )
+            )
+            result = await self.db.execute(query)
+            return result.scalar() or 0
+        except Exception as e:
+            logger.error(
+                f"Error counting public collections for owner {owner_id}: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to count public collections by owner",
+                details={"error": str(e)}
+            )
+        """Count collections owned by a user."""
+        try:
+            query = select(func.count(Collection.id)).filter(
+                Collection.owner_id == owner_id)
+            result = await self.db.execute(query)
+            return result.scalar() or 0
+        except Exception as e:
+            logger.error(
+                f"Error counting collections for owner {owner_id}: {str(e)}")
+            raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to count user collections",
                 details={"error": str(e)}

@@ -211,3 +211,31 @@ class DashboardRepository:
                 message="Failed to get global collections counts",
                 details={"error": str(e)}
             )
+
+    async def get_public_collections_count(self) -> int:
+        """Get count of public collections that have at least one album or artist"""
+        try:
+            from sqlalchemy import distinct
+
+            has_albums = select(1).where(
+                CollectionAlbum.collection_id == Collection.id
+            ).exists()
+
+            has_artists = select(1).where(
+                CollectionArtist.collection_id == Collection.id
+            ).exists()
+
+            count_query = select(func.count(distinct(Collection.id)))
+            count_query = count_query.filter(Collection.is_public == True)
+            count_query = count_query.filter(has_albums | has_artists)
+
+            result = await self.db.execute(count_query)
+            count = result.scalar()
+            return count or 0
+        except Exception as e:
+            logger.error(f"Error getting public collections count: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get public collections count",
+                details={"error": str(e)}
+            )
