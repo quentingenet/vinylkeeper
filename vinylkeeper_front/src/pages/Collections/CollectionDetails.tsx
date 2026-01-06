@@ -135,12 +135,13 @@ export default function CollectionDetails() {
     isLoading: isLoadingAlbums,
     error: albumsError,
   } = useQuery<PaginatedAlbumsResponse>({
-    queryKey: ["collectionAlbums", collectionId, albumsPage],
+    queryKey: ["collectionAlbums", collectionId, albumsPage, sortOrder],
     queryFn: () =>
       collectionApiService.getCollectionAlbumsPaginated(
         collectionId,
         albumsPage,
-        limit
+        limit,
+        sortOrder
       ),
     enabled: !!collectionId && tabValue === 0,
   });
@@ -151,12 +152,13 @@ export default function CollectionDetails() {
     isLoading: isLoadingArtists,
     error: artistsError,
   } = useQuery<PaginatedArtistsResponse>({
-    queryKey: ["collectionArtists", collectionId, artistsPage],
+    queryKey: ["collectionArtists", collectionId, artistsPage, sortOrder],
     queryFn: () =>
       collectionApiService.getCollectionArtistsPaginated(
         collectionId,
         artistsPage,
-        limit
+        limit,
+        sortOrder
       ),
     enabled: !!collectionId && tabValue === 1,
   });
@@ -282,6 +284,8 @@ export default function CollectionDetails() {
 
   const handleSortOrderChange = (event: SelectChangeEvent<SortOrder>) => {
     setSortOrder(event.target.value as SortOrder);
+    setAlbumsPage(1);
+    setArtistsPage(1);
   };
 
   const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,32 +326,6 @@ export default function CollectionDetails() {
       default:
         return "Search";
     }
-  };
-
-  // Function to sort albums by date
-  const getSortedAlbums = (albums: any[]) => {
-    if (!albums) return [];
-
-    const sorted = [...albums].sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-    });
-
-    return sorted;
-  };
-
-  // Function to sort artists by date
-  const getSortedArtists = (artists: any[]) => {
-    if (!artists) return [];
-
-    const sorted = [...artists].sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-    });
-
-    return sorted;
   };
 
   // Function to sort wishlist items by date
@@ -699,7 +677,7 @@ export default function CollectionDetails() {
                   {searchResults.albums.length} albums)
                 </Typography>
                 <div className={styles.resultsContainer}>
-                  {getSortedAlbums(searchResults.albums).map((album) => (
+                  {(searchResults.albums || []).map((album) => (
                     <Card
                       onClick={() => handlePlayClick(album, "album")}
                       key={album.id}
@@ -896,7 +874,7 @@ export default function CollectionDetails() {
           ) : (
             <>
               <div className={styles.resultsContainer}>
-                {getSortedAlbums(albumsData?.items || []).map((album) => (
+                {(albumsData?.items || []).map((album) => (
                   <Card
                     onClick={() => handlePlayClick(album, "album")}
                     key={album.id}
@@ -1124,7 +1102,7 @@ export default function CollectionDetails() {
                   {searchResults.artists.length} artists)
                 </Typography>
                 <div className={styles.resultsContainer}>
-                  {getSortedArtists(searchResults.artists).map((artist) => (
+                  {(searchResults.artists || []).map((artist) => (
                     <Card
                       onClick={() => handlePlayClick(artist, "artist")}
                       key={artist.id}
@@ -1301,7 +1279,7 @@ export default function CollectionDetails() {
           ) : (
             <>
               <div className={styles.resultsContainer}>
-                {getSortedArtists(artistsData?.items || []).map((artist) => (
+                {(artistsData?.items || []).map((artist) => (
                   <Card
                     onClick={() => handlePlayClick(artist, "artist")}
                     key={artist.id}

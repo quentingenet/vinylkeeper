@@ -394,8 +394,13 @@ export default function CollectionItem({
               color="text.secondary"
               sx={{ mt: 1, display: "block" }}
             >
-              Created on {formatDate(collection.created_at)} by{" "}
-              {truncateText(collection.owner?.username || "Unknown", 10)}
+              Created on {formatDate(collection.created_at)}
+              {!showOwner && (
+                <>
+                  {" "}
+                  by {truncateText(collection.owner?.username || "Unknown", 10)}
+                </>
+              )}
             </Typography>
             {localLikesCount > 0 && (
               <Typography

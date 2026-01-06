@@ -37,14 +37,14 @@ class DashboardService:
             latest_album = None
             latest_album_id = None
             if latest_album_result:
-                album, username = latest_album_result
+                album, username, updated_at = latest_album_result
                 latest_album_id = album.id
                 display_username = "You" if username == user.username else username
                 latest_album = LatestAddition(
                     id=album.id,
                     name=album.title,
                     username=display_username,
-                    created_at=album.updated_at,
+                    created_at=updated_at,
                     type="album",
                     image_url=album.image_url,
                     external_id=album.external_album_id,
@@ -54,14 +54,14 @@ class DashboardService:
             latest_artist = None
             latest_artist_id = None
             if latest_artist_result:
-                artist, username = latest_artist_result
+                artist, username, updated_at = latest_artist_result
                 latest_artist_id = artist.id
                 display_username = "You" if username == user.username else username
                 latest_artist = LatestAddition(
                     id=artist.id,
                     name=artist.title,
                     username=display_username,
-                    created_at=artist.updated_at,
+                    created_at=updated_at,
                     type="artist",
                     image_url=artist.image_url,
                     external_id=artist.external_artist_id
@@ -82,12 +82,12 @@ class DashboardService:
             # Process recent albums for mosaic (duplicates already filtered in repository)
             recent_albums = []
             if recent_albums_result:
-                for album, username in recent_albums_result:
+                for album, username, updated_at in recent_albums_result:
                     recent_albums.append(LatestAddition(
                         id=album.id,
                         name=album.title,
                         username=username,
-                        created_at=album.updated_at,
+                        created_at=updated_at,
                         type="album",
                         image_url=album.image_url,
                         external_id=album.external_album_id,

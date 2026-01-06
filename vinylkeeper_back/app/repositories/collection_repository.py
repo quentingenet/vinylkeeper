@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import select, func, or_, and_, case, update
+from sqlalchemy import select, func, or_, and_, case
 from sqlalchemy.exc import IntegrityError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.collection_album import CollectionAlbum
-from app.models.association_tables import collection_artist
+from app.models.association_tables import CollectionArtist, collection_artist
 from app.models.like_model import Like
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -198,6 +198,21 @@ class CollectionRepository(TransactionalMixin):
                 album_id for album_id in album_ids if album_id not in existing_album_ids]
 
             if not new_album_ids:
+                # Update existing associations' updated_at
+                from datetime import datetime, timezone
+                existing_associations = await self.db.execute(
+                    select(CollectionAlbum).filter(
+                        CollectionAlbum.collection_id == collection.id,
+                        CollectionAlbum.album_id.in_(album_ids)
+                    )
+                )
+                for assoc in existing_associations.scalars():
+                    # Update only updated_at - never modify created_at
+                    assoc.updated_at = datetime.now(timezone.utc)
+                    # Ensure created_at is preserved
+                    if assoc.created_at is None:
+                        assoc.created_at = assoc.updated_at
+                await self.db.flush()
                 return  # All albums already in collection
 
             # Verify albums exist (single query)
@@ -205,21 +220,20 @@ class CollectionRepository(TransactionalMixin):
             albums_result = await self.db.execute(albums_query)
             valid_album_ids = {row[0] for row in albums_result.all()}
 
-            # Create collection-album associations in batch
-            collection_albums = [
-                CollectionAlbum(
-                    collection_id=collection.id,
-                    album_id=album_id
-                )
-                for album_id in valid_album_ids
-            ]
-
-            if collection_albums:
+            # Create collection-album associations in batch with explicit timestamps
+            if valid_album_ids:
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc)
+                collection_albums = [
+                    CollectionAlbum(
+                        collection_id=collection.id,
+                        album_id=album_id,
+                        created_at=now,
+                        updated_at=now
+                    )
+                    for album_id in valid_album_ids
+                ]
                 self.db.add_all(collection_albums)
-                # Update albums' updated_at when adding to collection
-                stmt = update(Album).where(Album.id.in_(
-                    valid_album_ids)).values(updated_at=func.now())
-                await self.db.execute(stmt)
                 await self.db.flush()  # Flush without commit (transaction managed by service)
 
         except Exception as e:
@@ -237,9 +251,9 @@ class CollectionRepository(TransactionalMixin):
                 return
 
             # Check which artists already exist in collection (single query)
-            existing_query = select(collection_artist.c.artist_id).filter(
-                collection_artist.c.collection_id == collection.id,
-                collection_artist.c.artist_id.in_(artist_ids)
+            existing_query = select(CollectionArtist.artist_id).filter(
+                CollectionArtist.collection_id == collection.id,
+                CollectionArtist.artist_id.in_(artist_ids)
             )
             existing_result = await self.db.execute(existing_query)
             existing_artist_ids = {row[0] for row in existing_result.all()}
@@ -249,6 +263,21 @@ class CollectionRepository(TransactionalMixin):
                 artist_id for artist_id in artist_ids if artist_id not in existing_artist_ids]
 
             if not new_artist_ids:
+                # Update existing associations' updated_at
+                from datetime import datetime, timezone
+                existing_associations = await self.db.execute(
+                    select(CollectionArtist).filter(
+                        CollectionArtist.collection_id == collection.id,
+                        CollectionArtist.artist_id.in_(artist_ids)
+                    )
+                )
+                for assoc in existing_associations.scalars():
+                    # Update only updated_at - never modify created_at
+                    assoc.updated_at = datetime.now(timezone.utc)
+                    # Ensure created_at is preserved
+                    if assoc.created_at is None:
+                        assoc.created_at = assoc.updated_at
+                await self.db.flush()
                 return  # All artists already in collection
 
             # Verify artists exist (single query)
@@ -257,18 +286,20 @@ class CollectionRepository(TransactionalMixin):
             artists_result = await self.db.execute(artists_query)
             valid_artist_ids = {row[0] for row in artists_result.all()}
 
-            # Insert associations in batch
+            # Create associations in batch with explicit timestamps
             if valid_artist_ids:
-                insert_values = [
-                    {"collection_id": collection.id, "artist_id": artist_id}
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc)
+                collection_artists = [
+                    CollectionArtist(
+                        collection_id=collection.id,
+                        artist_id=artist_id,
+                        created_at=now,
+                        updated_at=now
+                    )
                     for artist_id in valid_artist_ids
                 ]
-                insert_query = collection_artist.insert().values(insert_values)
-                await self.db.execute(insert_query)
-                # Update artists' updated_at when adding to collection
-                stmt = update(Artist).where(Artist.id.in_(
-                    valid_artist_ids)).values(updated_at=func.now())
-                await self.db.execute(stmt)
+                self.db.add_all(collection_artists)
                 await self.db.flush()  # Flush without commit (transaction managed by service)
 
         except Exception as e:
@@ -304,13 +335,16 @@ class CollectionRepository(TransactionalMixin):
     async def remove_artists(self, collection: Collection, artist_ids: List[int]) -> None:
         """Remove artists from a collection."""
         try:
-
-            # Remove artists from collection through association table
-            delete_query = collection_artist.delete().where(
-                collection_artist.c.collection_id == collection.id,
-                collection_artist.c.artist_id.in_(artist_ids)
+            # Remove artists from collection through association model
+            query = select(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection.id,
+                CollectionArtist.artist_id.in_(artist_ids)
             )
-            await self.db.execute(delete_query)
+            result = await self.db.execute(query)
+            collection_artists = result.scalars().all()
+
+            for ca in collection_artists:
+                await self.db.delete(ca)
 
             # Transaction managed by service layer
         except Exception as e:
@@ -324,16 +358,18 @@ class CollectionRepository(TransactionalMixin):
     async def remove_artist(self, collection: Collection, artist_id: int) -> bool:
         """Remove a specific artist from a collection."""
         try:
-
-            # Delete from association table
-            delete_query = collection_artist.delete().where(
-                collection_artist.c.collection_id == collection.id,
-                collection_artist.c.artist_id == artist_id
+            # Delete from association model
+            query = select(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection.id,
+                CollectionArtist.artist_id == artist_id
             )
-            result = await self.db.execute(delete_query)
+            result = await self.db.execute(query)
+            collection_artist_obj = result.scalar_one_or_none()
 
-            # Transaction managed by service layer
-            return result.rowcount > 0
+            if collection_artist_obj:
+                await self.db.delete(collection_artist_obj)
+                return True
+            return False
         except Exception as e:
             logger.error(f"Error removing artist from collection: {str(e)}")
             raise ServerError(
@@ -347,7 +383,6 @@ class CollectionRepository(TransactionalMixin):
         Only returns collections with at least one album, artist, or wishlist item."""
         try:
             from app.models.like_model import Like
-            from app.models.association_tables import collection_artist
             from app.models.wishlist_model import Wishlist
 
             # Build base query
@@ -363,7 +398,7 @@ class CollectionRepository(TransactionalMixin):
             ).exists()
 
             has_artists = select(1).where(
-                collection_artist.c.collection_id == Collection.id
+                CollectionArtist.collection_id == Collection.id
             ).exists()
 
             # For wishlist, we need to check if the owner has any wishlist items
@@ -393,8 +428,8 @@ class CollectionRepository(TransactionalMixin):
             )
 
             artists_count_subq = (
-                select(func.count(collection_artist.c.artist_id))
-                .where(collection_artist.c.collection_id == Collection.id)
+                select(func.count(CollectionArtist.artist_id))
+                .where(CollectionArtist.collection_id == Collection.id)
                 .scalar_subquery()
             )
 
@@ -491,8 +526,8 @@ class CollectionRepository(TransactionalMixin):
             albums_count = albums_result.scalar() or 0
 
             # Artists count
-            artists_count_query = select(func.count(collection_artist.c.artist_id)).filter(
-                collection_artist.c.collection_id == collection_id
+            artists_count_query = select(func.count(CollectionArtist.artist_id)).filter(
+                CollectionArtist.collection_id == collection_id
             )
             artists_result = await self.db.execute(artists_count_query)
             artists_count = artists_result.scalar() or 0
@@ -563,7 +598,7 @@ class CollectionRepository(TransactionalMixin):
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Collection], int]:
         """Get user's collections with pagination and optimized relation loading (list view)."""
         try:
-            from app.models.association_tables import collection_artist
+            from app.models.association_tables import CollectionArtist, collection_artist
 
             # Build base query
             query = select(Collection).filter(Collection.owner_id == user_id)
@@ -581,8 +616,8 @@ class CollectionRepository(TransactionalMixin):
             )
 
             artists_count_subq = (
-                select(func.count(collection_artist.c.artist_id))
-                .where(collection_artist.c.collection_id == Collection.id)
+                select(func.count(CollectionArtist.artist_id))
+                .where(CollectionArtist.collection_id == Collection.id)
                 .scalar_subquery()
             )
 
@@ -657,23 +692,31 @@ class CollectionRepository(TransactionalMixin):
             logger.error(f"Error getting collection albums: {str(e)}")
             return []
 
-    async def get_collection_artists_paginated(self, collection_id: int, page: int = 1, limit: int = 12) -> Tuple[List[Artist], int]:
-        """Get paginated artists from a collection with optimized relation loading."""
+    async def get_collection_artists_paginated(self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> Tuple[List[tuple], int]:
+        """Get paginated artists from a collection with optimized relation loading, sorted by collection_artist.created_at."""
         try:
-            # Import the association table
+            # Determine sort order
+            if sort_order == "oldest":
+                order_clause = CollectionArtist.created_at.asc().nullslast()
+            else:  # default to newest
+                order_clause = CollectionArtist.created_at.desc().nullslast()
 
-            # Build base query using the association table
-            query = select(Artist).join(collection_artist).filter(
-                collection_artist.c.collection_id == collection_id)
-
-            # Preload relations to avoid N+1 queries
-            query = query.options(
-                selectinload(Artist.external_source),
-                selectinload(Artist.collections)
+            # Query to get artists with collection_artist metadata, sorted by collection_artist.created_at
+            query = (
+                select(Artist, CollectionArtist)
+                .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
+                .filter(CollectionArtist.collection_id == collection_id)
+                .options(
+                    selectinload(Artist.external_source),
+                    selectinload(Artist.collections)
+                )
+                .order_by(order_clause)
             )
 
             # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            count_query = select(func.count(CollectionArtist.artist_id)).filter(
+                CollectionArtist.collection_id == collection_id
+            )
             count_result = await self.db.execute(count_query)
             total = count_result.scalar()
 
@@ -682,9 +725,9 @@ class CollectionRepository(TransactionalMixin):
             query = query.offset(offset).limit(limit)
 
             result = await self.db.execute(query)
-            artists = result.scalars().all()
+            artists_with_association = result.all()
 
-            return artists, total
+            return artists_with_association, total
         except Exception as e:
             logger.error(
                 f"Error getting collection artists paginated: {str(e)}")
@@ -707,8 +750,8 @@ class CollectionRepository(TransactionalMixin):
             if search_type in ["artists", "both"]:
                 # Search artists using association table
 
-                artist_query = select(Artist).join(collection_artist).filter(
-                    collection_artist.c.collection_id == collection_id,
+                artist_query = select(Artist).join(CollectionArtist).filter(
+                    CollectionArtist.collection_id == collection_id,
                     or_(Artist.title.ilike(f"%{query}%"))
                 )
                 artist_result = await self.db.execute(artist_query)
@@ -774,9 +817,9 @@ class CollectionRepository(TransactionalMixin):
         """Search artists in a collection with optimized relation loading."""
         try:
 
-            # Search artists in collection using association table
-            artist_query = select(Artist).join(collection_artist).filter(
-                collection_artist.c.collection_id == collection_id,
+            # Search artists in collection using association model
+            artist_query = select(Artist).join(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection_id,
                 or_(Artist.title.ilike(f"%{query}%"))
             )
 

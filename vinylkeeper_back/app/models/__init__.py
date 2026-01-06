@@ -8,7 +8,7 @@ from .wishlist_model import Wishlist
 from .place_model import Place
 from .like_model import Like
 from .moderation_request_model import ModerationRequest
-from .association_tables import collection_artist
+from .association_tables import CollectionArtist, collection_artist
 from .place_like_model import PlaceLike
 
 from .reference_data.external_sources import ExternalSource
@@ -26,6 +26,7 @@ __all__ = [
     "Album",
     "Collection",
     "CollectionAlbum",
+    "CollectionArtist",
     "Loan",
     "Wishlist",
     "Place",

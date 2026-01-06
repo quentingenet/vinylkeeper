@@ -73,12 +73,16 @@ class CollectionService:
             "name": "UNKNOWN"
         }
 
-    def _convert_artist_to_collection_artist_response(self, artist) -> CollectionArtistResponse:
+    def _convert_artist_to_collection_artist_response(self, artist, collection_artist=None) -> CollectionArtistResponse:
         """Convert artist SQLAlchemy object to CollectionArtistResponse schema"""
         external_source_dict = self._convert_external_source_to_dict(
             artist.external_source if hasattr(
                 artist, 'external_source') else None
         )
+
+        # Use timestamps from collection_artist if available, otherwise fall back to artist timestamps
+        created_at = collection_artist.created_at if collection_artist and collection_artist.created_at else artist.created_at
+        updated_at = collection_artist.updated_at if collection_artist and collection_artist.updated_at else artist.updated_at
 
         return CollectionArtistResponse(
             id=artist.id,
@@ -86,8 +90,8 @@ class CollectionService:
             title=artist.title,
             image_url=artist.image_url,
             external_source=external_source_dict,
-            created_at=artist.created_at,
-            updated_at=artist.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
             collections_count=getattr(artist, 'collections_count', 0)
         )
 
@@ -113,6 +117,10 @@ class CollectionService:
                 album, 'external_source') else None
         )
 
+        # Use timestamps from collection_album if available, otherwise fall back to album timestamps
+        created_at = collection_album.created_at if collection_album and collection_album.created_at else album.created_at
+        updated_at = collection_album.updated_at if collection_album and collection_album.updated_at else album.updated_at
+
         return CollectionAlbumResponse(
             id=album.id,
             external_album_id=album.external_album_id,
@@ -124,8 +132,8 @@ class CollectionService:
             state_record=state_record,
             state_cover=state_cover,
             acquisition_month_year=acquisition_month_year,
-            created_at=album.created_at,
-            updated_at=album.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
             collections_count=getattr(album, 'collections_count', 0),
             loans_count=getattr(album, 'loans_count', 0),
             wishlist_count=getattr(album, 'wishlist_count', 0)
@@ -372,6 +380,8 @@ class CollectionService:
                                                                           'album_id'})
             )
 
+            # Flush all pending changes before commit (required with autoflush=False and async workers)
+            await self.collection_album_repository.db.flush()
             # Commit the transaction
             await self.collection_album_repository.db.commit()
 
@@ -415,6 +425,8 @@ class CollectionService:
                     exclude_unset=True)
             )
 
+            # Flush all pending changes before commit (required with autoflush=False and async workers)
+            await self.collection_album_repository.db.flush()
             # Commit the transaction
             await self.collection_album_repository.db.commit()
 
@@ -819,7 +831,7 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
-    async def get_collection_albums_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedAlbumsResponse:
+    async def get_collection_albums_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> PaginatedAlbumsResponse:
         """Get paginated albums from a collection"""
         try:
             # Validate pagination parameters
@@ -839,7 +851,7 @@ class CollectionService:
 
             # Get paginated albums
             albums_data, total = await self.collection_album_repository.get_collection_albums_paginated(
-                collection_id, page, limit
+                collection_id, page, limit, sort_order
             )
 
             # Convert to Pydantic schemas
@@ -873,7 +885,7 @@ class CollectionService:
                 details={"error": str(e)}
             )
 
-    async def get_collection_artists_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12) -> PaginatedArtistsResponse:
+    async def get_collection_artists_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> PaginatedArtistsResponse:
         """Get paginated artists from a collection"""
         try:
             # Validate pagination parameters
@@ -892,13 +904,13 @@ class CollectionService:
                 )
 
             # Get paginated artists
-            artists, total = await self.repository.get_collection_artists_paginated(collection_id, page, limit)
+            artists_data, total = await self.repository.get_collection_artists_paginated(collection_id, page, limit, sort_order)
 
             # Convert to Pydantic schemas
             artist_responses = []
-            for artist in artists:
+            for artist, collection_artist in artists_data:
                 artist_responses.append(
-                    self._convert_artist_to_collection_artist_response(artist))
+                    self._convert_artist_to_collection_artist_response(artist, collection_artist))
 
             # Calculate total pages
             total_pages = (total + limit - 1) // limit
@@ -1002,10 +1014,11 @@ class CollectionService:
         """Build a CollectionResponse from a Collection instance using preloaded data and pre-fetched likes info."""
         # Use preloaded artists and albums (no additional queries)
         artists = []
-        if hasattr(collection, 'artists') and collection.artists:
-            for artist in collection.artists:
-                artists.append(
-                    self._convert_artist_to_collection_artist_response(artist))
+        if hasattr(collection, 'collection_artists') and collection.collection_artists:
+            for collection_artist in collection.collection_artists:
+                if hasattr(collection_artist, 'artist') and collection_artist.artist:
+                    artists.append(
+                        self._convert_artist_to_collection_artist_response(collection_artist.artist, collection_artist))
 
         albums = []
         if hasattr(collection, 'collection_albums') and collection.collection_albums:

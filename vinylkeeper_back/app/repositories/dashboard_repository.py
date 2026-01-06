@@ -1,13 +1,13 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, case
+from sqlalchemy import func, select, case, and_
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.user_model import User
 from app.models.collection_model import Collection
 from app.models.collection_album import CollectionAlbum
 from app.models.place_model import Place
-from app.models.association_tables import collection_artist
+from app.models.association_tables import CollectionArtist
 from app.core.exceptions import ServerError
 from app.core.logging import logger
 
@@ -19,12 +19,15 @@ class DashboardRepository:
     async def get_latest_album(self):
         """Get the latest album added to any collection"""
         try:
+            # Get the collection_album association with the most recent updated_at
+            # Index on updated_at DESC ensures fast query execution
             query = (
-                select(Album, User.username)
+                select(Album, User.username, CollectionAlbum.updated_at)
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .order_by(Album.updated_at.desc())
+                .where(CollectionAlbum.updated_at.isnot(None))
+                .order_by(CollectionAlbum.updated_at.desc())
                 .limit(1)
             )
             result = await self.db.execute(query)
@@ -43,11 +46,12 @@ class DashboardRepository:
             # Simple approach: query albums and filter duplicates in Python
             # This is more reliable than complex SQL with DISTINCT ON
             query = (
-                select(Album, User.username)
+                select(Album, User.username, CollectionAlbum.updated_at)
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .order_by(Album.updated_at.desc())
+                .where(CollectionAlbum.updated_at.isnot(None))
+                .order_by(CollectionAlbum.updated_at.desc())
             )
 
             if exclude_ids:
@@ -61,10 +65,10 @@ class DashboardRepository:
             # Filter duplicates by album.id, keeping the first occurrence (most recent)
             seen_ids = set()
             unique_albums = []
-            for album, username in all_albums:
+            for album, username, updated_at in all_albums:
                 if album.id not in seen_ids:
                     seen_ids.add(album.id)
-                    unique_albums.append((album, username))
+                    unique_albums.append((album, username, updated_at))
                 if len(unique_albums) >= limit:
                     break
 
@@ -80,12 +84,15 @@ class DashboardRepository:
     async def get_latest_artist(self):
         """Get the latest artist added to any collection"""
         try:
+            # Get the collection_artist association with the most recent updated_at
+            # Index on updated_at DESC ensures fast query execution
             query = (
-                select(Artist, User.username)
-                .join(collection_artist, Artist.id == collection_artist.c.artist_id)
-                .join(Collection, collection_artist.c.collection_id == Collection.id)
+                select(Artist, User.username, CollectionArtist.updated_at)
+                .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
+                .join(Collection, CollectionArtist.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .order_by(Artist.updated_at.desc())
+                .where(CollectionArtist.updated_at.isnot(None))
+                .order_by(CollectionArtist.updated_at.desc())
                 .limit(1)
             )
             result = await self.db.execute(query)
@@ -111,8 +118,8 @@ class DashboardRepository:
 
             artists_count_subq = (
                 select(func.count(func.distinct(Artist.id)).label('count'))
-                .join(collection_artist, Artist.id == collection_artist.c.artist_id)
-                .join(Collection, collection_artist.c.collection_id == Collection.id)
+                .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
+                .join(Collection, CollectionArtist.collection_id == Collection.id)
                 .filter(Collection.owner_id == user_id)
                 .scalar_subquery()
             )
@@ -181,7 +188,7 @@ class DashboardRepository:
             )
 
             artists_count_subq = (
-                select(func.count(func.distinct(collection_artist.c.artist_id)))
+                select(func.count(func.distinct(CollectionArtist.artist_id)))
                 .scalar_subquery()
             )
 

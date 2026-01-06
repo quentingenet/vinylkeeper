@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, validates
 
 from app.models.base import Base
-from app.models.association_tables import collection_artist
+from app.models.association_tables import CollectionArtist
 
 
 class Collection(Base):
@@ -37,11 +37,19 @@ class Collection(Base):
         lazy="selectin"
     )
 
+    collection_artists = relationship(
+        "CollectionArtist",
+        back_populates="collection",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
     artists = relationship(
         "Artist",
-        secondary=collection_artist,
+        secondary="collection_artist",
         back_populates="collections",
-        lazy="selectin"
+        lazy="selectin",
+        overlaps="artist,collection,collection_artists"
     )
 
     likes = relationship(

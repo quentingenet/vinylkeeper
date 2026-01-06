@@ -204,6 +204,8 @@ class ExternalReferenceService:
 
             wishlist_response = self._build_wishlist_response(
                 result, request.entity_type.value, request.source)
+            # Flush all pending changes before commit (required with autoflush=False and async workers)
+            await self.repository.db.flush()
             # Commit the transaction
             await self.repository.db.commit()
 
@@ -247,6 +249,9 @@ class ExternalReferenceService:
                 raise ResourceNotFoundError("Wishlist item", wishlist_id)
 
             result = await self.repository.remove_wishlist_item(wishlist_item)
+
+            # Flush all pending changes before commit (required with autoflush=False and async workers)
+            await self.repository.db.flush()
 
             # Commit the transaction
             await self.repository.db.commit()
@@ -318,39 +323,38 @@ class ExternalReferenceService:
                 check_result = await self.repository.db.execute(check_query)
                 existing_collection_album = check_result.scalar_one_or_none()
 
+                # Process album_data to convert names to IDs (needed for both new and existing albums)
+                processed_album_data = None
+                if request.album_data:
+                    album_data_dict = request.album_data.dict(
+                        exclude_none=True)
+                    processed_album_data = album_data_dict.copy()
+
+                    state_record = processed_album_data.pop(
+                        'state_record', None)
+                    if state_record:
+                        # Convert VinylStateEnum to string for mapping
+                        state_record_str = state_record.value if hasattr(
+                            state_record, 'value') else str(state_record)
+                        processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(state_record_str)
+
+                    state_cover = processed_album_data.pop(
+                        'state_cover', None)
+                    if state_cover:
+                        # Convert VinylStateEnum to string for mapping
+                        state_cover_str = state_cover.value if hasattr(
+                            state_cover, 'value') else str(state_cover)
+                        processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover_str)
+
+                    # acquisition_month_year is already in the correct format, no conversion needed
+
                 is_new_album = False
                 if existing_collection_album:
-                    if not is_new_entity:
-                        await self.repository._update_album_timestamp(album.id)
-                    collection_item = existing_collection_album
+                    # Album already in collection, update timestamps and metadata via add_album_to_collection
+                    # which handles updating CollectionAlbum.updated_at
+                    collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data, is_new_entity)
                 else:
                     is_new_album = True
-                    # Process album_data to convert names to IDs
-                    processed_album_data = None
-                    if request.album_data:
-                        album_data_dict = request.album_data.dict(
-                            exclude_none=True)
-                        processed_album_data = album_data_dict.copy()
-
-                        state_record = processed_album_data.pop(
-                            'state_record', None)
-                        if state_record:
-                            # Convert VinylStateEnum to string for mapping
-                            state_record_str = state_record.value if hasattr(
-                                state_record, 'value') else str(state_record)
-                            processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(state_record_str)
-
-                        state_cover = processed_album_data.pop(
-                            'state_cover', None)
-                        if state_cover:
-                            # Convert VinylStateEnum to string for mapping
-                            state_cover_str = state_cover.value if hasattr(
-                                state_cover, 'value') else str(state_cover)
-                            processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover_str)
-
-                        # acquisition_month_year is already in the correct format, no conversion needed
-
-                    # Add album to collection (method will update albums.updated_at if entity existed before)
                     collection_item = await self.repository.add_album_to_collection(collection, album, processed_album_data, is_new_entity)
             else:
                 # Use the artist from the entity response (no need to search again)
@@ -371,14 +375,10 @@ class ExternalReferenceService:
                     entity_response, '_is_new_entity', False)
 
                 if existing_artist:
-                    if not is_new_entity:
-                        await self.repository._update_artist_timestamp(artist.id)
-                    collection_item = {
-                        "id": artist.id,
-                        "collection_id": collection.id,
-                        "artist_id": artist.id,
-                        "created_at": existing_artist["created_at"]
-                    }
+                    # Artist already in collection, update timestamps via add_artist_to_collection
+                    # which handles updating CollectionArtist.updated_at
+                    collection_item = await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
+                    is_new_artist = False
                 else:
                     is_new_artist = True
                     collection_item = await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
@@ -402,6 +402,12 @@ class ExternalReferenceService:
                 )
             else:
                 # For artists, collection_item is a dictionary
+                # Handle case where created_at might be None for old records
+                created_at = collection_item.get("created_at")
+                if created_at is None:
+                    from datetime import datetime, timezone
+                    created_at = datetime.now(timezone.utc)
+
                 item_response = CollectionItemResponse(
                     id=collection_item["id"],
                     user_id=user_id,
@@ -410,7 +416,7 @@ class ExternalReferenceService:
                     title=request.title,
                     image_url=request.image_url,
                     source=request.source,
-                    created_at=collection_item["created_at"]
+                    created_at=created_at
                 )
 
             # Build the final response with status information
@@ -423,6 +429,9 @@ class ExternalReferenceService:
                 entity_type=request.entity_type.value,
                 collection_name=collection.name
             )
+
+            # Flush all pending changes before commit (required with autoflush=False and async workers)
+            await self.repository.db.flush()
 
             # Commit the transaction
             await self.repository.db.commit()
@@ -463,6 +472,8 @@ class ExternalReferenceService:
 
                 await self.repository.remove_artist_from_collection(collection, artist)
 
+            # Flush all pending changes before commit (required with autoflush=False and async workers)
+            await self.repository.db.flush()
             # Commit the transaction
             await self.repository.db.commit()
 

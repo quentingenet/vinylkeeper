@@ -287,10 +287,11 @@ export class CollectionApiService extends BaseApiService {
   async getCollectionAlbumsPaginated(
     collectionId: number,
     page: number = 1,
-    limit: number = 12
+    limit: number = 12,
+    sortOrder: "newest" | "oldest" = "newest"
   ): Promise<PaginatedAlbumsResponse> {
     const response = await this.get<PaginatedAlbumsResponse>(
-      `/collections/${collectionId}/albums?page=${page}&limit=${limit}`
+      `/collections/${collectionId}/albums?page=${page}&limit=${limit}&sort_order=${sortOrder}`
     );
     return response;
   }
@@ -298,10 +299,11 @@ export class CollectionApiService extends BaseApiService {
   async getCollectionArtistsPaginated(
     collectionId: number,
     page: number = 1,
-    limit: number = 12
+    limit: number = 12,
+    sortOrder: "newest" | "oldest" = "newest"
   ): Promise<PaginatedArtistsResponse> {
     return this.get<PaginatedArtistsResponse>(
-      `/collections/${collectionId}/artists?page=${page}&limit=${limit}`
+      `/collections/${collectionId}/artists?page=${page}&limit=${limit}&sort_order=${sortOrder}`
     );
   }
 
@@ -380,22 +382,26 @@ export const collectionApiService = {
   getCollectionAlbumsPaginated: (
     collectionId: number,
     page: number = 1,
-    limit: number = 12
+    limit: number = 12,
+    sortOrder: "newest" | "oldest" = "newest"
   ) =>
     collectionApiServiceInstance.getCollectionAlbumsPaginated(
       collectionId,
       page,
-      limit
+      limit,
+      sortOrder
     ),
   getCollectionArtistsPaginated: (
     collectionId: number,
     page: number = 1,
-    limit: number = 12
+    limit: number = 12,
+    sortOrder: "newest" | "oldest" = "newest"
   ) =>
     collectionApiServiceInstance.getCollectionArtistsPaginated(
       collectionId,
       page,
-      limit
+      limit,
+      sortOrder
     ),
   searchCollectionItems: (
     collectionId: number,

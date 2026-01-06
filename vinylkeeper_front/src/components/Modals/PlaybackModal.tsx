@@ -262,8 +262,8 @@ export default function PlaybackModal({
                 sx={{ color: "#C9A726", fontWeight: "bold" }}
               >
                 {item?.itemType === "album"
-                  ? "Album Details"
-                  : "Artist Details"}
+                  ? "Album details"
+                  : "Artist details"}
               </Typography>
               <IconButton onClick={onClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
@@ -289,8 +289,20 @@ export default function PlaybackModal({
                     <img
                       src={
                         item?.itemType === "album"
-                          ? buildProxyImageUrl(albumMetadata?.image_url || "", 240, 240, 85, true)
-                          : buildProxyImageUrl(item?.image_url || "", 240, 240, 85, true)
+                          ? buildProxyImageUrl(
+                              albumMetadata?.image_url || "",
+                              240,
+                              240,
+                              85,
+                              true
+                            )
+                          : buildProxyImageUrl(
+                              item?.image_url || "",
+                              240,
+                              240,
+                              85,
+                              true
+                            )
                       }
                       alt={item.title}
                       style={{

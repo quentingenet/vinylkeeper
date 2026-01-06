@@ -176,10 +176,11 @@ async def get_collection_albums_paginated(
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(
         12, gt=0, le=50, description="Number of items per page"),
+    sort_order: str = Query("newest", description="Sort order: 'newest' or 'oldest'"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    response = await service.get_collection_albums_paginated(collection_id, user.id, page, limit)
+    response = await service.get_collection_albums_paginated(collection_id, user.id, page, limit, sort_order)
     return response.model_dump()
 
 
@@ -190,10 +191,11 @@ async def get_collection_artists_paginated(
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(
         12, gt=0, le=50, description="Number of items per page"),
+    sort_order: str = Query("newest", description="Sort order: 'newest' or 'oldest'"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    response = await service.get_collection_artists_paginated(collection_id, user.id, page, limit)
+    response = await service.get_collection_artists_paginated(collection_id, user.id, page, limit, sort_order)
     return response.model_dump()
 
 

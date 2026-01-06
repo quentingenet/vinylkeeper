@@ -9,7 +9,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, validates
 from app.models.base import Base
-from app.models.association_tables import collection_artist
 
 
 class Artist(Base):
@@ -50,11 +49,19 @@ class Artist(Base):
                         server_default=func.now(),
                         onupdate=func.now(), nullable=False)
 
+    collection_artists = relationship(
+        "CollectionArtist",
+        back_populates="artist",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
     collections = relationship(
         "Collection",
-        secondary=collection_artist,
+        secondary="collection_artist",
         back_populates="artists",
-        lazy="selectin"
+        lazy="selectin",
+        overlaps="collection_artists"
     )
 
     @validates('external_artist_id')

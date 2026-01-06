@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select
 from datetime import datetime, timezone
 from app.models.wishlist_model import Wishlist
 from app.models.album_model import Album
@@ -23,6 +23,7 @@ from app.repositories.collection_repository import CollectionRepository
 from app.repositories.album_repository import AlbumRepository
 from app.repositories.artist_repository import ArtistRepository
 from app.models.collection_album import CollectionAlbum
+from app.models.association_tables import CollectionArtist
 from app.models.reference_data.vinyl_state import VinylState
 from app.utils.vinyl_state_mapping import VinylStateMapping
 
@@ -47,20 +48,6 @@ class ExternalReferenceRepository:
         self._entity_type_cache: Dict[str, int] = {}
         self._external_source_cache: Dict[str, int] = {}
         self._vinyl_state_cache: Dict[str, int] = {}
-
-    async def _update_album_timestamp(self, album_id: int) -> None:
-        """Update album's updated_at timestamp (helper method)"""
-        stmt = update(Album).where(Album.id == album_id).values(
-            updated_at=datetime.now(timezone.utc))
-        await self.db.execute(stmt)
-        await self.db.flush()
-
-    async def _update_artist_timestamp(self, artist_id: int) -> None:
-        """Update artist's updated_at timestamp (helper method)"""
-        stmt = update(Artist).where(Artist.id == artist_id).values(
-            updated_at=datetime.now(timezone.utc))
-        await self.db.execute(stmt)
-        await self.db.flush()
 
     async def get_entity_type_id(self, entity_type: EntityTypeEnum) -> int:
         """Get the entity type ID from the database with caching"""
@@ -170,11 +157,10 @@ class ExternalReferenceRepository:
     async def find_collection_artist_by_external_id(self, collection_id: int, external_id: str) -> Optional[Artist]:
         """Find a collection artist by collection ID and external artist ID"""
         try:
-            from app.models.association_tables import collection_artist
             from app.models.artist_model import Artist
 
-            query = select(Artist).join(collection_artist).filter(
-                collection_artist.c.collection_id == collection_id,
+            query = select(Artist).join(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection_id,
                 Artist.external_artist_id == external_id
             )
 
@@ -241,14 +227,34 @@ class ExternalReferenceRepository:
             existing = result.scalar_one_or_none()
 
             if existing:
-                if not is_new_entity:
-                    await self._update_album_timestamp(album.id)
+                # Update metadata if provided
+                if album_data:
+                    if album_data.get('state_record_id') is not None:
+                        existing.state_record = album_data['state_record_id']
+                    if album_data.get('state_cover_id') is not None:
+                        existing.state_cover = album_data['state_cover_id']
+                    if album_data.get('acquisition_month_year') is not None:
+                        existing.acquisition_month_year = album_data['acquisition_month_year']
+
+                # Update only CollectionAlbum.updated_at when adding existing album
+                # Never modify created_at - it represents the initial addition date
+                from datetime import datetime, timezone
+                existing.updated_at = datetime.now(timezone.utc)
+                # Preserve created_at if it's None (for old records)
+                if existing.created_at is None:
+                    existing.created_at = existing.updated_at
+                await self.db.flush()
+
                 return existing
 
-            # Create new collection album association
+            # Create new collection album association with explicit timestamps
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
             collection_album = CollectionAlbum(
                 collection_id=collection.id,
-                album_id=album.id
+                album_id=album.id,
+                created_at=now,
+                updated_at=now
             )
 
             # Add album state data if provided
@@ -261,10 +267,8 @@ class ExternalReferenceRepository:
                     collection_album.acquisition_month_year = album_data['acquisition_month_year']
 
             self.db.add(collection_album)
-            if not is_new_entity:
-                await self._update_album_timestamp(album.id)
             await self.db.flush()
-            await self.db.refresh(collection_album)
+
             return collection_album
         except Exception as e:
             logger.error(
@@ -283,25 +287,19 @@ class ExternalReferenceRepository:
     async def find_artist_in_collection(self, collection_id: int, artist_id: int) -> Optional[dict]:
         """Find if an artist is already in a collection"""
         try:
-            from app.models.association_tables import collection_artist
-
-            query = select(collection_artist).filter(
-                collection_artist.c.collection_id == collection_id,
-                collection_artist.c.artist_id == artist_id
+            query = select(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection_id,
+                CollectionArtist.artist_id == artist_id
             )
             result = await self.db.execute(query)
             existing = result.scalar_one_or_none()
 
             if existing:
-                # Use current timestamp if created_at is not available
-                from datetime import datetime, timezone
-                current_time = datetime.now(timezone.utc)
-
                 return {
                     "id": artist_id,
                     "collection_id": collection_id,
                     "artist_id": artist_id,
-                    "created_at": getattr(existing, 'created_at', current_time)
+                    "created_at": existing.created_at
                 }
             return None
         except Exception as e:
@@ -311,34 +309,47 @@ class ExternalReferenceRepository:
     async def add_artist_to_collection(self, collection: Collection, artist: Artist, is_new_entity: bool = False) -> dict:
         """Add an artist to a collection"""
         try:
-            from app.models.association_tables import collection_artist
-
-            # Check if artist is already in collection using the association table
-            existing_query = select(collection_artist).filter(
-                collection_artist.c.collection_id == collection.id,
-                collection_artist.c.artist_id == artist.id
+            # Check if artist is already in collection
+            existing_query = select(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection.id,
+                CollectionArtist.artist_id == artist.id
             )
             existing_result = await self.db.execute(existing_query)
             existing = existing_result.scalar_one_or_none()
 
-            if not is_new_entity:
-                await self._update_artist_timestamp(artist.id)
-
             if not existing:
-                # Insert into association table
-                insert_query = collection_artist.insert().values(
+                # Create new association with explicit timestamps
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc)
+                collection_artist_obj = CollectionArtist(
                     collection_id=collection.id,
-                    artist_id=artist.id
+                    artist_id=artist.id,
+                    created_at=now,
+                    updated_at=now
                 )
-                await self.db.execute(insert_query)
-                # Transaction managed by service layer
+
+                self.db.add(collection_artist_obj)
+                await self.db.flush()
+
+                created_at = collection_artist_obj.created_at
+            else:
+                # Update only existing association's updated_at
+                # Never modify created_at - it represents the initial addition date
+                from datetime import datetime, timezone
+                existing.updated_at = datetime.now(timezone.utc)
+                # Preserve created_at if it's None (for old records)
+                if existing.created_at is None:
+                    existing.created_at = existing.updated_at
+                await self.db.flush()
+
+                created_at = existing.created_at if existing.created_at is not None else existing.updated_at
 
             # Return a dictionary with the necessary information
             return {
                 "id": artist.id,
                 "collection_id": collection.id,
                 "artist_id": artist.id,
-                "created_at": collection.created_at
+                "created_at": created_at
             }
         except Exception as e:
             logger.error(f"Failed to add artist to collection: {str(e)}")
@@ -376,14 +387,16 @@ class ExternalReferenceRepository:
     async def remove_artist_from_collection(self, collection: Collection, artist: Artist) -> None:
         """Remove an artist from a collection"""
         try:
-            from app.models.association_tables import collection_artist
-
-            # Delete from association table
-            delete_query = collection_artist.delete().where(
-                collection_artist.c.collection_id == collection.id,
-                collection_artist.c.artist_id == artist.id
+            # Delete from association model
+            query = select(CollectionArtist).filter(
+                CollectionArtist.collection_id == collection.id,
+                CollectionArtist.artist_id == artist.id
             )
-            await self.db.execute(delete_query)
+            result = await self.db.execute(query)
+            collection_artist_obj = result.scalar_one_or_none()
+
+            if collection_artist_obj:
+                await self.db.delete(collection_artist_obj)
             # Transaction managed by service layer
         except Exception as e:
             raise ServerError(
