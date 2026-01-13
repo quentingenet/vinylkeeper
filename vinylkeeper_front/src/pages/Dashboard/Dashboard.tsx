@@ -174,9 +174,16 @@ export default function Dashboard() {
 
   // Show tutorial for new users who haven't seen it yet
   // is_tutorial_seen is calculated by backend based on number_of_connections > 2
+  // We persist tutorial seen status in localStorage to avoid showing it multiple times in the same session
   useEffect(() => {
     if (currentUser && !currentUser.is_tutorial_seen) {
-      setShowTutorial(true);
+      const tutorialSeenKey = `tutorial_seen_${currentUser.user_uuid}`;
+      const hasSeenTutorialInSession =
+        localStorage.getItem(tutorialSeenKey) === "true";
+
+      if (!hasSeenTutorialInSession) {
+        setShowTutorial(true);
+      }
     }
   }, [currentUser]);
 
@@ -717,9 +724,10 @@ export default function Dashboard() {
                   mb: 2,
                 }}
               >
-                <Link
+                <Box
+                  component={Link}
                   to="/explore"
-                  style={{
+                  sx={{
                     color: "#c9a726",
                     textDecoration: "none",
                     fontSize: "1.25rem",
@@ -727,19 +735,12 @@ export default function Dashboard() {
                     fontFamily:
                       "Roboto,Oswald,  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
                     textShadow: "1px 1px 2px rgba(0, 0, 0, 0.5)",
-                    transition: "all 0.2s ease-in-out",
                     display: "inline-block",
-                    transform: "scale(1)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.05)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
+                    animation: `${growItem} 1.7s ease-in-out infinite`,
                   }}
                 >
                   Discover community collections
-                </Link>
+                </Box>
               </Box>
             </Paper>
           </div>
@@ -754,8 +755,13 @@ export default function Dashboard() {
         open={showTutorial}
         onClose={() => {
           setShowTutorial(false);
-          // Tutorial seen status is managed by backend based on number_of_connections
-          // No need to store in localStorage anymore
+          // Persist tutorial seen status in localStorage for this session
+          // This prevents showing the tutorial multiple times during the same session
+          // when number_of_connections < 2
+          if (currentUser) {
+            const tutorialSeenKey = `tutorial_seen_${currentUser.user_uuid}`;
+            localStorage.setItem(tutorialSeenKey, "true");
+          }
         }}
       />
     </Box>

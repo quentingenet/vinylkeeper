@@ -148,11 +148,16 @@ export function UserContextProvider({
     } catch (error) {
       console.error("Error while logging out:", error);
     } finally {
+      // Clear tutorial seen status from localStorage on logout
+      if (currentUser) {
+        const tutorialSeenKey = `tutorial_seen_${currentUser.user_uuid}`;
+        localStorage.removeItem(tutorialSeenKey);
+      }
       setIsUserLoggedIn(false);
       setCurrentUser(null);
       navigate("/", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, currentUser]);
 
   useEffect(() => {
     checkUserLoggedIn();
