@@ -190,12 +190,19 @@ export default function PlaybackModal({
       : window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const hasAtLeastOneField =
+    discState !== null || coverState !== null || purchaseDate !== "";
+
   const handleUpdateAlbumStates = async () => {
     if (!item || item.itemType !== "album" || !collectionId) {
       return;
     }
 
     if (!item.internalId) {
+      return;
+    }
+
+    if (!hasAtLeastOneField) {
       return;
     }
 
@@ -563,7 +570,7 @@ export default function PlaybackModal({
                             <Button
                               variant="contained"
                               onClick={handleUpdateAlbumStates}
-                              disabled={isUpdating}
+                              disabled={isUpdating || !hasAtLeastOneField}
                               sx={{
                                 backgroundColor: "#C9A726",
                                 color: "#1F1F1F",
