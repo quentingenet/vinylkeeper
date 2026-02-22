@@ -65,23 +65,26 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
     return groups;
   }, [mapPlaces]);
 
-  // One marker per group; position = first place's coordinates in that group
+  // One marker per group; use first place that has both country and city for by-location request
   const mapMarkers = useMemo(() => {
     return Array.from(groupedPlaces.entries()).map(([key, places]) => {
       const first = places[0];
+      const withLocation = places.find((p) => p.country && p.city) ?? first;
       return {
         key,
         latitude: first.latitude,
         longitude: first.longitude,
-        country: first.country ?? "",
-        city: first.city ?? "",
+        country: withLocation.country ?? "",
+        city: withLocation.city ?? "",
       };
     });
   }, [groupedPlaces]);
 
-  const { data: placesAtLocation, isLoading: isLoadingPlaces } = useQuery<
-    Place[]
-  >({
+  const {
+    data: placesAtLocation,
+    isLoading: isLoadingPlaces,
+    isError: isPlacesError,
+  } = useQuery<Place[]>({
     queryKey: ["places-location", selectedLocation?.country, selectedLocation?.city],
     queryFn: () =>
       placeApiService.getPlacesByLocation(
@@ -91,6 +94,8 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
     enabled: selectedLocation !== null,
     staleTime: 5 * 60 * 1000,
   });
+
+  const placesList = Array.isArray(placesAtLocation) ? placesAtLocation : [];
 
   const handleMarkerClick = (country: string, city: string) => {
     setSelectedLocation({ country, city });
@@ -171,13 +176,10 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
                 component="h2"
                 sx={{ color: "#C9A726", fontWeight: "bold" }}
               >
-                {isLoadingPlaces
-                  ? "Loading..."
-                  : placesAtLocation && placesAtLocation.length > 0
-                  ? `🏙️ ${[placesAtLocation[0].city, placesAtLocation[0].country].filter(Boolean).join(", ") || "Places"}`
-                  : selectedLocation
-                  ? `🏙️ ${selectedLocation.city}, ${selectedLocation.country}`
+                {selectedLocation
+                  ? `🏙️ ${[selectedLocation.city, selectedLocation.country].filter(Boolean).join(", ") || "Places"}`
                   : "🏙️ Places"}
+                {isLoadingPlaces && " (Loading...)"}
               </Typography>
               <IconButton onClick={handleCloseModal} size="small">
                 <Close sx={{ color: "#C9A726" }} />
@@ -193,7 +195,11 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
               >
                 <CircularProgress sx={{ color: "#C9A726" }} />
               </Box>
-            ) : placesAtLocation && placesAtLocation.length > 0 ? (
+            ) : isPlacesError ? (
+              <Typography sx={{ color: "#e4e4e4" }}>
+                Error loading places. Check your connection.
+              </Typography>
+            ) : placesList.length > 0 ? (
               <Box
                 sx={{
                   display: "flex",
@@ -204,7 +210,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
                   pr: 1,
                 }}
               >
-                {placesAtLocation.map((place) => (
+                {placesList.map((place) => (
                   <Accordion
                     key={place.id}
                     sx={{
