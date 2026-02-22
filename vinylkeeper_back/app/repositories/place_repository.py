@@ -48,12 +48,13 @@ class PlaceRepository(TransactionalMixin):
         return result.scalars().all()
 
     async def get_map_places(self) -> List[tuple]:
-        """Get all moderated places with coordinates for map markers (ultra-lightweight, only essential columns)."""
+        """Get all moderated places with coordinates for map markers (grouping by country+city)."""
         query = select(
             Place.id,
             Place.latitude,
             Place.longitude,
-            Place.city
+            Place.city,
+            Place.country
         ).filter(
             and_(
                 Place.is_valid == True,
@@ -66,8 +67,10 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.all()
 
-    async def get_places_by_coordinates(self, latitude: float, longitude: float) -> List[Place]:
-        """Get all moderated places at exact coordinates (with relations for details)."""
+    async def get_places_by_location(self, country: str, city: str) -> List[Place]:
+        """Get all moderated places in the given country and city (empty string matches NULL)."""
+        country_match = (Place.country == country) if country else Place.country.is_(None)
+        city_match = (Place.city == city) if city else Place.city.is_(None)
         query = select(Place).options(
             selectinload(Place.place_type),
             selectinload(Place.submitted_by)
@@ -75,8 +78,8 @@ class PlaceRepository(TransactionalMixin):
             and_(
                 Place.is_valid == True,
                 Place.is_moderated == True,
-                Place.latitude == latitude,
-                Place.longitude == longitude
+                country_match,
+                city_match
             )
         )
         result = await self.db.execute(query)

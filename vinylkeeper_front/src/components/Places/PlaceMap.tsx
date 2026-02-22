@@ -45,16 +45,18 @@ interface PlaceMapProps {
 const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
   const defaultZoom = 5;
-  const [selectedCoordinates, setSelectedCoordinates] = useState<{
-    latitude: number;
-    longitude: number;
+  const [selectedLocation, setSelectedLocation] = useState<{
+    country: string;
+    city: string;
   } | null>(null);
 
-  // Group places by coordinates (key: "lat,lng")
+  // Group places by country+city (one marker per location area)
   const groupedPlaces = useMemo(() => {
     const groups = new Map<string, PlaceMapResponse[]>();
     mapPlaces.forEach((place) => {
-      const key = `${place.latitude},${place.longitude}`;
+      const country = place.country ?? "";
+      const city = place.city ?? "";
+      const key = `${country}|${city}`;
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -63,40 +65,39 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
     return groups;
   }, [mapPlaces]);
 
-  // Get unique coordinates for markers (one marker per coordinate)
-  const uniqueCoordinates = useMemo(() => {
+  // One marker per group; position = first place's coordinates in that group
+  const mapMarkers = useMemo(() => {
     return Array.from(groupedPlaces.entries()).map(([key, places]) => {
-      const [lat, lng] = key.split(",").map(Number);
-      // Get city from first place in the group (all places at same coordinates should be in same city)
-      const city = places[0]?.city;
-      return { latitude: lat, longitude: lng, key, places, city };
+      const first = places[0];
+      return {
+        key,
+        latitude: first.latitude,
+        longitude: first.longitude,
+        country: first.country ?? "",
+        city: first.city ?? "",
+      };
     });
   }, [groupedPlaces]);
 
-  // Fetch all places at selected coordinates when a marker is clicked
-  const { data: placesAtCoordinates, isLoading: isLoadingPlaces } = useQuery<
+  const { data: placesAtLocation, isLoading: isLoadingPlaces } = useQuery<
     Place[]
   >({
-    queryKey: [
-      "places-coordinates",
-      selectedCoordinates?.latitude,
-      selectedCoordinates?.longitude,
-    ],
+    queryKey: ["places-location", selectedLocation?.country, selectedLocation?.city],
     queryFn: () =>
-      placeApiService.getPlacesByCoordinates(
-        selectedCoordinates!.latitude,
-        selectedCoordinates!.longitude
+      placeApiService.getPlacesByLocation(
+        selectedLocation!.country,
+        selectedLocation!.city
       ),
-    enabled: selectedCoordinates !== null,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: selectedLocation !== null,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const handleMarkerClick = (latitude: number, longitude: number) => {
-    setSelectedCoordinates({ latitude, longitude });
+  const handleMarkerClick = (country: string, city: string) => {
+    setSelectedLocation({ country, city });
   };
 
   const handleCloseModal = () => {
-    setSelectedCoordinates(null);
+    setSelectedLocation(null);
   };
 
   const modalStyle = {
@@ -137,13 +138,13 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
 
-          {/* One marker per unique coordinate */}
-          {uniqueCoordinates.map((coord) => (
+          {mapMarkers.map((marker) => (
             <Marker
-              key={coord.key}
-              position={[coord.latitude, coord.longitude]}
+              key={marker.key}
+              position={[marker.latitude, marker.longitude]}
               eventHandlers={{
-                click: () => handleMarkerClick(coord.latitude, coord.longitude),
+                click: () =>
+                  handleMarkerClick(marker.country, marker.city),
               }}
             />
           ))}
@@ -152,12 +153,12 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
 
       {/* Places at Coordinates Modal with Accordion */}
       <Modal
-        open={selectedCoordinates !== null}
+        open={selectedLocation !== null}
         onClose={handleCloseModal}
         closeAfterTransition
         slots={{ backdrop: Backdrop }}
       >
-        <Fade in={selectedCoordinates !== null}>
+        <Fade in={selectedLocation !== null}>
           <Box sx={modalStyle}>
             <Box
               display="flex"
@@ -172,9 +173,11 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
               >
                 {isLoadingPlaces
                   ? "Loading..."
-                  : placesAtCoordinates && placesAtCoordinates.length > 0
-                  ? `🏙️ ${placesAtCoordinates[0].city || "Unknown city"}`
-                  : "🏙️ Places at this location"}
+                  : placesAtLocation && placesAtLocation.length > 0
+                  ? `🏙️ ${[placesAtLocation[0].city, placesAtLocation[0].country].filter(Boolean).join(", ") || "Places"}`
+                  : selectedLocation
+                  ? `🏙️ ${selectedLocation.city}, ${selectedLocation.country}`
+                  : "🏙️ Places"}
               </Typography>
               <IconButton onClick={handleCloseModal} size="small">
                 <Close sx={{ color: "#C9A726" }} />
@@ -190,7 +193,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
               >
                 <CircularProgress sx={{ color: "#C9A726" }} />
               </Box>
-            ) : placesAtCoordinates && placesAtCoordinates.length > 0 ? (
+            ) : placesAtLocation && placesAtLocation.length > 0 ? (
               <Box
                 sx={{
                   display: "flex",
@@ -198,10 +201,10 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
                   gap: 1,
                   overflow: "auto",
                   flex: 1,
-                  pr: 1, // Padding right for scrollbar
+                  pr: 1,
                 }}
               >
-                {placesAtCoordinates.map((place) => (
+                {placesAtLocation.map((place) => (
                   <Accordion
                     key={place.id}
                     sx={{

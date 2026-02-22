@@ -49,7 +49,7 @@ async def get_places(
     offset: Optional[int] = Query(None, ge=0)
 ):
     """Get all places with optional pagination (only moderated places)"""
-    places = await service.get_all_places(user.id, limit, offset)
+    places = await service.get_all_places(user, limit, offset)
     return [place.model_dump() for place in places]
 
 
@@ -64,16 +64,16 @@ async def get_map_places(
     return places
 
 
-@router.get("/coordinates", status_code=status.HTTP_200_OK)
+@router.get("/by-location", status_code=status.HTTP_200_OK)
 @handle_app_exceptions
-async def get_places_by_coordinates(
-    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
-    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
+async def get_places_by_location(
+    country: str = Query("", description="Country name (empty treated as null in DB)"),
+    city: str = Query("", description="City name (empty treated as null in DB)"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
-    """Get all moderated places at exact coordinates (with full details including likes)."""
-    places = await service.get_places_by_coordinates(latitude, longitude, user.id)
+    """Get all moderated places in the given country and city (for map popup)."""
+    places = await service.get_places_by_location(country, city, user)
     return [place.model_dump() for place in places]
 
 
@@ -95,79 +95,6 @@ async def get_place_types(
         raise
 
 
-@router.get("/{place_id}", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
-async def get_place_by_id(
-    place_id: int = Path(..., gt=0, title="Place ID"),
-    user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
-):
-    """Get a place by ID (only moderated places)"""
-    place = await service.get_place(place_id, user.id)
-    return place.model_dump()
-
-
-@router.patch("/{place_id}", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
-async def update_place(
-    place_id: int = Path(..., gt=0, title="Place ID"),
-    data: PlaceUpdate = Body(...),
-    user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
-):
-    """Update a place"""
-    updated_place = await service.update_place(user.id, place_id, data)
-    return {"message": "Place updated successfully", "place": updated_place.model_dump()}
-
-
-@router.delete("/{place_id}", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
-async def delete_place(
-    place_id: int = Path(..., gt=0, title="Place ID"),
-    user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
-):
-    """Delete a place"""
-    deleted = await service.delete_place(user.id, place_id)
-    return {"message": "Place deleted successfully"}
-
-
-@router.post("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
-async def like_place(
-    place_id: int = Path(..., gt=0, title="Place ID"),
-    user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
-):
-    """Like a place"""
-    result = await service.like_place(user.id, place_id)
-    return PlaceLikeStatusResponse(
-        place_id=place_id,
-        liked=True,
-        is_liked=True,
-        likes_count=result["likes_count"],
-        message=result["message"]
-    )
-
-
-@router.delete("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
-async def unlike_place(
-    place_id: int = Path(..., gt=0, title="Place ID"),
-    user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
-):
-    """Unlike a place"""
-    result = await service.unlike_place(user.id, place_id)
-    return PlaceLikeStatusResponse(
-        place_id=place_id,
-        liked=False,
-        is_liked=False,
-        likes_count=result["likes_count"],
-        message=result["message"]
-    )
-
-
 @router.get("/search", status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def search_places(
@@ -176,7 +103,7 @@ async def search_places(
     service: PlaceService = Depends(get_place_service)
 ):
     """Search places by name, city, or country"""
-    places = await service.search_places(q, user.id)
+    places = await service.search_places(q, user)
     return {
         "items": [place.model_dump() for place in places],
         "total": len(places),
@@ -192,7 +119,7 @@ async def get_places_by_type(
     service: PlaceService = Depends(get_place_service)
 ):
     """Get places by type"""
-    places = await service.get_places_by_type(place_type_id, user.id)
+    places = await service.get_places_by_type(place_type_id, user)
     return {
         "items": [place.model_dump() for place in places],
         "total": len(places),
@@ -213,7 +140,7 @@ async def get_places_in_region(
     service: PlaceService = Depends(get_place_service)
 ):
     """Get places within a geographic region"""
-    places = await service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user.id)
+    places = await service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user)
     return {
         "items": [place.model_dump() for place in places],
         "total": len(places),
@@ -223,4 +150,77 @@ async def get_places_in_region(
             "min_lng": min_lng,
             "max_lng": max_lng
         }
-    } 
+    }
+
+
+@router.get("/{place_id}", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def get_place_by_id(
+    place_id: int = Path(..., gt=0, title="Place ID"),
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Get a place by ID (only moderated places)"""
+    place = await service.get_place(place_id, user)
+    return place.model_dump()
+
+
+@router.patch("/{place_id}", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def update_place(
+    place_id: int = Path(..., gt=0, title="Place ID"),
+    data: PlaceUpdate = Body(...),
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Update a place"""
+    updated_place = await service.update_place(user, place_id, data)
+    return {"message": "Place updated successfully", "place": updated_place.model_dump()}
+
+
+@router.delete("/{place_id}", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def delete_place(
+    place_id: int = Path(..., gt=0, title="Place ID"),
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Delete a place"""
+    deleted = await service.delete_place(user, place_id)
+    return {"message": "Place deleted successfully"}
+
+
+@router.post("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def like_place(
+    place_id: int = Path(..., gt=0, title="Place ID"),
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Like a place"""
+    result = await service.like_place(user, place_id)
+    return PlaceLikeStatusResponse(
+        place_id=place_id,
+        liked=True,
+        is_liked=True,
+        likes_count=result["likes_count"],
+        message=result["message"]
+    )
+
+
+@router.delete("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def unlike_place(
+    place_id: int = Path(..., gt=0, title="Place ID"),
+    user: User = Depends(get_current_user),
+    service: PlaceService = Depends(get_place_service)
+):
+    """Unlike a place"""
+    result = await service.unlike_place(user, place_id)
+    return PlaceLikeStatusResponse(
+        place_id=place_id,
+        liked=False,
+        is_liked=False,
+        likes_count=result["likes_count"],
+        message=result["message"]
+    )

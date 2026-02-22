@@ -133,16 +133,15 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def get_place(self, place_id: int, user_id: Optional[int] = None) -> PublicPlaceResponse:
-        """Get a place by ID (only moderated places)."""
+    async def get_place(self, place_id: int, user: Optional[User] = None) -> PublicPlaceResponse:
+        """Get a place by ID (only moderated places). User resolved from token (uuid) in endpoint."""
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
 
-            # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = False
-            if user_id:
-                is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
+            if user:
+                is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
 
             return self._create_public_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:
@@ -162,15 +161,16 @@ class PlaceService:
             if not places_tuples:
                 return []
 
-            # Build lightweight responses directly from tuples (id, latitude, longitude, city)
+            # Build lightweight responses (id, latitude, longitude, city, country)
             return [
                 PlaceMapResponse(
                     id=place_id,
                     latitude=latitude,
                     longitude=longitude,
-                    city=city
+                    city=city,
+                    country=country
                 )
-                for place_id, latitude, longitude, city in places_tuples
+                for place_id, latitude, longitude, city, country in places_tuples
             ]
         except Exception as e:
             logger.error(f"Error in get_map_places: {str(e)}")
@@ -180,70 +180,28 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def get_places_by_coordinates(self, latitude: float, longitude: float, user_id: int) -> List[PublicPlaceResponse]:
-        """Get all moderated places at exact coordinates (with full details including likes)."""
+    async def get_places_by_location(self, country: str, city: str, user: User) -> List[PublicPlaceResponse]:
+        """Get all moderated places in the given country and city (for map popup). User resolved from token (uuid)."""
         try:
-            places = await self.repository.get_places_by_coordinates(latitude, longitude)
-
+            places = await self.repository.get_places_by_location(country, city)
             if not places:
                 return []
-
-            place_ids = [place.id for place in places]
-
-            # Get likes info in a single optimized query (reduces from 2 queries to 1)
-            likes_info = await self.repository.get_places_likes_info_batch(user_id, place_ids)
-            likes_counts = likes_info['counts']
-            user_likes = likes_info['user_likes']
-
-            response_places = []
-            for place in places:
-                likes_count = likes_counts.get(place.id, 0)
-                is_liked = user_likes.get(place.id, False)
-                response_places.append(self._create_public_place_response(
-                    place, likes_count, is_liked))
-
-            return response_places
+            return await self._build_public_place_responses(places, user.id)
         except Exception as e:
-            logger.error(f"Error in get_places_by_coordinates: {str(e)}")
+            logger.error(f"Error in get_places_by_location: {str(e)}")
             raise ServerError(
                 error_code=5000,
-                message="Failed to get places by coordinates",
+                message="Failed to get places by location",
                 details={"error": str(e)}
             )
 
-    async def get_all_places(self, user_id: Optional[int] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PublicPlaceResponse]:
-        """Get all places with optional pagination (only moderated places)."""
+    async def get_all_places(self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PublicPlaceResponse]:
+        """Get all places with optional pagination (only moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.get_all_moderated_places(limit, offset)
-
             if not places:
                 return []
-
-            # Get all place IDs
-            place_ids = [place.id for place in places]
-
-            # Get likes info in a single optimized query (reduces from 2 queries to 1)
-            likes_info = await self.repository.get_places_likes_info_batch(user_id, place_ids)
-            likes_counts = likes_info['counts']
-            user_likes = likes_info['user_likes']
-
-            # Build responses efficiently
-            response_places = []
-            for place in places:
-                try:
-                    likes_count = likes_counts.get(place.id, 0)
-                    is_liked = user_likes.get(
-                        place.id, False) if user_id else False
-
-                    response_places.append(self._create_public_place_response(
-                        place, likes_count, is_liked))
-                except Exception as place_error:
-                    logger.error(
-                        f"Error processing place {place.id}: {str(place_error)}")
-                    # Continue with other places even if one fails
-                    continue
-
-            return response_places
+            return await self._build_public_place_responses(places, user.id if user else None)
         except Exception as e:
             logger.error(f"Error in get_all_places: {str(e)}")
             raise ServerError(
@@ -252,28 +210,23 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def update_place(self, user_id: int, place_id: int, place_data: PlaceUpdate) -> PlaceResponse:
-        """Update an existing place"""
+    async def update_place(self, user: User, place_id: int, place_data: PlaceUpdate) -> PlaceResponse:
+        """Update an existing place. User resolved from token (uuid)."""
         try:
             place = await self.repository.get_place_by_id(place_id)
 
-            # Check if user can update this place (owner or admin)
-            if place.submitted_by_id != user_id:
+            if place.submitted_by_id != user.id:
                 raise ForbiddenError(
                     error_code=4030,
                     message="You don't have permission to update this place"
                 )
 
-            # Update place
             update_dict = place_data.model_dump(exclude_unset=True)
             updated_place = await self.repository.update_place(place_id, update_dict)
-
-            # Commit the transaction to persist the place update
             await self.repository.db.commit()
 
-            # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
-            is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
+            is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
 
             return self._create_place_response(updated_place, likes_count, is_liked)
         except (ResourceNotFoundError, ForbiddenError):
@@ -285,13 +238,12 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def delete_place(self, user_id: int, place_id: int) -> bool:
-        """Soft delete a place"""
+    async def delete_place(self, user: User, place_id: int) -> bool:
+        """Soft delete a place. User resolved from token (uuid)."""
         try:
             place = await self.repository.get_place_by_id(place_id)
 
-            # Check if user can delete this place (owner or admin)
-            if place.submitted_by_id != user_id:
+            if place.submitted_by_id != user.id:
                 raise ForbiddenError(
                     error_code=4030,
                     message="You don't have permission to delete this place"
@@ -310,14 +262,12 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def like_place(self, user_id: int, place_id: int) -> dict:
-        """Like a place with transactional integrity"""
+    async def like_place(self, user: User, place_id: int) -> dict:
+        """Like a place. User resolved from token (uuid)."""
         try:
-            # Verify place exists and is moderated
             place = await self.repository.get_moderated_place_by_id(place_id)
 
-            # Like the place
-            await self.repository.like_place(user_id, place_id)
+            await self.repository.like_place(user.id, place_id)
             await self.repository.db.commit()  # Commit the transaction
 
             # Get updated likes count
@@ -337,14 +287,12 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def unlike_place(self, user_id: int, place_id: int) -> dict:
-        """Unlike a place with transactional integrity"""
+    async def unlike_place(self, user: User, place_id: int) -> dict:
+        """Unlike a place. User resolved from token (uuid)."""
         try:
-            # Verify place exists and is moderated
             place = await self.repository.get_moderated_place_by_id(place_id)
 
-            # Unlike the place
-            await self.repository.unlike_place(user_id, place_id)
+            await self.repository.unlike_place(user.id, place_id)
             await self.repository.db.commit()  # Commit the transaction
 
             # Get updated likes count
@@ -364,18 +312,17 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def search_places(self, search_term: str, user_id: Optional[int] = None) -> List[PublicPlaceResponse]:
-        """Search places by name, city, or country (only moderated places)."""
+    async def search_places(self, search_term: str, user: Optional[User] = None) -> List[PublicPlaceResponse]:
+        """Search places by name, city, or country (only moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.search_moderated_places(search_term)
 
-            # Get likes info for each place
             response_places = []
             for place in places:
                 likes_count = await self.repository.get_place_likes_count(place.id)
                 is_liked = False
-                if user_id:
-                    is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
+                if user:
+                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
 
                 response_places.append(self._create_public_place_response(
                     place, likes_count, is_liked))
@@ -388,18 +335,17 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def get_places_by_type(self, place_type_id: int, user_id: Optional[int] = None) -> List[PublicPlaceResponse]:
-        """Get places by type (only moderated places)."""
+    async def get_places_by_type(self, place_type_id: int, user: Optional[User] = None) -> List[PublicPlaceResponse]:
+        """Get places by type (only moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.get_moderated_places_by_type(place_type_id)
 
-            # Get likes info for each place
             response_places = []
             for place in places:
                 likes_count = await self.repository.get_place_likes_count(place.id)
                 is_liked = False
-                if user_id:
-                    is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
+                if user:
+                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
 
                 response_places.append(self._create_public_place_response(
                     place, likes_count, is_liked))
@@ -412,18 +358,17 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, user_id: Optional[int] = None) -> List[PublicPlaceResponse]:
-        """Get places within a geographic region (only moderated places)."""
+    async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, user: Optional[User] = None) -> List[PublicPlaceResponse]:
+        """Get places within a geographic region (only moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.get_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng)
 
-            # Get likes info for each place
             response_places = []
             for place in places:
                 likes_count = await self.repository.get_place_likes_count(place.id)
                 is_liked = False
-                if user_id:
-                    is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
+                if user:
+                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
 
                 response_places.append(self._create_public_place_response(
                     place, likes_count, is_liked))
@@ -477,9 +422,27 @@ class PlaceService:
         place.is_liked = is_liked
         return PlaceResponse.model_validate(place)
 
+    async def _build_public_place_responses(
+        self, places: List[Place], user_id: Optional[int]
+    ) -> List[PublicPlaceResponse]:
+        """Build PublicPlaceResponse list with likes; shared by get_all_places and get_places_by_location."""
+        place_ids = [p.id for p in places]
+        likes_info = await self.repository.get_places_likes_info_batch(user_id, place_ids)
+        counts = likes_info["counts"]
+        user_likes = likes_info["user_likes"]
+        result = []
+        for place in places:
+            try:
+                likes_count = counts.get(place.id, 0)
+                is_liked = user_likes.get(place.id, False) if user_id else False
+                result.append(self._create_public_place_response(place, likes_count, is_liked))
+            except Exception as e:
+                logger.error(f"Error building response for place {place.id}: {e}")
+                continue
+        return result
+
     def _create_public_place_response(self, place: Place, likes_count: int, is_liked: bool) -> PublicPlaceResponse:
-        """Create a PublicPlaceResponse from a Place model"""
-        # Add computed fields to the place object
+        """Create a PublicPlaceResponse from a Place model."""
         place.likes_count = likes_count
         place.is_liked = is_liked
         return PublicPlaceResponse.model_validate(place)
@@ -522,18 +485,17 @@ class PlaceService:
 
         return place_type.id
 
-    async def get_all_places_admin(self, user_id: Optional[int] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PlaceResponse]:
-        """Get all places (admin only - includes non-moderated places)."""
+    async def get_all_places_admin(self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PlaceResponse]:
+        """Get all places (admin only - includes non-moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.get_all_places(limit, offset)
 
-            # Get likes info for each place
             response_places = []
             for place in places:
                 likes_count = await self.repository.get_place_likes_count(place.id)
                 is_liked = False
-                if user_id:
-                    is_liked = await self.repository.is_place_liked_by_user(user_id, place.id)
+                if user:
+                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
 
                 response_places.append(self._create_place_response(
                     place, likes_count, is_liked))
@@ -546,16 +508,15 @@ class PlaceService:
                 details={"error": str(e)}
             )
 
-    async def get_place_admin(self, place_id: int, user_id: Optional[int] = None) -> PlaceResponse:
-        """Get a place by ID (admin only - includes non-moderated places)."""
+    async def get_place_admin(self, place_id: int, user: Optional[User] = None) -> PlaceResponse:
+        """Get a place by ID (admin only - includes non-moderated places). User resolved from token (uuid)."""
         try:
             place = await self.repository.get_place_by_id(place_id)
 
-            # Get likes info
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = False
-            if user_id:
-                is_liked = await self.repository.is_place_liked_by_user(user_id, place_id)
+            if user:
+                is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
 
             return self._create_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:

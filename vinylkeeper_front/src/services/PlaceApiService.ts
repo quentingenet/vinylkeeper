@@ -12,6 +12,7 @@ export interface PlaceMapResponse {
   latitude: number;
   longitude: number;
   city?: string;
+  country?: string;
 }
 
 export interface Place {
@@ -68,12 +69,9 @@ class PlaceApiService extends BaseApiService {
     return this.get<PlaceMapResponse[]>("/places/map");
   }
 
-  async getPlacesByCoordinates(
-    latitude: number,
-    longitude: number
-  ): Promise<Place[]> {
+  async getPlacesByLocation(country: string, city: string): Promise<Place[]> {
     return this.get<Place[]>(
-      `/places/coordinates?latitude=${latitude}&longitude=${longitude}`
+      `/places/by-location?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`
     );
   }
 

@@ -110,11 +110,12 @@ class PublicPlaceResponse(PlaceBase):
 
 
 class PlaceMapResponse(BaseModel):
-    """Ultra-lightweight schema for map markers (only geographic data + city)."""
+    """Ultra-lightweight schema for map markers (grouping by country+city)."""
     id: int = Field(gt=0, description="Place ID")
     latitude: float = Field(ge=-90, le=90, description="Latitude coordinate")
     longitude: float = Field(
         ge=-180, le=180, description="Longitude coordinate")
     city: Optional[str] = Field(None, description="City name")
+    country: Optional[str] = Field(None, description="Country name")
 
     model_config = ConfigDict(from_attributes=True)
