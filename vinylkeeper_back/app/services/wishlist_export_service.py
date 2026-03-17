@@ -22,13 +22,13 @@ class WishlistExportService:
     def __init__(self, wishlist_repository: WishlistRepository) -> None:
         self.wishlist_repository = wishlist_repository
 
-    async def export_my_wishlist_csv(self, user_id: int) -> StreamingResponse:
+    async def export_my_wishlist_csv(self, user_id: int, username: str) -> StreamingResponse:
         export_kind = "wishlist"
         export_format = "csv"
         logger.info(f"Export requested: kind={export_kind} format={export_format} user_id={user_id}")
         try:
             items = await self.wishlist_repository.get_user_wishlist_all(user_id)
-            filename = self._build_filename(user_id=user_id, suffix="wishlist.csv")
+            filename = self._build_filename(username=username, suffix="wishlist.csv")
             rows_count = len(items)
 
             def row_iter() -> Iterable[list[str]]:
@@ -47,13 +47,13 @@ class WishlistExportService:
             )
             raise
 
-    async def export_my_wishlist_ods(self, user_id: int) -> Response:
+    async def export_my_wishlist_ods(self, user_id: int, username: str) -> Response:
         export_kind = "wishlist"
         export_format = "ods"
         logger.info(f"Export requested: kind={export_kind} format={export_format} user_id={user_id}")
         try:
             items = await self.wishlist_repository.get_user_wishlist_all(user_id)
-            filename = self._build_filename(user_id=user_id, suffix="wishlist.ods")
+            filename = self._build_filename(username=username, suffix="wishlist.ods")
             headers = self._headers()
             rows = [self._row(item) for item in items]
             response = self._file_response(
@@ -158,7 +158,8 @@ class WishlistExportService:
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
 
-    def _build_filename(self, user_id: int, suffix: str) -> str:
+    def _build_filename(self, username: str, suffix: str) -> str:
         date_str = datetime.now(UTC).strftime("%Y-%m-%d")
-        return f"wishlist_user_{user_id}_{date_str}_{suffix}"
+        safe_username = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in (username or "user")).strip("_")
+        return f"wishlist_{safe_username}_{date_str}_{suffix}"
 

@@ -49,10 +49,7 @@ import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { Album } from "@mui/icons-material";
 import { API_VK_URL, truncateText } from "@utils/GlobalUtils";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
-import {
-  triggerBrowserDownload,
-  triggerBrowserDownloadFromUrl,
-} from "@utils/DownloadUtils";
+import { triggerBrowserDownloadFromUrl } from "@utils/DownloadUtils";
 import styles from "../../styles/pages/Collection.module.scss";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
@@ -100,6 +97,7 @@ export default function CollectionDetails() {
   const [exportMenuAnchorEl, setExportMenuAnchorEl] =
     useState<null | HTMLElement>(null);
   const [activeExportKey, setActiveExportKey] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -283,45 +281,12 @@ export default function CollectionDetails() {
     },
   });
 
-  const exportMutation = useMutation({
-    mutationFn: async (params:
-      | {
-          kind: "collection";
-          collectionId: number;
-          pathSuffix: string;
-          fallbackFilename: string;
-        }
-      | {
-          kind: "wishlist";
-          format: "csv" | "ods";
-          fallbackFilename: string;
-        }) => {
-      if (params.kind === "wishlist") {
-        const { blob, filename } =
-          await collectionApiService.exportMyWishlistFile(params.format);
-        return { blob, filename: filename || params.fallbackFilename };
-      }
-
-      const { blob, filename } = await collectionApiService.exportCollectionFile(
-        params.collectionId,
-        params.pathSuffix
-      );
-      return { blob, filename: filename || params.fallbackFilename };
-    },
-    onSuccess: ({ blob, filename }) => {
-      triggerBrowserDownload(blob, filename);
-      setExportMenuAnchorEl(null);
+  const finishExportUi = () => {
+    window.setTimeout(() => {
+      setIsExporting(false);
       setActiveExportKey(null);
-    },
-    onError: (error) => {
-      console.error("Export failed:", error);
-      const message =
-        error instanceof Error ? error.message : "Export failed. Please retry.";
-      window.alert(message);
-      setExportMenuAnchorEl(null);
-      setActiveExportKey(null);
-    },
-  });
+    }, 1200);
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     // If user is not logged in and tries to access wishlist tab (index 2), redirect to albums tab
@@ -345,37 +310,31 @@ export default function CollectionDetails() {
   const handleCloseExportMenu = () => {
     setExportMenuAnchorEl(null);
     setActiveExportKey(null);
+    setIsExporting(false);
   };
 
   const handleExport = (
     exportKey: string,
     pathSuffix: string,
-    fallbackFilename: string
+    _fallbackFilename: string
   ) => {
     setActiveExportKey(exportKey);
-    // Prefer direct navigation download to preserve "user gesture" in browsers.
+    setIsExporting(true);
     triggerBrowserDownloadFromUrl(
       `${API_VK_URL}/collections/${collectionId}/export/${pathSuffix}`
     );
-    // Keep mutation fallback for cases where navigation is blocked (rare).
-    exportMutation.mutate({
-      kind: "collection",
-      collectionId,
-      pathSuffix,
-      fallbackFilename,
-    });
+    setExportMenuAnchorEl(null);
+    finishExportUi();
   };
 
   const handleExportWishlist = (exportKey: string, format: "csv" | "ods") => {
     setActiveExportKey(exportKey);
+    setIsExporting(true);
     triggerBrowserDownloadFromUrl(
       `${API_VK_URL}/external-references/wishlist/export/${format}`
     );
-    exportMutation.mutate({
-      kind: "wishlist",
-      format,
-      fallbackFilename: `wishlist_${format}`,
-    });
+    setExportMenuAnchorEl(null);
+    finishExportUi();
   };
 
   const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -618,7 +577,7 @@ export default function CollectionDetails() {
                 size="small"
                 onClick={handleOpenExportMenu}
                 startIcon={<FileDownloadIcon fontSize="small" />}
-                disabled={exportMutation.isPending}
+                disabled={isExporting}
                 sx={{
                   minHeight: 30,
                   paddingY: 0.25,
@@ -652,7 +611,7 @@ export default function CollectionDetails() {
                     )
                   }
                 >
-                  {exportMutation.isPending &&
+                  {isExporting &&
                   activeExportKey === "collection_albums_csv" ? (
                     <Box display="flex" alignItems="center" gap={1}>
                       <VinylSpinner size={18} />
@@ -674,7 +633,7 @@ export default function CollectionDetails() {
                     )
                   }
                 >
-                  {exportMutation.isPending &&
+                  {isExporting &&
                   activeExportKey === "collection_albums_ods" ? (
                     <Box display="flex" alignItems="center" gap={1}>
                       <VinylSpinner size={18} />
@@ -696,7 +655,7 @@ export default function CollectionDetails() {
                     )
                   }
                 >
-                  {exportMutation.isPending &&
+                  {isExporting &&
                   activeExportKey === "collection_artists_csv" ? (
                     <Box display="flex" alignItems="center" gap={1}>
                       <VinylSpinner size={18} />
@@ -718,7 +677,7 @@ export default function CollectionDetails() {
                     )
                   }
                 >
-                  {exportMutation.isPending &&
+                  {isExporting &&
                   activeExportKey === "collection_artists_ods" ? (
                     <Box display="flex" alignItems="center" gap={1}>
                       <VinylSpinner size={18} />
@@ -734,7 +693,7 @@ export default function CollectionDetails() {
                 <MenuItem
                   onClick={() => handleExportWishlist("wishlist_csv", "csv")}
                 >
-                  {exportMutation.isPending && activeExportKey === "wishlist_csv" ? (
+                  {isExporting && activeExportKey === "wishlist_csv" ? (
                     <Box display="flex" alignItems="center" gap={1}>
                       <VinylSpinner size={18} />
                       <Typography variant="caption">Exporting…</Typography>
@@ -749,7 +708,7 @@ export default function CollectionDetails() {
                 <MenuItem
                   onClick={() => handleExportWishlist("wishlist_ods", "ods")}
                 >
-                  {exportMutation.isPending && activeExportKey === "wishlist_ods" ? (
+                  {isExporting && activeExportKey === "wishlist_ods" ? (
                     <Box display="flex" alignItems="center" gap={1}>
                       <VinylSpinner size={18} />
                       <Typography variant="caption">Exporting…</Typography>

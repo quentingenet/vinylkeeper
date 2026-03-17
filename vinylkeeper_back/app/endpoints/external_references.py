@@ -162,7 +162,7 @@ async def export_my_wishlist_csv(
     current_user: User = Depends(get_current_user),
     export_service: WishlistExportService = Depends(get_wishlist_export_service),
 ):
-    return await export_service.export_my_wishlist_csv(current_user.id)
+    return await export_service.export_my_wishlist_csv(current_user.id, current_user.username)
 
 
 @router.get("/wishlist/export/ods")
@@ -171,7 +171,7 @@ async def export_my_wishlist_ods(
     current_user: User = Depends(get_current_user),
     export_service: WishlistExportService = Depends(get_wishlist_export_service),
 ):
-    return await export_service.export_my_wishlist_ods(current_user.id)
+    return await export_service.export_my_wishlist_ods(current_user.id, current_user.username)
 
 
 @router.get("/wishlist/export.csv")
@@ -180,7 +180,7 @@ async def export_my_wishlist_csv_legacy(
     current_user: User = Depends(get_current_user),
     export_service: WishlistExportService = Depends(get_wishlist_export_service),
 ):
-    return await export_service.export_my_wishlist_csv(current_user.id)
+    return await export_service.export_my_wishlist_csv(current_user.id, current_user.username)
 
 
 @router.get("/wishlist/export.ods")
@@ -189,7 +189,7 @@ async def export_my_wishlist_ods_legacy(
     current_user: User = Depends(get_current_user),
     export_service: WishlistExportService = Depends(get_wishlist_export_service),
 ):
-    return await export_service.export_my_wishlist_ods(current_user.id)
+    return await export_service.export_my_wishlist_ods(current_user.id, current_user.username)
 
 
 @router.get("/wishlist/{wishlist_id}", response_model=WishlistItemResponse)
