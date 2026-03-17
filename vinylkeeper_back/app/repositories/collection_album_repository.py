@@ -341,6 +341,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                 select(Album, CollectionAlbum)
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .options(
+                    selectinload(Album.external_source),
                     selectinload(CollectionAlbum.state_record_ref),
                     selectinload(CollectionAlbum.state_cover_ref)
                 )

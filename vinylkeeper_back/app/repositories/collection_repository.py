@@ -767,6 +767,34 @@ class CollectionRepository(TransactionalMixin):
                 f"Error getting collection artists paginated: {str(e)}")
             return [], 0
 
+    async def get_collection_artists(self, collection_id: int, sort_order: str = "newest") -> List[tuple]:
+        """Get all artists from a collection with association metadata (for exports)."""
+        try:
+            if sort_order == "oldest":
+                order_clause = CollectionArtist.created_at.asc().nullslast()
+            else:
+                order_clause = CollectionArtist.created_at.desc().nullslast()
+
+            query = (
+                select(Artist, CollectionArtist)
+                .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
+                .filter(CollectionArtist.collection_id == collection_id)
+                .options(
+                    selectinload(Artist.external_source),
+                )
+                .order_by(order_clause)
+            )
+
+            result = await self.db.execute(query)
+            return result.all()
+        except Exception as e:
+            logger.error(f"Error getting collection artists: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get collection artists",
+                details={"error": str(e)},
+            )
+
     async def search_collection_items(self, collection_id: int, query: str, search_type: str = "both") -> dict:
         """Search items in a collection."""
         try:

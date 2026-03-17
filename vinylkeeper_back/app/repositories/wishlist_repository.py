@@ -146,6 +146,30 @@ class WishlistRepository(TransactionalMixin):
                 details={"error": str(e)}
             )
 
+    async def get_user_wishlist_all(self, user_id: int) -> List[Wishlist]:
+        """Get all wishlist items for a user with relations loaded (for exports)."""
+        try:
+            from sqlalchemy.orm import selectinload
+
+            query = (
+                select(Wishlist)
+                .options(
+                    selectinload(Wishlist.entity_type),
+                    selectinload(Wishlist.external_source),
+                )
+                .filter(Wishlist.user_id == user_id)
+                .order_by(Wishlist.created_at.desc())
+            )
+            result = await self.db.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting wishlist export data: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get wishlist items",
+                details={"error": str(e)},
+            )
+
     async def update(self, wishlist: Wishlist) -> Wishlist:
         """Update a wishlist item without committing (transaction managed by service)."""
         try:

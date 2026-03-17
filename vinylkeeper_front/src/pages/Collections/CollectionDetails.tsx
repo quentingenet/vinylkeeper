@@ -22,12 +22,14 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Menu,
+  MenuItem,
+  ListItemText,
   Tabs,
   Tab,
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
   SelectChangeEvent,
   Chip,
   Grid,
@@ -42,10 +44,15 @@ import { useUserContext } from "@contexts/UserContext";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SearchIcon from "@mui/icons-material/Search";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { Album } from "@mui/icons-material";
-import { truncateText } from "@utils/GlobalUtils";
+import { API_VK_URL, truncateText } from "@utils/GlobalUtils";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import {
+  triggerBrowserDownload,
+  triggerBrowserDownloadFromUrl,
+} from "@utils/DownloadUtils";
 import styles from "../../styles/pages/Collection.module.scss";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
@@ -90,6 +97,9 @@ export default function CollectionDetails() {
 
   // Sort order state
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [exportMenuAnchorEl, setExportMenuAnchorEl] =
+    useState<null | HTMLElement>(null);
+  const [activeExportKey, setActiveExportKey] = useState<string | null>(null);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -273,6 +283,46 @@ export default function CollectionDetails() {
     },
   });
 
+  const exportMutation = useMutation({
+    mutationFn: async (params:
+      | {
+          kind: "collection";
+          collectionId: number;
+          pathSuffix: string;
+          fallbackFilename: string;
+        }
+      | {
+          kind: "wishlist";
+          format: "csv" | "ods";
+          fallbackFilename: string;
+        }) => {
+      if (params.kind === "wishlist") {
+        const { blob, filename } =
+          await collectionApiService.exportMyWishlistFile(params.format);
+        return { blob, filename: filename || params.fallbackFilename };
+      }
+
+      const { blob, filename } = await collectionApiService.exportCollectionFile(
+        params.collectionId,
+        params.pathSuffix
+      );
+      return { blob, filename: filename || params.fallbackFilename };
+    },
+    onSuccess: ({ blob, filename }) => {
+      triggerBrowserDownload(blob, filename);
+      setExportMenuAnchorEl(null);
+      setActiveExportKey(null);
+    },
+    onError: (error) => {
+      console.error("Export failed:", error);
+      const message =
+        error instanceof Error ? error.message : "Export failed. Please retry.";
+      window.alert(message);
+      setExportMenuAnchorEl(null);
+      setActiveExportKey(null);
+    },
+  });
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     // If user is not logged in and tries to access wishlist tab (index 2), redirect to albums tab
     if (newValue === 2 && !isUserLoggedIn) {
@@ -286,6 +336,46 @@ export default function CollectionDetails() {
     setSortOrder(event.target.value as SortOrder);
     setAlbumsPage(1);
     setArtistsPage(1);
+  };
+
+  const handleOpenExportMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setExportMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseExportMenu = () => {
+    setExportMenuAnchorEl(null);
+    setActiveExportKey(null);
+  };
+
+  const handleExport = (
+    exportKey: string,
+    pathSuffix: string,
+    fallbackFilename: string
+  ) => {
+    setActiveExportKey(exportKey);
+    // Prefer direct navigation download to preserve "user gesture" in browsers.
+    triggerBrowserDownloadFromUrl(
+      `${API_VK_URL}/collections/${collectionId}/export/${pathSuffix}`
+    );
+    // Keep mutation fallback for cases where navigation is blocked (rare).
+    exportMutation.mutate({
+      kind: "collection",
+      collectionId,
+      pathSuffix,
+      fallbackFilename,
+    });
+  };
+
+  const handleExportWishlist = (exportKey: string, format: "csv" | "ods") => {
+    setActiveExportKey(exportKey);
+    triggerBrowserDownloadFromUrl(
+      `${API_VK_URL}/external-references/wishlist/export/${format}`
+    );
+    exportMutation.mutate({
+      kind: "wishlist",
+      format,
+      fallbackFilename: `wishlist_${format}`,
+    });
   };
 
   const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -512,7 +602,169 @@ export default function CollectionDetails() {
         <Typography variant="body1" color="text.secondary" paragraph>
           {collectionDetails.description || "No description available"}
         </Typography>
-        <Box sx={{ mb: 1 }}>
+        <Box
+          sx={{
+            mb: 1,
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            columnGap: 2,
+          }}
+        >
+          {isOwner && (
+            <>
+              <Button
+                variant="text"
+                size="small"
+                onClick={handleOpenExportMenu}
+                startIcon={<FileDownloadIcon fontSize="small" />}
+                disabled={exportMutation.isPending}
+                sx={{
+                  minHeight: 30,
+                  paddingY: 0.25,
+                  paddingX: 1,
+                  lineHeight: 1.2,
+                  textTransform: "none",
+                }}
+              >
+                Export to
+              </Button>
+              <Menu
+                anchorEl={exportMenuAnchorEl}
+                open={Boolean(exportMenuAnchorEl)}
+                onClose={handleCloseExportMenu}
+                MenuListProps={{ dense: true }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      "& .MuiMenuItem-root": { py: 0.25, minHeight: 32 },
+                      "& .MuiTypography-root": { fontSize: "0.95rem" },
+                    },
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={() =>
+                    handleExport(
+                      "collection_albums_csv",
+                      "albums.csv",
+                      `collection_${collectionId}_albums.csv`
+                    )
+                  }
+                >
+                  {exportMutation.isPending &&
+                  activeExportKey === "collection_albums_csv" ? (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VinylSpinner size={18} />
+                      <Typography variant="caption">Exporting…</Typography>
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary="Collection albums (CSV)"
+                      primaryTypographyProps={{ variant: "caption" }}
+                    />
+                  )}
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    handleExport(
+                      "collection_albums_ods",
+                      "albums.ods",
+                      `collection_${collectionId}_albums.ods`
+                    )
+                  }
+                >
+                  {exportMutation.isPending &&
+                  activeExportKey === "collection_albums_ods" ? (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VinylSpinner size={18} />
+                      <Typography variant="caption">Exporting…</Typography>
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary="Collection albums (ODS)"
+                      primaryTypographyProps={{ variant: "caption" }}
+                    />
+                  )}
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    handleExport(
+                      "collection_artists_csv",
+                      "artists.csv",
+                      `collection_${collectionId}_artists.csv`
+                    )
+                  }
+                >
+                  {exportMutation.isPending &&
+                  activeExportKey === "collection_artists_csv" ? (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VinylSpinner size={18} />
+                      <Typography variant="caption">Exporting…</Typography>
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary="Collection artists (CSV)"
+                      primaryTypographyProps={{ variant: "caption" }}
+                    />
+                  )}
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    handleExport(
+                      "collection_artists_ods",
+                      "artists.ods",
+                      `collection_${collectionId}_artists.ods`
+                    )
+                  }
+                >
+                  {exportMutation.isPending &&
+                  activeExportKey === "collection_artists_ods" ? (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VinylSpinner size={18} />
+                      <Typography variant="caption">Exporting…</Typography>
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary="Collection artists (ODS)"
+                      primaryTypographyProps={{ variant: "caption" }}
+                    />
+                  )}
+                </MenuItem>
+                <MenuItem
+                  onClick={() => handleExportWishlist("wishlist_csv", "csv")}
+                >
+                  {exportMutation.isPending && activeExportKey === "wishlist_csv" ? (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VinylSpinner size={18} />
+                      <Typography variant="caption">Exporting…</Typography>
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary="My wishlist (CSV)"
+                      primaryTypographyProps={{ variant: "caption" }}
+                    />
+                  )}
+                </MenuItem>
+                <MenuItem
+                  onClick={() => handleExportWishlist("wishlist_ods", "ods")}
+                >
+                  {exportMutation.isPending && activeExportKey === "wishlist_ods" ? (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VinylSpinner size={18} />
+                      <Typography variant="caption">Exporting…</Typography>
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary="My wishlist (ODS)"
+                      primaryTypographyProps={{ variant: "caption" }}
+                    />
+                  )}
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Created on{" "}
             {collectionDetails.created_at
@@ -567,42 +819,52 @@ export default function CollectionDetails() {
           </Box>
 
           {/* Sort order dropdown */}
-          {((tabValue === 0 &&
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              gap: 2,
+              alignItems: isMobile ? "stretch" : "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            {((tabValue === 0 &&
             albumsData?.items &&
             albumsData.items.length > 0) ||
             (tabValue === 1 &&
               artistsData?.items &&
               artistsData.items.length > 0) ||
             (tabValue === 2 && wishlistItemsAsResponse.length > 0)) && (
-            <FormControl sx={{ width: isMobile ? 320 : 150 }}>
-              <InputLabel sx={{ color: "text.secondary" }}>
-                Sort Order
-              </InputLabel>
-              <Select
-                value={sortOrder}
-                label="Sort Order"
-                onChange={handleSortOrderChange}
-                sx={{
-                  color: "text.primary",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255, 255, 255, 0.3)",
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255, 255, 255, 0.5)",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#C9A726",
-                  },
-                  "& .MuiSvgIcon-root": {
-                    color: "text.secondary",
-                  },
-                }}
-              >
-                <MenuItem value="newest">Newest first</MenuItem>
-                <MenuItem value="oldest">Oldest first</MenuItem>
-              </Select>
-            </FormControl>
+              <FormControl sx={{ width: isMobile ? 320 : 150 }}>
+                <InputLabel sx={{ color: "text.secondary" }}>
+                  Sort Order
+                </InputLabel>
+                <Select
+                  value={sortOrder}
+                  label="Sort Order"
+                  onChange={handleSortOrderChange}
+                  sx={{
+                    color: "text.primary",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#C9A726",
+                    },
+                    "& .MuiSvgIcon-root": {
+                      color: "text.secondary",
+                    },
+                  }}
+                >
+                  <MenuItem value="newest">Newest first</MenuItem>
+                  <MenuItem value="oldest">Oldest first</MenuItem>
+                </Select>
+              </FormControl>
           )}
+          </Box>
         </Box>
       </Box>
 

@@ -26,7 +26,14 @@ from app.core.exceptions import (
     ForbiddenError,
     ServerError
 )
-from app.deps.deps import get_external_reference_service, get_wishlist_service, get_user_service, get_collection_service
+from app.deps.deps import (
+    get_external_reference_service,
+    get_wishlist_service,
+    get_user_service,
+    get_collection_service,
+    get_wishlist_export_service,
+)
+from app.services.wishlist_export_service import WishlistExportService
 from app.core.enums import EntityTypeEnum
 from app.utils.endpoint_utils import handle_app_exceptions
 
@@ -147,6 +154,42 @@ async def get_user_wishlist_paginated(
 
     response = await service.get_user_wishlist_paginated(target_user_id, page, limit)
     return response.model_dump()
+
+
+@router.get("/wishlist/export/csv")
+@handle_app_exceptions
+async def export_my_wishlist_csv(
+    current_user: User = Depends(get_current_user),
+    export_service: WishlistExportService = Depends(get_wishlist_export_service),
+):
+    return await export_service.export_my_wishlist_csv(current_user.id)
+
+
+@router.get("/wishlist/export/ods")
+@handle_app_exceptions
+async def export_my_wishlist_ods(
+    current_user: User = Depends(get_current_user),
+    export_service: WishlistExportService = Depends(get_wishlist_export_service),
+):
+    return await export_service.export_my_wishlist_ods(current_user.id)
+
+
+@router.get("/wishlist/export.csv")
+@handle_app_exceptions
+async def export_my_wishlist_csv_legacy(
+    current_user: User = Depends(get_current_user),
+    export_service: WishlistExportService = Depends(get_wishlist_export_service),
+):
+    return await export_service.export_my_wishlist_csv(current_user.id)
+
+
+@router.get("/wishlist/export.ods")
+@handle_app_exceptions
+async def export_my_wishlist_ods_legacy(
+    current_user: User = Depends(get_current_user),
+    export_service: WishlistExportService = Depends(get_wishlist_export_service),
+):
+    return await export_service.export_my_wishlist_ods(current_user.id)
 
 
 @router.get("/wishlist/{wishlist_id}", response_model=WishlistItemResponse)

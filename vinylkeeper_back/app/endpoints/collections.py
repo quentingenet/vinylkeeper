@@ -14,9 +14,10 @@ from app.schemas.collection_schema import (
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
-from app.deps.deps import get_collection_service
+from app.deps.deps import get_collection_service, get_export_service
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
+from app.services.export_service import ExportService
 from app.core.exceptions import (
     ResourceNotFoundError,
     ForbiddenError,
@@ -310,3 +311,43 @@ async def search_collection_items(
 ):
     results = await service.search_collection_items(collection_id, user.id, q, search_type)
     return results
+
+
+@router.get("/{collection_id}/export/albums.csv", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def export_collection_albums_csv(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    user=Depends(get_current_user),
+    export_service: ExportService = Depends(get_export_service),
+):
+    return await export_service.export_collection_albums_csv(collection_id, user.id)
+
+
+@router.get("/{collection_id}/export/artists.csv", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def export_collection_artists_csv(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    user=Depends(get_current_user),
+    export_service: ExportService = Depends(get_export_service),
+):
+    return await export_service.export_collection_artists_csv(collection_id, user.id)
+
+
+@router.get("/{collection_id}/export/albums.ods", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def export_collection_albums_ods(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    user=Depends(get_current_user),
+    export_service: ExportService = Depends(get_export_service),
+):
+    return await export_service.export_collection_albums_ods(collection_id, user.id)
+
+
+@router.get("/{collection_id}/export/artists.ods", status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def export_collection_artists_ods(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    user=Depends(get_current_user),
+    export_service: ExportService = Depends(get_export_service),
+):
+    return await export_service.export_collection_artists_ods(collection_id, user.id)

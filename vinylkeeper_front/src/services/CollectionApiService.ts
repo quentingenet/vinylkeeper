@@ -1,6 +1,7 @@
 import { BaseApiService } from "./BaseApiService";
-import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
+import { API_VK_URL, ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
 import { WishlistItemResponse } from "@models/IExternalReference";
+import { extractFilenameFromContentDisposition } from "@utils/DownloadUtils";
 
 export interface UserMiniResponse {
   username: string;
@@ -333,6 +334,75 @@ export class CollectionApiService extends BaseApiService {
       data
     );
   }
+
+  async exportCollectionFile(
+    collectionId: number,
+    pathSuffix: string
+  ): Promise<{ blob: Blob; filename: string }> {
+    const response = await fetch(
+      `${API_VK_URL}/collections/${collectionId}/export/${pathSuffix}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "*/*",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let message = `Export failed (${response.status})`;
+      try {
+        const data = await response.json();
+        message = data?.message || message;
+      } catch {
+        // ignore
+      }
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const filename =
+      extractFilenameFromContentDisposition(
+        response.headers.get("content-disposition")
+      ) || `collection_${collectionId}_${pathSuffix}`;
+
+    return { blob, filename };
+  }
+
+  async exportMyWishlistFile(
+    format: "csv" | "ods"
+  ): Promise<{ blob: Blob; filename: string }> {
+    const response = await fetch(
+      `${API_VK_URL}/external-references/wishlist/export/${format}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "*/*",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let message = `Export failed (${response.status})`;
+      try {
+        const data = await response.json();
+        message = data?.message || message;
+      } catch {
+        // ignore
+      }
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const filename =
+      extractFilenameFromContentDisposition(
+        response.headers.get("content-disposition")
+      ) || `wishlist_${format}`;
+
+    return { blob, filename };
+  }
 }
 
 const collectionApiServiceInstance = new CollectionApiService();
@@ -427,6 +497,10 @@ export const collectionApiService = {
       albumId,
       data
     ),
+  exportCollectionFile: (collectionId: number, pathSuffix: string) =>
+    collectionApiServiceInstance.exportCollectionFile(collectionId, pathSuffix),
+  exportMyWishlistFile: (format: "csv" | "ods") =>
+    collectionApiServiceInstance.exportMyWishlistFile(format),
 };
 
 export default collectionApiService;

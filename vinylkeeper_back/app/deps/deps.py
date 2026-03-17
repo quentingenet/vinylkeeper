@@ -23,6 +23,8 @@ from app.services.dashboard_service import DashboardService
 from app.services.wishlist_service import WishlistService
 from app.services.place_service import PlaceService
 from app.services.moderation_service import ModerationService
+from app.services.export_service import ExportService
+from app.services.wishlist_export_service import WishlistExportService
 
 # Database
 from app.db.session import get_db
@@ -164,3 +166,18 @@ def get_moderation_service(
 ) -> ModerationService:
     """Get moderation service instance."""
     return ModerationService(moderation_repo, place_repo)
+
+
+def get_export_service(
+    collection_repository: CollectionRepository = Depends(get_collection_repository),
+    collection_album_repository: CollectionAlbumRepository = Depends(
+        get_collection_album_repository
+    ),
+) -> ExportService:
+    return ExportService(collection_repository, collection_album_repository)
+
+
+def get_wishlist_export_service(
+    wishlist_repository: WishlistRepository = Depends(get_wishlist_repository),
+) -> WishlistExportService:
+    return WishlistExportService(wishlist_repository)
