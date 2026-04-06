@@ -1,4 +1,4 @@
-import { Box, Modal, Typography, Button } from "@mui/material";
+import { Box, Modal, Typography, Button, Link } from "@mui/material";
 
 interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: (value: boolean) => void;
@@ -6,7 +6,7 @@ interface ModalTermsVinylKeeperProps {
 }
 
 export default function ModalTermsVinylKeeper(
-  props: ModalTermsVinylKeeperProps
+  props: ModalTermsVinylKeeperProps,
 ) {
   const { setOpenTermsModal, openTermsModal } = props;
 
@@ -66,6 +66,14 @@ export default function ModalTermsVinylKeeper(
             The Application is available at
             <br />
             https://vinylkeeper.org.
+            <br />
+            <Link
+              href="https://github.com/quentingenet/vinylkeeper"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Source code (GitHub)
+            </Link>
           </Typography>
           <Typography sx={{ mt: 2, textAlign: "center", color: "black" }}>
             <strong>Last updated: 20/06/2025</strong>
