@@ -134,4 +134,4 @@ The project promotes the four essential freedoms:
 ## Author and contributors
 
 - Quentin GENET
-- If you love vinyl, music, and web development, and are motivated to contribute seriously — we'd love to hear from you! 😄🚀
+- If you love vinyl, music, and web development, and are motivated to contribute seriously we'd love to hear from you! 😄🚀

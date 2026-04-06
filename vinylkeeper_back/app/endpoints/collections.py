@@ -4,12 +4,8 @@ from app.schemas.collection_schema import (
     CollectionDetailResponse,
     CollectionUpdate,
     CollectionResponse,
-    CollectionListItemResponse,
     CollectionVisibilityUpdate,
-    PaginatedAlbumsResponse,
-    PaginatedArtistsResponse,
     PaginatedCollectionListResponse,
-    CollectionSearchResponse,
     CollectionAlbumResponse
 )
 from app.schemas.like_schema import LikeStatusResponse
@@ -18,19 +14,10 @@ from app.deps.deps import get_collection_service, get_export_service
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.export_service import ExportService
-from app.core.exceptions import (
-    ResourceNotFoundError,
-    ForbiddenError,
-    DuplicateFieldError,
-    AppException,
-    ValidationError,
-    ServerError,
-)
 from app.schemas.collection_album_schema import CollectionAlbumUpdate
 from app.utils.endpoint_utils import handle_app_exceptions
-import logging
-
-logger = logging.getLogger(__name__)
+from app.core.exceptions import ValidationError
+from app.core.logging import logger
 
 router = APIRouter()
 
@@ -42,20 +29,12 @@ async def create_collection(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service)
 ):
-    try:
-        collection = await service.create_collection(data, user.id)
-        # Commit the transaction for standalone collection creation
-        await service.repository.db.commit()
-        logger.info(f"Collection created: {collection.id} by user {user.id}")
-        return {
-            "message": "Collection created successfully",
-            "collection_id": collection.id
-        }
-    except Exception as e:
-        logger.error(
-            f"Failed to create collection for user {user.id}: {str(e)}")
-        logger.error(f"Collection data: {data.model_dump()}")
-        raise
+    collection = await service.create_collection(data, user.id)
+    logger.info(f"Collection created: {collection.id} by user {user.id}")
+    return {
+        "message": "Collection created successfully",
+        "collection_id": collection.id
+    }
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=PaginatedCollectionListResponse)
@@ -208,15 +187,9 @@ async def remove_album_from_collection(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    try:
-        await service.remove_album_from_collection(user.id, collection_id, album_id)
-        logger.info(
-            f"Album {album_id} removed from collection {collection_id} by user {user.id}")
-        return {"message": "Album removed from collection successfully"}
-    except Exception as e:
-        logger.error(
-            f"Failed to remove album {album_id} from collection {collection_id} for user {user.id}: {str(e)}")
-        raise
+    await service.remove_album_from_collection(user.id, collection_id, album_id)
+    logger.info(f"Album {album_id} removed from collection {collection_id} by user {user.id}")
+    return {"message": "Album removed from collection successfully"}
 
 
 @router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_200_OK)
@@ -227,15 +200,9 @@ async def remove_artist_from_collection(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    try:
-        await service.remove_artist_from_collection(user.id, collection_id, artist_id)
-        logger.info(
-            f"Artist {artist_id} removed from collection {collection_id} by user {user.id}")
-        return {"message": "Artist removed from collection successfully"}
-    except Exception as e:
-        logger.error(
-            f"Failed to remove artist {artist_id} from collection {collection_id} for user {user.id}: {str(e)}")
-        raise
+    await service.remove_artist_from_collection(user.id, collection_id, artist_id)
+    logger.info(f"Artist {artist_id} removed from collection {collection_id} by user {user.id}")
+    return {"message": "Artist removed from collection successfully"}
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
@@ -245,20 +212,14 @@ async def like_collection(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    try:
-        result = await service.like_collection(user.id, collection_id)
-        logger.info(
-            f"Collection {collection_id} liked by user {user.id}, likes: {result['likes_count']}")
-        return LikeStatusResponse(
-            collection_id=collection_id,
-            liked=True,
-            likes_count=result["likes_count"],
-            message=result["message"]
-        )
-    except Exception as e:
-        logger.error(
-            f"Failed to like collection {collection_id} for user {user.id}: {str(e)}")
-        raise
+    result = await service.like_collection(user.id, collection_id)
+    logger.info(f"Collection {collection_id} liked by user {user.id}, likes: {result['likes_count']}")
+    return LikeStatusResponse(
+        collection_id=collection_id,
+        liked=True,
+        likes_count=result["likes_count"],
+        message=result["message"]
+    )
 
 
 @router.delete("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
@@ -268,20 +229,14 @@ async def unlike_collection(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    try:
-        result = await service.unlike_collection(user.id, collection_id)
-        logger.info(
-            f"Collection {collection_id} unliked by user {user.id}, likes: {result['likes_count']}")
-        return LikeStatusResponse(
-            collection_id=collection_id,
-            liked=False,
-            likes_count=result["likes_count"],
-            message=result["message"]
-        )
-    except Exception as e:
-        logger.error(
-            f"Failed to unlike collection {collection_id} for user {user.id}: {str(e)}")
-        raise
+    result = await service.unlike_collection(user.id, collection_id)
+    logger.info(f"Collection {collection_id} unliked by user {user.id}, likes: {result['likes_count']}")
+    return LikeStatusResponse(
+        collection_id=collection_id,
+        liked=False,
+        likes_count=result["likes_count"],
+        message=result["message"]
+    )
 
 
 @router.patch("/{collection_id}/albums/{album_id}/metadata", response_model=CollectionAlbumResponse)

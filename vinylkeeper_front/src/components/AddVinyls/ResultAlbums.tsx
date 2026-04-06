@@ -147,7 +147,7 @@ export default function ResultAlbums({
   if (isLoading) {
     return (
       <div className={styles.resultsContainer}>
-        {[...Array(6)].map((_, index) => (
+        {Array.from({ length: 6 }).map((_, index) => (
           <Box key={index}>
             <Card
               className={styles.resultCard}

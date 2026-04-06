@@ -1,4 +1,6 @@
 import logging
+import os
+import traceback
 from logging.config import dictConfig
 from logging.handlers import TimedRotatingFileHandler
 from app.core.config_env import settings
@@ -96,3 +98,17 @@ log_config = {
 dictConfig(log_config)
 
 logger = logging.getLogger("app")
+
+
+def extract_file_info(tb) -> str:
+    """Extract a short file:line string from a traceback, rooted at /app."""
+    if tb:
+        last_frame = tb[-1]
+        full_path = last_frame.filename
+        if '/app' in full_path:
+            app_index = full_path.find('/app')
+            file_info = full_path[app_index + 1:]
+        else:
+            file_info = os.path.basename(full_path)
+        return f"{file_info}:{last_frame.lineno}"
+    return "unknown:0"

@@ -2,7 +2,6 @@ import {
   AddToWishlistRequest,
   AddToCollectionRequest,
   WishlistItemResponse,
-  WishlistItemListResponse,
   PaginatedWishlistResponse,
   CollectionItemResponse,
   AddToWishlistResponse,

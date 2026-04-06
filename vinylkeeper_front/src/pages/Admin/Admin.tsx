@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  Snackbar,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -29,6 +30,7 @@ import {
   AdminPanelSettings,
 } from "@mui/icons-material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@utils/queryKeys";
 import { adminApiService, ModerationRequest } from "@services/AdminApiService";
 import { useUserContext } from "@contexts/UserContext";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -40,9 +42,24 @@ const Admin: React.FC = () => {
   const [selectedRequest, setSelectedRequest] =
     useState<ModerationRequest | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [moderationActionError, setModerationActionError] = useState<
+    string | null
+  >(null);
+  const [feedback, setFeedback] = useState<{
+    open: boolean;
+    severity: "success" | "error";
+    message: string;
+  }>({ open: false, severity: "success", message: "" });
 
   // Check if user has admin permissions
   const isAdmin = currentUser?.is_admin === true;
+
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return "An unexpected error occurred. Please try again.";
+  };
 
   // Fetch moderation requests
   const {
@@ -50,7 +67,7 @@ const Admin: React.FC = () => {
     isLoading: isLoadingRequests,
     error: requestsError,
   } = useQuery({
-    queryKey: ["moderation-requests"],
+    queryKey: queryKeys.moderation.all(),
     queryFn: () => adminApiService.getModerationRequests(),
     enabled: isAdmin,
     staleTime: 0,
@@ -59,7 +76,7 @@ const Admin: React.FC = () => {
 
   // Fetch pending requests
   const { data: pendingRequests, isLoading: isLoadingPending } = useQuery({
-    queryKey: ["pending-moderation-requests"],
+    queryKey: queryKeys.moderation.pending(),
     queryFn: () => adminApiService.getPendingModerationRequests(),
     enabled: isAdmin,
     staleTime: 0,
@@ -68,7 +85,7 @@ const Admin: React.FC = () => {
 
   // Fetch stats
   const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["moderation-stats"],
+    queryKey: queryKeys.moderation.stats(),
     queryFn: () => adminApiService.getModerationStats(),
     enabled: isAdmin,
     staleTime: 0,
@@ -82,24 +99,39 @@ const Admin: React.FC = () => {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["moderation-requests"],
+          queryKey: queryKeys.moderation.all(),
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["pending-moderation-requests"],
+          queryKey: queryKeys.moderation.pending(),
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["moderation-stats"],
+          queryKey: queryKeys.moderation.stats(),
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["places"],
-          refetchType: "active",
+          queryKey: queryKeys.places.all(),
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.places.map(),
+          refetchType: "all",
         }),
       ]);
+      setModerationActionError(null);
+      setFeedback({
+        open: true,
+        severity: "success",
+        message: "Moderation request approved.",
+      });
       setDetailDialogOpen(false);
       setSelectedRequest(null);
+    },
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error);
+      setModerationActionError(message);
+      setFeedback({ open: true, severity: "error", message });
     },
   });
 
@@ -110,40 +142,58 @@ const Admin: React.FC = () => {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["moderation-requests"],
+          queryKey: queryKeys.moderation.all(),
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["pending-moderation-requests"],
+          queryKey: queryKeys.moderation.pending(),
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["moderation-stats"],
+          queryKey: queryKeys.moderation.stats(),
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["places"],
-          refetchType: "active",
+          queryKey: queryKeys.places.all(),
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.places.map(),
+          refetchType: "all",
         }),
       ]);
+      setModerationActionError(null);
+      setFeedback({
+        open: true,
+        severity: "success",
+        message: "Moderation request rejected.",
+      });
       setDetailDialogOpen(false);
       setSelectedRequest(null);
+    },
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error);
+      setModerationActionError(message);
+      setFeedback({ open: true, severity: "error", message });
     },
   });
 
   const handleViewDetails = (request: ModerationRequest) => {
     setSelectedRequest(request);
     setDetailDialogOpen(true);
+    setModerationActionError(null);
   };
 
   const handleApprove = () => {
     if (selectedRequest) {
+      setModerationActionError(null);
       approveMutation.mutate(selectedRequest.id);
     }
   };
 
   const handleReject = () => {
     if (selectedRequest) {
+      setModerationActionError(null);
       rejectMutation.mutate(selectedRequest.id);
     }
   };
@@ -206,6 +256,22 @@ const Admin: React.FC = () => {
         margin: "0 auto",
       }}
     >
+      <Snackbar
+        open={feedback.open}
+        autoHideDuration={4500}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={feedback.severity}
+          variant="filled"
+          onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+          sx={{ width: "100%" }}
+        >
+          {feedback.message}
+        </Alert>
+      </Snackbar>
+
       <Box
         sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "wrap" }}
       >
@@ -388,6 +454,12 @@ const Admin: React.FC = () => {
       {requestsError && (
         <Alert severity="error" sx={{ mb: 3 }}>
           Error loading moderation requests
+        </Alert>
+      )}
+
+      {moderationActionError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {moderationActionError}
         </Alert>
       )}
 

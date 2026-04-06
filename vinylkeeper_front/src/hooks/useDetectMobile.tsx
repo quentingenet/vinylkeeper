@@ -27,6 +27,7 @@ const useDetectMobile = (
 
     window.addEventListener("resize", detectSize);
     return () => window.removeEventListener("resize", detectSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { isMobile };

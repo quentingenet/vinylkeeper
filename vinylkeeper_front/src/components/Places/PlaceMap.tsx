@@ -28,8 +28,10 @@ import {
   PlaceMapResponse,
 } from "@services/PlaceApiService";
 import "leaflet/dist/leaflet.css";
+import { queryKeys } from "@utils/queryKeys";
 
-// Fix for default markers in React Leaflet
+// Leaflet workaround: _getIconUrl is an internal method not exposed in the types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
 delete (Icon.Default.prototype as any)._getIconUrl;
 Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -85,7 +87,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
     isLoading: isLoadingPlaces,
     isError: isPlacesError,
   } = useQuery<Place[]>({
-    queryKey: ["places-location", selectedLocation?.country, selectedLocation?.city],
+    queryKey: queryKeys.places.byLocation(selectedLocation?.country, selectedLocation?.city),
     queryFn: () =>
       placeApiService.getPlacesByLocation(
         selectedLocation!.country,

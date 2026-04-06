@@ -5,7 +5,7 @@ This module provides explicit imports of frequently used schemas.
 
 # User schemas
 from .user_schema import (
-    UserCreate, UserUpdate, UserResponse, UserDetailResponse, 
+    UserCreate, UserUpdate, UserResponse,
     UserSettingsResponse, UserMeResponse
 )
 
@@ -42,7 +42,7 @@ from .moderation_request_schema import ModerationRequestCreate, ModerationReques
 
 __all__ = [
     # User
-    "UserCreate", "UserUpdate", "UserResponse", "UserDetailResponse", 
+    "UserCreate", "UserUpdate", "UserResponse",
     "UserSettingsResponse", "UserMeResponse",
     # Collection
     "CollectionCreate", "CollectionUpdate", "CollectionResponse", 

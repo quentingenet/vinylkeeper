@@ -35,5 +35,5 @@ COPY . .
 EXPOSE 8000
 
 # Run FastAPI with Gunicorn and Uvicorn workers for production
-CMD ["poetry", "run", "gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["poetry", "run", "gunicorn", "app.main:app", "-w", "9", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-"]
 

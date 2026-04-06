@@ -3,9 +3,7 @@ from fastapi import FastAPI
 from app.core.config_env import settings
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-import logging
-
-logger = logging.getLogger(__name__)
+from app.core.logging import logger
 
 
 def configure_cors(app: FastAPI):
@@ -47,10 +45,4 @@ def verify_password(hashed_password: str, plain_password: str) -> bool:
         ph.verify(hashed_password, plain_password)
         return True
     except VerifyMismatchError:
-        logger.info("Password verification failed: VerifyMismatchError")
-        return False
-    except Exception as e:
-        logger.error(f"Password verification failed with error: {str(e)}")
-        logger.error(f"Error type: {type(e).__name__}")
-        logger.error(f"Error details: {e}")
         return False

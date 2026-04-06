@@ -2,52 +2,39 @@
 Transaction management utilities for centralized database transaction handling.
 """
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any, Callable, TypeVar, Awaitable
+from contextvars import ContextVar
+from typing import AsyncGenerator, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import logger
-from app.core.exceptions import ServerError, ErrorCode
 
-T = TypeVar('T')
+_transaction_depth: ContextVar[int] = ContextVar('_transaction_depth', default=0)
 
 
 @asynccontextmanager
 async def transaction_context(session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
     """
-    Context manager for database transactions.
-    
-    This context manager should be used in services when multiple repository
-    operations need to be atomic. It handles both cases:
-    - Session already in transaction: uses existing transaction
-    - Session not in transaction: starts new transaction
-    
-    Usage in services:
-        async def create_collection_with_albums(self, ...):
-            async with transaction_context(self.repository.db):
-                # All operations within this block are part of a single transaction
-                collection = await self.repository.create(collection_data)
-                await self.repository.add_albums(collection.id, album_ids)
-                # Transaction is automatically committed at the end
-                # or rolled back if an exception occurs
+    Context manager for database transactions with reentrancy support.
+
+    Only the outermost call flushes and commits; nested calls yield without
+    managing the transaction, preserving atomicity when services call each other.
+    Rolls back on exception at the outermost level.
     """
-    # Check if session is already in a transaction
-    if session.in_transaction():
-        logger.debug("🔄 Using existing transaction")
-        try:
+    depth = _transaction_depth.get()
+    token = _transaction_depth.set(depth + 1)
+    try:
+        if depth > 0:
             yield session
-            logger.debug("✅ Operations completed in existing transaction")
-        except Exception as e:
-            logger.error(f"❌ Error in existing transaction: {str(e)}")
-            raise
-    else:
-        # Start new transaction
-        async with session.begin():
+        else:
             try:
-                logger.debug("🔄 Starting new database transaction")
                 yield session
-                logger.debug("✅ Transaction committed successfully")
+                await session.flush()
+                await session.commit()
             except Exception as e:
                 logger.error(f"❌ Transaction rolled back due to error: {str(e)}")
+                await session.rollback()
                 raise
+    finally:
+        _transaction_depth.reset(token)
 
 
 class TransactionalMixin:
@@ -72,7 +59,7 @@ class TransactionalMixin:
     
     async def _delete_entity(self, entity: Any, flush: bool = False) -> None:
         """Delete entity from session without committing.
-        
+
         Args:
             entity: The entity to delete
             flush: If True, flush immediately. Default False for performance.

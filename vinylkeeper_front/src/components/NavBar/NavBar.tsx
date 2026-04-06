@@ -19,8 +19,6 @@ import {
   Album as AlbumIcon,
   AddBox as AddBoxIcon,
   Search as SearchIcon,
-  Group as GroupIcon,
-  Favorite as FavoriteIcon,
   Settings as SettingsIcon,
   Place as PlaceIcon,
   AdminPanelSettings,
@@ -64,7 +62,7 @@ const NavBar: React.FC<NavBarProps> = ({
 
   const handleItemClick = (title: string, linkTo: EGlobalUrls) => {
     setTitlePage(title);
-    navigate(linkTo);
+    void navigate(linkTo);
   };
 
   const colorYellow = "#C9A726";

@@ -1,14 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUserContext } from "@contexts/UserContext";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  collectionApiService,
   type CollectionResponse,
   type CollectionListItemResponse,
 } from "@services/CollectionApiService";
 import { useCollections } from "@hooks/useCollections";
-import { ICollection } from "@models/ICollectionForm";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import {
   Card,
@@ -51,7 +46,7 @@ const formatDate = (dateString: string) => {
  *
  * @component
  * @param {Object} props
- * @param {ICollection} props.collection - The collection object containing id, name, description etc
+ * @param {CollectionResponse | CollectionListItemResponse} props.collection - The collection object
  * @param {Function} props.onSwitchArea - Callback when public/private toggle is switched
  * @param {Function} props.handleOpenModalCollection - Callback to open edit collection modal
  * @param {Function} props.onCollectionClick - Callback when collection card is clicked
@@ -99,9 +94,6 @@ export default function CollectionItem({
   const [showStatusToast, setShowStatusToast] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const userContext = useUserContext();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { deleteCollection, isDeletingCollection } = useCollections();
   const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
     useCollectionLike(collection.id);
@@ -127,6 +119,7 @@ export default function CollectionItem({
   useEffect(() => {
     setLocalIsLiked(collection.is_liked_by_user);
     setLocalLikesCount(collection.likes_count);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collection.id]);
 
   // Only update local state when collection ID changes (new collection loaded)
@@ -151,6 +144,7 @@ export default function CollectionItem({
     setLikeBounce(true);
     const timeout = setTimeout(() => setLikeBounce(false), 350);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localLikesCount]);
 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,10 +188,6 @@ export default function CollectionItem({
     // Set cooldown to prevent rapid clicks
     setLikeCooldown(true);
     setTimeout(() => setLikeCooldown(false), 1000); // 1 second cooldown
-
-    // Store previous state for potential rollback
-    const previousLiked = localIsLiked;
-    const previousCount = localLikesCount;
 
     // Immediate visual feedback
     if (localIsLiked) {

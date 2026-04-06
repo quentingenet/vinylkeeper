@@ -25,6 +25,10 @@ class ErrorCode:
     MISSING_REQUIRED_FIELD = 3001
     INVALID_FORMAT = 3002
 
+    # Authorization errors (4000-4999)
+    FORBIDDEN = 4030
+    FORBIDDEN_OWNER = 4003
+
     # Server errors (5000-5999)
     SERVER_ERROR = 5000
     DATABASE_ERROR = 5001
@@ -204,7 +208,7 @@ class DuplicateCollectionNameError(DuplicateFieldError):
 
 
 class ForbiddenError(AppException):
-    def __init__(self, error_code: int = 4030, message: str = "You are not allowed to access this resource", details: Optional[Dict[str, Any]] = None):
+    def __init__(self, error_code: int = ErrorCode.FORBIDDEN, message: str = "You are not allowed to access this resource", details: Optional[Dict[str, Any]] = None):
         super().__init__(
             error_code=error_code,
             message=message,

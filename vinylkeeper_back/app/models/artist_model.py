@@ -49,6 +49,9 @@ class Artist(Base):
                         server_default=func.now(),
                         onupdate=func.now(), nullable=False)
 
+    # Non-mapped aggregated count, populated by repository queries
+    collections_count = 0
+
     collection_artists = relationship(
         "CollectionArtist",
         back_populates="artist",

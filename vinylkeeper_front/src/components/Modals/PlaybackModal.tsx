@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   Box,
@@ -104,6 +104,7 @@ export default function PlaybackModal({
     } else if (item?.itemType === "artist") {
       resetAlbumStates();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id, item?.itemType]);
 
   // Reset states when modal closes
@@ -138,7 +139,6 @@ export default function PlaybackModal({
       : undefined
   );
 
-  const metadata = item?.itemType === "album" ? albumMetadata : artistMetadata;
   const isLoading =
     item?.itemType === "album" ? isAlbumLoading : isArtistLoading;
   const error = item?.itemType === "album" ? albumError : artistError;
@@ -185,9 +185,11 @@ export default function PlaybackModal({
         return;
     }
 
-    isMobile
-      ? (window.location.href = url)
-      : window.open(url, "_blank", "noopener,noreferrer");
+    if (isMobile) {
+      window.location.href = url;
+    } else {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
   const hasAtLeastOneField =
@@ -216,7 +218,7 @@ export default function PlaybackModal({
         acquisition_month_year: purchaseDate || null,
       };
 
-      const result = await updateAlbumStatesMutation.mutateAsync({
+      await updateAlbumStatesMutation.mutateAsync({
         collectionId: parseInt(collectionId),
         albumId: parseInt(albumId),
         data: updateData,
@@ -224,7 +226,7 @@ export default function PlaybackModal({
 
       // Show success toast
       setShowSuccessToast(true);
-    } catch (error) {
+    } catch {
       // Error handling is done by the mutation
     } finally {
       setIsUpdating(false);
@@ -569,7 +571,7 @@ export default function PlaybackModal({
                           {isOwner === true && (
                             <Button
                               variant="contained"
-                              onClick={handleUpdateAlbumStates}
+                              onClick={() => { void handleUpdateAlbumStates(); }}
                               disabled={isUpdating || !hasAtLeastOneField}
                               sx={{
                                 backgroundColor: "#C9A726",

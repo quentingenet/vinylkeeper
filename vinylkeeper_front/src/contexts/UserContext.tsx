@@ -1,8 +1,4 @@
-import { API_VK_URL } from "@utils/GlobalUtils";
-import requestService from "@utils/RequestService";
 import { userApiService, type UserResponse } from "@services/UserApiService";
-import { isCapacitorPlatform } from "@utils/CapacitorUtils";
-import { capacitorHttpService } from "@utils/CapacitorHttpService";
 import {
   createContext,
   useContext,
@@ -12,24 +8,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 
-/**
- * Interface defining the structure of the User Context
- * @interface IUserContext
- * @property {boolean} isLoading - Loading state flag
- * @property {function} setIsLoading - Function to update loading state
- * @property {string} jwt - JSON Web Token for authentication
- * @property {function} setJwt - Function to update JWT
- * @property {boolean|null} isUserLoggedIn - User login status
- * @property {function} setIsUserLoggedIn - Function to update login status
- * @property {boolean} isFirstConnection - Flag for first time connection
- * @property {function} setIsFirstConnection - Function to update first connection status
- * @property {boolean} openDialog - Dialog display state
- * @property {function} setOpenDialog - Function to control dialog visibility
- * @property {function} refreshJwt - Async function to refresh JWT token
- * @property {function} logout - Function to handle user logout
- * @property {UserResponse | null} currentUser - Current user information
- * @property {function} setCurrentUser - Function to update current user information
- */
+const SESSION_KEY = "vk_has_session";
+
 interface IUserContext {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
@@ -49,6 +29,7 @@ interface IUserContext {
  * @constant
  * @type {IUserContext}
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const UserContext = createContext<IUserContext>({
   isLoading: false,
   setIsLoading: () => {},
@@ -63,6 +44,7 @@ export const UserContext = createContext<IUserContext>({
   setCurrentUser: () => {},
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUserContext() {
   return useContext(UserContext);
 }
@@ -78,42 +60,21 @@ export function UserContextProvider({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
-  const [hasCheckedAuth, setHasCheckedAuth] = useState<boolean>(false);
 
   const checkUserLoggedIn = useCallback(async () => {
-    // Only check once on initial load, then only if user is logged in
-    if (hasCheckedAuth && !isUserLoggedIn) {
+    if (!localStorage.getItem(SESSION_KEY)) {
+      setIsUserLoggedIn(false);
       return;
     }
-
     try {
-      let response: { isLoggedIn: boolean };
-
-      if (isCapacitorPlatform()) {
-        response = await capacitorHttpService.post<{ isLoggedIn: boolean }>(
-          "/users/refresh-token",
-          undefined,
-          true
-        );
-      } else {
-        response = await requestService<{ isLoggedIn: boolean }>({
-          apiTarget: API_VK_URL,
-          method: "POST",
-          endpoint: "/users/refresh-token",
-          skipRefresh: true,
-        });
-      }
-
-      setIsUserLoggedIn(response.isLoggedIn);
-      setHasCheckedAuth(true);
-
-      if (response.isLoggedIn) {
+      const { isLoggedIn } = await userApiService.refreshToken();
+      setIsUserLoggedIn(isLoggedIn);
+      if (isLoggedIn) {
         try {
           const user = await userApiService.getCurrentUser();
           setCurrentUser(user);
         } catch (error) {
           console.error("Error fetching current user:", error);
-          // If we can't fetch user data, assume user is not logged in
           setIsUserLoggedIn(false);
           setCurrentUser(null);
         }
@@ -124,51 +85,43 @@ export function UserContextProvider({
       console.error("Error while checking user logged in:", error);
       setIsUserLoggedIn(false);
       setCurrentUser(null);
-      setHasCheckedAuth(true);
     }
-  }, [hasCheckedAuth, isUserLoggedIn]);
+  }, []);
 
   const logout = useCallback(async () => {
     try {
-      let response: { isLoggedIn: boolean };
-
-      if (isCapacitorPlatform()) {
-        response = await capacitorHttpService.post<{ isLoggedIn: boolean }>(
-          "/users/logout"
-        );
-      } else {
-        response = await requestService<{ isLoggedIn: boolean }>({
-          apiTarget: API_VK_URL,
-          method: "POST",
-          endpoint: "/users/logout",
-        });
-      }
-
-      setIsUserLoggedIn(response.isLoggedIn);
+      await userApiService.logout();
     } catch (error) {
       console.error("Error while logging out:", error);
     } finally {
-      // Clear tutorial seen status from localStorage on logout
       if (currentUser) {
-        const tutorialSeenKey = `tutorial_seen_${currentUser.user_uuid}`;
-        localStorage.removeItem(tutorialSeenKey);
+        localStorage.removeItem(`tutorial_seen_${currentUser.user_uuid}`);
       }
+      localStorage.removeItem(SESSION_KEY);
       setIsUserLoggedIn(false);
       setCurrentUser(null);
-      navigate("/", { replace: true });
+      void navigate("/", { replace: true });
     }
   }, [navigate, currentUser]);
 
   useEffect(() => {
-    checkUserLoggedIn();
-    // Only set up interval if user is logged in
-    const intervalId = setInterval(() => {
-      if (isUserLoggedIn) {
-        checkUserLoggedIn();
-      }
-    }, 25 * 60 * 1000);
+    if (isUserLoggedIn === true) {
+      localStorage.setItem(SESSION_KEY, "1");
+    } else if (isUserLoggedIn === false) {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }, [isUserLoggedIn]);
+
+  useEffect(() => {
+    void checkUserLoggedIn();
+  }, [checkUserLoggedIn]);
+
+  // Token refresh interval, active only while logged in
+  useEffect(() => {
+    if (!isUserLoggedIn) return;
+    const intervalId = setInterval(() => { void checkUserLoggedIn(); }, 25 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, [checkUserLoggedIn, isUserLoggedIn]);
+  }, [isUserLoggedIn, checkUserLoggedIn]);
 
   const value: IUserContext = {
     isLoading,
@@ -179,6 +132,7 @@ export function UserContextProvider({
     setIsFirstConnection,
     openDialog,
     setOpenDialog,
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     logout,
     currentUser,
     setCurrentUser,

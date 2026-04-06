@@ -36,7 +36,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const theme = useTheme();
   const { isMobile } = useDetectMobile();
   const toggleMenu = () => setOpen((prev) => !prev);
-  const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
   const [titlePage, setTitlePage] = useState<string>("Vinyl Keeper");
   const [currentTitle, setCurrentTitle] = useState<string>("Vinyl Keeper");
   const [isAnimating, setIsAnimating] = useState<boolean>(false);

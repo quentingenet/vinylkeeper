@@ -111,15 +111,10 @@ class SearchResponse(BaseSchema):
 class WishlistItemResponse(BaseSchema):
     """Response model for wishlist items that matches the Wishlist model."""
     id: int = Field(..., description="Unique identifier")
-    user_id: int = Field(..., description="ID of the user who owns this wishlist item")
     external_id: str = Field(..., description="External ID")
-    entity_type_id: int = Field(..., description="ID of the entity type")
-    external_source_id: int = Field(..., description="ID of the external source")
     title: str = Field(..., description="Title of the album or artist")
     image_url: str = Field(..., description="URL of the image")
     created_at: datetime = Field(..., description="When the wishlist item was created")
-    
-    # Additional fields for display - using simple strings for frontend compatibility
     entity_type: Optional[str] = Field(None, description="Entity type name (album or artist)")
     source: Optional[str] = Field(None, description="Source name (discogs or musicbrainz)")
 
@@ -139,7 +134,6 @@ class AddToWishlistResponse(BaseSchema):
 class CollectionItemResponse(BaseSchema):
     """Response model for collection items."""
     id: int = Field(..., description="Unique identifier")
-    user_id: int = Field(..., description="ID of the user who owns this reference")
     external_id: str = Field(..., description="External ID")
     entity_type: str = Field(..., description="Type of entity (ALBUM or ARTIST)")
     title: str = Field(..., description="Title of the album or artist")

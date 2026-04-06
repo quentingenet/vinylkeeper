@@ -2,6 +2,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.moderation_request_model import ModerationRequest
 from app.models.place_model import Place
@@ -35,13 +36,13 @@ class ModerationRequestRepository(TransactionalMixin):
 
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation requests (limit: {limit}, offset: {offset}): {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_requests_by_status(self, status_id: int, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequest]:
@@ -62,13 +63,13 @@ class ModerationRequestRepository(TransactionalMixin):
 
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation requests by status {status_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests by status",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_request_by_id(self, request_id: int) -> ModerationRequest:
@@ -90,13 +91,13 @@ class ModerationRequestRepository(TransactionalMixin):
             return request
         except ResourceNotFoundError:
             raise
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation request {request_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation request",
-                details={"error": str(e)}
+                details={}
             )
 
     async def create_request(self, request_data: dict) -> ModerationRequest:
@@ -106,12 +107,12 @@ class ModerationRequestRepository(TransactionalMixin):
             await self._add_entity(request, flush=True)  # Flush to get the ID
             await self._refresh_entity(request)
             return request
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error creating moderation request: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create moderation request",
-                details={"error": str(e)}
+                details={}
             )
 
     async def update_request(self, request_id: int, request_data: dict) -> ModerationRequest:
@@ -129,13 +130,13 @@ class ModerationRequestRepository(TransactionalMixin):
             return request
         except ResourceNotFoundError:
             raise
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error updating moderation request {request_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update moderation request",
-                details={"error": str(e)}
+                details={}
             )
 
     async def delete_request(self, request_id: int) -> bool:
@@ -146,13 +147,13 @@ class ModerationRequestRepository(TransactionalMixin):
             return True
         except ResourceNotFoundError:
             raise
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error deleting moderation request {request_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete moderation request",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_requests_by_user(self, user_id: int) -> List[ModerationRequest]:
@@ -162,13 +163,13 @@ class ModerationRequestRepository(TransactionalMixin):
                 ModerationRequest.submitted_by_id == user_id)
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation requests for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests by user",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_requests_by_entity_type(self, entity_type_id: int) -> List[ModerationRequest]:
@@ -178,26 +179,26 @@ class ModerationRequestRepository(TransactionalMixin):
                 ModerationRequest.entity_type_id == entity_type_id)
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation requests by entity type {entity_type_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests by entity type",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_pending_requests_count(self) -> int:
         """Get the count of pending moderation requests."""
         try:
             return await self.get_moderation_request_count_by_status(ModerationStatusEnum.PENDING.value)
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error counting pending moderation requests: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count pending moderation requests",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_requests_by_entity_id(self, entity_id: int, entity_type_id: int) -> List[ModerationRequest]:
@@ -209,13 +210,13 @@ class ModerationRequestRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation requests for entity {entity_id} of type {entity_type_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests by entity",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_moderation_request_stats(self) -> dict:
@@ -227,12 +228,12 @@ class ModerationRequestRepository(TransactionalMixin):
                 "approved": await self.get_moderation_request_count_by_status(ModerationStatusEnum.APPROVED.value),
                 "rejected": await self.get_moderation_request_count_by_status(ModerationStatusEnum.REJECTED.value),
             }
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting moderation request stats: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation request stats",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_moderation_request_count_by_status(self, status_name: str) -> int:
@@ -244,13 +245,13 @@ class ModerationRequestRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalar()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error counting moderation requests by status {status_name}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count moderation requests by status",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_total_moderation_request_count(self) -> int:
@@ -260,30 +261,12 @@ class ModerationRequestRepository(TransactionalMixin):
             query = select(func.count(ModerationRequest.id))
             result = await self.db.execute(query)
             return result.scalar()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error counting total moderation requests: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count total moderation requests",
-                details={"error": str(e)}
-            )
-
-    async def get_moderation_request_stats_sync(self) -> dict:
-        """Get moderation request statistics."""
-        try:
-            return {
-                "total": await self.get_total_moderation_request_count(),
-                "pending": await self.get_moderation_request_count_by_status(ModerationStatusEnum.PENDING.value),
-                "approved": await self.get_moderation_request_count_by_status(ModerationStatusEnum.APPROVED.value),
-                "rejected": await self.get_moderation_request_count_by_status(ModerationStatusEnum.REJECTED.value),
-            }
-        except Exception as e:
-            logger.error(
-                f"Error getting moderation request stats sync: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation request stats",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_moderation_status_by_name(self, status_name: str):
@@ -293,11 +276,11 @@ class ModerationRequestRepository(TransactionalMixin):
                 ModerationStatus.name == status_name)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving moderation status by name {status_name}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation status by name",
-                details={"error": str(e)}
+                details={}
             )

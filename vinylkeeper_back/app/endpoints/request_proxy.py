@@ -7,11 +7,6 @@ from app.schemas.request_proxy.request_proxy_schema import (
     SearchQuery,
     ArtistMetadata
 )
-from app.core.exceptions import (
-    ServerError,
-    ValidationError,
-    ErrorCode
-)
 from app.services.search_service import SearchService
 from app.utils.endpoint_utils import handle_app_exceptions
 

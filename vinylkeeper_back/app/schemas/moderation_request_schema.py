@@ -23,6 +23,8 @@ class PlaceMiniResponse(BaseModel):
     country: str = Field(description="Country")
     description: Optional[str] = Field(None, description="Place description")
     place_type: Optional[PlaceTypeResponse] = Field(None, description="Place type")
+    is_moderated: bool = Field(False, description="Whether the place has been moderated")
+    is_valid: bool = Field(True, description="Whether the place is valid")
 
     model_config = ConfigDict(from_attributes=True)
 

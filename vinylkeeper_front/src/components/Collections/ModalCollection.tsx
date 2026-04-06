@@ -25,10 +25,13 @@ import { collectionApiService } from "@services/CollectionApiService";
 import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { queryKeys } from "@utils/queryKeys";
 import {
   CollectionResponse,
   CollectionListItemResponse,
+  PaginatedCollectionListResponse,
 } from "@services/CollectionApiService";
+import { isApiError } from "@utils/apiError";
 
 interface IModalCollectionProps {
   openModal: boolean;
@@ -91,6 +94,7 @@ export default function ModalCollection({
       setValue("description", collection?.description || "");
       setValue("is_public", collection?.is_public ?? isPublic);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openModal, collection, setValue]);
 
   // Custom mutation for collection creation with error handling
@@ -98,15 +102,11 @@ export default function ModalCollection({
     mutationFn: collectionApiService.createCollection,
     onSuccess: () => {
       onCollectionAdded();
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
       handleClose();
     },
-    onError: (error: any) => {
-      // Check if it's a duplicate collection name error
-      if (
-        error?.code === 2001 &&
-        error?.message?.includes("Collection name already exists")
-      ) {
+    onError: (error: Error) => {
+      if (isApiError(error) && error.code === 2001 && error.message.includes("Collection name already exists")) {
         setErrorSnackbar({
           open: true,
           message:
@@ -137,11 +137,11 @@ export default function ModalCollection({
       // Optimistic update instead of full invalidation
       queryClient.setQueryData(
         ["collections", userContext.currentUser?.user_uuid],
-        (oldData: any) => {
+        (oldData: PaginatedCollectionListResponse | undefined) => {
           if (!oldData?.items) return oldData;
           return {
             ...oldData,
-            items: oldData.items.map((item: any) =>
+            items: oldData.items.map((item: CollectionListItemResponse) =>
               item.id === variables.id
                 ? {
                     ...item,
@@ -157,12 +157,8 @@ export default function ModalCollection({
       onCollectionAdded();
       handleClose();
     },
-    onError: (error: any) => {
-      // Check if it's a duplicate collection name error
-      if (
-        error?.code === 2001 &&
-        error?.message?.includes("Collection name already exists")
-      ) {
+    onError: (error: Error) => {
+      if (isApiError(error) && error.code === 2001 && error.message.includes("Collection name already exists")) {
         setErrorSnackbar({
           open: true,
           message:
@@ -219,7 +215,7 @@ export default function ModalCollection({
         slots={{ backdrop: Backdrop }}
       >
         <Fade in={openModal}>
-          <form onSubmit={handleSubmit(submitCollection)}>
+          <form onSubmit={(e) => { void handleSubmit(submitCollection)(e); }}>
             <Box sx={style}>
               <Box display="flex" justifyContent="flex-end">
                 <IconButton onClick={handleClose}>

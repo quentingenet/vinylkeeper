@@ -1,2 +1,0 @@
-// Moderation request domain model
-

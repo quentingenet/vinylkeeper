@@ -17,7 +17,9 @@ class CollectionAlbumCreate(BaseSchema):
     state_cover: Optional[VinylStateEnum] = Field(
         None, description="State of the album cover (mint, near_mint, very_good_plus, etc.)")
     acquisition_month_year: Optional[str] = Field(
-        None, description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')")
+        None,
+        pattern=r'^\d{4}-(0[1-9]|1[0-2])$',
+        description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')")
 
     @field_validator("acquisition_month_year")
     @classmethod
@@ -53,7 +55,9 @@ class CollectionAlbumUpdate(BaseSchema):
     state_cover: Optional[VinylStateEnum] = Field(
         None, description="Updated cover state (mint, near_mint, very_good_plus, etc.)")
     acquisition_month_year: Optional[str] = Field(
-        None, description="Updated acquisition month and year in format YYYY-MM (e.g., '2024-06')")
+        None,
+        pattern=r'^\d{4}-(0[1-9]|1[0-2])$',
+        description="Updated acquisition month and year in format YYYY-MM (e.g., '2024-06')")
 
     @field_validator("acquisition_month_year")
     @classmethod

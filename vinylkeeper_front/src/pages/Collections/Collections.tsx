@@ -4,7 +4,7 @@ import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
   CollectionResponse,
@@ -47,10 +47,6 @@ export default function Collections() {
     isError,
     handleSwitchVisibility,
     refreshCollections,
-    createCollection,
-    deleteCollection,
-    isCreatingCollection,
-    isDeletingCollection,
   } = useCollections(debouncedPage, itemsPerPage);
 
   const handleOpenModalCollection = (
@@ -72,7 +68,7 @@ export default function Collections() {
   const handleCollectionClick = (
     collection: CollectionResponse | CollectionListItemResponse
   ) => {
-    navigate(
+    void navigate(
       EGlobalUrls.COLLECTION_DETAILS.replace(":id", collection.id.toString())
     );
   };

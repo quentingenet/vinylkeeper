@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, case, and_
+from sqlalchemy.exc import SQLAlchemyError
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.user_model import User
@@ -32,53 +33,51 @@ class DashboardRepository:
             )
             result = await self.db.execute(query)
             return result.first()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting latest album: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get latest album",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_recent_albums(self, limit: int = 5, exclude_ids: Optional[List[int]] = None):
-        """Get recent albums added to any collection (for mosaic display), excluding specified IDs"""
+        """Get recent albums added to any collection (for mosaic display), deduplicated per album via DISTINCT ON."""
         try:
-            # Simple approach: query albums and filter duplicates in Python
-            # This is more reliable than complex SQL with DISTINCT ON
-            query = (
-                select(Album, User.username, CollectionAlbum.updated_at)
+            inner_where = [CollectionAlbum.updated_at.isnot(None)]
+            if exclude_ids:
+                inner_where.append(Album.id.notin_(exclude_ids))
+
+            # DISTINCT ON (album_id) keeps only the most recent collection_album row per album
+            inner = (
+                select(
+                    Album.id.label("album_id"),
+                    User.username.label("username"),
+                    CollectionAlbum.updated_at.label("updated_at"),
+                )
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
-                .where(CollectionAlbum.updated_at.isnot(None))
-                .order_by(CollectionAlbum.updated_at.desc())
+                .where(*inner_where)
+                .distinct(Album.id)
+                .order_by(Album.id, CollectionAlbum.updated_at.desc())
+            ).subquery()
+
+            query = (
+                select(Album, inner.c.username, inner.c.updated_at)
+                .join(inner, Album.id == inner.c.album_id)
+                .order_by(inner.c.updated_at.desc())
+                .limit(limit)
             )
 
-            if exclude_ids:
-                query = query.filter(~Album.id.in_(exclude_ids))
-
-            # Get more results than needed to account for duplicates
-            query = query.limit(limit * 3)
             result = await self.db.execute(query)
-            all_albums = result.all()
-
-            # Filter duplicates by album.id, keeping the first occurrence (most recent)
-            seen_ids = set()
-            unique_albums = []
-            for album, username, updated_at in all_albums:
-                if album.id not in seen_ids:
-                    seen_ids.add(album.id)
-                    unique_albums.append((album, username, updated_at))
-                if len(unique_albums) >= limit:
-                    break
-
-            return unique_albums
-        except Exception as e:
+            return result.all()
+        except SQLAlchemyError as e:
             logger.error(f"Error getting recent albums: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get recent albums",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_latest_artist(self):
@@ -97,12 +96,12 @@ class DashboardRepository:
             )
             result = await self.db.execute(query)
             return result.first()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting latest artist: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get latest artist",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_user_stats_batch(self, user_id: int) -> dict:
@@ -130,11 +129,18 @@ class DashboardRepository:
                 .scalar_subquery()
             )
 
+            public_collections_count_subq = (
+                select(func.count(Collection.id).label('count'))
+                .filter(Collection.owner_id == user_id, Collection.is_public == True)
+                .scalar_subquery()
+            )
+
             # Combine all counts in a single query
             query = select(
                 albums_count_subq.label('albums_total'),
                 artists_count_subq.label('artists_total'),
-                collections_count_subq.label('collections_total')
+                collections_count_subq.label('collections_total'),
+                public_collections_count_subq.label('public_collections_total'),
             )
 
             result = await self.db.execute(query)
@@ -143,15 +149,16 @@ class DashboardRepository:
             return {
                 'albums_total': row.albums_total or 0 if row else 0,
                 'artists_total': row.artists_total or 0 if row else 0,
-                'collections_total': row.collections_total or 0 if row else 0
+                'collections_total': row.collections_total or 0 if row else 0,
+                'public_collections_total': row.public_collections_total or 0 if row else 0,
             }
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error getting user stats batch for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get user stats batch",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_places_counts_batch(self) -> dict:
@@ -171,12 +178,12 @@ class DashboardRepository:
                 'moderated_total': row.moderated_count or 0 if row else 0,
                 'global_total': row.global_count or 0 if row else 0
             }
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting places counts batch: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places counts batch",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_global_collections_counts(self) -> dict:
@@ -204,12 +211,12 @@ class DashboardRepository:
                 'albums_total': row.albums_total or 0 if row else 0,
                 'artists_total': row.artists_total or 0 if row else 0
             }
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting global collections counts: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get global collections counts",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_public_collections_count(self) -> int:
@@ -232,10 +239,10 @@ class DashboardRepository:
             result = await self.db.execute(count_query)
             count = result.scalar()
             return count or 0
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting public collections count: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get public collections count",
-                details={"error": str(e)}
+                details={}
             )

@@ -7,7 +7,7 @@ import {
 } from "@models/IRequestProxy";
 
 export class SearchApiService extends BaseApiService {
-  private cache: Map<string, any> = new Map();
+  private cache: Map<string, unknown> = new Map();
 
   async searchMusic(requestToSend: IRequestToSend): Promise<DiscogsData[]> {
     try {

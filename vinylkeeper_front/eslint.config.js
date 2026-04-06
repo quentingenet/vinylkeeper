@@ -9,8 +9,11 @@ export default tseslint.config(
   // Ignore patterns
   {
     ignores: [
+      "android/**",
+      "ios/**",
       "dist/**",
       "node_modules/**",
+      "coverage/**",
       "**/*.config.js",
       "**/*.config.ts",
       ".eslintrc.cjs",
@@ -69,13 +72,13 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: "^_",
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-empty-object-type": "warn",
       "@typescript-eslint/no-unused-expressions": "warn",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-assignment": "warn",
+      "@typescript-eslint/no-unsafe-member-access": "warn",
+      "@typescript-eslint/no-unsafe-call": "warn",
+      "@typescript-eslint/no-unsafe-return": "warn",
       "@typescript-eslint/no-floating-promises": "warn",
       "@typescript-eslint/no-misused-promises": "warn",
 

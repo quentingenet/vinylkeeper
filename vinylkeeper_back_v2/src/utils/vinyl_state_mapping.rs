@@ -1,2 +1,0 @@
-// Vinyl state mapping utilities
-

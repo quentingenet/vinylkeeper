@@ -31,14 +31,15 @@ import {
 import { useUserContext } from "@contexts/UserContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { userApiService, UserSettingsResponse } from "@services/UserApiService";
-import useDetectMobile from "@hooks/useDetectMobile";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
+import type { FieldError } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { passwordChangeValidationSchema } from "@utils/validators/passwordChangeValidationSchema";
 import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
 import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import { queryKeys } from "@utils/queryKeys";
 
 interface PasswordFormData {
   currentPassword: string;
@@ -49,7 +50,6 @@ interface PasswordFormData {
 export default function Settings() {
   const navigate = useNavigate();
   const { currentUser, isUserLoggedIn, logout } = useUserContext();
-  const { isMobile } = useDetectMobile();
   const queryClient = useQueryClient();
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -57,6 +57,7 @@ export default function Settings() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [openTermsModal, setOpenTermsModal] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [contactMessage, setContactMessage] = useState<{
@@ -84,6 +85,7 @@ export default function Settings() {
     resolver: yupResolver(passwordChangeValidationSchema),
     mode: "onChange",
   });
+  // eslint-disable-next-line react-hooks/incompatible-library
   const newPassword = watch("newPassword");
 
   const changePasswordMutation = useMutation({
@@ -96,7 +98,7 @@ export default function Settings() {
       reset();
       setTimeout(() => setPasswordMessage(null), 3000);
     },
-    onError: (e: any) => {
+    onError: (e: Error) => {
       setPasswordMessage({
         type: "error",
         text: e.message || "Failed to change password",
@@ -110,10 +112,13 @@ export default function Settings() {
     onSuccess: () => {
       setDeleteAccountDialog(false);
       setDeleteConfirmation("");
+      setDeleteError(null);
       logout();
-      setTimeout(() => navigate("/"), 100);
+      setTimeout(() => { void navigate("/"); }, 100);
     },
-    onError: (e: any) => console.error("Failed to delete account:", e),
+    onError: (e: Error) => {
+      setDeleteError(e?.message || "Failed to delete account. Please try again.");
+    },
   });
 
   const sendContactMessageMutation = useMutation({
@@ -127,7 +132,7 @@ export default function Settings() {
       setContactModalOpen(false);
       setTimeout(() => setContactMessage(null), 3000);
     },
-    onError: (e: any) => {
+    onError: (e: Error) => {
       setContactMessage({
         type: "error",
         text: e.message || "Failed to send contact message",
@@ -149,7 +154,7 @@ export default function Settings() {
   // Invalidate user settings queries when user changes
   useEffect(() => {
     if (currentUser?.user_uuid) {
-      queryClient.invalidateQueries({ queryKey: ["userSettings"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.userSettings.all() });
     }
   }, [currentUser?.user_uuid, queryClient]);
 
@@ -158,7 +163,7 @@ export default function Settings() {
     isLoading,
     error,
   } = useQuery<UserSettingsResponse>({
-    queryKey: ["userSettings", currentUser?.user_uuid],
+    queryKey: queryKeys.userSettings.forUser(currentUser?.user_uuid),
     queryFn: userApiService.getCurrentUserSettings,
     staleTime: 300000,
     enabled: Boolean(isUserLoggedIn) && !!currentUser?.user_uuid,
@@ -270,12 +275,10 @@ export default function Settings() {
             </Alert>
           )}
           <form
-            onSubmit={handleSubmit((data) =>
-              changePasswordMutation.mutate(data)
-            )}
+            onSubmit={(e) => { void handleSubmit((data) => changePasswordMutation.mutate(data))(e); }}
           >
             <Grid container spacing={2}>
-              {["currentPassword", "newPassword", "confirmPassword"].map(
+              {(["currentPassword", "newPassword", "confirmPassword"] as const).map(
                 (fieldName, idx) => {
                   const isShow =
                     idx === 0
@@ -298,7 +301,7 @@ export default function Settings() {
                   return (
                     <Grid key={fieldName} size={{ xs: 12 }}>
                       <Controller
-                        name={fieldName as any}
+                        name={fieldName}
                         control={control}
                         render={({ field }) => (
                           <FormControl fullWidth variant="outlined">
@@ -335,8 +338,8 @@ export default function Settings() {
                           sx={{ mt: 0.5, display: "block" }}
                         >
                           {
-                            (errors[fieldName as keyof typeof errors] as any)
-                              .message
+                            (errors[fieldName as keyof typeof errors] as FieldError | undefined)
+                              ?.message
                           }
                         </Typography>
                       )}
@@ -448,8 +451,16 @@ export default function Settings() {
             placeholder="Type DELETE to confirm"
             label="Confirm deletion"
             value={deleteConfirmation}
-            onChange={(e) => setDeleteConfirmation(e.target.value)}
+            onChange={(e) => {
+              setDeleteConfirmation(e.target.value);
+              setDeleteError(null);
+            }}
           />
+          {deleteError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {deleteError}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteAccountDialog(false)}>Cancel</Button>

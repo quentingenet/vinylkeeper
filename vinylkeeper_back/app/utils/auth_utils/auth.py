@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 import os
+from pathlib import Path
 
-from fastapi import Request, Depends, HTTPException, status, Response
+from fastapi import Request, Depends, Response
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import HTTPBearer
@@ -12,17 +13,17 @@ from app.core.config_env import settings
 from app.db.session import get_db
 from app.models.user_model import User
 from app.repositories.user_repository import UserRepository
-from app.core.exceptions import RefreshTokenNotFoundError
+from app.core.exceptions import RefreshTokenNotFoundError, UnauthorizedError, InvalidResetTokenError
 from app.core.logging import logger
 
 # Load keys
 def load_keys():
     """Load JWT keys with error handling"""
-    base_path = "./app/keys"
+    base_path = Path(__file__).parent.parent.parent / "keys"
     try:
-        with open(os.path.join(base_path, "public_key.pem"), "rb") as key_file:
+        with open(base_path / "public_key.pem", "rb") as key_file:
             public_key = key_file.read()
-        with open(os.path.join(base_path, "private_key.pem"), "rb") as key_file:
+        with open(base_path / "private_key.pem", "rb") as key_file:
             private_key = key_file.read()
         return public_key, private_key
     except FileNotFoundError as e:
@@ -46,6 +47,7 @@ security = HTTPBearer()
 class TokenType(str, Enum):
     ACCESS = "access"
     REFRESH = "refresh"
+    RESET = "reset"
 
 
 # Create a JWT token with an explicit token type
@@ -66,24 +68,23 @@ def create_token(user_uuid: str, token_type: TokenType) -> str:
 
 
 # Decode and validate a token, ensuring correct type
-def verify_token(token: str) -> str:
+def verify_token(token: str, expected_type: Optional[TokenType] = None) -> str:
     """Verify a JWT token and return the user UUID"""
     try:
         payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        if expected_type and payload.get("type") != expected_type.value:
+            raise UnauthorizedError("Invalid token type")
         return payload["sub"]
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
+        raise UnauthorizedError("Invalid token")
 
 
 # Verify an access token from cookies
 def verify_access_token(request: Request) -> str:
     token = request.cookies.get("access_token")
     if not token:
-        raise ValueError("Access token not found")
-    return verify_token(token)
+        raise UnauthorizedError("Access token not found")
+    return verify_token(token, expected_type=TokenType.ACCESS)
 
 
 # Verify a refresh token from cookies
@@ -96,16 +97,10 @@ def verify_refresh_token(request: Request) -> str:
     try:
         payload = jwt.decode(refresh_token, PUBLIC_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != TokenType.REFRESH.value:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type"
-            )
+            raise UnauthorizedError("Invalid token type")
         return payload["sub"]
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
+        raise UnauthorizedError("Invalid refresh token")
 
 
 # Create a short-lived reset token for password reset
@@ -113,7 +108,7 @@ def create_reset_token(user_uuid: str) -> str:
     try:
         expire = datetime.now(
             timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
-        to_encode = {"sub": str(user_uuid), "exp": expire}
+        to_encode = {"sub": str(user_uuid), "exp": expire, "type": TokenType.RESET.value}
         return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
     except Exception as e:
         raise ValueError(f"Failed to create reset token: {str(e)}")
@@ -123,12 +118,14 @@ def create_reset_token(user_uuid: str) -> str:
 def verify_reset_token(token: str) -> str:
     try:
         payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != TokenType.RESET.value:
+            raise InvalidResetTokenError()
         user_uuid = payload.get("sub")
         if not user_uuid:
-            raise ValueError("Invalid token payload")
+            raise InvalidResetTokenError()
         return user_uuid
     except JWTError:
-        raise ValueError("Invalid token")
+        raise InvalidResetTokenError()
 
 
 # Retrieve the current user from access token
@@ -138,23 +135,14 @@ async def get_current_user(
 ) -> User:
     """Get the current user from the access token"""
     user_repository = UserRepository(db)
-    try:
-        token = request.cookies.get("access_token")
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No access token provided"
-            )
-        user_uuid = verify_token(token)
-        user = await user_repository.get_user_by_uuid(user_uuid)
-        if not user:
-            raise ValueError("User not found")
-        return user
-    except (JWTError, ValueError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+    token = request.cookies.get("access_token")
+    if not token:
+        raise UnauthorizedError("No access token provided")
+    user_uuid = verify_token(token, expected_type=TokenType.ACCESS)
+    user = await user_repository.get_user_by_uuid(user_uuid)
+    if not user:
+        raise UnauthorizedError("User not found")
+    return user
 
 
 # Set a token in cookie with appropriate attributes
@@ -180,7 +168,7 @@ def set_token_cookie(
         secure=is_production,
         samesite="none" if is_production else "lax",
         path="/",
-        domain=None
+        domain=settings.COOKIE_DOMAIN or None
     )
 
 

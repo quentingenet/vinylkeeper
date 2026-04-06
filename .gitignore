@@ -28,6 +28,9 @@ replay_pid*
 settings.json
 node_modules
 .cursor
+.claude
+.claudeignore
+.cursorignore
 
 #Capacitor files
 android/

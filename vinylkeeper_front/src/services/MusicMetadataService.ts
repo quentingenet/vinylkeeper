@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlbumMetadata, ArtistMetadata, Track } from "@models/IRequestProxy";
+import { AlbumMetadata, ArtistMetadata } from "@models/IRequestProxy";
+import { queryKeys } from "@utils/queryKeys";
 
 export interface AlbumMetadataParams {
   id: string;
@@ -21,31 +22,8 @@ export const fetchAlbumMetadata = async (
     }
     throw new Error("Failed to fetch album metadata");
   }
-  return await response.json();
+  return await response.json() as AlbumMetadata;
 };
-
-async function fetchWikipediaContent(url: string): Promise<string> {
-  if (!url) return "";
-  try {
-    const title = url.split("/").pop()?.replace(/_/g, " ") || "";
-    const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(
-      title
-    )}&origin=*`;
-
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      throw new Error("Failed to fetch Wikipedia content");
-    }
-
-    const data = await response.json();
-    const pages = data.query.pages;
-    const pageId = Object.keys(pages)[0];
-    return pages[pageId].extract || "";
-  } catch (error) {
-    console.error("Error fetching Wikipedia content:", error);
-    return "";
-  }
-}
 
 export const fetchArtistMetadata = async (
   artistId: string
@@ -81,7 +59,7 @@ export const fetchArtistMetadata = async (
       );
     }
 
-    return await response.json();
+    return await response.json() as ArtistMetadata;
   } catch (error) {
     console.error("Error fetching artist metadata:", error);
     throw error;
@@ -90,7 +68,7 @@ export const fetchArtistMetadata = async (
 
 export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
   return useQuery({
-    queryKey: ["albumMetadata", params?.id],
+    queryKey: queryKeys.metadata.album(params?.id),
     queryFn: () => fetchAlbumMetadata(params!),
     enabled: !!params?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -102,7 +80,7 @@ export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
 
 export const useArtistMetadata = (artistId?: string) => {
   return useQuery({
-    queryKey: ["artistMetadata", artistId],
+    queryKey: queryKeys.metadata.artist(artistId),
     queryFn: () => fetchArtistMetadata(artistId!),
     enabled: !!artistId && artistId.trim() !== "",
     staleTime: 5 * 60 * 1000, // 5 minutes

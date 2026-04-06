@@ -6,7 +6,8 @@ import {
   type CollectionCreate,
 } from "@services/CollectionApiService";
 import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
-import { HTTPError } from "ky";
+import { queryKeys } from "@utils/queryKeys";
+import { type ApiError } from "@utils/apiError";
 import { useUserContext } from "@contexts/UserContext";
 import { useEffect } from "react";
 
@@ -19,7 +20,7 @@ interface UseCollectionsReturn {
   collections: CollectionListItemResponse[];
   totalPages: number;
   collectionsLoading: boolean;
-  error: HTTPError | null;
+  error: ApiError | null;
   isError: boolean;
   handleSwitchVisibility: (collectionId: number, newIsPublic: boolean) => void;
   refreshCollections: () => void;
@@ -40,13 +41,11 @@ export const useCollections = (
   useEffect(() => {
     if (currentUser?.user_uuid) {
       // Only invalidate if we don't have data for the current page
-      const currentData = queryClient.getQueryData([
-        "collections",
-        currentUser?.user_uuid,
-        page,
-      ]);
+      const currentData = queryClient.getQueryData(
+        queryKeys.collections.list(currentUser?.user_uuid, page)
+      );
       if (!currentData) {
-        void queryClient.invalidateQueries({ queryKey: ["collections"] });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
       }
     }
   }, [currentUser?.user_uuid, queryClient, page]);
@@ -56,8 +55,8 @@ export const useCollections = (
     isLoading: collectionsLoading,
     error,
     isError,
-  } = useQuery<PaginatedCollectionListResponse, HTTPError>({
-    queryKey: ["collections", currentUser?.user_uuid, page],
+  } = useQuery<PaginatedCollectionListResponse, ApiError>({
+    queryKey: queryKeys.collections.list(currentUser?.user_uuid, page),
     queryFn: () => collectionApiService.getCollections(page, itemsPerPage),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
@@ -70,7 +69,7 @@ export const useCollections = (
 
   const switchVisibilityMutation = useMutation<
     { message: string },
-    HTTPError,
+    ApiError,
     ICollectionVisibilityUpdate
   >({
     mutationFn: ({ collectionId, newIsPublic }) =>
@@ -79,22 +78,11 @@ export const useCollections = (
         newIsPublic
       ),
     onSuccess: async (_, variables) => {
-      // Invalidate and refetch all collection queries to ensure UI consistency
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["collections", currentUser?.user_uuid],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["publicCollections"],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["collectionDetails", variables.collectionId],
-        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(variables.collectionId) }),
       ]);
-      // Force refetch of active publicCollections queries to update UI immediately
-      await queryClient.refetchQueries({
-        queryKey: ["publicCollections"],
-      });
     },
     onError: (error) => {
       console.error("Error updating collection visibility:", error.message);
@@ -111,34 +99,27 @@ export const useCollections = (
   // Optimistic create collection mutation
   const createCollectionMutation = useMutation<
     { message: string; collection_id: number },
-    HTTPError,
+    ApiError,
     CollectionCreate
   >({
     mutationFn: collectionApiService.createCollection,
     onMutate: async (newCollection) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: ["collections", currentUser?.user_uuid],
-      });
+      await queryClient.cancelQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) });
 
-      // Snapshot the previous value
       const previousCollections =
-        queryClient.getQueryData<PaginatedCollectionListResponse>([
-          "collections",
-          currentUser?.user_uuid,
-          page,
-        ]);
+        queryClient.getQueryData<PaginatedCollectionListResponse>(
+          queryKeys.collections.list(currentUser?.user_uuid, page)
+        );
 
-      // Optimistically update to the new value
       if (previousCollections) {
         const optimisticCollection: CollectionListItemResponse = {
-          id: -Math.floor(Math.random() * 1000000), // Temporary negative ID (safe for int32)
+          id: -(Date.now()),
           name: newCollection.name,
           description: newCollection.description,
           is_public: newCollection.is_public,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          owner_id: 0, // Will be set by server
           albums_count: 0,
           artists_count: 0,
           likes_count: 0,
@@ -151,7 +132,7 @@ export const useCollections = (
         };
 
         queryClient.setQueryData<PaginatedCollectionListResponse>(
-          ["collections", currentUser?.user_uuid, page],
+          queryKeys.collections.list(currentUser?.user_uuid, page),
           {
             ...previousCollections,
             items: [optimisticCollection, ...previousCollections.items],
@@ -171,13 +152,12 @@ export const useCollections = (
         context.previousCollections
       ) {
         queryClient.setQueryData(
-          ["collections", currentUser?.user_uuid, page],
+          queryKeys.collections.list(currentUser?.user_uuid, page),
           context.previousCollections
         );
       }
     },
     onSuccess: async (data, _newCollection, context) => {
-      // Replace the temporary ID with the real ID from the server
       if (
         context &&
         typeof context === "object" &&
@@ -185,11 +165,9 @@ export const useCollections = (
         context.previousCollections
       ) {
         const currentData =
-          queryClient.getQueryData<PaginatedCollectionListResponse>([
-            "collections",
-            currentUser?.user_uuid,
-            page,
-          ]);
+          queryClient.getQueryData<PaginatedCollectionListResponse>(
+            queryKeys.collections.list(currentUser?.user_uuid, page)
+          );
 
         if (currentData) {
           // Find the collection with negative ID and replace it with the real ID
@@ -198,58 +176,39 @@ export const useCollections = (
           );
 
           queryClient.setQueryData<PaginatedCollectionListResponse>(
-            ["collections", currentUser?.user_uuid, page],
-            {
-              ...currentData,
-              items: updatedItems,
-            }
+            queryKeys.collections.list(currentUser?.user_uuid, page),
+            { ...currentData, items: updatedItems }
           );
         }
       }
 
-      // Invalidate collections and public collections
-      // (invalidate public collections in case the new collection is public)
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["collections", currentUser?.user_uuid, page],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["publicCollections"],
-        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() }),
       ]);
-      // Force refetch of active publicCollections queries to update UI immediately
-      await queryClient.refetchQueries({
-        queryKey: ["publicCollections"],
-      });
     },
   });
 
   // Optimistic delete collection mutation
   const deleteCollectionMutation = useMutation<
     { message: string },
-    HTTPError,
+    ApiError,
     number
   >({
     mutationFn: (collectionId: number) =>
       collectionApiService.deleteCollection(collectionId),
     onMutate: async (collectionId) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: ["collections", currentUser?.user_uuid],
-      });
+      await queryClient.cancelQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) });
 
-      // Snapshot the previous value
       const previousCollections =
-        queryClient.getQueryData<PaginatedCollectionListResponse>([
-          "collections",
-          currentUser?.user_uuid,
-          page,
-        ]);
+        queryClient.getQueryData<PaginatedCollectionListResponse>(
+          queryKeys.collections.list(currentUser?.user_uuid, page)
+        );
 
-      // Optimistically update to the new value
       if (previousCollections) {
         queryClient.setQueryData<PaginatedCollectionListResponse>(
-          ["collections", currentUser?.user_uuid, page],
+          queryKeys.collections.list(currentUser?.user_uuid, page),
           {
             ...previousCollections,
             items: previousCollections.items.filter(
@@ -271,25 +230,16 @@ export const useCollections = (
         context.previousCollections
       ) {
         queryClient.setQueryData(
-          ["collections", currentUser?.user_uuid, page],
+          queryKeys.collections.list(currentUser?.user_uuid, page),
           context.previousCollections
         );
       }
     },
     onSuccess: async () => {
-      // Invalidate collections and public collections (deleted collection might have been public)
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["collections", currentUser?.user_uuid, page],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["publicCollections"],
-        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() }),
       ]);
-      // Force refetch of active publicCollections queries to update UI immediately
-      await queryClient.refetchQueries({
-        queryKey: ["publicCollections"],
-      });
     },
   });
 
@@ -302,7 +252,7 @@ export const useCollections = (
     handleSwitchVisibility,
     refreshCollections: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["collections", currentUser?.user_uuid, page],
+        queryKey: queryKeys.collections.list(currentUser?.user_uuid, page),
       });
     },
     createCollection: createCollectionMutation.mutate,
@@ -335,10 +285,10 @@ export function useUpdateAlbumStates() {
         data
       );
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["collectionDetails"] }),
-        queryClient.invalidateQueries({ queryKey: ["collectionAlbums"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(variables.collectionId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(variables.collectionId) }),
       ]);
     },
     onError: (error) => {

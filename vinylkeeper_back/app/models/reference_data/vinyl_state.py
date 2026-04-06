@@ -1,4 +1,4 @@
-# app/models/reference/vinyl_status_model.py
+# app/models/reference_data/vinyl_state.py
 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship, validates

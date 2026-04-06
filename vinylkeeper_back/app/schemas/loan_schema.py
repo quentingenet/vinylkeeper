@@ -64,13 +64,13 @@ class LoanBase(BaseModel):
             raise ValueError("Comment cannot be longer than 255 characters")
         return v
 
-    @field_validator("end_date")
-    @classmethod
-    def validate_end_date(cls, v: Optional[datetime], values: dict) -> Optional[datetime]:
+    @model_validator(mode='after')
+    def validate_end_date(self) -> 'LoanBase':
         """Validate that end_date is after start_date if provided."""
-        if v is not None and "start_date" in values and v < values["start_date"]:
-            raise ValueError("End date must be after start date")
-        return v
+        if self.end_date is not None and self.start_date is not None:
+            if self.end_date < self.start_date:
+                raise ValueError("End date must be after start date")
+        return self
 
 
 class LoanCreate(LoanBase):

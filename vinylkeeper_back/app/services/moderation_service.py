@@ -14,6 +14,7 @@ from app.schemas.moderation_request_schema import (
     ModerationRequestListResponse
 )
 from app.core.exceptions import (
+    AppException,
     ResourceNotFoundError,
     ForbiddenError,
     ValidationError,
@@ -21,6 +22,7 @@ from app.core.exceptions import (
 )
 from app.core.enums import ModerationStatusEnum
 from app.core.logging import logger
+from app.core.transaction import transaction_context
 
 
 class ModerationService:
@@ -48,12 +50,14 @@ class ModerationService:
                 approved_count=stats["approved"],
                 rejected_count=stats["rejected"]
             )
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error getting moderation requests: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_moderation_request_by_id(self, request_id: int) -> ModerationRequestResponse:
@@ -63,12 +67,14 @@ class ModerationService:
             return self._create_moderation_request_response(request)
         except ResourceNotFoundError:
             raise
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error getting moderation request: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation request",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_pending_moderation_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequestResponse]:
@@ -93,13 +99,15 @@ class ModerationService:
             return response_requests
         except ServerError:
             raise
+        except AppException:
+            raise
         except Exception as e:
             logger.error(
                 f"Error getting pending moderation requests: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get pending moderation requests",
-                details={"error": str(e)}
+                details={}
             )
 
     async def update_moderation_request_status(self, request_id: int, new_status: str, admin_user_id: int) -> ModerationRequestResponse:
@@ -117,34 +125,29 @@ class ModerationService:
                     message="Invalid moderation status"
                 )
 
-            # Update the moderation request status
-            await self.moderation_repository.update_request(
-                request_id, {"status_id": new_status_obj.id}
-            )
+            async with transaction_context(self.moderation_repository.db):
+                await self.moderation_repository.update_request(
+                    request_id, {"status_id": new_status_obj.id}
+                )
 
-            # Handle place moderation based on status
-            if new_status == ModerationStatusEnum.APPROVED.value:
-                # Approve the place
-                await self.place_repository.update_place(request.place_id, {"is_moderated": True})
-            elif new_status == ModerationStatusEnum.REJECTED.value:
-                # Reject the place (mark as invalid)
-                await self.place_repository.update_place(request.place_id, {"is_moderated": False, "is_valid": False})
+                if new_status == ModerationStatusEnum.APPROVED.value:
+                    await self.place_repository.update_place(request.place_id, {"is_moderated": True})
+                elif new_status == ModerationStatusEnum.REJECTED.value:
+                    await self.place_repository.update_place(request.place_id, {"is_moderated": False, "is_valid": False})
 
-            # Commit the transaction
-            await self.moderation_repository.db.commit()
-
-            # Reload the moderation request to ensure relationships are hydrated
             reloaded_request = await self.moderation_repository.get_request_by_id(request_id)
 
             return self._create_moderation_request_response(reloaded_request)
         except (ResourceNotFoundError, ValidationError):
+            raise
+        except AppException:
             raise
         except Exception as e:
             logger.error(f"Error updating moderation request status: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update moderation request status",
-                details={"error": str(e)}
+                details={}
             )
 
     async def approve_moderation_request(self, request_id: int, admin_user_id: int) -> ModerationRequestResponse:
@@ -159,12 +162,14 @@ class ModerationService:
         """Get moderation statistics."""
         try:
             return await self.moderation_repository.get_moderation_request_stats()
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error getting moderation stats: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation statistics",
-                details={"error": str(e)}
+                details={}
             )
 
     def _create_moderation_request_response(self, request: ModerationRequest) -> ModerationRequestResponse:

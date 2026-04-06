@@ -4,6 +4,8 @@ services:
     container_name: vinylkeeper-db
     env_file:
       - .env
+    environment:
+      - PGTZ=Europe/Paris
     ports:
       - "127.0.0.1:5432:5432"
     networks:
@@ -16,6 +18,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
 
   vinylkeeper-back:
     build:
@@ -36,16 +43,32 @@ services:
       - app/.env.production
     environment:
       - TZ=Europe/Paris
-      - PYTHONUNBUFFERED=1   # pour avoir les logs non bufferisés
+      - PYTHONUNBUFFERED=1
     working_dir: /app
     command: >
       sh -eu -c "
         echo '[boot] running alembic...';
         poetry run alembic upgrade head;
         echo '[boot] starting gunicorn with uvicorn workers...';
-        exec poetry run gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -
+        exec poetry run gunicorn app.main:app -w 9 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -
       "
     restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "2.5"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
 networks:
   vk_network:

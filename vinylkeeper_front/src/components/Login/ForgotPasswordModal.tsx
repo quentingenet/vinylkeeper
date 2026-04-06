@@ -1,21 +1,15 @@
 import useDetectMobile from "@hooks/useDetectMobile";
-import { Email, Close as CloseIcon } from "@mui/icons-material";
 import {
   Modal,
   TextField,
-  InputAdornment,
   Button,
-  Collapse,
   Alert,
-  IconButton,
-  Typography,
   Box,
   CircularProgress,
 } from "@mui/material";
 import { Grid } from "@mui/material";
 import { emailValidator } from "@utils/Regex";
 import { useState } from "react";
-import styles from "../../styles/pages/Landpage.module.scss";
 import { userApiService } from "@services/UserApiService";
 
 type ForgotPasswordProps = {
@@ -29,9 +23,6 @@ export default function ForgotPasswordModal({
   setOpenForgotPassword,
   setForgotPassword,
 }: ForgotPasswordProps) {
-  const [isMailSended, setIsMailSended] = useState(false);
-  const [errorRecovery, setErrorRecovery] = useState(false);
-  const [emailRecovery, setEmailRecovery] = useState("");
   const { isMobile } = useDetectMobile();
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -46,41 +37,21 @@ export default function ForgotPasswordModal({
     setForgotPassword(false);
   };
 
-  const handlePasswordRecovery = async () => {
-    if (emailRecovery.match(emailValidator)) {
-      try {
-        await userApiService.forgotPassword(emailRecovery.toLowerCase());
-        setIsMailSended(true);
-        setErrorRecovery(false);
-      } catch {
-        setErrorRecovery(true);
-        setIsMailSended(false);
-      }
-    } else {
-      setErrorRecovery(true);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (email.match(emailValidator)) {
       try {
         setIsLoading(true);
         await userApiService.forgotPassword(email.toLowerCase());
-        setIsMailSended(true);
-        setErrorRecovery(false);
         setMessage("Mail sent. Check your inbox.");
         setMessageType("success");
-      } catch (error) {
-        setErrorRecovery(true);
-        setIsMailSended(false);
+      } catch {
         setMessage("Error, email not sent");
         setMessageType("error");
       } finally {
         setIsLoading(false);
       }
     } else {
-      setErrorRecovery(true);
       setEmailError("Invalid email format");
     }
   };
@@ -141,7 +112,7 @@ export default function ForgotPasswordModal({
           >
             <Button
               variant="contained"
-              onClick={handleSubmit}
+              onClick={(e) => { void handleSubmit(e); }}
               disabled={!email || isLoading}
               sx={{ mb: 2 }}
             >

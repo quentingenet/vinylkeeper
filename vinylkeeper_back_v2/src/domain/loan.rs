@@ -1,2 +1,0 @@
-// Loan domain model
-

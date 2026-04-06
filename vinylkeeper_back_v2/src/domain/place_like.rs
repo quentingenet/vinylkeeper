@@ -1,2 +1,0 @@
-// Place like domain model
-

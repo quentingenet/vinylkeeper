@@ -109,7 +109,7 @@ export default function ResetPasswordForm() {
     <>
       <Box
         component="form"
-        onSubmit={handleSubmit(submitResetPassword)}
+        onSubmit={(e) => { void handleSubmit(submitResetPassword)(e); }}
         sx={styleResetPassword}
         className={styles.globalForm}
       >

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useEffect } from "react";
+import React, { useState, useCallback, memo } from "react";
 import {
   Modal,
   Box,
@@ -13,13 +13,11 @@ import {
   Backdrop,
   IconButton,
   Alert,
-  CircularProgress,
   Tooltip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  TextField,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -42,14 +40,13 @@ import {
 import {
   AddToWishlistRequest,
   AddToCollectionRequest,
-  AddToWishlistResponse,
-  AddToCollectionResponse,
 } from "@models/IExternalReference";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { format, parse, isValid } from "date-fns";
+import { format, parse } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { truncateText, vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+import { queryKeys } from "@utils/queryKeys";
 import { growItem } from "@utils/Animations";
 
 interface AddToCollectionModalProps {
@@ -78,7 +75,7 @@ interface CollectionSelectionModalProps {
   isLoading?: boolean;
   isAddingToCollection?: boolean; // New prop for collection addition state
   albumStateData?: AlbumStateData;
-  onAlbumStateChange?: (field: keyof AlbumStateData, value: any) => void;
+  onAlbumStateChange?: (field: keyof AlbumStateData, value: AlbumStateData[keyof AlbumStateData]) => void;
   isDatePickerOpen?: boolean;
   setIsDatePickerOpen?: (open: boolean) => void;
 }
@@ -104,19 +101,6 @@ const modalStyle = (isMobile: boolean) => ({
   },
 });
 
-const alertStyle = (isError: boolean = false) => ({
-  width: "auto",
-  maxWidth: "100%",
-  mb: 2,
-  backgroundColor: isError
-    ? "rgba(211, 47, 47, 0.1)"
-    : "rgba(46, 125, 50, 0.1)",
-  color: isError ? "#ff6b6b" : "#4caf50",
-  wordBreak: "break-word",
-  whiteSpace: "normal",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-});
 
 const getAlertStyle = (
   messageType: "success" | "warning" | "info" | "error"
@@ -169,7 +153,6 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
     setIsDatePickerOpen,
   }) => {
     const { isMobile } = useDetectMobile();
-    const isError = messageType === "error";
 
     const handleDateChange = (newValue: Date | null) => {
       onAlbumStateChange?.(
@@ -554,10 +537,9 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
 
   const { isMobile } = useDetectMobile();
   const queryClient = useQueryClient();
-  const isError = successMessage?.includes("Error");
 
   const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
-    queryKey: ["collections"],
+    queryKey: queryKeys.collections.all(),
     queryFn: () => collectionApiService.getCollections(1, 100),
     enabled: open,
     staleTime: 5 * 60 * 1000,
@@ -615,7 +597,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     setTimeout(() => setSuccessMessage(""), 3000);
   };
 
-  const handleAlbumStateChange = (field: keyof AlbumStateData, value: any) => {
+  const handleAlbumStateChange = (field: keyof AlbumStateData, value: AlbumStateData[keyof AlbumStateData]) => {
     setAlbumStateData((prev) => ({
       ...prev,
       [field]: value,
@@ -626,9 +608,8 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     mutationFn: (albumData: AddToWishlistRequest) => {
       return externalReferenceApiService.addToWishlist(albumData);
     },
-    onSuccess: (response) => {
-      // Invalidate wishlist queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.wishlist.all() });
       handleMutationSuccess("wishlist", response.message, response.is_new);
     },
     onError: handleMutationError,
@@ -644,18 +625,16 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         data.item
       );
     },
-    onSuccess: (response, variables) => {
-      // Invalidate all collection-related queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
-      queryClient.invalidateQueries({ queryKey: ["collectionDetails"] });
-      queryClient.invalidateQueries({ queryKey: ["collectionAlbums"] });
-      // Invalidate specific collection that was updated
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", variables.collectionId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["collectionAlbums", variables.collectionId],
-      });
+    onSuccess: async (response, variables) => {
+      const isAlbum = variables.item.entity_type === "album";
+      const itemQueryKey = isAlbum
+        ? ["collectionAlbums", variables.collectionId]
+        : ["collectionArtists", variables.collectionId];
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(variables.collectionId) }),
+        queryClient.invalidateQueries({ queryKey: itemQueryKey }),
+      ]);
       handleMutationSuccess("collections", response.message, response.is_new);
     },
     onError: handleMutationError,
@@ -684,7 +663,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     setSuccessMessage("Adding to collection...");
 
     try {
-      const response = await addToCollectionMutation.mutateAsync({
+      await addToCollectionMutation.mutateAsync({
         collectionId: collectionId,
         item: {
           external_id: item?.id.toString() || "",
@@ -853,7 +832,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         item={item}
         itemType={itemType}
         collections={collections}
-        onAddToCollection={handleAddToCollection}
+        onAddToCollection={(collectionId) => { void handleAddToCollection(collectionId); }}
         successMessage={successMessage}
         messageType={messageType}
         isLoading={addToCollectionMutation.isPending}

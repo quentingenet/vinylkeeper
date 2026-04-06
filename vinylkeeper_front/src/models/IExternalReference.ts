@@ -25,10 +25,7 @@ export interface AddToCollectionRequest {
 
 export interface WishlistItemResponse {
   id: number;
-  user_id: number;
   external_id: string;
-  entity_type_id: number;
-  external_source_id: number;
   title: string;
   image_url: string;
   created_at: string;
@@ -55,7 +52,6 @@ export interface PaginatedWishlistResponse {
 
 export interface CollectionItemResponse {
   id: number;
-  user_id: number;
   external_id: string;
   entity_type: string;
   title: string;

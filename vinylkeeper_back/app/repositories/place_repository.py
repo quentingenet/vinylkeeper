@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.place_model import Place
 from app.models.place_like_model import PlaceLike
-from app.core.exceptions import ResourceNotFoundError, ValidationError
+from app.core.exceptions import ResourceNotFoundError
 from app.core.transaction import TransactionalMixin
 
 
@@ -282,21 +282,8 @@ class PlaceRepository(TransactionalMixin):
 
     async def like_place(self, user_id: int, place_id: int) -> PlaceLike:
         """Like a place for a user without committing (transaction managed by service)."""
-        # Check if like already exists
-        query = select(PlaceLike).filter(
-            and_(PlaceLike.user_id == user_id, PlaceLike.place_id == place_id)
-        )
-        result = await self.db.execute(query)
-        existing_like = result.scalar_one_or_none()
-
-        if existing_like:
-            raise ValidationError(
-                error_code=4000,
-                message="User has already liked this place"
-            )
-
         like = PlaceLike(user_id=user_id, place_id=place_id)
-        await self._add_entity(like, flush=True)  # Flush to get the ID
+        await self._add_entity(like, flush=True)
         await self._refresh_entity(like)
         return like
 
@@ -307,13 +294,8 @@ class PlaceRepository(TransactionalMixin):
         )
         result = await self.db.execute(query)
         like = result.scalar_one_or_none()
-
         if not like:
-            raise ValidationError(
-                error_code=4000,
-                message="User has not liked this place"
-            )
-
+            return False
         await self._delete_entity(like)
         return True
 
@@ -419,3 +401,9 @@ class PlaceRepository(TransactionalMixin):
         query = select(PlaceType).filter(PlaceType.name == place_type_name)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+
+    async def get_all_place_types(self) -> List:
+        """Get all place types."""
+        from app.models.reference_data.place_types import PlaceType
+        result = await self.db.execute(select(PlaceType))
+        return result.scalars().all()

@@ -25,9 +25,6 @@ class PlaceLikeStatusResponse(BaseModel):
         gt=0,
         description="ID of the place"
     )
-    liked: bool = Field(
-        description="Whether the place is liked by the current user"
-    )
     likes_count: int = Field(
         ge=0,
         description="Total number of likes for the place"
@@ -36,7 +33,7 @@ class PlaceLikeStatusResponse(BaseModel):
         description="Response message"
     )
     is_liked: bool = Field(
-        description="Whether the place is liked by the current user (alias for liked)"
+        description="Whether the place is liked by the current user"
     )
 
     model_config = ConfigDict(from_attributes=True)

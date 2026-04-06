@@ -48,15 +48,16 @@ class Collection(Base):
         "Artist",
         secondary="collection_artist",
         back_populates="collections",
-        lazy="selectin",
+        lazy="noload",
         overlaps="artist,collection,collection_artists"
     )
 
     likes = relationship(
         "Like",
         back_populates="collection",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     created_at = Column(DateTime(timezone=True),
@@ -64,6 +65,10 @@ class Collection(Base):
     updated_at = Column(DateTime(timezone=True),
                         server_default=func.now(),
                         onupdate=func.now(), nullable=False)
+
+    # Non-mapped aggregated counts, populated by repository queries
+    albums_count = 0
+    artists_count = 0
 
     __table_args__ = (
         CheckConstraint(

@@ -1,32 +1,12 @@
 # app/core/handlers.py
-import logging
 import traceback
-import os
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.exceptions import AppException
 from app.core.config_env import settings
-
-logger = logging.getLogger("app")
-
-
-def _extract_file_info(tb):
-    """Extract file info from traceback, showing only the path from /app"""
-    if tb:
-        last_frame = tb[-1]
-        full_path = last_frame.filename
-        
-        if '/app' in full_path:
-            app_index = full_path.find('/app')
-            file_info = full_path[app_index + 1:]
-        else:
-            file_info = os.path.basename(full_path)
-        
-        return f"{file_info}:{last_frame.lineno}"
-    else:
-        return "unknown:0"
+from app.core.logging import logger, extract_file_info
 
 
 def register_exception_handlers(app):
@@ -39,7 +19,7 @@ def register_exception_handlers(app):
             
         if should_log:
             tb = traceback.extract_tb(exc.__traceback__)
-            file_info = _extract_file_info(tb)
+            file_info = extract_file_info(tb)
             
             error_details = f"AppException (code {exc.detail['code']}): {exc.detail['message']} - File: {file_info}"
             if exc.detail.get('details'):
@@ -50,7 +30,7 @@ def register_exception_handlers(app):
     @app.exception_handler(RequestValidationError)
     def validation_exception_handler(request: Request, exc: RequestValidationError):
         tb = traceback.extract_tb(exc.__traceback__)
-        file_info = _extract_file_info(tb)
+        file_info = extract_file_info(tb)
         
         errors = []
         for error in exc.errors():
@@ -91,7 +71,7 @@ def register_exception_handlers(app):
             
         if should_log:
             tb = traceback.extract_tb(exc.__traceback__)
-            file_info = _extract_file_info(tb)
+            file_info = extract_file_info(tb)
             logger.error(f"HTTP {exc.status_code} - {exc.detail} | {file_info}")
         
         return JSONResponse(
@@ -106,7 +86,7 @@ def register_exception_handlers(app):
     @app.exception_handler(Exception)
     def unhandled_exception_handler(request: Request, exc: Exception):
         tb = traceback.extract_tb(exc.__traceback__)
-        file_info = _extract_file_info(tb)
+        file_info = extract_file_info(tb)
         
         logger.exception(f"Unhandled exception occurred - File: {file_info}")
         return JSONResponse(

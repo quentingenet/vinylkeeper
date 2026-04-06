@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import useDetectMobile from "@hooks/useDetectMobile";
 
@@ -9,7 +10,7 @@ interface PaginationWithEllipsisProps {
   onChange: (page: number) => void;
   color?: "primary" | "secondary";
   size?: "small" | "medium" | "large";
-  sx?: any;
+  sx?: SxProps<Theme>;
 }
 
 export default function PaginationWithEllipsis({

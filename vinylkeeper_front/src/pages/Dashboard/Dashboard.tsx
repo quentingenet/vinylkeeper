@@ -13,12 +13,14 @@ import {
   Tooltip,
   Legend,
   ChartOptions,
+  type TooltipItem,
 } from "chart.js";
 import { Album, Person, ArrowForward } from "@mui/icons-material";
 import styles from "../../styles/pages/Dashboard.module.scss";
 import Counter from "@utils/Counter";
 import { growItem } from "@utils/Animations";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@utils/queryKeys";
 import { dashboardApiService } from "@services/DashboardApiService";
 import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -126,10 +128,9 @@ export default function Dashboard() {
     useState<PlaybackItem | null>(null);
 
   const { data, isLoading, isError } = useQuery<IDashboardStats>({
-    queryKey: ["dashboard-stats"],
+    queryKey: queryKeys.dashboard.stats(),
     queryFn: () => dashboardApiService.getStats(),
-    refetchOnMount: true,
-    staleTime: 0, // Always consider data stale to refetch on mount
+    staleTime: 30 * 1000,
   });
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -211,7 +212,7 @@ export default function Dashboard() {
     return {
       id: externalId,
       title: addition.name,
-      artist: addition.name,
+      artist: type === "album" ? "" : addition.name,
       image_url: addition.image_url,
       itemType: type,
     };
@@ -298,9 +299,9 @@ export default function Dashboard() {
       tooltip: {
         enabled: true,
         callbacks: {
-          label: function (context: any) {
+          label: function (context: TooltipItem<"doughnut">) {
             const label = context.label || "";
-            const value = context.parsed || context.raw || 0;
+            const value = context.parsed || (context.raw as number) || 0;
             const total = context.dataset.data.reduce(
               (a: number, b: number) => a + b,
               0
@@ -323,7 +324,7 @@ export default function Dashboard() {
   ) => (
     <div
       className={styles.stat}
-      onClick={() => redirectTo && navigate(redirectTo)}
+      onClick={() => { if (redirectTo) void navigate(redirectTo); }}
       style={{ cursor: redirectTo ? "pointer" : "default" }}
     >
       <Paper className={`${styles.card} ${styles.statCard}`}>
@@ -539,7 +540,7 @@ export default function Dashboard() {
                   boxShadow: "4px 4px 8px rgba(0, 0, 0, 0.7)",
                 },
               }}
-              onClick={() => navigate("/explore")}
+              onClick={() => void navigate("/explore")}
             >
               <CardContent
                 sx={{

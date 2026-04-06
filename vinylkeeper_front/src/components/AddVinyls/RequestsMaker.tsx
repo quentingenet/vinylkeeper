@@ -1,7 +1,5 @@
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
-  IAlbumRequestResults,
-  IArtistRequestResults,
   IRequestResults,
   IRequestToSend,
   DiscogsData,
@@ -12,7 +10,6 @@ import {
   TextField,
   Typography,
   InputAdornment,
-  CircularProgress,
   Alert,
 } from "@mui/material";
 import { searchApiService } from "@services/SearchApiService";
@@ -20,6 +17,7 @@ import { useState, useCallback, useMemo, memo } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@utils/queryKeys";
 import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface IRequestsMakerProps {
@@ -74,7 +72,7 @@ const SearchInput = memo(
     setSearchTerm: (e: React.ChangeEvent<HTMLInputElement>) => void;
     isArtist: boolean;
     isMobile: boolean;
-    mutation: any;
+    mutation: { isPending: boolean };
     requestResults: IRequestResults[];
     onSearch: () => void;
     error?: string;
@@ -170,7 +168,7 @@ export default function RequestsMaker({
           data: transformedData,
         },
       ]);
-      queryClient.invalidateQueries({ queryKey: ["requestResults"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.search.results() });
     },
     onError: (error) => {
       console.error("Error fetching data:", error);

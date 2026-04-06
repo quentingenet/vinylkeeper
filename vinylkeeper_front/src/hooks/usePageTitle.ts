@@ -2,10 +2,6 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 
-interface UsePageTitleProps {
-  setTitlePage: (title: string) => void;
-}
-
 export const usePageTitle = (setTitlePage?: (title: string) => void) => {
   const location = useLocation();
 

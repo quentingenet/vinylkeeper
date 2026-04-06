@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from pydantic import Field, field_validator, model_validator
 from datetime import datetime
 
@@ -25,10 +25,6 @@ class AlbumBase(BaseSchema):
         None,
         description="Cached title of the album"
     )
-    artist: Optional[str] = Field(
-        None,
-        description="Artist name for the album"
-    )
     image_url: Optional[str] = Field(
         None,
         description="URL of the album cover image"
@@ -54,6 +50,7 @@ class AlbumInCollection(BaseSchema):
     )
     acquisition_month_year: Optional[str] = Field(
         None,
+        pattern=r"^\d{4}-(0[1-9]|1[0-2])$",
         description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')"
     )
 
@@ -82,7 +79,4 @@ class AlbumResponse(AlbumInDB):
 
 
 class AlbumDetailResponse(AlbumResponse):
-    """Detailed album response including related lists."""
-    collections: List[dict] = Field(default_factory=list)
-    loans: List[dict] = Field(default_factory=list)
-    wishlist_items: List[dict] = Field(default_factory=list)
+    pass

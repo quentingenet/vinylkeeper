@@ -9,10 +9,10 @@ class ModerationRequest(Base):
     __tablename__ = "moderation_requests"
 
     id = Column(Integer, primary_key=True)
-    place_id = Column(Integer, ForeignKey("places.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    place_id = Column(Integer, ForeignKey("places.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     status_id = Column(Integer, ForeignKey(
-        "moderation_statuses.id"), nullable=False)
+        "moderation_statuses.id", ondelete="CASCADE"), nullable=False, index=True)
 
     created_at = Column(DateTime(timezone=True),
                         server_default=func.now(), nullable=False)
@@ -20,11 +20,11 @@ class ModerationRequest(Base):
                           server_default=func.now(), nullable=False)
 
     place = relationship(
-        "Place", back_populates="moderation_requests", lazy="selectin")
+        "Place", back_populates="moderation_requests", lazy="raise")
     user = relationship(
-        "User", back_populates="moderation_requests", lazy="selectin")
+        "User", back_populates="moderation_requests", lazy="raise")
     status = relationship(
-        "ModerationStatus", back_populates="moderation_requests", lazy="selectin")
+        "ModerationStatus", back_populates="moderation_requests", lazy="raise")
 
     def __repr__(self):
         return f"<ModerationRequest(user_id={self.user_id}, place_id={self.place_id}, status={self.status.name})>"

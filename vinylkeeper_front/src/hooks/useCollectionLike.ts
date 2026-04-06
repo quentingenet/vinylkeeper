@@ -1,52 +1,34 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { collectionApiService } from "@services/CollectionApiService";
-import { useUserContext } from "@contexts/UserContext";
+import { queryKeys } from "@utils/queryKeys";
 
 export function useCollectionLike(collectionId: number) {
   const queryClient = useQueryClient();
-  const { currentUser } = useUserContext();
-
   const likeMutation = useMutation({
     mutationFn: () => collectionApiService.likeCollection(collectionId),
     onSuccess: async () => {
-      // Invalidate specific queries to sync with backend
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["collectionDetails", collectionId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ["collections"] }),
-        queryClient.invalidateQueries({ queryKey: ["publicCollections"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() }),
       ]);
-      // Force refetch of active publicCollections queries to update sorting immediately
-      await queryClient.refetchQueries({
-        queryKey: ["publicCollections"],
-      });
     },
     onError: (error) => {
       console.error("Error liking collection:", error);
-      // Let the component handle error state
     },
   });
 
   const unlikeMutation = useMutation({
     mutationFn: () => collectionApiService.unlikeCollection(collectionId),
     onSuccess: async () => {
-      // Invalidate specific queries to sync with backend
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["collectionDetails", collectionId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ["collections"] }),
-        queryClient.invalidateQueries({ queryKey: ["publicCollections"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() }),
       ]);
-      // Force refetch of active publicCollections queries to update sorting immediately
-      await queryClient.refetchQueries({
-        queryKey: ["publicCollections"],
-      });
     },
     onError: (error) => {
       console.error("Error unliking collection:", error);
-      // Let the component handle error state
     },
   });
 
@@ -55,7 +37,6 @@ export function useCollectionLike(collectionId: number) {
     unlike: unlikeMutation.mutate,
     isLiking: likeMutation.isPending,
     isUnliking: unlikeMutation.isPending,
-    // Add error states for better debugging
     likeError: likeMutation.error,
     unlikeError: unlikeMutation.error,
   };

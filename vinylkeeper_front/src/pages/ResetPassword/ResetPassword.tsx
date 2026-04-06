@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
-import useDetectMobile from "../../hooks/useDetectMobile";
+import useDetectMobile from "@hooks/useDetectMobile";
 
 import Footer from "@components/Footer/Footer";
 import { Typography } from "@mui/material";

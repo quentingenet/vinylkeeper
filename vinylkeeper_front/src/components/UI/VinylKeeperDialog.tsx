@@ -1,4 +1,3 @@
-import { useUserContext } from "@contexts/UserContext";
 import { Button } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";

@@ -13,12 +13,14 @@ from app.schemas.wishlist_schema import (
 from app.schemas.album_schema import AlbumResponse, AlbumCreate
 from app.schemas.artist_schema import ArtistResponse, ArtistCreate
 from app.core.exceptions import (
+    AppException,
     ValidationError,
     ResourceNotFoundError,
     ServerError
 )
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
+from app.core.transaction import transaction_context
 
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
@@ -122,12 +124,14 @@ class WishlistService:
                 }
                 return ArtistResponse.model_validate(entity_dict)
 
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Failed to find or create entity: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find or create entity",
-                details={"error": str(e)}
+                details={}
             )
 
     async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> AddToWishlistResponse:
@@ -162,17 +166,15 @@ class WishlistService:
             # Create wishlist item
             entity_type_id = await self.external_ref_repo.get_entity_type_id(request.entity_type)
 
-            result = await self.wishlist_repo.add_to_wishlist(
-                user_id=user_id,
-                external_id=external_id,
-                entity_type=request.entity_type,
-                title=request.title,
-                image_url=request.image_url,
-                external_source_id=external_source_id
-            )
-
-            # Commit the transaction
-            await self.wishlist_repo.db.commit()
+            async with transaction_context(self.wishlist_repo.db):
+                result = await self.wishlist_repo.add_to_wishlist(
+                    user_id=user_id,
+                    external_id=external_id,
+                    entity_type=request.entity_type,
+                    title=request.title,
+                    image_url=request.image_url,
+                    external_source_id=external_source_id
+                )
 
             wishlist_response = self._build_wishlist_response(
                 result, request.entity_type.value, request.source)
@@ -183,12 +185,14 @@ class WishlistService:
                 entity_type=request.entity_type.value
             )
 
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Failed to add to wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to wishlist",
-                details={"error": str(e)}
+                details={}
             )
 
     def _build_wishlist_response(self, wishlist_item: Wishlist, entity_type: str, source: str) -> WishlistItemResponse:
@@ -218,21 +222,20 @@ class WishlistService:
                     resource_id=wishlist_id
                 )
 
-            # Remove from wishlist (use the item we already found)
-            await self.wishlist_repo._delete_entity(wishlist_item)
-
-            # Commit the transaction
-            await self.wishlist_repo.db.commit()
+            async with transaction_context(self.wishlist_repo.db):
+                await self.wishlist_repo._delete_entity(wishlist_item)
 
             return True
         except ResourceNotFoundError:
+            raise
+        except AppException:
             raise
         except Exception as e:
             logger.error(f"Failed to remove from wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove from wishlist",
-                details={"error": str(e)}
+                details={}
             )
 
     def _validate_pagination_params(self, page: int, limit: int):
@@ -258,11 +261,8 @@ class WishlistService:
             list_responses = []
             for item in items:
                 try:
-                    entity_type_str = "unknown"
-                    if item.entity_type_id == 1:
-                        entity_type_str = "album"
-                    elif item.entity_type_id == 2:
-                        entity_type_str = "artist"
+                    _entity_type_map = {1: EntityTypeEnum.ALBUM.value, 2: EntityTypeEnum.ARTIST.value}
+                    entity_type_str = _entity_type_map.get(item.entity_type_id, "unknown")
 
                     list_response = WishlistItemListResponse(
                         id=item.id,
@@ -290,12 +290,14 @@ class WishlistService:
 
         except ValidationError:
             raise
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get paginated wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get paginated wishlist",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_wishlist_item_detail(self, wishlist_id: int) -> WishlistItemResponse:
@@ -312,10 +314,12 @@ class WishlistService:
 
         except ResourceNotFoundError:
             raise
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get wishlist item detail: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item detail",
-                details={"error": str(e)}
+                details={}
             )

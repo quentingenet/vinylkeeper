@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from pydantic import Field, field_validator
 from datetime import datetime
 
@@ -23,10 +23,6 @@ class ArtistBase(BaseSchema):
     title: Optional[str] = Field(
         None,
         description="Cached title of the artist"
-    )
-    artist: Optional[str] = Field(
-        None,
-        description="Artist name (alias for title for frontend compatibility)"
     )
     image_url: Optional[str] = Field(
         None,
@@ -65,5 +61,4 @@ class ArtistResponse(ArtistInDB):
 
 
 class ArtistDetailResponse(ArtistResponse):
-    """Detailed artist response including related lists."""
-    collections: List[dict] = Field(default_factory=list)
+    pass

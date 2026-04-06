@@ -1,4 +1,4 @@
-import { Box, Modal, Typography, Button } from "@mui/material";
+import { Box, Modal, Typography, Button, Link } from "@mui/material";
 
 interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: (value: boolean) => void;
@@ -6,7 +6,7 @@ interface ModalTermsVinylKeeperProps {
 }
 
 export default function ModalTermsVinylKeeper(
-  props: ModalTermsVinylKeeperProps
+  props: ModalTermsVinylKeeperProps,
 ) {
   const { setOpenTermsModal, openTermsModal } = props;
 
@@ -51,8 +51,9 @@ export default function ModalTermsVinylKeeper(
             textAlign: "center",
           }}
         >
-          Terms of Use for the Vinyl Keeper Application
+          Terms of Use — Vinyl Keeper
         </Typography>
+
         <Typography id="modal-modal-description" sx={{ mt: 2, color: "black" }}>
           <strong>
             Vinyl Keeper is a free and open-source application licensed under
@@ -62,24 +63,39 @@ export default function ModalTermsVinylKeeper(
             <br />
           </strong>
           <br />
+
           <Typography sx={{ mt: 1, textAlign: "center", color: "black" }}>
             The Application is available at
             <br />
-            https://vinylkeeper.org.
+            https://vinylkeeper.org
+            <br />
+            <Link
+              href="https://github.com/quentingenet/vinylkeeper"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Source code (GitHub)
+            </Link>
           </Typography>
+
           <Typography sx={{ mt: 2, textAlign: "center", color: "black" }}>
-            <strong>Last updated: 20/06/2025</strong>
+            <strong>Last updated: 18/06/2026</strong>
           </Typography>
-          <br /> <br />
-          <strong>
-            <center>Legal Information</center>
-          </strong>
+
+          <br />
+          <br />
+
+          <Typography sx={{ textAlign: "center", color: "black" }}>
+            <strong>Legal Information</strong>
+          </Typography>
           <br />
           The website is owned and administered by Quentin Genet. Hosting is
           provided by Hostinger – a company registered in Lithuania. Contact and
           address details for the hosting provider can be found on the Hostinger
           website.
           <br />
+          <br />
+
           <strong>1. Acceptance of Terms of Use</strong>
           <br />
           1.1. The use of the Vinyl Keeper application (hereinafter referred to
@@ -89,14 +105,20 @@ export default function ModalTermsVinylKeeper(
           1.2. The user acknowledges having read the Terms carefully and agrees
           to comply with all the provisions stated herein.
           <br />
-          <strong>2. Personal Use</strong> <br />
+          <br />
+
+          <strong>2. Personal Use</strong>
+          <br />
           2.1. The Application is intended solely for personal use in managing
           vinyl collections.
           <br />
           2.2. Users are encouraged to consult a professional for any advice
           regarding the value or management of their collection.
           <br />
-          <strong>3. User Responsibility</strong> <br />
+          <br />
+
+          <strong>3. User Responsibility</strong>
+          <br />
           3.1. The user is entirely responsible for their decisions and actions
           resulting from the use of the Application.
           <br />
@@ -104,7 +126,10 @@ export default function ModalTermsVinylKeeper(
           the consequences of actions taken based on the information provided by
           the Application.
           <br />
-          <strong>4. No Warranty</strong> <br />
+          <br />
+
+          <strong>4. No Warranty</strong>
+          <br />
           4.1. The Application is provided "as is" under GPLv3 without warranty
           of accuracy, reliability, or suitability for a particular purpose.
           <br />
@@ -112,6 +137,8 @@ export default function ModalTermsVinylKeeper(
           the results obtained from its use and cannot be held responsible for
           errors, inaccuracies, or omissions.
           <br />
+          <br />
+
           <strong>5. Commitment to User Freedom and Privacy</strong>
           <br />
           5.1. As a GPLv3-licensed application, Vinyl Keeper promotes user
@@ -121,22 +148,91 @@ export default function ModalTermsVinylKeeper(
           for advertising or marketing purposes. No personal information will be
           sold, rented, or shared without explicit consent.
           <br />
-          <strong>6. Service Interruption</strong> <br />
+          <br />
+
+          <strong>6. Service Interruption</strong>
+          <br />
           6.1. Users acknowledge that the Application may experience temporary
           interruptions due to technical or maintenance issues. The developer
           cannot be held responsible for such disruptions.
           <br />
-          <strong>7. Collection and Use of Data</strong> <br />
-          7.1. Users consent to the collection, storage, and use of their data
-          in accordance with the Vinyl Keeper privacy policy, accessible on the
-          Application's website.
           <br />
-          <strong>8. Modification of Terms of Use</strong> <br />
+
+          <strong>7. Collection and Use of Personal Data (GDPR)</strong>
+          <br />
+          7.1. The Application collects and processes the following personal
+          data: email address, username, timezone, and vinyl collection content
+          (albums, artists, wishlists, and associated metadata).
+          <br />
+          7.2. This data is collected solely for the purpose of providing the
+          Application's features and is never used for advertising or marketing
+          purposes.
+          <br />
+          7.3. The legal basis for processing is the user's explicit consent
+          given at registration, as required by Regulation (EU) 2016/679
+          (GDPR).
+          <br />
+          7.4. Data is retained for the duration of the user's account. Upon
+          account deletion, all personal data is permanently removed from our
+          servers.
+          <br />
+          7.5. In accordance with the GDPR, users have the following rights
+          regarding their personal data:
+          <br />
+          &nbsp;&nbsp;— <strong>Right of access:</strong> obtain a copy of the
+          data held about you.
+          <br />
+          &nbsp;&nbsp;— <strong>Right to rectification:</strong> request
+          correction of inaccurate or incomplete data.
+          <br />
+          &nbsp;&nbsp;— <strong>Right to erasure:</strong> request deletion of
+          your account and all associated data at any time via the Settings
+          page.
+          <br />
+          &nbsp;&nbsp;— <strong>Right to data portability:</strong> request a
+          copy of your data in a structured, machine-readable format.
+          <br />
+          &nbsp;&nbsp;— <strong>Right to object:</strong> object to the
+          processing of your data at any time.
+          <br />
+          7.6. To exercise any of these rights, contact:{" "}
+          <Link href="mailto:vinylkeeper@quentingenet.fr">
+            vinylkeeper@quentingenet.fr
+          </Link>
+          <br />
+          7.7. If you believe your rights have not been respected, you may lodge
+          a complaint with the French data protection authority (CNIL) at{" "}
+          <Link
+            href="https://www.cnil.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            www.cnil.fr
+          </Link>
+          .
+          <br />
+          <br />
+
+          <strong>8. Modification of Terms of Use</strong>
+          <br />
           8.1. The developer reserves the right to modify the Terms at any time.
           Users are responsible for regularly reviewing updates.
           <br />
-          <strong>9. Applicable Law and Jurisdiction</strong> <br />
-          9.1. These Terms are governed by French law. Any disputes shall fall
+          <br />
+
+          <strong>9. Contact</strong>
+          <br />
+          9.1. For any questions regarding these Terms or the processing of your
+          personal data, you may contact the developer at:{" "}
+          <Link href="mailto:vinylkeeper@quentingenet.fr">
+            vinylkeeper@quentingenet.fr
+          </Link>
+          <br />
+          <br />
+
+          <strong>10. Applicable Law and Jurisdiction</strong>
+          <br />
+          10.1. These Terms are governed by French law. Any disputes shall fall
           under the exclusive jurisdiction of French courts.
         </Typography>
 

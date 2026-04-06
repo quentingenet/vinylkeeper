@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export function useDebounce(callback: () => void, delay: number, deps: any[]) {
+export function useDebounce(callback: () => void, delay: number, deps: unknown[]) {
   const callbackRef = useRef(callback);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -26,5 +26,6 @@ export function useDebounce(callback: () => void, delay: number, deps: any[]) {
         clearTimeout(timeoutRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, delay]);
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import PlaceMap from "@components/Places/PlaceMap";
 import PlaceAddModal from "@components/Places/PlaceAddModal";
 import { Box, Typography, Fab, Tooltip } from "@mui/material";
@@ -11,6 +11,7 @@ import {
 import useDetectMobile from "@hooks/useDetectMobile";
 import { growItem } from "@utils/Animations";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@utils/queryKeys";
 import VinylSpinner from "@components/UI/VinylSpinner";
 
 export default function Places() {
@@ -23,7 +24,7 @@ export default function Places() {
     isLoading,
     error,
   } = useQuery<PlaceMapResponse[]>({
-    queryKey: ["places-map"],
+    queryKey: queryKeys.places.map(),
     queryFn: () => placeApiService.getPlacesMap(),
     staleTime: 5 * 60 * 1000, // 5 minutes - map data doesn't change frequently
     gcTime: 30 * 60 * 1000, // 30 minutes
@@ -35,8 +36,8 @@ export default function Places() {
     try {
       await placeApiService.createPlace(placeData);
       // Invalidate places queries to refetch data
-      void queryClient.invalidateQueries({ queryKey: ["places-map"] });
-      void queryClient.invalidateQueries({ queryKey: ["places"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.places.map() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.places.all() });
       setIsModalOpen(false);
     } catch (error) {
       console.error("Error creating place:", error);

@@ -20,7 +20,7 @@ export interface PaginatedResponse<T> {
   total_pages: number;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;

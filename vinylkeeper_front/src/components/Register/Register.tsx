@@ -1,18 +1,13 @@
 import {
-  Box,
   Button,
-  Container,
   Grid,
   TextField,
   Typography,
-  Alert,
-  CircularProgress,
   Checkbox,
   FormControlLabel,
   IconButton,
   InputAdornment,
   Modal,
-  Snackbar,
 } from "@mui/material";
 import { useState } from "react";
 import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
@@ -24,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { getTimezone } from "@utils/GlobalUtils";
+import { isApiError } from "@utils/apiError";
 import { registerValidationSchema } from "@utils/validators/registerValidationSchema";
 import styles from "../../styles/pages/Landpage.module.scss";
 import VinylSpinner from "@components/UI/VinylSpinner";
@@ -82,14 +78,12 @@ const Register = ({
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
 
-      navigate("/dashboard");
-    } catch (error: any) {
-      // Extract error message from backend response
+      void navigate("/dashboard");
+    } catch (error: unknown) {
       let errorMessage =
         "An error occurred during registration. Please try again.";
 
-      if (error.message) {
-        // Backend error object with message property
+      if (isApiError(error) || error instanceof Error) {
         errorMessage = error.message;
       }
 
@@ -136,7 +130,7 @@ const Register = ({
           }}
         >
           <form
-            onSubmit={handleSubmit(submitRegister)}
+            onSubmit={(e) => { void handleSubmit(submitRegister)(e); }}
             className={styles.globalForm}
             style={{ width: "100%" }}
           >
@@ -157,7 +151,7 @@ const Register = ({
                   style: { textTransform: "lowercase" },
                 }}
                 {...register("username", {
-                  setValueAs: (value) => value.toLowerCase(),
+                  setValueAs: (value: unknown): string => String(value).toLowerCase(),
                 })}
               />
             </Grid>
@@ -179,7 +173,7 @@ const Register = ({
                   style: { textTransform: "lowercase" },
                 }}
                 {...register("email", {
-                  setValueAs: (value) => value.toLowerCase(),
+                  setValueAs: (value: unknown): string => String(value).toLowerCase(),
                 })}
               />
             </Grid>

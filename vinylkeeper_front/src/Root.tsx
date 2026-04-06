@@ -17,17 +17,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Optimisations de performance
-      staleTime: 5 * 60 * 1000, // 5 minutes - données considérées fraîches
-      gcTime: 30 * 60 * 1000, // 30 minutes - cache gardé en mémoire
-      retry: 2, // 2 tentatives max
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Backoff exponentiel
-      refetchOnWindowFocus: false, // Évite les refetch inutiles
-      refetchOnReconnect: true, // Refetch quand la connexion revient
-      refetchOnMount: true, // Refetch au montage du composant
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      refetchOnMount: true,
     },
     mutations: {
-      retry: 1, // 1 tentative pour les mutations
+      retry: 1,
       retryDelay: 1000,
     },
   },

@@ -1,23 +1,24 @@
 import ky, { HTTPError } from "ky";
+import { ApiError } from "./apiError";
 
-/**
- * Request options interface
- */
+export type { ApiError };
+export type AppError = ApiError;
+
+interface EnrichedHTTPError extends HTTPError {
+  errorData?: ApiError;
+}
+
 interface RequestOptions {
   apiTarget: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   endpoint: string;
-  body?: any;
+  body?: unknown;
   headers?: HeadersInit;
-  retrying?: boolean; // internal flag to avoid infinite loop
-  skipRefresh?: boolean; // flag to skip automatic refresh
+  retrying?: boolean;
+  skipRefresh?: boolean;
 }
 
-/**
- * Generic request service with automatic retry on 401 Unauthorized
- * and proper error handling for backend error responses
- */
-const requestService = async <T = any>({
+const requestService = async <T = unknown>({
   apiTarget,
   method,
   endpoint,
@@ -27,7 +28,7 @@ const requestService = async <T = any>({
   skipRefresh = false,
 }: RequestOptions): Promise<T> => {
   if (!apiTarget || !endpoint) {
-    throw new Error("API target or endpoint is missing.");
+    throw { code: 9999, message: "API target or endpoint is missing.", details: {} } satisfies AppError;
   }
 
   const urlToFetch = `${apiTarget}${endpoint}`;
@@ -42,22 +43,19 @@ const requestService = async <T = any>({
     credentials: "include" as RequestCredentials,
     hooks: {
       beforeError: [
-        async (error: HTTPError) => {
+        async (error: HTTPError): Promise<HTTPError> => {
           const { response } = error;
           if (response && response.body) {
             try {
-              const errorData = await response.json();
-              // Create a new HTTPError with the parsed error data
-              const newError = new HTTPError(
+              const errorData = (await response.json()) as AppError;
+              const enriched = new HTTPError(
                 response,
                 error.request,
                 error.options
-              );
-              // Attach the error data as a property for later extraction
-              (newError as any).errorData = errorData;
-              return newError;
+              ) as EnrichedHTTPError;
+              enriched.errorData = errorData;
+              return enriched;
             } catch {
-              // If we can't parse JSON, return the original error
               return error;
             }
           }
@@ -78,10 +76,9 @@ const requestService = async <T = any>({
     } else if (contentType.includes("text/")) {
       return (await response.text()) as T;
     } else {
-      throw new Error(`Unexpected content-type: ${contentType}`);
+      throw { code: 9999, message: `Unexpected content-type: ${contentType}`, details: {} } satisfies AppError;
     }
-  } catch (error: any) {
-    // Handle 401 Unauthorized with token refresh
+  } catch (error: unknown) {
     if (
       error instanceof HTTPError &&
       error.response?.status === 401 &&
@@ -93,7 +90,6 @@ const requestService = async <T = any>({
           credentials: "include",
         });
 
-        // Retry original request
         return await requestService<T>({
           apiTarget,
           method,
@@ -102,22 +98,22 @@ const requestService = async <T = any>({
           headers,
           retrying: true,
         });
-      } catch (refreshError) {
-        throw new Error("Unauthorized and token refresh failed");
+      } catch {
+        throw {
+          code: 401,
+          message: "Session expired. Please log in again.",
+          details: {},
+        } satisfies AppError;
       }
     }
 
-    // Extract backend error data from HTTPError
-    if (error instanceof HTTPError && (error as any).errorData) {
-      throw (error as any).errorData;
+    const enriched = error as EnrichedHTTPError;
+    if (enriched instanceof HTTPError && enriched.errorData) {
+      throw enriched.errorData;
     }
 
-    // For other errors, wrap in standard error format
-    throw {
-      code: 9999,
-      message: error.message || "Unknown error occurred",
-      details: {},
-    };
+    const message = error instanceof Error ? error.message : "Unknown error occurred";
+    throw { code: 9999, message, details: {} } satisfies AppError;
   }
 };
 

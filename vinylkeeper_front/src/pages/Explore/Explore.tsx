@@ -20,6 +20,7 @@ import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useNavigate } from "react-router-dom";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
+import { queryKeys } from "@utils/queryKeys";
 
 type SortOption = "updated_at" | "likes_count" | "created_at";
 
@@ -35,7 +36,7 @@ export default function Explore() {
     isLoading,
     error,
   } = useQuery<PaginatedCollectionListResponse>({
-    queryKey: ["publicCollections", page, sortBy],
+    queryKey: queryKeys.collections.public.list(page, sortBy),
     queryFn: () =>
       collectionApiService.getPublicCollections(page, itemsPerPage, sortBy),
     refetchOnWindowFocus: true,
@@ -138,7 +139,7 @@ export default function Explore() {
                 onSwitchArea={() => {}}
                 handleOpenModalCollection={() => {}}
                 onCollectionClick={(collection) => {
-                  navigate(`/collections/${collection.id}`, {
+                  void navigate(`/collections/${collection.id}`, {
                     state: { from: "explore" },
                   });
                 }}

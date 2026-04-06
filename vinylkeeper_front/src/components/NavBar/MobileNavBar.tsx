@@ -9,7 +9,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  keyframes,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -19,11 +18,8 @@ import {
   Album as AlbumIcon,
   AddBox as AddBoxIcon,
   Search as SearchIcon,
-  Group as GroupIcon,
-  Favorite as FavoriteIcon,
   SwapHoriz as SwapHorizIcon,
   Settings as SettingsIcon,
-  ContactMail as ContactMailIcon,
   AdminPanelSettings,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
@@ -48,7 +44,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
 }) => {
   const { logout, currentUser } = useUserContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState<string | null>(null);
+  const [_activeItem, setActiveItem] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const colorYellow = "#C9A726";
@@ -125,7 +121,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     if (text === "Logout") {
       logout();
     }
-    navigate(linkTo);
+    void navigate(linkTo);
   };
 
   return (

@@ -45,6 +45,11 @@ class Album(Base):
                         server_default=func.now(),
                         onupdate=func.now(), nullable=False)
 
+    # Non-mapped aggregated counts, populated by repository queries
+    collections_count = 0
+    loans_count = 0
+    wishlist_count = 0
+
     album_collections = relationship(
         "CollectionAlbum",
         back_populates="album",

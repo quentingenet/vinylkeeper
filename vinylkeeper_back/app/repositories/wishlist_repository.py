@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.exc import SQLAlchemyError
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
 from app.core.enums import EntityTypeEnum
@@ -43,12 +44,12 @@ class WishlistRepository(TransactionalMixin):
             await self._add_entity(wishlist_item, flush=True)
             await self._refresh_entity(wishlist_item)
             return wishlist_item
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error adding to wishlist: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to wishlist",
-                details={"error": str(e)}
+                details={}
             )
 
     async def create(self, wishlist: Wishlist) -> Wishlist:
@@ -58,13 +59,13 @@ class WishlistRepository(TransactionalMixin):
             await self._add_entity(wishlist, flush=True)
             await self._refresh_entity(wishlist)
             return wishlist
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error creating wishlist item for user {wishlist.user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
-                details={"error": str(e)}
+                details={}
             )
 
     async def find_by_user_and_external_id(self, user_id: int, external_id: str, entity_type: EntityTypeEnum) -> Optional[Wishlist]:
@@ -78,13 +79,13 @@ class WishlistRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Database error in find_by_user_and_external_id: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find wishlist item",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_by_id(self, wishlist_id: int) -> Optional[Wishlist]:
@@ -93,13 +94,13 @@ class WishlistRepository(TransactionalMixin):
             query = select(Wishlist).filter(Wishlist.id == wishlist_id)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving wishlist item {wishlist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item by ID",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_by_id_with_relations(self, wishlist_id: int) -> Optional[Wishlist]:
@@ -112,13 +113,13 @@ class WishlistRepository(TransactionalMixin):
             ).filter(Wishlist.id == wishlist_id)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving wishlist item {wishlist_id} with relations: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item by ID with relations",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_user_wishlist_paginated(self, user_id: int, page: int = 1, limit: int = 8) -> Tuple[List[Wishlist], int]:
@@ -137,13 +138,13 @@ class WishlistRepository(TransactionalMixin):
             total = count_result.scalar() or 0
 
             return items, total
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error getting paginated wishlist items for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get paginated wishlist items",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_user_wishlist_all(self, user_id: int) -> List[Wishlist]:
@@ -162,12 +163,12 @@ class WishlistRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting wishlist export data: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist items",
-                details={"error": str(e)},
+                details={},
             )
 
     async def update(self, wishlist: Wishlist) -> Wishlist:
@@ -177,13 +178,13 @@ class WishlistRepository(TransactionalMixin):
             await self._add_entity(wishlist, flush=True)
             await self._refresh_entity(wishlist)
             return wishlist
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error updating wishlist item {wishlist.id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update wishlist item",
-                details={"error": str(e)}
+                details={}
             )
 
     async def delete(self, wishlist_id: int) -> bool:
@@ -194,13 +195,13 @@ class WishlistRepository(TransactionalMixin):
                 await self._delete_entity(wishlist)
                 return True
             return False
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error deleting wishlist item {wishlist_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete wishlist item",
-                details={"error": str(e)}
+                details={}
             )
 
     async def count_user_wishlist_items(self, user_id: int) -> int:
@@ -209,6 +210,6 @@ class WishlistRepository(TransactionalMixin):
             query = select(func.count()).filter(Wishlist.user_id == user_id)
             result = await self.db.execute(query)
             return result.scalar()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error counting user wishlist items: {str(e)}")
             return 0

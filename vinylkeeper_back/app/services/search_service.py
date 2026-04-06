@@ -125,18 +125,21 @@ class SearchService:
         params = {
             "q": query,
             "type": entity,
-            "token": self.token,
             "per_page": 15,
         }
         try:
-            response = await client_to_use.get(self.search_url, params=params)
+            response = await client_to_use.get(
+                self.search_url,
+                params=params,
+                headers={"Authorization": f"Discogs token={self.token}"},
+            )
             response.raise_for_status()
             return response.json().get("results", [])
         except httpx.HTTPError as e:
             logger.error(f"Discogs API error: {str(e)}")
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
-                message=f"Failed to search Discogs: {str(e)}"
+                message="Failed to search Discogs"
             )
 
     def _is_vinyl_format(self, formats: List[str]) -> bool:
@@ -246,7 +249,7 @@ class SearchService:
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                 message="Failed to search music",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_artist_metadata(self, artist_id: str) -> ArtistMetadata:
@@ -327,7 +330,10 @@ class SearchService:
 
         # Get artist releases
         try:
-            releases_data = await self.http_client.get(f"{self.base_url}/artists/{artist_id}/releases")
+            releases_data = await self.http_client.get(
+                f"{self.base_url}/artists/{artist_id}/releases",
+                headers={"Authorization": f"Discogs token={self.token}"},
+            )
             releases_data.raise_for_status()
             releases_data = releases_data.json()
 

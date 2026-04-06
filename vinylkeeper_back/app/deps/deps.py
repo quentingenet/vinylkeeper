@@ -1,5 +1,10 @@
+from uuid import UUID
+
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.user_model import User
+from app.core.exceptions import ForbiddenError, ErrorCode, ResourceNotFoundError
+from app.utils.auth_utils.auth import get_current_user
 
 # Repositories
 from app.repositories.user_repository import UserRepository
@@ -30,9 +35,32 @@ from app.services.wishlist_export_service import WishlistExportService
 from app.db.session import get_db
 
 
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    if not (user.role and user.role.name == "admin" and user.is_superuser):
+        raise ForbiddenError(error_code=ErrorCode.FORBIDDEN, message="Admin access required")
+    return user
+
+
 # Repository Dependencies
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
+
+
+async def get_user_id_by_uuid(
+    user_uuid: UUID,
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> int:
+    """Resolve a public user_uuid path/query param to the internal user_id.
+
+    Usage in endpoints:
+        @router.get("/collections/owner/{user_uuid}")
+        async def get_collections(owner_id: int = Depends(get_user_id_by_uuid)):
+            ...
+    """
+    user = await user_repo.get_user_by_uuid(str(user_uuid))
+    if not user:
+        raise ResourceNotFoundError("User", str(user_uuid))
+    return user.id
 
 
 def get_collection_repository(db: AsyncSession = Depends(get_db)) -> CollectionRepository:
@@ -94,26 +122,6 @@ def get_collection_service(
     return CollectionService(repository, like_repository, collection_album_repository, wishlist_repository, place_repository)
 
 
-def get_collection_service_with_session(
-    db: AsyncSession,
-    repository: CollectionRepository = Depends(get_collection_repository),
-    like_repository: LikeRepository = Depends(get_like_repository),
-    collection_album_repository: CollectionAlbumRepository = Depends(
-        get_collection_album_repository),
-    wishlist_repository: WishlistRepository = Depends(get_wishlist_repository),
-    place_repository: PlaceRepository = Depends(get_place_repository)
-) -> CollectionService:
-    """Get CollectionService with a specific session for transactional operations"""
-    # Create repositories with the provided session
-    collection_repo = CollectionRepository(db)
-    like_repo = LikeRepository(db)
-    collection_album_repo = CollectionAlbumRepository(db)
-    wishlist_repo = WishlistRepository(db)
-    place_repo = PlaceRepository(db)
-
-    return CollectionService(collection_repo, like_repo, collection_album_repo, wishlist_repo, place_repo)
-
-
 def get_search_service(request: Request) -> SearchService:
     """Get SearchService with shared HTTP client from app state."""
     http_client = request.app.state.http_client
@@ -153,10 +161,8 @@ def get_user_service(
 def get_dashboard_service(
     dashboard_repository: DashboardRepository = Depends(
         get_dashboard_repository),
-    collection_repository: CollectionRepository = Depends(
-        get_collection_repository),
 ) -> DashboardService:
-    return DashboardService(dashboard_repository, collection_repository)
+    return DashboardService(dashboard_repository)
 
 
 def get_moderation_service(

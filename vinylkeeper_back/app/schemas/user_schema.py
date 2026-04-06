@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
@@ -9,12 +10,47 @@ from app.schemas import BaseSchema
 from app.core.enums import RoleEnum
 
 
+def _validate_email_value(v: str, check_deliverability: bool = True) -> str:
+    try:
+        validation = validate_email(v, check_deliverability=check_deliverability)
+        return validation.normalized
+    except EmailNotValidError as e:
+        raise ValueError(f"Invalid email format: {str(e)}")
+
+
+def _validate_username_value(v: str) -> str:
+    v = v.strip()
+    if not v:
+        raise ValueError("Username cannot be empty")
+    if len(v) < 2:
+        raise ValueError("Username must contain at least 2 characters")
+    if not re.match(r'^[a-zA-Z0-9._-]+$', v):
+        raise ValueError(
+            "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+    if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
+        raise ValueError(
+            "Username cannot start or end with dots, hyphens, or underscores")
+    return v
+
+
+def _validate_password_complexity(v: str) -> str:
+    if not v:
+        raise ValueError("New password cannot be empty")
+    if len(v) < 4:
+        raise ValueError("Password must contain at least 4 characters")
+    if not any(c.isalpha() for c in v):
+        raise ValueError("Password must contain at least one letter")
+    if not any(c.isdigit() for c in v):
+        raise ValueError("Password must contain at least one number")
+    return v
+
+
 class UserBase(BaseSchema):
     """Base schema for user data."""
     username: str = Field(
-        min_length=3,
+        min_length=2,
         max_length=50,
-        description="Username must be between 3 and 50 characters"
+        description="Username must be between 2 and 50 characters"
     )
     email: str = Field(
         max_length=255,
@@ -29,34 +65,12 @@ class UserBase(BaseSchema):
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
-        """Validate username format and content."""
-        if not v:
-            raise ValueError("Username cannot be empty")
-
-        v = v.strip()
-
-        # Allow only alphanumeric characters, dots, hyphens, and underscores
-        import re
-        if not re.match(r'^[a-zA-Z0-9._-]+$', v):
-            raise ValueError(
-                "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
-
-        # Username cannot start or end with special characters
-        if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
-            raise ValueError(
-                "Username cannot start or end with dots, hyphens, or underscores")
-
-        return v
+        return _validate_username_value(v)
 
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
-        """Validate email format and domain."""
-        try:
-            validation = validate_email(v, check_deliverability=True)
-            return validation.normalized
-        except EmailNotValidError as e:
-            raise ValueError(f"Invalid email format: {str(e)}")
+        return _validate_email_value(v, check_deliverability=True)
 
     @field_validator("timezone")
     @classmethod
@@ -86,14 +100,19 @@ class UserCreate(UserBase):
         description="ID of the user's role (defaults to regular user)"
     )
 
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        return _validate_password_complexity(v)
+
 
 class UserUpdate(BaseSchema):
     """Schema for updating a user."""
     username: Optional[str] = Field(
         None,
         min_length=2,
-        max_length=255,
-        description="Username must be between 2 and 255 characters"
+        max_length=50,
+        description="Username must be between 2 and 50 characters"
     )
     email: Optional[str] = Field(
         None,
@@ -114,35 +133,15 @@ class UserUpdate(BaseSchema):
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: Optional[str]) -> Optional[str]:
-        """Validate username format."""
         if v is not None:
-            if not v or len(v.strip()) == 0:
-                raise ValueError("Username cannot be empty")
-
-            v = v.strip()
-
-            # Allow only alphanumeric characters, dots, hyphens, and underscores
-            import re
-            if not re.match(r'^[a-zA-Z0-9._-]+$', v):
-                raise ValueError(
-                    "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
-
-            # Username cannot start or end with special characters
-            if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
-                raise ValueError(
-                    "Username cannot start or end with dots, hyphens, or underscores")
-
-            return v
+            return _validate_username_value(v)
         return v
 
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: Optional[str]) -> Optional[str]:
-        """Validate email format."""
         if v is not None:
-            if not v or len(v.strip()) == 0:
-                raise ValueError("Email cannot be empty")
-            return v.strip().lower()
+            return _validate_email_value(v, check_deliverability=False)
         return v
 
 
@@ -206,30 +205,6 @@ class UserResponse(UserInDB):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserDetailResponse(UserResponse):
-    """Detailed user response including related data."""
-    collections: List[dict] = Field(
-        default_factory=list,
-        description="List of collections owned by the user"
-    )
-    liked_collections: List[dict] = Field(
-        default_factory=list,
-        description="List of collections liked by the user"
-    )
-    loans: List[dict] = Field(
-        default_factory=list,
-        description="List of loans made by the user"
-    )
-    wishlist_items: List[dict] = Field(
-        default_factory=list,
-        description="List of items in user's wishlist"
-    )
-    liked_places: List[dict] = Field(
-        default_factory=list,
-        description="List of places liked by the user"
-    )
-
-
 class UserAuthSchema(BaseModel):
     """Schema for user authentication."""
     email: str = Field(
@@ -265,20 +240,7 @@ class ResetPasswordSchema(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v: str) -> str:
-        """Validate new password complexity"""
-        if not v:
-            raise ValueError("New password cannot be empty")
-
-        if len(v) < 4:
-            raise ValueError("Password must contain at least 4 characters")
-
-        if not any(c.isalpha() for c in v):
-            raise ValueError("Password must contain at least one letter")
-
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-
-        return v
+        return _validate_password_complexity(v)
 
 
 class PasswordChangeSchema(BaseModel):
@@ -297,20 +259,7 @@ class PasswordChangeSchema(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v: str) -> str:
-        """Validate new password complexity"""
-        if not v:
-            raise ValueError("New password cannot be empty")
-
-        if len(v) < 4:
-            raise ValueError("Password must contain at least 4 characters")
-
-        if not any(c.isalpha() for c in v):
-            raise ValueError("Password must contain at least one letter")
-
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-
-        return v
+        return _validate_password_complexity(v)
 
 
 class UserMeResponse(BaseModel):

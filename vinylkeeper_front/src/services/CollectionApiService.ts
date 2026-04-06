@@ -1,174 +1,48 @@
 import { BaseApiService } from "./BaseApiService";
-import { API_VK_URL, ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
-import { WishlistItemResponse } from "@models/IExternalReference";
-import { extractFilenameFromContentDisposition } from "@utils/DownloadUtils";
+import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
+import type {
+  UserMiniResponse,
+  AlbumBase,
+  ArtistBase,
+  AlbumInCollection,
+  CollectionAlbumResponse,
+  CollectionArtistResponse,
+  CollectionBase,
+  CollectionCreate,
+  CollectionUpdate,
+  CollectionInDB,
+  CollectionResponse,
+  CollectionListItemResponse,
+  CollectionDetailResponse,
+  LikeStatusResponse,
+  CollectionSearchResponse,
+  PaginatedAlbumsResponse,
+  PaginatedArtistsResponse,
+  PaginatedCollectionResponse,
+  PaginatedCollectionListResponse,
+} from "@models/Collection";
 
-export interface UserMiniResponse {
-  username: string;
-  user_uuid: string;
-}
-
-export interface AlbumBase {
-  external_album_id: string;
-  title: string;
-  image_url?: string;
-  external_source: {
-    id: number;
-    name: string;
-  };
-}
-
-export interface ArtistBase {
-  external_artist_id: string;
-  title: string;
-  image_url?: string;
-  external_source: {
-    id: number;
-    name: string;
-  };
-}
-
-export interface AlbumInCollection {
-  state_record?: VinylStateEnum | null;
-  state_cover?: VinylStateEnum | null;
-  acquisition_month_year?: string | null;
-}
-
-export interface CollectionAlbumResponse extends AlbumBase, AlbumInCollection {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  collections_count: number;
-  loans_count: number;
-  wishlist_count: number;
-}
-
-export interface CollectionArtistResponse extends ArtistBase {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  collections_count: number;
-}
-
-export interface CollectionBase {
-  name: string;
-  description?: string;
-  is_public: boolean;
-  mood_id?: number;
-}
-
-export interface CollectionCreate extends CollectionBase {
-  album_ids?: number[];
-  artist_ids?: number[];
-  albums?: number[];
-}
-
-export interface CollectionUpdate {
-  name?: string;
-  description?: string;
-  is_public?: boolean;
-  mood_id?: number;
-}
-
-export interface CollectionInDB extends CollectionBase {
-  id: number;
-  owner_id: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CollectionResponse {
-  id: number;
-  name: string;
-  description?: string;
-  is_public: boolean;
-  mood_id?: number;
-  owner_id: number;
-  created_at: string;
-  updated_at: string;
-  owner?: UserMiniResponse;
-  albums: CollectionAlbumResponse[];
-  artists: CollectionArtistResponse[];
-  likes_count: number;
-  is_liked_by_user: boolean;
-  wishlist: WishlistItemResponse[];
-}
-
-export interface CollectionListItemResponse {
-  id: number;
-  name: string;
-  description?: string;
-  is_public: boolean;
-  owner_id: number;
-  created_at: string;
-  updated_at: string;
-  owner?: UserMiniResponse;
-  likes_count: number;
-  is_liked_by_user: boolean;
-  albums_count: number;
-  artists_count: number;
-  image_preview?: string | null;
-}
-
-export interface CollectionDetailResponse {
-  id: number;
-  name: string;
-  description: string | null;
-  is_public: boolean;
-  mood_id: number | null;
-  owner_uuid: string;
-  owner: UserMiniResponse | null;
-  likes_count: number;
-  is_liked_by_user: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface LikeStatusResponse {
-  collection_id: number;
-  liked: boolean;
-  likes_count: number;
-  last_liked_at?: string;
-}
-
-export interface PaginatedAlbumsResponse {
-  items: CollectionAlbumResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
-
-export interface PaginatedArtistsResponse {
-  items: CollectionArtistResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
-
-export interface CollectionSearchResponse {
-  albums: CollectionAlbumResponse[];
-  artists: CollectionArtistResponse[];
-  query: string;
-  search_type: string;
-}
-
-export interface PaginatedCollectionResponse {
-  items: CollectionResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
-
-export interface PaginatedCollectionListResponse {
-  items: CollectionListItemResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
+export type {
+  UserMiniResponse,
+  AlbumBase,
+  ArtistBase,
+  AlbumInCollection,
+  CollectionAlbumResponse,
+  CollectionArtistResponse,
+  CollectionBase,
+  CollectionCreate,
+  CollectionUpdate,
+  CollectionInDB,
+  CollectionResponse,
+  CollectionListItemResponse,
+  CollectionDetailResponse,
+  LikeStatusResponse,
+  CollectionSearchResponse,
+  PaginatedAlbumsResponse,
+  PaginatedArtistsResponse,
+  PaginatedCollectionResponse,
+  PaginatedCollectionListResponse,
+};
 
 export class CollectionApiService extends BaseApiService {
   constructor() {
@@ -339,69 +213,13 @@ export class CollectionApiService extends BaseApiService {
     collectionId: number,
     pathSuffix: string
   ): Promise<{ blob: Blob; filename: string }> {
-    const response = await fetch(
-      `${API_VK_URL}/collections/${collectionId}/export/${pathSuffix}`,
-      {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          Accept: "*/*",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      let message = `Export failed (${response.status})`;
-      try {
-        const data = await response.json();
-        message = data?.message || message;
-      } catch {
-        // ignore
-      }
-      throw new Error(message);
-    }
-
-    const blob = await response.blob();
-    const filename =
-      extractFilenameFromContentDisposition(
-        response.headers.get("content-disposition")
-      ) || `collection_${collectionId}_${pathSuffix}`;
-
-    return { blob, filename };
+    return this.blobGet(`/collections/${collectionId}/export/${pathSuffix}`);
   }
 
   async exportMyWishlistFile(
     format: "csv" | "ods"
   ): Promise<{ blob: Blob; filename: string }> {
-    const response = await fetch(
-      `${API_VK_URL}/external-references/wishlist/export/${format}`,
-      {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          Accept: "*/*",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      let message = `Export failed (${response.status})`;
-      try {
-        const data = await response.json();
-        message = data?.message || message;
-      } catch {
-        // ignore
-      }
-      throw new Error(message);
-    }
-
-    const blob = await response.blob();
-    const filename =
-      extractFilenameFromContentDisposition(
-        response.headers.get("content-disposition")
-      ) || `wishlist_${format}`;
-
-    return { blob, filename };
+    return this.blobGet(`/external-references/wishlist/export/${format}`);
   }
 }
 

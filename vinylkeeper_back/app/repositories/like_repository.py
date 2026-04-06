@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
+from sqlalchemy.exc import SQLAlchemyError
 from app.models.like_model import Like
 from app.core.exceptions import ServerError
 from app.core.logging import logger
@@ -18,13 +19,13 @@ class LikeRepository(TransactionalMixin):
                 user_id=user_id, collection_id=collection_id)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error retrieving like for user {user_id} and collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get like",
-                details={"error": str(e)}
+                details={}
             )
 
     async def find_by_user_and_collection(self, user_id: int, collection_id: int) -> Optional[Like]:
@@ -46,13 +47,13 @@ class LikeRepository(TransactionalMixin):
             await self._add_entity(like, flush=True)
             await self._refresh_entity(like)
             return like
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error creating like for user {user_id} and collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create like",
-                details={"error": str(e)}
+                details={}
             )
 
     async def remove(self, user_id: int, collection_id: int) -> None:
@@ -65,13 +66,13 @@ class LikeRepository(TransactionalMixin):
             else:
                 logger.warning(
                     f"Like not found for user {user_id} and collection {collection_id}")
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error removing like for user {user_id} and collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove like",
-                details={"error": str(e)}
+                details={}
             )
 
     async def count_likes(self, collection_id: int) -> int:
@@ -81,13 +82,13 @@ class LikeRepository(TransactionalMixin):
                 Like).filter_by(collection_id=collection_id)
             result = await self.db.execute(query)
             return result.scalar()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error counting likes for collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count likes",
-                details={"error": str(e)}
+                details={}
             )
 
     async def count_user_likes(self, user_id: int) -> int:
@@ -97,12 +98,12 @@ class LikeRepository(TransactionalMixin):
                 Like).filter_by(user_id=user_id)
             result = await self.db.execute(query)
             return result.scalar()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error counting likes for user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to count user likes",
-                details={"error": str(e)}
+                details={}
             )
 
     async def is_liked_by_user(self, collection_id: int, user_id: int) -> bool:
@@ -110,13 +111,13 @@ class LikeRepository(TransactionalMixin):
         try:
             like = await self.get(user_id, collection_id)
             return like is not None
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error checking if collection {collection_id} is liked by user {user_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to check like status",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_likes_info(self, collection_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
@@ -145,11 +146,11 @@ class LikeRepository(TransactionalMixin):
                 "count": row.count or 0,
                 "is_liked": bool(row.is_liked) if user_id is not None else False
             }
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error getting likes info for collection {collection_id}: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get likes info",
-                details={"error": str(e)}
+                details={}
             )

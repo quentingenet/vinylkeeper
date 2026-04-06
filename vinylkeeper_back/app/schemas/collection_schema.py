@@ -8,11 +8,9 @@ from app.schemas import BaseSchema
 from app.schemas.user_schema import UserMiniResponse
 from app.schemas.album_schema import AlbumBase
 from app.schemas.artist_schema import ArtistBase
-from app.schemas.external_reference_schema import WishlistItemResponse
 from app.core.enums import MoodEnum, VinylStateEnum
 
 
-# Import AlbumInCollection from album_schema to avoid duplication
 from app.schemas.album_schema import AlbumInCollection
 
 
@@ -32,8 +30,8 @@ class CollectionArtistResponse(BaseSchema):
     external_artist_id: str = Field(..., description="External Artist ID")
     title: str = Field(..., description="Artist title")
     image_url: Optional[str] = Field(None, description="Artist image URL")
-    external_source: dict = Field(...,
-                                  description="External source information")
+    external_source: Optional[dict] = Field(None,
+                                             description="External source information")
     created_at: datetime
     updated_at: datetime
     collections_count: int = Field(default=0)
@@ -89,11 +87,6 @@ class CollectionCreate(CollectionBase):
         default_factory=list,
         description="List of artist IDs to include in the collection"
     )
-    albums: Optional[List[int]] = Field(
-        default_factory=list,
-        description="List of album IDs to include in the collection"
-    )
-
     @field_validator("album_ids")
     @classmethod
     def validate_album_ids(cls, v: Optional[List[int]]) -> Optional[List[int]]:
@@ -147,10 +140,7 @@ class CollectionVisibilityUpdate(BaseSchema):
 class CollectionInDB(CollectionBase):
     """Schema for collection data as stored in database."""
     id: int = Field(gt=0)
-    owner_id: int = Field(
-        gt=0,
-        description="ID of the collection owner"
-    )
+    owner_id: int = Field(gt=0, exclude=True)
     created_at: datetime
     updated_at: datetime
 
@@ -162,17 +152,15 @@ class CollectionResponse(CollectionInDB):
     artists: List[CollectionArtistResponse] = Field(default_factory=list)
     likes_count: int = Field(default=0)
     is_liked_by_user: bool = Field(default=False)
-    wishlist: List[WishlistItemResponse] = Field(default_factory=list)
 
 
 class CollectionListItemResponse(BaseSchema):
     """Lightweight schema for collection list views (optimized for performance)."""
     id: int = Field(gt=0)
     name: str
-    description: Optional[str] = Field(
-        None, description="Truncated description for list view")
+    description: Optional[str] = None
     is_public: bool
-    owner_id: int = Field(gt=0)
+    mood_id: Optional[int] = None
     owner: Optional[UserMiniResponse] = None
     likes_count: int = Field(default=0)
     is_liked_by_user: bool = Field(default=False)
@@ -193,7 +181,8 @@ class CollectionDetailResponse(BaseSchema):
     description: Optional[str] = None
     is_public: bool
     mood_id: Optional[int] = None
-    owner_uuid: UUID = Field(
+    owner_uuid: Optional[UUID] = Field(
+        None,
         description="Owner's UUID (no id exposed to frontend)")
     owner: Optional[UserMiniResponse] = None
     likes_count: int = Field(default=0)

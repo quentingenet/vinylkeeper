@@ -1,43 +1,44 @@
+import time
+from typing import Any
 from app.repositories.dashboard_repository import DashboardRepository
-from app.repositories.collection_repository import CollectionRepository
 from app.models.user_model import User
 from app.schemas.dashboard_schema import DashboardStatsResponse, LatestAddition
-from app.core.exceptions import ServerError
-import logging
+from app.core.exceptions import AppException, ServerError
+from app.core.logging import logger
+
+_CACHE_TTL = 30.0
+_cache: dict[int, tuple[Any, float]] = {}
 
 
 class DashboardService:
-    def __init__(self, dashboard_repository: DashboardRepository, collection_repository: CollectionRepository):
+    def __init__(self, dashboard_repository: DashboardRepository):
         self.dashboard_repository = dashboard_repository
-        self.collection_repository = collection_repository
 
     async def get_dashboard_stats(self, user: User) -> DashboardStatsResponse:
+        cached = _cache.get(user.id)
+        if cached and time.monotonic() < cached[1]:
+            return cached[0]
+
         try:
-            # Get user stats using optimized batch query (reduces from 3 queries to 2)
             user_stats = await self.dashboard_repository.get_user_stats_batch(user.id)
             user_albums_total = user_stats['albums_total']
             user_artists_total = user_stats['artists_total']
-            user_collections_total = await self.collection_repository.count_by_owner(user.id)
-            user_public_collections_total = await self.collection_repository.count_public_by_owner(user.id)
+            user_collections_total = user_stats['collections_total']
+            user_public_collections_total = user_stats['public_collections_total']
 
-            # Get global collections counts (albums and artists across all collections)
             global_counts = await self.dashboard_repository.get_global_collections_counts()
             global_albums_total = global_counts['albums_total']
             global_artists_total = global_counts['artists_total']
 
-            # Get latest additions sequentially
             latest_album_result = await self.dashboard_repository.get_latest_album()
             latest_artist_result = await self.dashboard_repository.get_latest_artist()
 
-            # Get places counts using optimized batch query (reduces from 2 queries to 1)
             places_counts = await self.dashboard_repository.get_places_counts_batch()
             moderated_places_total = places_counts['moderated_total']
             global_places_total = places_counts['global_total']
 
-            # Get public collections count
             public_collections_total = await self.dashboard_repository.get_public_collections_count()
 
-            # Process latest album
             latest_album = None
             latest_album_id = None
             if latest_album_result:
@@ -54,7 +55,6 @@ class DashboardService:
                     external_id=album.external_album_id,
                 )
 
-            # Process latest artist
             latest_artist = None
             latest_artist_id = None
             if latest_artist_result:
@@ -71,7 +71,6 @@ class DashboardService:
                     external_id=artist.external_artist_id
                 )
 
-            # Get recent albums for mosaic, excluding latest album and artist
             exclude_ids = []
             if latest_album_id:
                 exclude_ids.append(latest_album_id)
@@ -83,7 +82,6 @@ class DashboardService:
                 exclude_ids=exclude_ids if exclude_ids else None
             )
 
-            # Process recent albums for mosaic (duplicates already filtered in repository)
             recent_albums = []
             if recent_albums_result:
                 for album, username, updated_at in recent_albums_result:
@@ -97,7 +95,7 @@ class DashboardService:
                         external_id=album.external_album_id,
                     ))
 
-            return DashboardStatsResponse(
+            result = DashboardStatsResponse(
                 user_albums_total=user_albums_total,
                 user_artists_total=user_artists_total,
                 user_collections_total=user_collections_total,
@@ -111,10 +109,14 @@ class DashboardService:
                 latest_artist=latest_artist,
                 recent_albums=recent_albums
             )
+            _cache[user.id] = (result, time.monotonic() + _CACHE_TTL)
+            return result
+        except AppException:
+            raise
         except Exception as e:
-            logging.error(f"Dashboard error: {e}", exc_info=True)
+            logger.error(f"Dashboard error: {e}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get dashboard stats",
-                details={"error": str(e)}
+                details={}
             )

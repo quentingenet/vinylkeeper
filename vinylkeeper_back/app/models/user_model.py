@@ -10,7 +10,7 @@ from sqlalchemy import (
     event,
     func
 )
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import relationship
 from app.models.base import Base
 
 
@@ -95,101 +95,53 @@ class User(Base):
     collections = relationship(
         "Collection",
         back_populates="owner",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     loans = relationship(
         "Loan",
         back_populates="user",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     wishlist_items = relationship(
         "Wishlist",
         back_populates="user",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     likes = relationship(
         "Like",
         back_populates="user",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
-    
+
     place_likes = relationship(
         "PlaceLike",
         back_populates="user",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
-    
+
     submitted_places = relationship(
         "Place",
         back_populates="submitted_by",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     moderation_requests = relationship(
-        "ModerationRequest", back_populates="user", lazy="selectin")
-
-    @validates('username', 'email')
-    def validate_unique_fields(self, key, value):
-        """Validate unique fields."""
-        if value is None:
-            raise ValueError(f"{key} cannot be null")
-        
-        if key == 'username':
-            if len(value) < 3:
-                raise ValueError("Username must contain at least 3 characters")
-            if len(value) > 50:
-                raise ValueError("Username must not exceed 50 characters")
-            
-            # Allow only alphanumeric characters, dots, hyphens, and underscores
-            import re
-            if not re.match(r'^[a-zA-Z0-9._-]+$', value):
-                raise ValueError("Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
-            
-            # Username cannot start or end with special characters
-            if value.startswith(('.', '-', '_')) or value.endswith(('.', '-', '_')):
-                raise ValueError("Username cannot start or end with dots, hyphens, or underscores")
-        
-        return value
-
-    @validates('password')
-    def validate_password(self, key, value):
-        """Validate password complexity."""
-        if value is None:
-            raise ValueError("Password cannot be null")
-        
-        # Skip validation for hashed passwords (they start with $argon2)
-        if value.startswith('$argon2'):
-            return value
-        
-        # Validate plain password
-        if len(value) < 4:
-            raise ValueError("Password must contain at least 4 characters")
-        
-        if not any(c.isalpha() for c in value):
-            raise ValueError("Password must contain at least one letter")
-        
-        if not any(c.isdigit() for c in value):
-            raise ValueError("Password must contain at least one number")
-        
-        return value
-
-    @validates('timezone')
-    def validate_timezone(self, key, value):
-        """Validate timezone format."""
-        if value is None:
-            raise ValueError("Timezone cannot be null")
-        if not value or '/' not in value:
-            raise ValueError("Invalid timezone format")
-        return value
+        "ModerationRequest", back_populates="user", lazy="noload")
 
     def __repr__(self):
         """String representation of the user."""

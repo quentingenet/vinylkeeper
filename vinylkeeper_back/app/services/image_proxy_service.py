@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import os
 from pathlib import Path
@@ -135,7 +136,7 @@ class ImageProxyService:
             logger.error(f"Failed to fetch image from {url}: {str(e)}")
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
-                message=f"Failed to fetch image: {str(e)}"
+                message="Failed to fetch image"
             )
 
     def _process_image(
@@ -164,7 +165,7 @@ class ImageProxyService:
             logger.error(f"Failed to process image: {str(e)}")
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
-                message=f"Failed to process image: {str(e)}"
+                message="Failed to process image"
             )
 
     async def get_proxy_image(
@@ -188,17 +189,17 @@ class ImageProxyService:
             cache_key = self._generate_cache_key(
                 src, width, height, quality, format)
 
-            if self._is_cached(cache_key, format):
-                cached_data = self._load_from_cache(cache_key, format)
+            if await asyncio.to_thread(self._is_cached, cache_key, format):
+                cached_data = await asyncio.to_thread(self._load_from_cache, cache_key, format)
                 return cached_data, f"image/{format}"
 
         image_data = await self._fetch_image(src)
-        processed_data = self._process_image(
-            image_data, width, height, quality, format)
+        processed_data = await asyncio.to_thread(
+            self._process_image, image_data, width, height, quality, format)
 
         if cacheable:
             cache_key = self._generate_cache_key(
                 src, width, height, quality, format)
-            self._save_to_cache(cache_key, format, processed_data)
+            await asyncio.to_thread(self._save_to_cache, cache_key, format, processed_data)
 
         return processed_data, f"image/{format}"

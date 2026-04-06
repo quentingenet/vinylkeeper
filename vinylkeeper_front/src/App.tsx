@@ -1,27 +1,47 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useUserContext } from "@contexts/UserContext";
 import Protected from "@routing/Protected";
-import Landpage from "@pages/Landpage/Landpage";
-import Dashboard from "@pages/Dashboard/Dashboard";
-import Layout from "@components/Layout/Layout";
-import ResetPassword from "@pages/ResetPassword/ResetPassword";
-import Settings from "@pages/Settings/Settings";
-import Collections from "@pages/Collections/Collections";
-import AddVinyls from "@pages/AddVinyls/AddVinyls";
-import Explore from "@pages/Explore/Explore";
+import VinylSpinner from "@components/UI/VinylSpinner";
+import { ErrorBoundary } from "@components/ErrorBoundary/ErrorBoundary";
 import { EGlobalUrls } from "@utils/GlobalUrls";
-import CollectionDetails from "@pages/Collections/CollectionDetails";
-import Places from "@pages/Places/Places";
-import Admin from "@pages/Admin/Admin";
+
+const Landpage = lazy(() => import("@pages/Landpage/Landpage"));
+const Dashboard = lazy(() => import("@pages/Dashboard/Dashboard"));
+const Layout = lazy(() => import("@components/Layout/Layout"));
+const ResetPassword = lazy(() => import("@pages/ResetPassword/ResetPassword"));
+const Settings = lazy(() => import("@pages/Settings/Settings"));
+const Collections = lazy(() => import("@pages/Collections/Collections"));
+const AddVinyls = lazy(() => import("@pages/AddVinyls/AddVinyls"));
+const Explore = lazy(() => import("@pages/Explore/Explore"));
+const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
+const Places = lazy(() => import("@pages/Places/Places"));
+const Admin = lazy(() => import("@pages/Admin/Admin"));
 
 function App() {
   const userContext = useUserContext();
   const location = useLocation();
 
+  if (userContext.isUserLoggedIn === null)
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <VinylSpinner />
+      </div>
+    );
+
   const shouldDisplayNavBar =
-    userContext.isUserLoggedIn && !location.pathname.includes("reset-password");
+    userContext.isUserLoggedIn === true &&
+    !location.pathname.includes("reset-password");
+
   return (
-    <>
+    <ErrorBoundary>
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <VinylSpinner />
+        </div>
+      }
+    >
       {shouldDisplayNavBar ? (
         <Layout>
           <Routes>
@@ -110,7 +130,8 @@ function App() {
           <Route path={EGlobalUrls.NO_MATCH} element={<Landpage />} />
         </Routes>
       )}
-    </>
+    </Suspense>
+    </ErrorBoundary>
   );
 }
 

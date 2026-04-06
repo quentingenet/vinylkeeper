@@ -1,7 +1,6 @@
 import {
   Alert,
   Button,
-  CircularProgress,
   Grid,
   IconButton,
   InputAdornment,
@@ -72,7 +71,7 @@ export default function Login({
       userContext.setIsUserLoggedIn(response.isLoggedIn);
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
-      navigate("/dashboard");
+      void navigate("/dashboard");
     } catch {
       setOpenSnackBar(true);
     } finally {
@@ -113,7 +112,7 @@ export default function Login({
         }}
       >
         <form
-          onSubmit={handleSubmit(submitLogin)}
+          onSubmit={(e) => { void handleSubmit(submitLogin)(e); }}
           className={styles.globalForm}
           style={{ width: "100%" }}
         >
@@ -138,7 +137,7 @@ export default function Login({
                 style: { textTransform: "lowercase" },
               }}
               {...register("email", {
-                setValueAs: (value) => value.toLowerCase(),
+                setValueAs: (value: unknown): string => String(value).toLowerCase(),
               })}
             />
           </Grid>

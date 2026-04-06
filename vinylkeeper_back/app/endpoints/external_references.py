@@ -1,7 +1,5 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, Path
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_db
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.external_reference_service import ExternalReferenceService
@@ -11,7 +9,6 @@ from app.services.collection_service import CollectionService
 from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
     AddToCollectionRequest,
-    AddExternalResponse,
     WishlistItemResponse,
     CollectionItemResponse,
     AddToWishlistResponse,
@@ -21,10 +18,8 @@ from app.schemas.wishlist_schema import (
     PaginatedWishlistResponse
 )
 from app.core.exceptions import (
-    ResourceNotFoundError,
     ValidationError,
     ForbiddenError,
-    ServerError
 )
 from app.deps.deps import (
     get_external_reference_service,
@@ -127,22 +122,7 @@ async def get_user_wishlist_paginated(
         # Check if target user has at least one public collection
         # If not, only the owner can view their wishlist
         if target_user_id != current_user.id:
-            # Check if user has any public collection using collection_service
-            from sqlalchemy import select
-            from app.models.collection_model import Collection
-
-            # Get database session from collection_service
-            db = collection_service.repository.db
-
-            # Check if user has at least one public collection
-            query = select(Collection).filter(
-                Collection.owner_id == target_user_id,
-                Collection.is_public == True
-            ).limit(1)
-            result = await db.execute(query)
-            has_public_collection = result.scalar_one_or_none() is not None
-
-            if not has_public_collection:
+            if not await collection_service.has_public_collections(target_user_id):
                 # All collections are private, so wishlist is private
                 raise ForbiddenError(
                     error_code=4003,
@@ -173,23 +153,6 @@ async def export_my_wishlist_ods(
 ):
     return await export_service.export_my_wishlist_ods(current_user.id, current_user.username)
 
-
-@router.get("/wishlist/export.csv")
-@handle_app_exceptions
-async def export_my_wishlist_csv_legacy(
-    current_user: User = Depends(get_current_user),
-    export_service: WishlistExportService = Depends(get_wishlist_export_service),
-):
-    return await export_service.export_my_wishlist_csv(current_user.id, current_user.username)
-
-
-@router.get("/wishlist/export.ods")
-@handle_app_exceptions
-async def export_my_wishlist_ods_legacy(
-    current_user: User = Depends(get_current_user),
-    export_service: WishlistExportService = Depends(get_wishlist_export_service),
-):
-    return await export_service.export_my_wishlist_ods(current_user.id, current_user.username)
 
 
 @router.get("/wishlist/{wishlist_id}", response_model=WishlistItemResponse)

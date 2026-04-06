@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom";
+import { Box } from "@mui/material";
 import styles from "../../styles/components/Footer.module.scss";
+import { growItem } from "@utils/Animations";
 import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
 import ModalFounderVinylKeeper from "@components/Modals/ModalFounderVinylKeeper";
 
@@ -23,18 +24,22 @@ export default function Footer(props: FooterProps) {
       <span onClick={() => setOpenTermsModal(true)}>
         Terms and conditions&nbsp;
       </span>
-      <span>
-        <Link
-          to={"https://github.com/quentingenet/vinylkeeper"}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Source code&nbsp;
-        </Link>
-      </span>
       <span onClick={() => setOpenFounderModal(true)}>
-        made with&nbsp;<span className={styles.heartFooter}>❤</span>&nbsp;by
-        Quentin Genet
+        &nbsp;made with&nbsp;
+        <Box
+          component="span"
+          sx={{
+            color: "red",
+            display: "inline-block",
+            fontSize: "1.18em",
+            lineHeight: 1,
+            verticalAlign: "-0.06em",
+            animation: `${growItem} 0.7s infinite`,
+          }}
+        >
+          ❤
+        </Box>
+        &nbsp;by Quentin Genet
       </span>
       <ModalTermsVinylKeeper
         setOpenTermsModal={setOpenTermsModal}

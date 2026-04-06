@@ -1,5 +1,3 @@
-# app/main.py
-import logging
 import os
 from fastapi import FastAPI
 from app.core.security import configure_cors
@@ -8,10 +6,7 @@ from app.endpoints import users, collections, request_proxy, dashboard, places, 
 from app.endpoints import external_references, images
 from app.core.lifespan import lifespan
 
-# Set timezone to Europe/Paris to match server timezone
-os.environ['TZ'] = 'Europe/Paris'
-
-logger = logging.getLogger("app")
+os.environ["TZ"] = "Europe/Paris"
 
 app = FastAPI(
     title="VinylKeeper API",
@@ -34,5 +29,9 @@ app.include_router(admin.router, prefix="/api/vk-admin")
 app.include_router(images.router, prefix="/api/images")
 
 @app.get("/")
-def root():
+async def root():
     return {"message": "Welcome to the VinylKeeper API"}
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}

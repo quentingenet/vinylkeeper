@@ -18,12 +18,13 @@ export interface ModerationRequest {
     city: string;
     country: string;
     description?: string;
+    place_type?: { id: number; name: string };
     is_moderated: boolean;
     is_valid: boolean;
   };
   user?: {
-    id: number;
     username: string;
+    user_uuid: string;
   };
   status?: ModerationStatus;
 }

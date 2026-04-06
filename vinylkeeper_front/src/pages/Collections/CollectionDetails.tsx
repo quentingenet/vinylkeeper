@@ -5,22 +5,18 @@ import {
   type CollectionDetailResponse,
   type PaginatedAlbumsResponse,
   type PaginatedArtistsResponse,
+  type CollectionAlbumResponse,
+  type CollectionArtistResponse,
 } from "@services/CollectionApiService";
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
-import { type WishlistItemResponse } from "@models/IExternalReference";
+import {
+  type WishlistItemResponse,
+  type PaginatedWishlistResponse,
+} from "@models/IExternalReference";
 import { useWishlist } from "@hooks/useWishlist";
 import {
   Typography,
   Box,
-  CircularProgress,
-  Card,
-  CardContent,
-  CardMedia,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Menu,
   MenuItem,
@@ -31,26 +27,22 @@ import {
   InputLabel,
   Select,
   SelectChangeEvent,
-  Chip,
-  Grid,
-  useTheme,
-  useMediaQuery,
   TextField,
   InputAdornment,
 } from "@mui/material";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
-import DeleteIcon from "@mui/icons-material/Delete";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { useDebounce } from "@hooks/useDebounce";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
-import { Album } from "@mui/icons-material";
-import { API_VK_URL, truncateText } from "@utils/GlobalUtils";
-import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { API_VK_URL, VinylStateEnum } from "@utils/GlobalUtils";
+import { queryKeys } from "@utils/queryKeys";
 import { triggerBrowserDownloadFromUrl } from "@utils/DownloadUtils";
 import styles from "../../styles/pages/Collection.module.scss";
+import MediaCard from "@components/Collections/MediaCard";
+import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import VinylSpinner from "@components/UI/VinylSpinner";
 
@@ -58,6 +50,20 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+}
+
+interface PlayableItem {
+  external_id?: string;
+  external_album_id?: string;
+  external_artist_id?: string;
+  title?: string;
+  name?: string;
+  artist_name?: string;
+  image_url?: string;
+  state_record?: VinylStateEnum | null;
+  state_cover?: VinylStateEnum | null;
+  acquisition_month_year?: string | null;
+  id?: number;
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -87,7 +93,7 @@ export default function CollectionDetails() {
   const location = useLocation();
 
   // Check if we came from Explore page
-  const isFromExplore = location.state?.from === "explore";
+  const isFromExplore = (location.state as { from?: string } | null)?.from === "explore";
 
   // Tab state
   const [tabValue, setTabValue] = useState(0);
@@ -102,7 +108,6 @@ export default function CollectionDetails() {
   // Search state
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-  const [isSearching, setIsSearching] = useState(false);
 
   // Pagination states
   const [albumsPage, setAlbumsPage] = useState(1);
@@ -132,7 +137,7 @@ export default function CollectionDetails() {
     isLoading: isLoadingDetails,
     error: detailsError,
   } = useQuery<CollectionDetailResponse>({
-    queryKey: ["collectionDetails", collectionId],
+    queryKey: queryKeys.collections.detail(collectionId),
     queryFn: () => collectionApiService.getCollectionDetails(collectionId),
     enabled: !!collectionId,
   });
@@ -143,7 +148,7 @@ export default function CollectionDetails() {
     isLoading: isLoadingAlbums,
     error: albumsError,
   } = useQuery<PaginatedAlbumsResponse>({
-    queryKey: ["collectionAlbums", collectionId, albumsPage, sortOrder],
+    queryKey: queryKeys.collections.albumsPage(collectionId, albumsPage, sortOrder),
     queryFn: () =>
       collectionApiService.getCollectionAlbumsPaginated(
         collectionId,
@@ -160,7 +165,7 @@ export default function CollectionDetails() {
     isLoading: isLoadingArtists,
     error: artistsError,
   } = useQuery<PaginatedArtistsResponse>({
-    queryKey: ["collectionArtists", collectionId, artistsPage, sortOrder],
+    queryKey: queryKeys.collections.artistsPage(collectionId, artistsPage, sortOrder),
     queryFn: () =>
       collectionApiService.getCollectionArtistsPaginated(
         collectionId,
@@ -173,7 +178,7 @@ export default function CollectionDetails() {
 
   // Wishlist query - load collection owner's wishlist with pagination (public)
   const shouldLoadWishlist = tabValue === 2 && !!collectionDetails?.owner_uuid;
-  const ownerUuid = collectionDetails?.owner_uuid;
+  const ownerUuid = collectionDetails?.owner_uuid != null ? collectionDetails.owner_uuid : undefined;
 
   const {
     wishlistItems: ownerWishlistItems,
@@ -185,10 +190,9 @@ export default function CollectionDetails() {
   const {
     data: searchResults,
     isLoading: isLoadingSearch,
-    error: searchError,
     refetch: refetchSearch,
   } = useQuery({
-    queryKey: ["collectionSearch", collectionId, debouncedSearchTerm, tabValue],
+    queryKey: queryKeys.collections.searchQuery(collectionId, debouncedSearchTerm, tabValue),
     queryFn: () => {
       const searchType =
         tabValue === 0 ? "album" : tabValue === 1 ? "artist" : "both";
@@ -219,7 +223,7 @@ export default function CollectionDetails() {
       entity_type: item.entity_type,
       source: "",
     }));
-  }, [ownerWishlistItems, collectionDetails?.owner_uuid]);
+  }, [ownerWishlistItems]);
 
   // Filter wishlist items for search (client-side filtering)
   const filteredWishlistItems = useMemo(() => {
@@ -239,45 +243,50 @@ export default function CollectionDetails() {
   const removeAlbumMutation = useMutation({
     mutationFn: (albumId: number) =>
       collectionApiService.removeAlbumFromCollection(collectionId, albumId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["collectionAlbums", collectionId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["collectionSearch", collectionId],
-      });
+    onSuccess: (_data, albumId) => {
+      queryClient.setQueryData<PaginatedAlbumsResponse>(
+        queryKeys.collections.albumsPage(collectionId, albumsPage, sortOrder),
+        (old) =>
+          old
+            ? { ...old, items: old.items.filter((item) => item.id !== albumId), total: Math.max(0, old.total - 1) }
+            : old
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.search(collectionId) });
     },
   });
 
   const removeArtistMutation = useMutation({
     mutationFn: (artistId: number) =>
       collectionApiService.removeArtistFromCollection(collectionId, artistId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["collectionArtists", collectionId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["collectionSearch", collectionId],
-      });
+    onSuccess: (_data, artistId) => {
+      queryClient.setQueryData<PaginatedArtistsResponse>(
+        queryKeys.collections.artistsPage(collectionId, artistsPage, sortOrder),
+        (old) =>
+          old
+            ? { ...old, items: old.items.filter((item) => item.id !== artistId), total: Math.max(0, old.total - 1) }
+            : old
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.artists(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.search(collectionId) });
     },
   });
 
   const removeWishlistItemMutation = useMutation({
     mutationFn: (wishlistId: number) =>
       externalReferenceApiService.removeFromWishlist(wishlistId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["collectionDetails", collectionId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["wishlist"],
-      });
+    onSuccess: (_data, wishlistId) => {
+      queryClient.setQueriesData<PaginatedWishlistResponse>(
+        { queryKey: queryKeys.wishlist.all() },
+        (old) =>
+          old
+            ? { ...old, items: old.items.filter((item) => item.id !== wishlistId) }
+            : old
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wishlist.all() });
     },
   });
 
@@ -342,19 +351,11 @@ export default function CollectionDetails() {
     setSearchTerm(value);
   };
 
-  // Debounce effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  useDebounce(() => setDebouncedSearchTerm(searchTerm), 500, [searchTerm]);
 
   const handleSearch = () => {
     if (searchTerm.trim() && searchTerm.length >= 2) {
-      setIsSearching(true);
-      refetchSearch().finally(() => setIsSearching(false));
+      void refetchSearch();
     }
   };
 
@@ -390,7 +391,7 @@ export default function CollectionDetails() {
     return sorted;
   };
 
-  const handlePlayClick = (item: any, type: "album" | "artist") => {
+  const handlePlayClick = (item: PlayableItem, type: "album" | "artist") => {
     // For wishlist items, use external_id directly
     // For collection items, use external_album_id or external_artist_id
     const externalId =
@@ -411,7 +412,7 @@ export default function CollectionDetails() {
 
     const playbackItem: PlaybackItem = {
       id: externalId,
-      title: item.title || item.name,
+      title: item.title || item.name || "",
       artist: type === "album" ? item.artist_name || "" : "",
       image_url: item.image_url || "",
       itemType: type,
@@ -419,9 +420,9 @@ export default function CollectionDetails() {
       albumData:
         type === "album"
           ? {
-              state_record: item.state_record,
-              state_cover: item.state_cover,
-              acquisition_month_year: item.acquisition_month_year,
+              state_record: item.state_record ?? undefined,
+              state_cover: item.state_cover ?? undefined,
+              acquisition_month_year: item.acquisition_month_year ?? undefined,
             }
           : undefined,
     };
@@ -435,12 +436,12 @@ export default function CollectionDetails() {
     setSelectedPlaybackItem(null);
   };
 
-  const handleDeleteAlbum = (album: any) => {
+  const handleDeleteAlbum = (album: CollectionAlbumResponse) => {
     setItemToDelete({ id: album.id, type: "album", title: album.title });
     setDeleteAlbumModalOpen(true);
   };
 
-  const handleDeleteArtist = (artist: any) => {
+  const handleDeleteArtist = (artist: CollectionArtistResponse) => {
     setItemToDelete({ id: artist.id, type: "artist", title: artist.title });
     setDeleteArtistModalOpen(true);
   };
@@ -553,7 +554,7 @@ export default function CollectionDetails() {
             variant="h4"
             component="h1"
             gutterBottom
-            sx={{ color: "#C9A726" }}
+            sx={{ color: "primary.main" }}
           >
             {collectionDetails.name || "Collection"}
           </Typography>
@@ -811,7 +812,7 @@ export default function CollectionDetails() {
                       borderColor: "rgba(255, 255, 255, 0.5)",
                     },
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#C9A726",
+                      borderColor: "primary.main",
                     },
                     "& .MuiSvgIcon-root": {
                       color: "text.secondary",
@@ -835,10 +836,10 @@ export default function CollectionDetails() {
           variant="fullWidth"
           sx={{
             "& .MuiTab-root": {
-              color: "#C9A726",
-              "&.Mui-selected": { color: "#C9A726" },
+              color: "primary.main",
+              "&.Mui-selected": { color: "primary.main" },
             },
-            "& .MuiTabs-indicator": { backgroundColor: "#C9A726" },
+            "& .MuiTabs-indicator": { backgroundColor: "primary.main" },
           }}
         >
           <Tab label="Albums" />
@@ -893,173 +894,20 @@ export default function CollectionDetails() {
               </Box>
             ) : (
               <>
-                <Typography variant="h6" sx={{ mb: 2, color: "#C9A726" }}>
+                <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
                   Search results for "{debouncedSearchTerm}" (
                   {searchResults.albums.length} albums)
                 </Typography>
                 <div className={styles.resultsContainer}>
                   {(searchResults.albums || []).map((album) => (
-                    <Card
-                      onClick={() => handlePlayClick(album, "album")}
+                    <MediaCard
                       key={album.id}
-                      className={styles.resultCard}
-                      sx={{
-                        width: 250,
-                        height: 350,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        position: "relative",
-                        transition: "transform 0.2s ease-in-out",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 10,
-                          right: 10,
-                          display: "flex",
-                          flexDirection: "row",
-                          gap: 1,
-                          zIndex: 2,
-                        }}
-                      >
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayClick(album, "album");
-                          }}
-                          sx={{
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            width: "32px",
-                            height: "32px",
-                            p: 0,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            },
-                          }}
-                        >
-                          <PlayArrowIcon
-                            sx={{ color: "white", fontSize: "20px" }}
-                          />
-                        </IconButton>
-                        {isOwner && (
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteAlbum(album);
-                            }}
-                            sx={{
-                              backgroundColor: "rgba(0, 0, 0, 0.5)",
-                              width: "32px",
-                              height: "32px",
-                              p: 0,
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                              },
-                            }}
-                          >
-                            <DeleteIcon
-                              sx={{ color: "white", fontSize: "20px" }}
-                            />
-                          </IconButton>
-                        )}
-                      </Box>
-                      {album.image_url ? (
-                        <CardMedia
-                          component="img"
-                          height={250}
-                          sx={{ objectFit: "contain" }}
-                          image={
-                            buildProxyImageUrl(
-                              album.image_url || "",
-                              300,
-                              300,
-                              75,
-                              true
-                            ) || undefined
-                          }
-                          alt={album.title}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            height: 250,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Album
-                            sx={{
-                              opacity: 0.7,
-                              width: 150,
-                              height: 150,
-                              color: "#C9A726",
-                            }}
-                          />
-                        </Box>
-                      )}
-                      <CardContent
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          height: "80px",
-                          gap: 0.5,
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: "1.4rem",
-                            textAlign: "center",
-                            color: "#C9A726",
-                            fontWeight: "bold",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            lineHeight: 1.2,
-                            height: "2.4em",
-                            width: "100%",
-                          }}
-                        >
-                          {truncateText(album.title?.split(" - ")[0] || "", 20)}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontSize: "1rem",
-                            textAlign: "center",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            lineHeight: 1.2,
-                            height: "2.4em",
-                            width: "100%",
-                          }}
-                          variant="h6"
-                        >
-                          {truncateText(
-                            album.title?.split(" - ")[1] || album.title || "",
-                            20
-                          )}
-                        </Typography>
-                      </CardContent>
-                    </Card>
+                      item={album}
+                      itemType="album"
+                      onPlay={() => handlePlayClick(album, "album")}
+                      onDelete={isOwner ? () => handleDeleteAlbum(album) : undefined}
+                      imageSize={{ w: 300, h: 300, q: 75 }}
+                    />
                   ))}
                 </div>
               </>
@@ -1096,167 +944,14 @@ export default function CollectionDetails() {
             <>
               <div className={styles.resultsContainer}>
                 {(albumsData?.items || []).map((album) => (
-                  <Card
-                    onClick={() => handlePlayClick(album, "album")}
+                  <MediaCard
                     key={album.id}
-                    className={styles.resultCard}
-                    sx={{
-                      width: 250,
-                      height: 350,
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      position: "relative",
-                      transition: "transform 0.2s ease-in-out",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 10,
-                        right: 10,
-                        display: "flex",
-                        flexDirection: "row",
-                        gap: 1,
-                        zIndex: 2,
-                      }}
-                    >
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayClick(album, "album");
-                        }}
-                        sx={{
-                          backgroundColor: "rgba(0, 0, 0, 0.5)",
-                          width: "32px",
-                          height: "32px",
-                          p: 0,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.7)",
-                          },
-                        }}
-                      >
-                        <PlayArrowIcon
-                          sx={{ color: "white", fontSize: "20px" }}
-                        />
-                      </IconButton>
-                      {isOwner && (
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteAlbum(album);
-                          }}
-                          sx={{
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            width: "32px",
-                            height: "32px",
-                            p: 0,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            },
-                          }}
-                        >
-                          <DeleteIcon
-                            sx={{ color: "white", fontSize: "20px" }}
-                          />
-                        </IconButton>
-                      )}
-                    </Box>
-                    {album.image_url ? (
-                      <CardMedia
-                        component="img"
-                        height={250}
-                        sx={{ objectFit: "contain" }}
-                        image={
-                          buildProxyImageUrl(
-                            album.image_url || "",
-                            500,
-                            500,
-                            85,
-                            true
-                          ) || undefined
-                        }
-                        alt={album.title}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          height: 250,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Album
-                          sx={{
-                            opacity: 0.7,
-                            width: 150,
-                            height: 150,
-                            color: "#C9A726",
-                          }}
-                        />
-                      </Box>
-                    )}
-                    <CardContent
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "80px",
-                        gap: 0.5,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: "1.4rem",
-                          textAlign: "center",
-                          color: "#C9A726",
-                          fontWeight: "bold",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          lineHeight: 1.2,
-                          height: "2.4em",
-                          width: "100%",
-                        }}
-                      >
-                        {truncateText(album.title?.split(" - ")[0] || "", 20)}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: "1rem",
-                          textAlign: "center",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          lineHeight: 1.2,
-                          height: "2.4em",
-                          width: "100%",
-                        }}
-                        variant="h6"
-                      >
-                        {truncateText(
-                          album.title?.split(" - ")[1] || album.title || "",
-                          20
-                        )}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    item={album}
+                    itemType="album"
+                    onPlay={() => handlePlayClick(album, "album")}
+                    onDelete={isOwner ? () => handleDeleteAlbum(album) : undefined}
+                    imageSize={{ w: 500, h: 500, q: 85 }}
+                  />
                 ))}
               </div>
               {albumsData && albumsData.total_pages > 1 && (
@@ -1318,153 +1013,20 @@ export default function CollectionDetails() {
               </Box>
             ) : (
               <>
-                <Typography variant="h6" sx={{ mb: 2, color: "#C9A726" }}>
+                <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
                   Search results for "{debouncedSearchTerm}" (
                   {searchResults.artists.length} artists)
                 </Typography>
                 <div className={styles.resultsContainer}>
                   {(searchResults.artists || []).map((artist) => (
-                    <Card
-                      onClick={() => handlePlayClick(artist, "artist")}
+                    <MediaCard
                       key={artist.id}
-                      className={styles.resultCard}
-                      sx={{
-                        width: 250,
-                        height: 350,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        position: "relative",
-                        transition: "transform 0.2s ease-in-out",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 10,
-                          right: 10,
-                          display: "flex",
-                          flexDirection: "row",
-                          gap: 1,
-                          zIndex: 2,
-                        }}
-                      >
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayClick(artist, "artist");
-                          }}
-                          sx={{
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            width: "32px",
-                            height: "32px",
-                            p: 0,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            },
-                          }}
-                        >
-                          <PlayArrowIcon
-                            sx={{ color: "white", fontSize: "20px" }}
-                          />
-                        </IconButton>
-                        {isOwner && (
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteArtist(artist);
-                            }}
-                            sx={{
-                              backgroundColor: "rgba(0, 0, 0, 0.5)",
-                              width: "32px",
-                              height: "32px",
-                              p: 0,
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                              },
-                            }}
-                          >
-                            <DeleteIcon
-                              sx={{ color: "white", fontSize: "20px" }}
-                            />
-                          </IconButton>
-                        )}
-                      </Box>
-                      {artist.image_url ? (
-                        <CardMedia
-                          component="img"
-                          height={250}
-                          sx={{ objectFit: "contain" }}
-                          image={
-                            buildProxyImageUrl(
-                              artist.image_url || "",
-                              300,
-                              300,
-                              75,
-                              true
-                            ) || undefined
-                          }
-                          alt={artist.title}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            height: 250,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Album
-                            sx={{
-                              opacity: 0.7,
-                              width: 150,
-                              height: 150,
-                              color: "#C9A726",
-                            }}
-                          />
-                        </Box>
-                      )}
-                      <CardContent
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          height: "80px",
-                          gap: 0.5,
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: "1.4rem",
-                            textAlign: "center",
-                            color: "#C9A726",
-                            fontWeight: "bold",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            lineHeight: 1.2,
-                            height: "2.4em",
-                            width: "100%",
-                          }}
-                        >
-                          {truncateText(artist.title || "", 20)}
-                        </Typography>
-                      </CardContent>
-                    </Card>
+                      item={artist}
+                      itemType="artist"
+                      onPlay={() => handlePlayClick(artist, "artist")}
+                      onDelete={isOwner ? () => handleDeleteArtist(artist) : undefined}
+                      imageSize={{ w: 300, h: 300, q: 75 }}
+                    />
                   ))}
                 </div>
               </>
@@ -1501,147 +1063,14 @@ export default function CollectionDetails() {
             <>
               <div className={styles.resultsContainer}>
                 {(artistsData?.items || []).map((artist) => (
-                  <Card
-                    onClick={() => handlePlayClick(artist, "artist")}
+                  <MediaCard
                     key={artist.id}
-                    className={styles.resultCard}
-                    sx={{
-                      width: 250,
-                      height: 350,
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      position: "relative",
-                      transition: "transform 0.2s ease-in-out",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 10,
-                        right: 10,
-                        display: "flex",
-                        flexDirection: "row",
-                        gap: 1,
-                        zIndex: 2,
-                      }}
-                    >
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayClick(artist, "artist");
-                        }}
-                        sx={{
-                          backgroundColor: "rgba(0, 0, 0, 0.5)",
-                          width: "32px",
-                          height: "32px",
-                          p: 0,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.7)",
-                          },
-                        }}
-                      >
-                        <PlayArrowIcon
-                          sx={{ color: "white", fontSize: "20px" }}
-                        />
-                      </IconButton>
-                      {isOwner && (
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteArtist(artist);
-                          }}
-                          sx={{
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            width: "32px",
-                            height: "32px",
-                            p: 0,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            },
-                          }}
-                        >
-                          <DeleteIcon
-                            sx={{ color: "white", fontSize: "20px" }}
-                          />
-                        </IconButton>
-                      )}
-                    </Box>
-                    {artist.image_url ? (
-                      <CardMedia
-                        component="img"
-                        height={250}
-                        sx={{ objectFit: "contain" }}
-                        image={
-                          buildProxyImageUrl(
-                            artist.image_url || "",
-                            500,
-                            500,
-                            85,
-                            true
-                          ) || undefined
-                        }
-                        alt={artist.title}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          height: 250,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Album
-                          sx={{
-                            opacity: 0.7,
-                            width: 150,
-                            height: 150,
-                            color: "#C9A726",
-                          }}
-                        />
-                      </Box>
-                    )}
-                    <CardContent
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "80px",
-                        gap: 0.5,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: "1.4rem",
-                          textAlign: "center",
-                          color: "#C9A726",
-                          fontWeight: "bold",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          lineHeight: 1.2,
-                          height: "2.4em",
-                          width: "100%",
-                        }}
-                      >
-                        {truncateText(artist.title || "", 20)}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    item={artist}
+                    itemType="artist"
+                    onPlay={() => handlePlayClick(artist, "artist")}
+                    onDelete={isOwner ? () => handleDeleteArtist(artist) : undefined}
+                    imageSize={{ w: 500, h: 500, q: 85 }}
+                  />
                 ))}
               </div>
               {artistsData && artistsData.total_pages > 1 && (
@@ -1703,170 +1132,20 @@ export default function CollectionDetails() {
               </Box>
             ) : (
               <>
-                <Typography variant="h6" sx={{ mb: 2, color: "#C9A726" }}>
+                <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
                   Search results for "{debouncedSearchTerm}" (
                   {filteredWishlistItems.length} items)
                 </Typography>
                 <div className={styles.resultsContainer}>
                   {getSortedWishlistItems(filteredWishlistItems).map((item) => (
-                    <Card
-                      onClick={() =>
-                        handlePlayClick(
-                          item,
-                          item.entity_type === "album" ? "album" : "artist"
-                        )
-                      }
+                    <MediaCard
                       key={item.id}
-                      className={styles.resultCard}
-                      sx={{
-                        width: 250,
-                        height: 350,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        position: "relative",
-                        transition: "transform 0.2s ease-in-out",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 10,
-                          right: 10,
-                          display: "flex",
-                          flexDirection: "row",
-                          gap: 1,
-                          zIndex: 2,
-                        }}
-                      >
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayClick(
-                              item,
-                              item.entity_type === "album" ? "album" : "artist"
-                            );
-                          }}
-                          sx={{
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            width: "32px",
-                            height: "32px",
-                            p: 0,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            },
-                          }}
-                        >
-                          <PlayArrowIcon
-                            sx={{ color: "white", fontSize: "20px" }}
-                          />
-                        </IconButton>
-                        {isOwner && (
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteWishlistItem(item);
-                            }}
-                            sx={{
-                              backgroundColor: "rgba(0, 0, 0, 0.5)",
-                              width: "32px",
-                              height: "32px",
-                              p: 0,
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                              },
-                            }}
-                          >
-                            <DeleteIcon
-                              sx={{ color: "white", fontSize: "20px" }}
-                            />
-                          </IconButton>
-                        )}
-                      </Box>
-                      {item.image_url ? (
-                        <CardMedia
-                          component="img"
-                          height={250}
-                          sx={{ objectFit: "contain" }}
-                          image={
-                            buildProxyImageUrl(
-                              item.image_url || "",
-                              300,
-                              300,
-                              75,
-                              true
-                            ) || undefined
-                          }
-                          alt={item.title}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            height: 250,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Album
-                            sx={{
-                              opacity: 0.7,
-                              width: 150,
-                              height: 150,
-                              color: "#C9A726",
-                            }}
-                          />
-                        </Box>
-                      )}
-                      <CardContent
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          height: "80px",
-                          gap: 0.5,
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: "1.4rem",
-                            textAlign: "center",
-                            color: "#C9A726",
-                            fontWeight: "bold",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            lineHeight: 1.2,
-                            height: "2.4em",
-                            width: "100%",
-                          }}
-                        >
-                          {truncateText(item.title || "", 20)}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontSize: "0.9rem",
-                            textAlign: "center",
-                            color: "text.secondary",
-                          }}
-                        >
-                          {item.entity_type === "album" ? "Album" : "Artist"}
-                        </Typography>
-                      </CardContent>
-                    </Card>
+                      item={item}
+                      itemType="wishlist"
+                      onPlay={() => handlePlayClick(item, item.entity_type === "album" ? "album" : "artist")}
+                      onDelete={isOwner ? () => handleDeleteWishlistItem(item) : undefined}
+                      imageSize={{ w: 300, h: 300, q: 75 }}
+                    />
                   ))}
                 </div>
               </>
@@ -1890,164 +1169,14 @@ export default function CollectionDetails() {
             <>
               <div className={styles.resultsContainer}>
                 {getSortedWishlistItems(filteredWishlistItems).map((item) => (
-                  <Card
-                    onClick={() =>
-                      handlePlayClick(
-                        item,
-                        item.entity_type === "album" ? "album" : "artist"
-                      )
-                    }
+                  <MediaCard
                     key={item.id}
-                    className={styles.resultCard}
-                    sx={{
-                      width: 250,
-                      height: 350,
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      position: "relative",
-                      transition: "transform 0.2s ease-in-out",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 10,
-                        right: 10,
-                        display: "flex",
-                        flexDirection: "row",
-                        gap: 1,
-                        zIndex: 2,
-                      }}
-                    >
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayClick(
-                            item,
-                            item.entity_type === "album" ? "album" : "artist"
-                          );
-                        }}
-                        sx={{
-                          backgroundColor: "rgba(0, 0, 0, 0.5)",
-                          width: "32px",
-                          height: "32px",
-                          p: 0,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.7)",
-                          },
-                        }}
-                      >
-                        <PlayArrowIcon
-                          sx={{ color: "white", fontSize: "20px" }}
-                        />
-                      </IconButton>
-                      {isOwner && (
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteWishlistItem(item);
-                          }}
-                          sx={{
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            width: "32px",
-                            height: "32px",
-                            p: 0,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            },
-                          }}
-                        >
-                          <DeleteIcon
-                            sx={{ color: "white", fontSize: "20px" }}
-                          />
-                        </IconButton>
-                      )}
-                    </Box>
-                    {item.image_url ? (
-                      <CardMedia
-                        component="img"
-                        height={250}
-                        sx={{ objectFit: "contain" }}
-                        image={
-                          buildProxyImageUrl(
-                            item.image_url || "",
-                            300,
-                            300,
-                            75,
-                            true
-                          ) || undefined
-                        }
-                        alt={item.title}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          height: 250,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Album
-                          sx={{
-                            opacity: 0.7,
-                            width: 150,
-                            height: 150,
-                            color: "#C9A726",
-                          }}
-                        />
-                      </Box>
-                    )}
-                    <CardContent
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "80px",
-                        gap: 0.5,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: "1.4rem",
-                          textAlign: "center",
-                          color: "#C9A726",
-                          fontWeight: "bold",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          lineHeight: 1.2,
-                          height: "2.4em",
-                          width: "100%",
-                        }}
-                      >
-                        {truncateText(item.title || "", 20)}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: "0.9rem",
-                          textAlign: "center",
-                          color: "text.secondary",
-                        }}
-                      >
-                        {item.entity_type === "album" ? "Album" : "Artist"}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    item={item}
+                    itemType="wishlist"
+                    onPlay={() => handlePlayClick(item, item.entity_type === "album" ? "album" : "artist")}
+                    onDelete={isOwner ? () => handleDeleteWishlistItem(item) : undefined}
+                    imageSize={{ w: 300, h: 300, q: 75 }}
+                  />
                 ))}
               </div>
               {wishlistTotalPages > 1 && !debouncedSearchTerm.trim() && (
@@ -2073,71 +1202,32 @@ export default function CollectionDetails() {
         isExplorePage={isFromExplore}
       />
 
-      {/* Delete Album Confirmation Modal */}
-      <Dialog open={deleteAlbumModalOpen} onClose={closeDeleteModals}>
-        <DialogTitle>Remove Album from Collection</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove "{itemToDelete?.title}" from this
-            collection? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDeleteModals}>Cancel</Button>
-          <Button
-            onClick={confirmDeleteAlbum}
-            color="error"
-            variant="contained"
-            disabled={removeAlbumMutation.isPending}
-          >
-            {removeAlbumMutation.isPending ? "Removing..." : "Remove"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={deleteAlbumModalOpen}
+        title="Remove Album from Collection"
+        message={`Are you sure you want to remove "${itemToDelete?.title}" from this collection? This action cannot be undone.`}
+        isPending={removeAlbumMutation.isPending}
+        onConfirm={confirmDeleteAlbum}
+        onClose={closeDeleteModals}
+      />
 
-      {/* Delete Artist Confirmation Modal */}
-      <Dialog open={deleteArtistModalOpen} onClose={closeDeleteModals}>
-        <DialogTitle>Remove Artist from Collection</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove "{itemToDelete?.title}" from this
-            collection? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDeleteModals}>Cancel</Button>
-          <Button
-            onClick={confirmDeleteArtist}
-            color="error"
-            variant="contained"
-            disabled={removeArtistMutation.isPending}
-          >
-            {removeArtistMutation.isPending ? "Removing..." : "Remove"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={deleteArtistModalOpen}
+        title="Remove Artist from Collection"
+        message={`Are you sure you want to remove "${itemToDelete?.title}" from this collection? This action cannot be undone.`}
+        isPending={removeArtistMutation.isPending}
+        onConfirm={confirmDeleteArtist}
+        onClose={closeDeleteModals}
+      />
 
-      {/* Delete Wishlist Item Confirmation Modal */}
-      <Dialog open={deleteWishlistModalOpen} onClose={closeDeleteModals}>
-        <DialogTitle>Remove from Wishlist</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove "{wishlistItemToDelete?.title}" from
-            your wishlist? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDeleteModals}>Cancel</Button>
-          <Button
-            onClick={confirmDeleteWishlistItem}
-            color="error"
-            variant="contained"
-            disabled={removeWishlistItemMutation.isPending}
-          >
-            {removeWishlistItemMutation.isPending ? "Removing..." : "Remove"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={deleteWishlistModalOpen}
+        title="Remove from Wishlist"
+        message={`Are you sure you want to remove "${wishlistItemToDelete?.title}" from your wishlist? This action cannot be undone.`}
+        isPending={removeWishlistItemMutation.isPending}
+        onConfirm={confirmDeleteWishlistItem}
+        onClose={closeDeleteModals}
+      />
     </Box>
   );
 }

@@ -84,9 +84,9 @@ export interface ArtistMetadata {
   source: string;
 }
 
-export interface IRequestToSend extends SearchQuery {}
-export interface IArtistRequestResults extends DiscogsData {}
-export interface IAlbumRequestResults extends DiscogsData {}
+export type IRequestToSend = SearchQuery;
+export type IArtistRequestResults = DiscogsData;
+export type IAlbumRequestResults = DiscogsData;
 export interface IRequestResults {
   type: string;
   data: IArtistRequestResults[] | IAlbumRequestResults[];

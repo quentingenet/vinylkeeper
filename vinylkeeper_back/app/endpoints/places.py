@@ -1,28 +1,15 @@
 from fastapi import APIRouter, Depends, status, Path, Query, Body
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
-    PlaceResponse,
-    PublicPlaceResponse,
     PlaceMapResponse
 )
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
 from app.services.place_service import PlaceService
-from app.deps.deps import get_place_service, get_db
+from app.deps.deps import get_place_service
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
-from app.models.reference_data.place_types import PlaceType
-from app.core.exceptions import (
-    ResourceNotFoundError,
-    ForbiddenError,
-    DuplicateFieldError,
-    AppException,
-    ValidationError,
-    ServerError,
-)
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
@@ -80,19 +67,11 @@ async def get_places_by_location(
 @router.get("/place-types", status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def get_place_types(
-    db: AsyncSession = Depends(get_db)
+    service: PlaceService = Depends(get_place_service)
 ):
     """Get all place types (public endpoint)"""
-    try:
-        from app.models.reference_data.place_types import PlaceType as PlaceTypeModel
-        from sqlalchemy import select
-        result = await db.execute(select(PlaceTypeModel))
-        place_types = result.scalars().all()
-        return [{"id": pt.id, "name": pt.name} for pt in place_types]
-    except Exception as e:
-        from app.core.logging import logger
-        logger.error(f"Error retrieving place types: {str(e)}")
-        raise
+    place_types = await service.get_place_types()
+    return [{"id": pt.id, "name": pt.name} for pt in place_types]
 
 
 @router.get("/search", status_code=status.HTTP_200_OK)
@@ -201,7 +180,6 @@ async def like_place(
     result = await service.like_place(user, place_id)
     return PlaceLikeStatusResponse(
         place_id=place_id,
-        liked=True,
         is_liked=True,
         likes_count=result["likes_count"],
         message=result["message"]
@@ -219,7 +197,6 @@ async def unlike_place(
     result = await service.unlike_place(user, place_id)
     return PlaceLikeStatusResponse(
         place_id=place_id,
-        liked=False,
         is_liked=False,
         likes_count=result["likes_count"],
         message=result["message"]

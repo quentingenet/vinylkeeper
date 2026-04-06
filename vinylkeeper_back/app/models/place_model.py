@@ -44,9 +44,9 @@ class Place(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    moderation_requests = relationship("ModerationRequest", back_populates="place", lazy="selectin", cascade="all, delete-orphan")
+    moderation_requests = relationship("ModerationRequest", back_populates="place", lazy="noload", cascade="all, delete-orphan", passive_deletes=True)
 
-    likes = relationship("PlaceLike", back_populates="place", cascade="all, delete-orphan", lazy="selectin")
+    likes = relationship("PlaceLike", back_populates="place", cascade="all, delete-orphan", lazy="noload", passive_deletes=True)
 
     __table_args__ = (
         CheckConstraint("length(name) >= 1", name="check_place_name_length"),

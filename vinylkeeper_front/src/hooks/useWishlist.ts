@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
+import { queryKeys } from "@utils/queryKeys";
 import type {
   PaginatedWishlistResponse,
   WishlistItemResponse,
 } from "@models/IExternalReference";
-import { HTTPError } from "ky";
+import { type ApiError } from "@utils/apiError";
 import { useUserContext } from "@contexts/UserContext";
 
 interface UseWishlistReturn {
@@ -12,7 +13,7 @@ interface UseWishlistReturn {
   totalPages: number;
   total: number;
   wishlistLoading: boolean;
-  error: HTTPError | null;
+  error: ApiError | null;
   isError: boolean;
   refreshWishlist: () => void;
 }
@@ -26,16 +27,14 @@ export const useWishlist = (
   const queryClient = useQueryClient();
   const { currentUser } = useUserContext();
 
-  const cacheKey = userUuid
-    ? ["wishlist", userUuid, page]
-    : ["wishlist", currentUser?.user_uuid, page];
+  const cacheKey = queryKeys.wishlist.forUserPage(userUuid ?? currentUser?.user_uuid, page);
 
   const {
     data: wishlistData,
     isLoading: wishlistLoading,
     error,
     isError,
-  } = useQuery<PaginatedWishlistResponse, HTTPError>({
+  } = useQuery<PaginatedWishlistResponse, ApiError>({
     queryKey: cacheKey,
     queryFn: () =>
       externalReferenceApiService.getUserWishlistPaginated(
@@ -61,7 +60,7 @@ export const useWishlist = (
     isError,
     refreshWishlist: () => {
       void queryClient.invalidateQueries({
-        queryKey: userUuid ? ["wishlist", userUuid] : ["wishlist"],
+        queryKey: userUuid ? queryKeys.wishlist.forUser(userUuid) : queryKeys.wishlist.all(),
       });
     },
   };
@@ -70,7 +69,7 @@ export const useWishlist = (
 interface UseWishlistItemDetailReturn {
   wishlistItem: WishlistItemResponse | undefined;
   isLoading: boolean;
-  error: HTTPError | null;
+  error: ApiError | null;
   isError: boolean;
 }
 
@@ -83,8 +82,8 @@ export const useWishlistItemDetail = (
     isLoading,
     error,
     isError,
-  } = useQuery<WishlistItemResponse, HTTPError>({
-    queryKey: ["wishlistItem", wishlistId],
+  } = useQuery<WishlistItemResponse, ApiError>({
+    queryKey: queryKeys.wishlist.item(wishlistId),
     queryFn: () =>
       externalReferenceApiService.getWishlistItemDetail(wishlistId!),
     enabled: enabled && wishlistId !== null,

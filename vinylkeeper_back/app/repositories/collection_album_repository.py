@@ -1,7 +1,9 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import SQLAlchemyError
 from app.models.collection_album import CollectionAlbum
 from app.models.album_model import Album
 from app.models.reference_data.vinyl_state import VinylState
@@ -28,13 +30,13 @@ class CollectionAlbumRepository(TransactionalMixin):
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
             return collection_album
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error creating collection-album association: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create collection-album association",
-                details={"error": str(e)}
+                details={}
             )
 
     async def update(self, collection_album: CollectionAlbum) -> CollectionAlbum:
@@ -44,13 +46,13 @@ class CollectionAlbumRepository(TransactionalMixin):
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
             return collection_album
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error updating collection-album association: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update collection-album association",
-                details={"error": str(e)}
+                details={}
             )
 
     async def delete(self, collection_album: CollectionAlbum) -> bool:
@@ -58,13 +60,13 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             await self._delete_entity(collection_album)
             return True
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error deleting collection-album association: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete collection-album association",
-                details={"error": str(e)}
+                details={}
             )
 
     async def find_by_collection_and_album(self, collection_id: int, album_id: int) -> Optional[CollectionAlbum]:
@@ -76,13 +78,13 @@ class CollectionAlbumRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error finding collection-album association: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find collection-album association",
-                details={"error": str(e)}
+                details={}
             )
 
     async def find_by_collection(self, collection_id: int) -> List[CollectionAlbum]:
@@ -93,12 +95,12 @@ class CollectionAlbumRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error finding collection albums: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find collection albums",
-                details={"error": str(e)}
+                details={}
             )
 
     async def find_by_album(self, album_id: int) -> List[CollectionAlbum]:
@@ -109,12 +111,12 @@ class CollectionAlbumRepository(TransactionalMixin):
             )
             result = await self.db.execute(query)
             return result.scalars().all()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error finding album collections: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to find album collections",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_vinyl_state_id(self, state_name: str) -> Optional[int]:
@@ -128,8 +130,6 @@ class CollectionAlbumRepository(TransactionalMixin):
     async def get_collection_albums_paginated(self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> tuple[List[tuple], int]:
         """Get paginated albums for a collection with metadata, sorted by collection_album.created_at"""
         try:
-            from sqlalchemy import func
-
             # Calculate offset
             offset = (page - 1) * limit
 
@@ -165,13 +165,13 @@ class CollectionAlbumRepository(TransactionalMixin):
 
             return albums_with_metadata, total
 
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(
                 f"Error getting collection albums paginated: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection albums paginated",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_album_with_metadata(self, collection_id: int, album_id: int) -> Optional[Album]:
@@ -187,12 +187,12 @@ class CollectionAlbumRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
 
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting album with metadata: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get album with metadata",
-                details={"error": str(e)}
+                details={}
             )
 
     async def add_album_to_collection(self, collection_id: int, album_id: int, metadata: dict) -> CollectionAlbum:
@@ -205,7 +205,6 @@ class CollectionAlbumRepository(TransactionalMixin):
                 stmt = update(Album).where(
                     Album.id == album_id).values(updated_at=func.now())
                 await self.db.execute(stmt)
-                from datetime import datetime, timezone
                 existing.updated_at = datetime.now(timezone.utc)
                 await self.db.flush()
                 raise DuplicateFieldError(
@@ -232,7 +231,6 @@ class CollectionAlbumRepository(TransactionalMixin):
                         f"Invalid state_cover value: {metadata['state_cover']}")
 
             # Create new association with explicit timestamps
-            from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
             collection_album = CollectionAlbum(
                 collection_id=collection_id,
@@ -253,12 +251,12 @@ class CollectionAlbumRepository(TransactionalMixin):
 
         except DuplicateFieldError:
             raise
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error adding album to collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to add album to collection",
-                details={"error": str(e)}
+                details={}
             )
 
     async def update_album_metadata(self, collection_id: int, album_id: int, metadata: dict) -> CollectionAlbum:
@@ -296,7 +294,6 @@ class CollectionAlbumRepository(TransactionalMixin):
 
             # Update only updated_at when modifying metadata
             # Never modify created_at - it represents the initial addition date
-            from datetime import datetime, timezone
             collection_album.updated_at = datetime.now(timezone.utc)
             # Preserve created_at if it's None (for old records)
             if collection_album.created_at is None:
@@ -306,12 +303,12 @@ class CollectionAlbumRepository(TransactionalMixin):
 
         except ResourceNotFoundError:
             raise
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error updating album metadata: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to update album metadata",
-                details={"error": str(e)}
+                details={}
             )
 
     async def remove_album_from_collection(self, collection_id: int, album_id: int) -> bool:
@@ -326,12 +323,12 @@ class CollectionAlbumRepository(TransactionalMixin):
 
         except ResourceNotFoundError:
             raise
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error removing album from collection: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove album from collection",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_collection_albums(self, collection_id: int) -> List[tuple]:
@@ -352,12 +349,12 @@ class CollectionAlbumRepository(TransactionalMixin):
             albums = result.all()
             return albums
 
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting collection albums: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection albums",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_collection_album_metadata(self, collection_id: int, album_id: int) -> Optional[CollectionAlbum]:
@@ -378,6 +375,6 @@ class CollectionAlbumRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
 
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting collection album metadata: {str(e)}")
             return None

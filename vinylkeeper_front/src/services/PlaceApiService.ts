@@ -21,8 +21,8 @@ export interface Place {
   address?: string;
   city?: string;
   country?: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   description?: string;
   source_url?: string;
   place_type: {
@@ -30,11 +30,11 @@ export interface Place {
     name: string;
   };
   submitted_by?: {
-    id: number;
     username: string;
+    user_uuid: string;
   };
-  is_moderated: boolean;
-  is_valid: boolean;
+  is_moderated?: boolean;
+  is_valid?: boolean;
   likes_count: number;
   is_liked?: boolean;
   created_at: string;

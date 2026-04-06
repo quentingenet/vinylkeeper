@@ -1,5 +1,6 @@
 import { CapacitorHttp } from "@capacitor/core";
 import { API_VK_URL } from "./GlobalUtils";
+import { ApiError } from "./apiError";
 
 interface CapacitorHttpOptions {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -7,12 +8,6 @@ interface CapacitorHttpOptions {
   body?: unknown;
   headers?: Record<string, string>;
   skipRefresh?: boolean;
-}
-
-interface ErrorResponse {
-  code: number;
-  message: string;
-  details: Record<string, unknown>;
 }
 
 class CapacitorHttpService {
@@ -49,9 +44,9 @@ class CapacitorHttpService {
         const contentType = response.headers["content-type"] || "";
 
         if (contentType.includes("application/json")) {
-          return typeof response.data === "string"
+          return (typeof response.data === "string"
             ? JSON.parse(response.data)
-            : response.data;
+            : response.data) as unknown as T;
         } else if (contentType.includes("text/")) {
           return response.data as T;
         }
@@ -99,10 +94,10 @@ class CapacitorHttpService {
     status?: number;
     data?: unknown;
     message?: string;
-  }): ErrorResponse {
+  }): ApiError {
     if (error.data) {
       try {
-        const errorData =
+        const errorData: unknown =
           typeof error.data === "string" ? JSON.parse(error.data) : error.data;
 
         if (
@@ -110,7 +105,7 @@ class CapacitorHttpService {
           typeof errorData === "object" &&
           ("message" in errorData || "code" in errorData)
         ) {
-          return errorData as ErrorResponse;
+          return errorData as ApiError;
         }
       } catch {
         // If parsing fails, continue with default error handling

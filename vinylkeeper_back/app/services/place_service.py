@@ -18,6 +18,7 @@ from app.schemas.place_schema import (
     PlaceMapResponse
 )
 from app.core.exceptions import (
+    AppException,
     ResourceNotFoundError,
     ForbiddenError,
     DuplicateFieldError,
@@ -27,6 +28,7 @@ from app.core.exceptions import (
 )
 from app.core.logging import logger
 from app.core.enums import ModerationStatusEnum, RoleEnum
+from app.core.transaction import transaction_context
 
 from app.utils.geocoding import geocode_city
 from app.mails.client_mail import send_mail, MailSubject
@@ -83,13 +85,11 @@ class PlaceService:
                     )
             # Coordinates are already valid, no action needed
 
-            # Create place
-            created_place = await self.repository.create_place(place_dict)
+            async with transaction_context(self.repository.db):
+                created_place = await self.repository.create_place(place_dict)
+                moderation_request = await self._create_moderation_request(created_place.id, user.id)
 
-            # Create moderation request automatically
-            moderation_request = await self._create_moderation_request(created_place.id, user.id)
-
-            # Notify admins about the new place suggestion
+            # Notify admins after commit (email failure must not roll back DB)
             try:
                 email_sent = await send_mail(
                     to=settings.EMAIL_ADMIN,
@@ -110,8 +110,6 @@ class PlaceService:
                 logger.error(
                     "New place suggestion email failed for place_id=%s: %s", created_place.id, mail_error
                 )
-            # Commit the transaction
-            await self.repository.db.commit()
 
             # Get likes info for the new place
             likes_count = await self.repository.get_place_likes_count(created_place.id)
@@ -125,12 +123,14 @@ class PlaceService:
 
         except (DuplicateFieldError, ValidationError) as e:
             raise e
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error creating place: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create place",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_place(self, place_id: int, user: Optional[User] = None) -> PublicPlaceResponse:
@@ -146,11 +146,13 @@ class PlaceService:
             return self._create_public_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:
             raise
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_map_places(self) -> List[PlaceMapResponse]:
@@ -172,12 +174,14 @@ class PlaceService:
                 )
                 for place_id, latitude, longitude, city, country in places_tuples
             ]
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error in get_map_places: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get map places",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_places_by_location(self, country: str, city: str, user: User) -> List[PublicPlaceResponse]:
@@ -187,12 +191,14 @@ class PlaceService:
             if not places:
                 return []
             return await self._build_public_place_responses(places, user.id)
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error in get_places_by_location: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places by location",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_all_places(self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PublicPlaceResponse]:
@@ -202,12 +208,14 @@ class PlaceService:
             if not places:
                 return []
             return await self._build_public_place_responses(places, user.id if user else None)
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Error in get_all_places: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places",
-                details={"error": str(e)}
+                details={}
             )
 
     async def update_place(self, user: User, place_id: int, place_data: PlaceUpdate) -> PlaceResponse:
@@ -222,8 +230,8 @@ class PlaceService:
                 )
 
             update_dict = place_data.model_dump(exclude_unset=True)
-            updated_place = await self.repository.update_place(place_id, update_dict)
-            await self.repository.db.commit()
+            async with transaction_context(self.repository.db):
+                updated_place = await self.repository.update_place(place_id, update_dict)
 
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
@@ -231,11 +239,13 @@ class PlaceService:
             return self._create_place_response(updated_place, likes_count, is_liked)
         except (ResourceNotFoundError, ForbiddenError):
             raise
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to update place",
-                details={"error": str(e)}
+                details={}
             )
 
     async def delete_place(self, user: User, place_id: int) -> bool:
@@ -249,17 +259,18 @@ class PlaceService:
                     message="You don't have permission to delete this place"
                 )
 
-            result = await self.repository.delete_place(place_id)
-            # Commit the transaction to persist the place deletion
-            await self.repository.db.commit()
+            async with transaction_context(self.repository.db):
+                result = await self.repository.delete_place(place_id)
             return result
         except (ResourceNotFoundError, ForbiddenError):
+            raise
+        except AppException:
             raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete place",
-                details={"error": str(e)}
+                details={}
             )
 
     async def like_place(self, user: User, place_id: int) -> dict:
@@ -267,10 +278,15 @@ class PlaceService:
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
 
-            await self.repository.like_place(user.id, place_id)
-            await self.repository.db.commit()  # Commit the transaction
+            if await self.repository.is_place_liked_by_user(user.id, place_id):
+                raise ValidationError(
+                    error_code=4000,
+                    message="User has already liked this place"
+                )
 
-            # Get updated likes count
+            async with transaction_context(self.repository.db):
+                await self.repository.like_place(user.id, place_id)
+
             likes_count = await self.repository.get_place_likes_count(place_id)
 
             return {
@@ -280,11 +296,13 @@ class PlaceService:
             }
         except (ResourceNotFoundError, ValidationError):
             raise
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to like place",
-                details={"error": str(e)}
+                details={}
             )
 
     async def unlike_place(self, user: User, place_id: int) -> dict:
@@ -292,10 +310,15 @@ class PlaceService:
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
 
-            await self.repository.unlike_place(user.id, place_id)
-            await self.repository.db.commit()  # Commit the transaction
+            if not await self.repository.is_place_liked_by_user(user.id, place_id):
+                raise ValidationError(
+                    error_code=4000,
+                    message="User has not liked this place"
+                )
 
-            # Get updated likes count
+            async with transaction_context(self.repository.db):
+                await self.repository.unlike_place(user.id, place_id)
+
             likes_count = await self.repository.get_place_likes_count(place_id)
 
             return {
@@ -305,11 +328,13 @@ class PlaceService:
             }
         except (ResourceNotFoundError, ValidationError):
             raise
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to unlike place",
-                details={"error": str(e)}
+                details={}
             )
 
     async def search_places(self, search_term: str, user: Optional[User] = None) -> List[PublicPlaceResponse]:
@@ -328,11 +353,13 @@ class PlaceService:
                     place, likes_count, is_liked))
 
             return response_places
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to search places",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_places_by_type(self, place_type_id: int, user: Optional[User] = None) -> List[PublicPlaceResponse]:
@@ -351,11 +378,13 @@ class PlaceService:
                     place, likes_count, is_liked))
 
             return response_places
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places by type",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, user: Optional[User] = None) -> List[PublicPlaceResponse]:
@@ -374,11 +403,13 @@ class PlaceService:
                     place, likes_count, is_liked))
 
             return response_places
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places in region",
-                details={"error": str(e)}
+                details={}
             )
 
     async def _create_moderation_request(self, place_id: int, user_id: int) -> ModerationRequest:
@@ -404,15 +435,16 @@ class PlaceService:
             moderation_request = await self.moderation_request_repository.create_request(moderation_request_data.model_dump())
 
             return moderation_request
+        except ServerError:
+            raise
+        except AppException:
+            raise
         except Exception as e:
-            logger.error(f"Exception in _create_moderation_request: {str(e)}")
-            logger.error(f"Exception type: {type(e)}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"Failed to create moderation request: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to create moderation request",
-                details={"error": str(e)}
+                details={}
             )
 
     def _create_place_response(self, place: Place, likes_count: int, is_liked: bool) -> PlaceResponse:
@@ -501,11 +533,13 @@ class PlaceService:
                     place, likes_count, is_liked))
 
             return response_places
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all places",
-                details={"error": str(e)}
+                details={}
             )
 
     async def get_place_admin(self, place_id: int, user: Optional[User] = None) -> PlaceResponse:
@@ -521,9 +555,15 @@ class PlaceService:
             return self._create_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:
             raise
+        except AppException:
+            raise
         except Exception as e:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",
-                details={"error": str(e)}
+                details={}
             )
+
+    async def get_place_types(self) -> List:
+        """Get all place types."""
+        return await self.repository.get_all_place_types()

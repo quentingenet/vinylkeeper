@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
-import useDetectMobile from "../../hooks/useDetectMobile";
+import useDetectMobile from "@hooks/useDetectMobile";
 import Login from "@components/Login/Login";
 import Register from "@components/Register/Register";
 import Footer from "@components/Footer/Footer";

@@ -1,4 +1,4 @@
-import { Box, IconButton } from "@mui/material";
+import { Box } from "@mui/material";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import { zoomIn } from "@utils/Animations";
 

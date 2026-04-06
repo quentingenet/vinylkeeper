@@ -1,7 +1,6 @@
 import os
 
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -54,7 +53,7 @@ class Settings(BaseSettings):
     # User-Agent
     USER_AGENT: str
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=f"./app/.env.{os.getenv('APP_ENV', 'development')}"
     )
 
