@@ -9,8 +9,11 @@ export default tseslint.config(
   // Ignore patterns
   {
     ignores: [
+      "android/**",
+      "ios/**",
       "dist/**",
       "node_modules/**",
+      "coverage/**",
       "**/*.config.js",
       "**/*.config.ts",
       ".eslintrc.cjs",
