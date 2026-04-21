@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  Snackbar,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -40,9 +41,24 @@ const Admin: React.FC = () => {
   const [selectedRequest, setSelectedRequest] =
     useState<ModerationRequest | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [moderationActionError, setModerationActionError] = useState<
+    string | null
+  >(null);
+  const [feedback, setFeedback] = useState<{
+    open: boolean;
+    severity: "success" | "error";
+    message: string;
+  }>({ open: false, severity: "success", message: "" });
 
   // Check if user has admin permissions
   const isAdmin = currentUser?.is_admin === true;
+
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return "An unexpected error occurred. Please try again.";
+  };
 
   // Fetch moderation requests
   const {
@@ -95,11 +111,26 @@ const Admin: React.FC = () => {
         }),
         queryClient.invalidateQueries({
           queryKey: ["places"],
-          refetchType: "active",
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["places-map"],
+          refetchType: "all",
         }),
       ]);
+      setModerationActionError(null);
+      setFeedback({
+        open: true,
+        severity: "success",
+        message: "Moderation request approved.",
+      });
       setDetailDialogOpen(false);
       setSelectedRequest(null);
+    },
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error);
+      setModerationActionError(message);
+      setFeedback({ open: true, severity: "error", message });
     },
   });
 
@@ -123,27 +154,45 @@ const Admin: React.FC = () => {
         }),
         queryClient.invalidateQueries({
           queryKey: ["places"],
-          refetchType: "active",
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["places-map"],
+          refetchType: "all",
         }),
       ]);
+      setModerationActionError(null);
+      setFeedback({
+        open: true,
+        severity: "success",
+        message: "Moderation request rejected.",
+      });
       setDetailDialogOpen(false);
       setSelectedRequest(null);
+    },
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error);
+      setModerationActionError(message);
+      setFeedback({ open: true, severity: "error", message });
     },
   });
 
   const handleViewDetails = (request: ModerationRequest) => {
     setSelectedRequest(request);
     setDetailDialogOpen(true);
+    setModerationActionError(null);
   };
 
   const handleApprove = () => {
     if (selectedRequest) {
+      setModerationActionError(null);
       approveMutation.mutate(selectedRequest.id);
     }
   };
 
   const handleReject = () => {
     if (selectedRequest) {
+      setModerationActionError(null);
       rejectMutation.mutate(selectedRequest.id);
     }
   };
@@ -206,6 +255,22 @@ const Admin: React.FC = () => {
         margin: "0 auto",
       }}
     >
+      <Snackbar
+        open={feedback.open}
+        autoHideDuration={4500}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={feedback.severity}
+          variant="filled"
+          onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+          sx={{ width: "100%" }}
+        >
+          {feedback.message}
+        </Alert>
+      </Snackbar>
+
       <Box
         sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "wrap" }}
       >
@@ -388,6 +453,12 @@ const Admin: React.FC = () => {
       {requestsError && (
         <Alert severity="error" sx={{ mb: 3 }}>
           Error loading moderation requests
+        </Alert>
+      )}
+
+      {moderationActionError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {moderationActionError}
         </Alert>
       )}
 

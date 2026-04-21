@@ -22,7 +22,6 @@ import { Close, MyLocation, CheckCircle } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { placeApiService, PlaceTypeData } from "@services/PlaceApiService";
 import { PlaceType } from "@utils/GlobalUtils";
 
 interface Country {
@@ -78,7 +77,6 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
-  const [placeTypesData, setPlaceTypesData] = useState<PlaceTypeData[]>([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
@@ -86,14 +84,14 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
       try {
         // Load countries
         const countriesResponse = await fetch("/data/countries.json");
+        if (!countriesResponse.ok) {
+          throw new Error("Failed to load countries list.");
+        }
         const countriesData = await countriesResponse.json();
         setCountries(countriesData);
-
-        // Load place types from API
-        const placeTypesResponse = await placeApiService.getPlaceTypes();
-        setPlaceTypesData(placeTypesResponse);
       } catch (error) {
         console.error("Error loading data:", error);
+        setError("Failed to load form data. Please reopen the modal.");
       }
     };
 
