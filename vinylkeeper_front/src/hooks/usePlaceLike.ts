@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { placeApiService } from "@services/PlaceApiService";
 import { queryKeys } from "@utils/queryKeys";
@@ -17,7 +18,7 @@ export function usePlaceLike(
     mutationFn: () => placeApiService.likePlace(placeId),
     onSuccess: invalidatePlaceQueries,
     onError: (error) => {
-      console.error("Error liking place:", error);
+      logger.error("Error liking place:", error);
       onError?.(error);
     },
   });
@@ -26,7 +27,7 @@ export function usePlaceLike(
     mutationFn: () => placeApiService.unlikePlace(placeId),
     onSuccess: invalidatePlaceQueries,
     onError: (error) => {
-      console.error("Error unliking place:", error);
+      logger.error("Error unliking place:", error);
       onError?.(error);
     },
   });

@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
   Alert,
   Box,
@@ -99,7 +100,7 @@ export default function ResetPasswordForm() {
       .resetPassword(resetData)
       .then(() => navigate("/"))
       .catch((error) => {
-        console.error("Error while resetting password:", error);
+        logger.error("Error while resetting password:", error);
         setOpenSnackBar(true);
       })
       .finally(() => setIsLoading(false));

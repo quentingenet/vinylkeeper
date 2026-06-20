@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { collectionApiService } from "@services/CollectionApiService";
 import { queryKeys } from "@utils/queryKeys";
@@ -14,7 +15,7 @@ export function useCollectionLike(collectionId: number) {
       ]);
     },
     onError: (error) => {
-      console.error("Error liking collection:", error);
+      logger.error("Error liking collection:", error);
     },
   });
 
@@ -28,7 +29,7 @@ export function useCollectionLike(collectionId: number) {
       ]);
     },
     onError: (error) => {
-      console.error("Error unliking collection:", error);
+      logger.error("Error unliking collection:", error);
     },
   });
 

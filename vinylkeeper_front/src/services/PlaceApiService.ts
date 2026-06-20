@@ -41,6 +41,26 @@ export interface Place {
   updated_at: string;
 }
 
+export interface PaginatedPlaceResponse {
+  items: Place[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface PlaceLikeStatusResponse {
+  place_id: number;
+  is_liked: boolean;
+  likes_count: number;
+  message: string;
+}
+
+export interface PlaceMutationResponse {
+  message: string;
+  place: Place;
+}
+
 export interface CreatePlaceData {
   name: string;
   address: string;
@@ -75,35 +95,35 @@ class PlaceApiService extends BaseApiService {
     );
   }
 
-  async getPlaces(): Promise<Place[]> {
-    return this.get<Place[]>("/places/");
+  async getPlaces(page = 1, limit = 20): Promise<PaginatedPlaceResponse> {
+    return this.get<PaginatedPlaceResponse>(`/places/?page=${page}&limit=${limit}`);
   }
 
   async getPlace(id: number): Promise<Place> {
     return this.get<Place>(`/places/${id}`);
   }
 
-  async createPlace(data: CreatePlaceData): Promise<Place> {
-    return this.post<Place>("/places/", data);
+  async createPlace(data: CreatePlaceData): Promise<PlaceMutationResponse> {
+    return this.post<PlaceMutationResponse>("/places/", data);
   }
 
   async updatePlace(
     id: number,
     data: Partial<CreatePlaceData>
-  ): Promise<Place> {
-    return this.put<Place>(`/places/${id}`, data);
+  ): Promise<PlaceMutationResponse> {
+    return this.patch<PlaceMutationResponse>(`/places/${id}`, data);
   }
 
   async deletePlace(id: number): Promise<void> {
     return this.delete<void>(`/places/${id}`);
   }
 
-  async likePlace(id: number): Promise<void> {
-    return this.post<void>(`/places/${id}/like`);
+  async likePlace(id: number): Promise<PlaceLikeStatusResponse> {
+    return this.post<PlaceLikeStatusResponse>(`/places/${id}/like`);
   }
 
-  async unlikePlace(id: number): Promise<void> {
-    return this.delete<void>(`/places/${id}/like`);
+  async unlikePlace(id: number): Promise<PlaceLikeStatusResponse> {
+    return this.delete<PlaceLikeStatusResponse>(`/places/${id}/like`);
   }
 
   async getPlaceTypes(): Promise<PlaceTypeData[]> {

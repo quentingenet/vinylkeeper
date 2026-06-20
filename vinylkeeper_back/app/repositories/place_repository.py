@@ -30,6 +30,14 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalars().all()
 
+    async def count_all_moderated_places(self) -> int:
+        """Count all moderated places."""
+        query = select(func.count(Place.id)).filter(
+            and_(Place.is_valid == True, Place.is_moderated == True)
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one()
+
     async def get_all_moderated_places(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Place]:
         """Get all moderated places with optional pagination."""
         query = select(Place).options(
@@ -39,9 +47,9 @@ class PlaceRepository(TransactionalMixin):
             and_(Place.is_valid == True, Place.is_moderated == True)
         )
 
-        if offset:
+        if offset is not None and offset > 0:
             query = query.offset(offset)
-        if limit:
+        if limit is not None:
             query = query.limit(limit)
 
         result = await self.db.execute(query)
@@ -196,7 +204,16 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_moderated_places_by_type(self, place_type_id: int) -> List[Place]:
+    async def count_moderated_places_by_type(self, place_type_id: int) -> int:
+        """Count all moderated places of a specific type."""
+        query = select(func.count(Place.id)).filter(
+            and_(Place.place_type_id == place_type_id,
+                 Place.is_valid == True, Place.is_moderated == True)
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one()
+
+    async def get_moderated_places_by_type(self, place_type_id: int, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Place]:
         """Get all moderated places of a specific type."""
         query = select(Place).options(
             selectinload(Place.place_type),
@@ -205,6 +222,10 @@ class PlaceRepository(TransactionalMixin):
             and_(Place.place_type_id == place_type_id,
                  Place.is_valid == True, Place.is_moderated == True)
         )
+        if offset is not None and offset > 0:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -226,7 +247,23 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def search_moderated_places(self, search_term: str) -> List[Place]:
+    async def count_moderated_places_by_search(self, search_term: str) -> int:
+        """Count moderated places matching a search term."""
+        query = select(func.count(Place.id)).filter(
+            and_(
+                Place.is_valid == True,
+                Place.is_moderated == True,
+                or_(
+                    Place.name.ilike(f"%{search_term}%"),
+                    Place.city.ilike(f"%{search_term}%"),
+                    Place.country.ilike(f"%{search_term}%")
+                )
+            )
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one()
+
+    async def search_moderated_places(self, search_term: str, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Place]:
         """Search moderated places by name, city, or country."""
         query = select(Place).options(
             selectinload(Place.place_type),
@@ -242,6 +279,10 @@ class PlaceRepository(TransactionalMixin):
                 )
             )
         )
+        if offset is not None and offset > 0:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -262,7 +303,22 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_moderated_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float) -> List[Place]:
+    async def count_moderated_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float) -> int:
+        """Count moderated places within a geographic region."""
+        query = select(func.count(Place.id)).filter(
+            and_(
+                Place.is_valid == True,
+                Place.is_moderated == True,
+                Place.latitude >= min_lat,
+                Place.latitude <= max_lat,
+                Place.longitude >= min_lng,
+                Place.longitude <= max_lng
+            )
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one()
+
+    async def get_moderated_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Place]:
         """Get moderated places within a geographic region."""
         query = select(Place).options(
             selectinload(Place.place_type),
@@ -277,6 +333,10 @@ class PlaceRepository(TransactionalMixin):
                 Place.longitude <= max_lng
             )
         )
+        if offset is not None and offset > 0:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
         result = await self.db.execute(query)
         return result.scalars().all()
 

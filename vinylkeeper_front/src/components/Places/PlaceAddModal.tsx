@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import React, { useState, useEffect } from "react";
 import {
   Modal,
@@ -90,7 +91,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
         const countriesData = await countriesResponse.json() as Country[];
         setCountries(countriesData);
       } catch (error) {
-        console.error("Error loading data:", error);
+        logger.error("Error loading data:", error);
         setError("Failed to load form data. Please reopen the modal.");
       }
     };

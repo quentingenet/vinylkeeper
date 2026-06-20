@@ -1,20 +1,16 @@
-from typing import List, Optional, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError, NoResultFound
-
+import asyncio
+from typing import List, Optional
 
 from app.repositories.place_repository import PlaceRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.models.place_model import Place
 from app.models.moderation_request_model import ModerationRequest
-from app.models.reference_data.moderation_statuses import ModerationStatus
-from app.models.reference_data.place_types import PlaceType
 from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
     PlaceResponse,
     PublicPlaceResponse,
-    PlaceInDB,
+    PaginatedPlaceResponse,
     PlaceMapResponse
 )
 from app.core.exceptions import (
@@ -24,10 +20,9 @@ from app.core.exceptions import (
     DuplicateFieldError,
     ServerError,
     ValidationError,
-    ErrorCode
 )
 from app.core.logging import logger
-from app.core.enums import ModerationStatusEnum, RoleEnum
+from app.core.enums import ModerationStatusEnum
 from app.core.transaction import transaction_context
 
 from app.utils.geocoding import geocode_city
@@ -201,13 +196,22 @@ class PlaceService:
                 details={}
             )
 
-    async def get_all_places(self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PublicPlaceResponse]:
-        """Get all places with optional pagination (only moderated places). User resolved from token (uuid)."""
+    async def get_all_places(self, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
+        """Get moderated places with pagination. User resolved from token (uuid)."""
         try:
-            places = await self.repository.get_all_moderated_places(limit, offset)
-            if not places:
-                return []
-            return await self._build_public_place_responses(places, user.id if user else None)
+            offset = (page - 1) * limit
+            total, places = await asyncio.gather(
+                self.repository.count_all_moderated_places(),
+                self.repository.get_all_moderated_places(limit, offset),
+            )
+            items = await self._build_public_place_responses(places, user.id if user else None)
+            return PaginatedPlaceResponse(
+                items=items,
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=max(1, -(-total // limit)),
+            )
         except AppException:
             raise
         except Exception as e:
@@ -337,22 +341,22 @@ class PlaceService:
                 details={}
             )
 
-    async def search_places(self, search_term: str, user: Optional[User] = None) -> List[PublicPlaceResponse]:
+    async def search_places(self, search_term: str, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
         """Search places by name, city, or country (only moderated places). User resolved from token (uuid)."""
         try:
-            places = await self.repository.search_moderated_places(search_term)
-
-            response_places = []
-            for place in places:
-                likes_count = await self.repository.get_place_likes_count(place.id)
-                is_liked = False
-                if user:
-                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
-
-                response_places.append(self._create_public_place_response(
-                    place, likes_count, is_liked))
-
-            return response_places
+            offset = (page - 1) * limit
+            total, places = await asyncio.gather(
+                self.repository.count_moderated_places_by_search(search_term),
+                self.repository.search_moderated_places(search_term, limit, offset),
+            )
+            items = await self._build_public_place_responses(places, user.id if user else None)
+            return PaginatedPlaceResponse(
+                items=items,
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=max(1, -(-total // limit)),
+            )
         except AppException:
             raise
         except Exception as e:
@@ -362,22 +366,22 @@ class PlaceService:
                 details={}
             )
 
-    async def get_places_by_type(self, place_type_id: int, user: Optional[User] = None) -> List[PublicPlaceResponse]:
+    async def get_places_by_type(self, place_type_id: int, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
         """Get places by type (only moderated places). User resolved from token (uuid)."""
         try:
-            places = await self.repository.get_moderated_places_by_type(place_type_id)
-
-            response_places = []
-            for place in places:
-                likes_count = await self.repository.get_place_likes_count(place.id)
-                is_liked = False
-                if user:
-                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
-
-                response_places.append(self._create_public_place_response(
-                    place, likes_count, is_liked))
-
-            return response_places
+            offset = (page - 1) * limit
+            total, places = await asyncio.gather(
+                self.repository.count_moderated_places_by_type(place_type_id),
+                self.repository.get_moderated_places_by_type(place_type_id, limit, offset),
+            )
+            items = await self._build_public_place_responses(places, user.id if user else None)
+            return PaginatedPlaceResponse(
+                items=items,
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=max(1, -(-total // limit)),
+            )
         except AppException:
             raise
         except Exception as e:
@@ -387,22 +391,22 @@ class PlaceService:
                 details={}
             )
 
-    async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, user: Optional[User] = None) -> List[PublicPlaceResponse]:
+    async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
         """Get places within a geographic region (only moderated places). User resolved from token (uuid)."""
         try:
-            places = await self.repository.get_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng)
-
-            response_places = []
-            for place in places:
-                likes_count = await self.repository.get_place_likes_count(place.id)
-                is_liked = False
-                if user:
-                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
-
-                response_places.append(self._create_public_place_response(
-                    place, likes_count, is_liked))
-
-            return response_places
+            offset = (page - 1) * limit
+            total, places = await asyncio.gather(
+                self.repository.count_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng),
+                self.repository.get_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng, limit, offset),
+            )
+            items = await self._build_public_place_responses(places, user.id if user else None)
+            return PaginatedPlaceResponse(
+                items=items,
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=max(1, -(-total // limit)),
+            )
         except AppException:
             raise
         except Exception as e:

@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
   Box,
   Typography,
@@ -201,7 +202,7 @@ export default function Dashboard() {
 
     // Validate that external ID is numeric
     if (!/^\d+$/.test(externalId)) {
-      console.warn(
+      logger.warn(
         `Non-numeric external ID for ${type}:`,
         externalId,
         addition

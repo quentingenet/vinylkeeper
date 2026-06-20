@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useState, useEffect } from "react";
 import {
   Modal,
@@ -181,7 +182,7 @@ export default function PlaybackModal({
         break;
 
       default:
-        console.warn("Unsupported platform:", platformName);
+        logger.warn("Unsupported platform:", platformName);
         return;
     }
 

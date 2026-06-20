@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { IAlbumRequestResults } from "@models/IRequestProxy";
 import styles from "../../styles/pages/AddVinyls.module.scss";
 import {
@@ -124,7 +125,7 @@ export default function ResultAlbums({
   const handlePlayClick = useCallback((album: IAlbumRequestResults) => {
     // Validate that album ID is numeric
     if (!/^\d+$/.test(album.id)) {
-      console.warn("Non-numeric album ID provided:", album.id, album);
+      logger.warn("Non-numeric album ID provided:", album.id, album);
       return;
     }
 

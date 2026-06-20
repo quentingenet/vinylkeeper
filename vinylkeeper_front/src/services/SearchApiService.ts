@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { BaseApiService } from "./BaseApiService";
 import {
   IRequestToSend,
@@ -16,20 +17,20 @@ export class SearchApiService extends BaseApiService {
         requestToSend
       );
     } catch (error) {
-      console.error("Search failed:", error);
+      logger.error("Search failed:", error);
       throw new Error("Failed to search music");
     }
   }
 
   async getArtistMetadata(artistId: string): Promise<ArtistMetadata> {
     if (!artistId || artistId.trim() === "") {
-      console.warn("Invalid artist ID provided:", artistId);
+      logger.warn("Invalid artist ID provided:", artistId);
       throw new Error("Invalid artist ID provided");
     }
 
     // Validate that artistId is numeric
     if (!/^\d+$/.test(artistId)) {
-      console.warn("Non-numeric artist ID provided:", artistId);
+      logger.warn("Non-numeric artist ID provided:", artistId);
       throw new Error("Artist ID must be numeric");
     }
 
@@ -38,20 +39,20 @@ export class SearchApiService extends BaseApiService {
         `/request-proxy/music-metadata/artist/${artistId}`
       );
     } catch (error) {
-      console.error("Failed to fetch artist metadata:", error);
+      logger.error("Failed to fetch artist metadata:", error);
       throw new Error("Failed to fetch artist metadata");
     }
   }
 
   async getAlbumMetadata(albumId: string): Promise<AlbumMetadata> {
     if (!albumId || albumId.trim() === "") {
-      console.warn("Invalid album ID provided:", albumId);
+      logger.warn("Invalid album ID provided:", albumId);
       throw new Error("Invalid album ID provided");
     }
 
     // Validate that albumId is numeric
     if (!/^\d+$/.test(albumId)) {
-      console.warn("Non-numeric album ID provided:", albumId);
+      logger.warn("Non-numeric album ID provided:", albumId);
       throw new Error("Album ID must be numeric");
     }
 
@@ -60,7 +61,7 @@ export class SearchApiService extends BaseApiService {
         `/request-proxy/music-metadata/album/${albumId}`
       );
     } catch (error) {
-      console.error("Failed to fetch album metadata:", error);
+      logger.error("Failed to fetch album metadata:", error);
       throw new Error("Failed to fetch album metadata");
     }
   }

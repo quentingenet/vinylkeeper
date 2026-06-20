@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { IArtistRequestResults } from "@models/IRequestProxy";
 import styles from "../../styles/pages/AddVinyls.module.scss";
 import {
@@ -120,7 +121,7 @@ export default function ResultArtist({
   const handlePlayClick = useCallback((artist: IArtistRequestResults) => {
     // Validate that artist ID is numeric
     if (!/^\d+$/.test(artist.id)) {
-      console.warn("Non-numeric artist ID provided:", artist.id, artist);
+      logger.warn("Non-numeric artist ID provided:", artist.id, artist);
       return;
     }
 

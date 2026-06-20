@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
   IRequestResults,
@@ -171,7 +172,7 @@ export default function RequestsMaker({
       void queryClient.invalidateQueries({ queryKey: queryKeys.search.results() });
     },
     onError: (error) => {
-      console.error("Error fetching data:", error);
+      logger.error("Error fetching data:", error);
       setError(
         error.message || "An error occurred while searching. Please try again."
       );

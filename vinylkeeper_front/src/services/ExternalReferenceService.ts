@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
   AddToWishlistRequest,
   AddToCollectionRequest,
@@ -21,7 +22,7 @@ export class ExternalReferenceService extends BaseApiService {
         data
       );
     } catch (error) {
-      console.error("Error adding to wishlist:", error);
+      logger.error("Error adding to wishlist:", error);
       throw new Error("Failed to add item to wishlist");
     }
   }
@@ -36,7 +37,7 @@ export class ExternalReferenceService extends BaseApiService {
         data
       );
     } catch (error) {
-      console.error("Error adding to collection:", error);
+      logger.error("Error adding to collection:", error);
       throw new Error("Failed to add item to collection");
     }
   }
@@ -47,7 +48,7 @@ export class ExternalReferenceService extends BaseApiService {
         `${this.endpoint}/wishlist/${wishlistId}`
       );
     } catch (error) {
-      console.error("Error removing from wishlist:", error);
+      logger.error("Error removing from wishlist:", error);
       throw new Error("Failed to remove item from wishlist");
     }
   }
@@ -62,7 +63,7 @@ export class ExternalReferenceService extends BaseApiService {
         `${this.endpoint}/collection/${collectionId}/remove?external_id=${externalId}&entity_type=${entityType}`
       );
     } catch (error) {
-      console.error("Error removing from collection:", error);
+      logger.error("Error removing from collection:", error);
       throw new Error("Failed to remove item from collection");
     }
   }
@@ -78,7 +79,7 @@ export class ExternalReferenceService extends BaseApiService {
         : `${this.endpoint}/wishlist?page=${page}&limit=${limit}`;
       return await this.get<PaginatedWishlistResponse>(url);
     } catch (error) {
-      console.error("Error fetching paginated wishlist:", error);
+      logger.error("Error fetching paginated wishlist:", error);
       throw new Error("Failed to fetch wishlist items");
     }
   }
@@ -91,7 +92,7 @@ export class ExternalReferenceService extends BaseApiService {
         `${this.endpoint}/wishlist/${wishlistId}`
       );
     } catch (error) {
-      console.error("Error fetching wishlist item detail:", error);
+      logger.error("Error fetching wishlist item detail:", error);
       throw new Error("Failed to fetch wishlist item detail");
     }
   }
@@ -102,7 +103,7 @@ export class ExternalReferenceService extends BaseApiService {
         `${this.endpoint}/collection`
       );
     } catch (error) {
-      console.error("Error fetching collection items:", error);
+      logger.error("Error fetching collection items:", error);
       throw new Error("Failed to fetch collection items");
     }
   }

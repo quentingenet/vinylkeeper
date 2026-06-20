@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useQuery } from "@tanstack/react-query";
 import { AlbumMetadata, ArtistMetadata } from "@models/IRequestProxy";
 import { queryKeys } from "@utils/queryKeys";
@@ -29,7 +30,7 @@ export const fetchArtistMetadata = async (
   artistId: string
 ): Promise<ArtistMetadata> => {
   if (!artistId || artistId === "Unknown Artist" || artistId.trim() === "") {
-    console.warn("Invalid artist ID provided:", artistId);
+    logger.warn("Invalid artist ID provided:", artistId);
     return {
       id: "",
       title: "",
@@ -49,7 +50,7 @@ export const fetchArtistMetadata = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(
+      logger.error(
         "Artist metadata fetch failed:",
         response.status,
         errorText
@@ -61,7 +62,7 @@ export const fetchArtistMetadata = async (
 
     return await response.json() as ArtistMetadata;
   } catch (error) {
-    console.error("Error fetching artist metadata:", error);
+    logger.error("Error fetching artist metadata:", error);
     throw error;
   }
 };

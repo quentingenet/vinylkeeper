@@ -3,6 +3,7 @@ from typing import List, Optional
 from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
+    PaginatedPlaceResponse,
     PlaceMapResponse
 )
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
@@ -27,17 +28,16 @@ async def create_place(
     return {"message": "Place created successfully", "place": place.model_dump()}
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/", response_model=PaginatedPlaceResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def get_places(
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service),
-    limit: Optional[int] = Query(None, gt=0, le=100),
-    offset: Optional[int] = Query(None, ge=0)
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
-    """Get all places with optional pagination (only moderated places)"""
-    places = await service.get_all_places(user, limit, offset)
-    return [place.model_dump() for place in places]
+    """Get all moderated places with pagination."""
+    return await service.get_all_places(user, page, limit)
 
 
 @router.get("/map", status_code=status.HTTP_200_OK, response_model=List[PlaceMapResponse])
@@ -74,62 +74,46 @@ async def get_place_types(
     return [{"id": pt.id, "name": pt.name} for pt in place_types]
 
 
-@router.get("/search", status_code=status.HTTP_200_OK)
+@router.get("/search", response_model=PaginatedPlaceResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def search_places(
     q: str = Query(..., min_length=1, description="Search term"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: PlaceService = Depends(get_place_service),
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
-    """Search places by name, city, or country"""
-    places = await service.search_places(q, user)
-    return {
-        "items": [place.model_dump() for place in places],
-        "total": len(places),
-        "search_term": q
-    }
+    """Search places by name, city, or country."""
+    return await service.search_places(q, user, page, limit)
 
 
-@router.get("/type/{place_type_id}", status_code=status.HTTP_200_OK)
+@router.get("/type/{place_type_id}", response_model=PaginatedPlaceResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def get_places_by_type(
     place_type_id: int = Path(..., gt=0, title="Place Type ID"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: PlaceService = Depends(get_place_service),
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
-    """Get places by type"""
-    places = await service.get_places_by_type(place_type_id, user)
-    return {
-        "items": [place.model_dump() for place in places],
-        "total": len(places),
-        "place_type_id": place_type_id
-    }
+    """Get places by type."""
+    return await service.get_places_by_type(place_type_id, user, page, limit)
 
 
-@router.get("/region", status_code=status.HTTP_200_OK)
+@router.get("/region", response_model=PaginatedPlaceResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def get_places_in_region(
     min_lat: float = Query(..., ge=-90, le=90, description="Minimum latitude"),
     max_lat: float = Query(..., ge=-90, le=90, description="Maximum latitude"),
-    min_lng: float = Query(..., ge=-180, le=180,
-                           description="Minimum longitude"),
-    max_lng: float = Query(..., ge=-180, le=180,
-                           description="Maximum longitude"),
+    min_lng: float = Query(..., ge=-180, le=180, description="Minimum longitude"),
+    max_lng: float = Query(..., ge=-180, le=180, description="Maximum longitude"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: PlaceService = Depends(get_place_service),
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
-    """Get places within a geographic region"""
-    places = await service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user)
-    return {
-        "items": [place.model_dump() for place in places],
-        "total": len(places),
-        "region": {
-            "min_lat": min_lat,
-            "max_lat": max_lat,
-            "min_lng": min_lng,
-            "max_lng": max_lng
-        }
-    }
+    """Get places within a geographic region."""
+    return await service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user, page, limit)
 
 
 @router.get("/{place_id}", status_code=status.HTTP_200_OK)

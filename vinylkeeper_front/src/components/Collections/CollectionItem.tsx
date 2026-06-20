@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useState, useRef, useEffect } from "react";
 import {
   type CollectionResponse,
@@ -103,7 +104,7 @@ export default function CollectionItem({
   const handleDeleteCollection = () => {
     // Don't allow deletion of collections with temporary IDs (negative numbers)
     if (collection.id < 0) {
-      console.warn("Cannot delete collection with temporary ID");
+      logger.warn("Cannot delete collection with temporary ID");
       setOpenDeleteDialog(false);
       return;
     }

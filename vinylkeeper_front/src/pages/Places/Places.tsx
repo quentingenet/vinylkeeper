@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useState } from "react";
 import PlaceMap from "@components/Places/PlaceMap";
 import PlaceAddModal from "@components/Places/PlaceAddModal";
@@ -40,7 +41,7 @@ export default function Places() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.places.all() });
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error creating place:", error);
+      logger.error("Error creating place:", error);
       throw error;
     }
   };

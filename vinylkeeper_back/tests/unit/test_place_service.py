@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.place_service import PlaceService
-from app.schemas.place_schema import PlaceCreate, PlaceUpdate
+from app.schemas.place_schema import PlaceCreate, PlaceUpdate, PaginatedPlaceResponse
 from app.core.exceptions import ForbiddenError, ResourceNotFoundError, ServerError, ValidationError
 
 from tests.conftest import make_user
@@ -322,3 +322,181 @@ class TestCreateModerationRequest:
         assert call_kwargs["place_id"] == 5
         assert call_kwargs["user_id"] == 2
         assert call_kwargs["status_id"] == 1
+
+
+# ---------------------------------------------------------------------------
+# get_all_places (paginated)
+# ---------------------------------------------------------------------------
+
+class TestGetAllPlaces:
+    async def test_returns_paginated_response(self):
+        service, repo, *_ = make_service()
+        repo.count_all_moderated_places = AsyncMock(return_value=2)
+        repo.get_all_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_all_places(user, page=1, limit=20)
+
+        assert isinstance(result, PaginatedPlaceResponse)
+        assert result.total == 2
+        assert result.page == 1
+        assert result.limit == 20
+        assert result.total_pages == 1
+
+    async def test_offset_calculated_from_page(self):
+        service, repo, *_ = make_service()
+        repo.count_all_moderated_places = AsyncMock(return_value=100)
+        repo.get_all_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            await service.get_all_places(user, page=3, limit=10)
+
+        repo.get_all_moderated_places.assert_awaited_once_with(10, 20)
+
+    async def test_total_pages_ceiling_division(self):
+        service, repo, *_ = make_service()
+        repo.count_all_moderated_places = AsyncMock(return_value=21)
+        repo.get_all_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_all_places(user, page=1, limit=20)
+
+        assert result.total_pages == 2
+
+    async def test_empty_result_returns_page_one(self):
+        service, repo, *_ = make_service()
+        repo.count_all_moderated_places = AsyncMock(return_value=0)
+        repo.get_all_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_all_places(user, page=1, limit=20)
+
+        assert result.total == 0
+        assert result.total_pages == 1
+        assert result.items == []
+
+
+# ---------------------------------------------------------------------------
+# search_places (paginated)
+# ---------------------------------------------------------------------------
+
+class TestSearchPlaces:
+    async def test_returns_paginated_response(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_by_search = AsyncMock(return_value=3)
+        repo.search_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.search_places("vinyl", user, page=1, limit=20)
+
+        assert isinstance(result, PaginatedPlaceResponse)
+        assert result.total == 3
+        assert result.page == 1
+
+    async def test_offset_calculated_from_page(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_by_search = AsyncMock(return_value=50)
+        repo.search_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            await service.search_places("vinyl", user, page=2, limit=10)
+
+        repo.search_moderated_places.assert_awaited_once_with("vinyl", 10, 10)
+
+    async def test_total_pages_ceiling_division(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_by_search = AsyncMock(return_value=11)
+        repo.search_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.search_places("vinyl", user, page=1, limit=10)
+
+        assert result.total_pages == 2
+
+
+# ---------------------------------------------------------------------------
+# get_places_by_type (paginated)
+# ---------------------------------------------------------------------------
+
+class TestGetPlacesByType:
+    async def test_returns_paginated_response(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_by_type = AsyncMock(return_value=5)
+        repo.get_moderated_places_by_type = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_places_by_type(1, user, page=1, limit=20)
+
+        assert isinstance(result, PaginatedPlaceResponse)
+        assert result.total == 5
+
+    async def test_offset_calculated_from_page(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_by_type = AsyncMock(return_value=30)
+        repo.get_moderated_places_by_type = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            await service.get_places_by_type(2, user, page=4, limit=5)
+
+        repo.get_moderated_places_by_type.assert_awaited_once_with(2, 5, 15)
+
+    async def test_total_pages_exact_division(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_by_type = AsyncMock(return_value=20)
+        repo.get_moderated_places_by_type = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_places_by_type(1, user, page=1, limit=20)
+
+        assert result.total_pages == 1
+
+
+# ---------------------------------------------------------------------------
+# get_places_in_region (paginated)
+# ---------------------------------------------------------------------------
+
+class TestGetPlacesInRegion:
+    async def test_returns_paginated_response(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_in_region = AsyncMock(return_value=4)
+        repo.get_moderated_places_in_region = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=1, limit=20)
+
+        assert isinstance(result, PaginatedPlaceResponse)
+        assert result.total == 4
+        assert result.page == 1
+
+    async def test_offset_calculated_from_page(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_in_region = AsyncMock(return_value=40)
+        repo.get_moderated_places_in_region = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=2, limit=20)
+
+        repo.get_moderated_places_in_region.assert_awaited_once_with(40.0, 50.0, 0.0, 10.0, 20, 20)
+
+    async def test_total_pages_ceiling_division(self):
+        service, repo, *_ = make_service()
+        repo.count_moderated_places_in_region = AsyncMock(return_value=41)
+        repo.get_moderated_places_in_region = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+            result = await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=1, limit=20)
+
+        assert result.total_pages == 3

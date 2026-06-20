@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { userApiService, type UserResponse } from "@services/UserApiService";
 import {
   createContext,
@@ -74,7 +75,7 @@ export function UserContextProvider({
           const user = await userApiService.getCurrentUser();
           setCurrentUser(user);
         } catch (error) {
-          console.error("Error fetching current user:", error);
+          logger.error("Error fetching current user:", error);
           setIsUserLoggedIn(false);
           setCurrentUser(null);
         }
@@ -82,7 +83,7 @@ export function UserContextProvider({
         setCurrentUser(null);
       }
     } catch (error) {
-      console.error("Error while checking user logged in:", error);
+      logger.error("Error while checking user logged in:", error);
       setIsUserLoggedIn(false);
       setCurrentUser(null);
     }
@@ -92,7 +93,7 @@ export function UserContextProvider({
     try {
       await userApiService.logout();
     } catch (error) {
-      console.error("Error while logging out:", error);
+      logger.error("Error while logging out:", error);
     } finally {
       if (currentUser) {
         localStorage.removeItem(`tutorial_seen_${currentUser.user_uuid}`);

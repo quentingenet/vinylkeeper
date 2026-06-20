@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { getPlatform } from "@utils/CapacitorUtils";
 
 export interface StreamingPlatform {
@@ -67,7 +68,7 @@ class MusicStreamingService {
   public redirectTo(platformName: string, query: StreamingQuery): void {
     const platform = this.platforms.find((p) => p.name === platformName);
     if (!platform) {
-      console.error(`Platform ${platformName} not found`);
+      logger.error(`Platform ${platformName} not found`);
       return;
     }
 

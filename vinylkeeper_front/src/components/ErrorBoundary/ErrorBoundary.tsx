@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import VinylSpinner from "@components/UI/VinylSpinner";
 
@@ -142,7 +143,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[ErrorBoundary]", error, info.componentStack);
+    logger.error("[ErrorBoundary]", error, info.componentStack);
   }
 
   handleReset = () => {

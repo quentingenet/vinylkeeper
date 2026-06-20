@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -400,13 +401,13 @@ export default function CollectionDetails() {
 
     // Validate external ID
     if (!externalId || externalId.trim() === "") {
-      console.warn(`Invalid external ID for ${type}:`, externalId, item);
+      logger.warn(`Invalid external ID for ${type}:`, externalId, item);
       return;
     }
 
     // Validate that external ID is numeric
     if (!/^\d+$/.test(externalId)) {
-      console.warn(`Non-numeric external ID for ${type}:`, externalId, item);
+      logger.warn(`Non-numeric external ID for ${type}:`, externalId, item);
       return;
     }
 

@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   collectionApiService,
@@ -85,7 +86,7 @@ export const useCollections = (
       ]);
     },
     onError: (error) => {
-      console.error("Error updating collection visibility:", error.message);
+      logger.error("Error updating collection visibility:", error.message);
     },
   });
 
@@ -292,7 +293,7 @@ export function useUpdateAlbumStates() {
       ]);
     },
     onError: (error) => {
-      console.error("Error updating album states:", error);
+      logger.error("Error updating album states:", error);
     },
   });
 }
