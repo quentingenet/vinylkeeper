@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = 'place_location_not_null'
-down_revision: Union[str, None] = 'restore_critical_indexes'
+down_revision: Union[str, None] = 'b475567323ec'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
