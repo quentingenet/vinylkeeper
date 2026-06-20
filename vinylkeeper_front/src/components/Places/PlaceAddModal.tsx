@@ -23,7 +23,7 @@ import { Close, MyLocation, CheckCircle } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { PlaceType } from "@utils/GlobalUtils";
+import { placeApiService, PlaceTypeData } from "@services/PlaceApiService";
 
 interface Country {
   name: string;
@@ -44,7 +44,7 @@ interface PlaceFormData {
   country: string;
   description: string;
   source_url: string;
-  place_type_id: PlaceType;
+  place_type_id: number;
 }
 
 const schema = yup
@@ -63,9 +63,9 @@ const schema = yup
       .max(600, "Description must not exceed 600 characters"),
     source_url: yup.string().url("Must be a valid URL").optional().default(""),
     place_type_id: yup
-      .string()
-      .oneOf(Object.values(PlaceType), "Invalid place type")
-      .required("Place type is required"),
+      .number()
+      .required("Place type is required")
+      .positive("Place type is required"),
   })
   .required();
 
@@ -78,18 +78,22 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
+  const [placeTypes, setPlaceTypes] = useState<PlaceTypeData[]>([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load countries
-        const countriesResponse = await fetch("/data/countries.json");
+        const [countriesResponse, types] = await Promise.all([
+          fetch("/data/countries.json"),
+          placeApiService.getPlaceTypes(),
+        ]);
         if (!countriesResponse.ok) {
           throw new Error("Failed to load countries list.");
         }
         const countriesData = await countriesResponse.json() as Country[];
         setCountries(countriesData);
+        setPlaceTypes(types);
       } catch (error) {
         logger.error("Error loading data:", error);
         setError("Failed to load form data. Please reopen the modal.");
@@ -253,13 +257,13 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
               <FormControl fullWidth sx={formFieldStyle}>
                 <InputLabel>Place type</InputLabel>
                 <Select
-                  {...register("place_type_id")}
+                  {...register("place_type_id", { valueAsNumber: true })}
                   error={!!errors.place_type_id}
                   label="Place type"
                 >
-                  {Object.values(PlaceType).map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {placeTypes.map((type) => (
+                    <MenuItem key={type.id} value={type.id}>
+                      {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
                     </MenuItem>
                   ))}
                 </Select>

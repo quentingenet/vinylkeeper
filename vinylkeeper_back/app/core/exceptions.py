@@ -36,7 +36,14 @@ class ErrorCode:
 
 
 class AppException(Exception):
-    def __init__(self, error_code: int, message: str, status_code: int, details: Optional[Dict[str, Any]] = None, should_log: bool = True):
+    def __init__(
+        self,
+        error_code: int,
+        message: str,
+        status_code: int,
+        details: Optional[Dict[str, Any]] = None,
+        should_log: bool = True
+    ):
         self.status_code = status_code
         self.detail = {
             "code": error_code,
@@ -48,7 +55,9 @@ class AppException(Exception):
 
 
 class AuthenticationError(AppException):
-    def __init__(self, error_code: int, message: str, details: Optional[Dict[str, Any]] = None, should_log: bool = True):
+    def __init__(
+        self, error_code: int, message: str, details: Optional[Dict[str, Any]] = None, should_log: bool = True
+    ):
         super().__init__(
             error_code=error_code,
             message=message,
@@ -208,7 +217,12 @@ class DuplicateCollectionNameError(DuplicateFieldError):
 
 
 class ForbiddenError(AppException):
-    def __init__(self, error_code: int = ErrorCode.FORBIDDEN, message: str = "You are not allowed to access this resource", details: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        error_code: int = ErrorCode.FORBIDDEN,
+        message: str = "You are not allowed to access this resource",
+        details: Optional[Dict[str, Any]] = None
+    ):
         super().__init__(
             error_code=error_code,
             message=message,

@@ -7,8 +7,6 @@ from pydantic import Field, field_validator, model_validator
 from app.schemas import BaseSchema
 from app.schemas.user_schema import UserMiniResponse
 from app.schemas.album_schema import AlbumBase
-from app.schemas.artist_schema import ArtistBase
-from app.core.enums import MoodEnum, VinylStateEnum
 
 
 from app.schemas.album_schema import AlbumInCollection
@@ -30,8 +28,8 @@ class CollectionArtistResponse(BaseSchema):
     external_artist_id: str = Field(..., description="External Artist ID")
     title: str = Field(..., description="Artist title")
     image_url: Optional[str] = Field(None, description="Artist image URL")
-    external_source: Optional[dict] = Field(None,
-                                             description="External source information")
+    external_source: Optional[dict] = Field(
+        None, description="External source information")
     created_at: datetime
     updated_at: datetime
     collections_count: int = Field(default=0)
@@ -87,6 +85,7 @@ class CollectionCreate(CollectionBase):
         default_factory=list,
         description="List of artist IDs to include in the collection"
     )
+
     @field_validator("album_ids")
     @classmethod
     def validate_album_ids(cls, v: Optional[List[int]]) -> Optional[List[int]]:

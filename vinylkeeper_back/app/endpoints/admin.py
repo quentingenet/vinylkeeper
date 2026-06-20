@@ -26,7 +26,11 @@ async def get_moderation_requests(
     return requests
 
 
-@router.get("/moderation-requests/pending", response_model=List[ModerationRequestResponse], status_code=status.HTTP_200_OK)
+@router.get(
+    "/moderation-requests/pending",
+    response_model=List[ModerationRequestResponse],
+    status_code=status.HTTP_200_OK
+)
 @handle_app_exceptions
 async def get_pending_moderation_requests(
     user: User = Depends(require_admin),
@@ -39,7 +43,11 @@ async def get_pending_moderation_requests(
     return requests
 
 
-@router.get("/moderation-requests/{request_id}", response_model=ModerationRequestResponse, status_code=status.HTTP_200_OK)
+@router.get(
+    "/moderation-requests/{request_id}",
+    response_model=ModerationRequestResponse,
+    status_code=status.HTTP_200_OK
+)
 @handle_app_exceptions
 async def get_moderation_request_by_id(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
@@ -51,7 +59,11 @@ async def get_moderation_request_by_id(
     return request
 
 
-@router.post("/moderation-requests/{request_id}/approve", response_model=ModerationRequestResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/moderation-requests/{request_id}/approve",
+    response_model=ModerationRequestResponse,
+    status_code=status.HTTP_200_OK
+)
 @handle_app_exceptions
 async def approve_moderation_request(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
@@ -63,7 +75,11 @@ async def approve_moderation_request(
     return approved_request
 
 
-@router.post("/moderation-requests/{request_id}/reject", response_model=ModerationRequestResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/moderation-requests/{request_id}/reject",
+    response_model=ModerationRequestResponse,
+    status_code=status.HTTP_200_OK
+)
 @handle_app_exceptions
 async def reject_moderation_request(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
@@ -83,4 +99,4 @@ async def get_moderation_stats(
 ):
     """Get moderation statistics (admin only)"""
     stats = await service.get_moderation_stats()
-    return stats 
+    return stats

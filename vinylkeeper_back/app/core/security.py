@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from app.core.config_env import settings
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from app.core.logging import logger
 
 
 def configure_cors(app: FastAPI):

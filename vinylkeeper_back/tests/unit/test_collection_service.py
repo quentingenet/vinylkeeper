@@ -125,7 +125,10 @@ class TestCreateCollection:
 
         with pytest.raises(DuplicateCollectionNameError):
             await service.create_collection(
-                CollectionCreate.model_construct(name="Dup", description=None, is_public=False, mood_id=None, album_ids=[], artist_ids=[]),
+                CollectionCreate.model_construct(
+                    name="Dup", description=None, is_public=False,
+                    mood_id=None, album_ids=[], artist_ids=[]
+                ),
                 user_id=1,
             )
 
@@ -140,7 +143,10 @@ class TestCreateCollection:
         with patch.object(service, "_build_collection_response", new_callable=AsyncMock) as mock_build:
             mock_build.return_value = MagicMock()
             await service.create_collection(
-                CollectionCreate.model_construct(name="New", description=None, is_public=False, mood_id=None, album_ids=[], artist_ids=[]),
+                CollectionCreate.model_construct(
+                    name="New", description=None, is_public=False,
+                    mood_id=None, album_ids=[], artist_ids=[]
+                ),
                 user_id=1,
             )
 
@@ -157,7 +163,10 @@ class TestCreateCollection:
 
         with patch.object(service, "_build_collection_response", new_callable=AsyncMock, return_value=MagicMock()):
             await service.create_collection(
-                CollectionCreate.model_construct(name="New", description=None, is_public=False, mood_id=None, album_ids=[1, 2], artist_ids=[]),
+                CollectionCreate.model_construct(
+                    name="New", description=None, is_public=False,
+                    mood_id=None, album_ids=[1, 2], artist_ids=[]
+                ),
                 user_id=1,
             )
 
@@ -277,7 +286,9 @@ class TestUpdateCollection:
         with pytest.raises(ForbiddenError):
             await service.update_collection(
                 user_id=1, collection_id=1,
-                collection_data=CollectionUpdate.model_construct(name="New name", description=None, is_public=None, mood_id=None),
+                collection_data=CollectionUpdate.model_construct(
+                    name="New name", description=None, is_public=None, mood_id=None
+                ),
             )
 
     async def test_duplicate_name_raises(self):
@@ -290,7 +301,9 @@ class TestUpdateCollection:
         with pytest.raises(DuplicateCollectionNameError):
             await service.update_collection(
                 user_id=1, collection_id=1,
-                collection_data=CollectionUpdate.model_construct(name="Taken", description=None, is_public=None, mood_id=None),
+                collection_data=CollectionUpdate.model_construct(
+                    name="Taken", description=None, is_public=None, mood_id=None
+                ),
             )
 
     async def test_same_name_skips_uniqueness_check(self):
@@ -303,7 +316,9 @@ class TestUpdateCollection:
         with patch.object(service, "get_collection", new_callable=AsyncMock, return_value=MagicMock()):
             await service.update_collection(
                 user_id=1, collection_id=1,
-                collection_data=CollectionUpdate.model_construct(name="Same name", description=None, is_public=None, mood_id=None),
+                collection_data=CollectionUpdate.model_construct(
+                    name="Same name", description=None, is_public=None, mood_id=None
+                ),
             )
 
         repo.find_by_name_and_owner.assert_not_awaited()

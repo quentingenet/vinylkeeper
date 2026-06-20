@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 import re
 
 from pydantic import Field, model_validator, field_validator
@@ -29,22 +28,22 @@ class CollectionAlbumCreate(BaseSchema):
             return v
         if not isinstance(v, str):
             raise ValueError("acquisition_month_year must be a string")
-        
+
         # Check format YYYY-MM
         if not re.match(r'^\d{4}-\d{2}$', v):
             raise ValueError("acquisition_month_year must be in format YYYY-MM (e.g., '2024-06')")
-        
+
         # Validate year and month
         year, month = v.split('-')
         year_int = int(year)
         month_int = int(month)
-        
+
         if year_int < 1900 or year_int > 2100:
             raise ValueError("Year must be between 1900 and 2100")
-        
+
         if month_int < 1 or month_int > 12:
             raise ValueError("Month must be between 01 and 12")
-        
+
         return v
 
 
@@ -67,22 +66,22 @@ class CollectionAlbumUpdate(BaseSchema):
             return v
         if not isinstance(v, str):
             raise ValueError("acquisition_month_year must be a string")
-        
+
         # Check format YYYY-MM
         if not re.match(r'^\d{4}-\d{2}$', v):
             raise ValueError("acquisition_month_year must be in format YYYY-MM (e.g., '2024-06')")
-        
+
         # Validate year and month
         year, month = v.split('-')
         year_int = int(year)
         month_int = int(month)
-        
+
         if year_int < 1900 or year_int > 2100:
             raise ValueError("Year must be between 1900 and 2100")
-        
+
         if month_int < 1 or month_int > 12:
             raise ValueError("Month must be between 01 and 12")
-        
+
         return v
 
     @model_validator(mode="after")

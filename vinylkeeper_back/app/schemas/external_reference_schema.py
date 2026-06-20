@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
@@ -26,15 +26,15 @@ class ExternalSourceResponse(BaseSchema):
 class AlbumStateData(BaseSchema):
     """Schema for album state data when adding to collection."""
     state_cover: Optional[VinylStateEnum] = Field(
-        None, 
+        None,
         description="State of the cover (mint, near_mint, very_good_plus, etc.)"
     )
     state_record: Optional[VinylStateEnum] = Field(
-        None, 
+        None,
         description="State of the record (mint, near_mint, very_good_plus, etc.)"
     )
     acquisition_month_year: Optional[str] = Field(
-        None, 
+        None,
         description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')"
     )
 

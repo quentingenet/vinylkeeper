@@ -6,7 +6,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.collection_album import CollectionAlbum
 from app.models.album_model import Album
-from app.models.reference_data.vinyl_state import VinylState
 from app.utils.vinyl_state_mapping import VinylStateMapping
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -127,7 +126,9 @@ class CollectionAlbumRepository(TransactionalMixin):
         """Get vinyl state name by ID using mapping"""
         return VinylStateMapping.get_name_from_id(state_id)
 
-    async def get_collection_albums_paginated(self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> tuple[List[tuple], int]:
+    async def get_collection_albums_paginated(
+        self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
+    ) -> tuple[List[tuple], int]:
         """Get paginated albums for a collection with metadata, sorted by collection_album.created_at"""
         try:
             # Calculate offset

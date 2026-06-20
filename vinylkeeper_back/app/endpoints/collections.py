@@ -67,7 +67,9 @@ async def get_public_collections(
         "updated_at", description="Sort by: updated_at, created_at, or likes_count")
 ):
     """Get public collections (optimized list view with lightweight response)."""
-    collections, total = await service.get_public_collections(page, limit, exclude_user_id=user.id, user_id=user.id, sort_by=sort_by)
+    collections, total = await service.get_public_collections(
+        page, limit, exclude_user_id=user.id, user_id=user.id, sort_by=sort_by
+    )
     return PaginatedCollectionListResponse(
         items=collections,
         total=total,
@@ -133,7 +135,7 @@ async def delete_collection(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    deleted = await service.delete_collection(user.id, collection_id)
+    await service.delete_collection(user.id, collection_id)
     return {"message": "Collection deleted successfully"}
 
 

@@ -27,7 +27,7 @@ class DashboardStatsResponse(BaseModel):
     global_albums_total: int = Field(...,
                                      description="Total albums across all collections")
     global_artists_total: int = Field(...,
-                                     description="Total artists across all collections")
+                                      description="Total artists across all collections")
     global_places_total: int = Field(...,
                                      description="Total places (all users)")
     moderated_places_total: int = Field(

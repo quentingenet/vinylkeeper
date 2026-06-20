@@ -1,6 +1,5 @@
 import { BaseApiService } from "./BaseApiService";
 import requestService from "@utils/RequestService";
-import { PlaceType } from "@utils/GlobalUtils";
 
 export interface PlaceTypeData {
   id: number;
@@ -68,7 +67,7 @@ export interface CreatePlaceData {
   country: string;
   description?: string;
   source_url?: string;
-  place_type_id: PlaceType;
+  place_type_id: number;
   latitude?: number;
   longitude?: number;
 }

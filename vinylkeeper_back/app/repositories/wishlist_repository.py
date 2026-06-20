@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
 from app.core.enums import EntityTypeEnum
-from app.core.exceptions import ResourceNotFoundError, ServerError
+from app.core.exceptions import ServerError
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
 
@@ -28,7 +28,11 @@ class WishlistRepository(TransactionalMixin):
             )
         return entity_type_record.id
 
-    async def add_to_wishlist(self, user_id: int, external_id: str, entity_type: EntityTypeEnum, title: str, image_url: str, external_source_id: int) -> Wishlist:
+    async def add_to_wishlist(
+        self,
+        user_id: int, external_id: str, entity_type: EntityTypeEnum,
+        title: str, image_url: str, external_source_id: int
+    ) -> Wishlist:
         """Add an item to user's wishlist without committing (transaction managed by service)."""
         try:
             entity_type_id = await self._get_entity_type_id(entity_type)
@@ -68,7 +72,9 @@ class WishlistRepository(TransactionalMixin):
                 details={}
             )
 
-    async def find_by_user_and_external_id(self, user_id: int, external_id: str, entity_type: EntityTypeEnum) -> Optional[Wishlist]:
+    async def find_by_user_and_external_id(
+        self, user_id: int, external_id: str, entity_type: EntityTypeEnum
+    ) -> Optional[Wishlist]:
         """Find a wishlist item by user ID and external ID"""
         try:
             entity_type_id = await self._get_entity_type_id(entity_type)
@@ -122,7 +128,9 @@ class WishlistRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_user_wishlist_paginated(self, user_id: int, page: int = 1, limit: int = 8) -> Tuple[List[Wishlist], int]:
+    async def get_user_wishlist_paginated(
+        self, user_id: int, page: int = 1, limit: int = 8
+    ) -> Tuple[List[Wishlist], int]:
         """Get paginated wishlist items for a user (lightweight query, no heavy relations)"""
         try:
             offset = (page - 1) * limit

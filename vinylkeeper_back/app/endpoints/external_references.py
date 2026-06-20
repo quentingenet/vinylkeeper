@@ -154,7 +154,6 @@ async def export_my_wishlist_ods(
     return await export_service.export_my_wishlist_ods(current_user.id, current_user.username)
 
 
-
 @router.get("/wishlist/{wishlist_id}", response_model=WishlistItemResponse)
 @handle_app_exceptions
 async def get_wishlist_item_detail(

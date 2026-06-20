@@ -24,13 +24,17 @@ class ImageFetcher:
         self.headers = {"Authorization": f"Discogs token={self.token}"}
         self.http_client = http_client
 
-    async def fetch_images(self, entity_type: str, entity_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None) -> Tuple[Optional[str], Optional[str]]:
+    async def fetch_images(
+        self, entity_type: str, entity_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Generic method to fetch images for both artists and releases."""
         if entity_type == "artist":
             return await self._fetch_artist_images(entity_id, hit, client)
         return await self._fetch_release_images(entity_id, hit, client)
 
-    async def _fetch_artist_images(self, artist_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None) -> Tuple[Optional[str], Optional[str]]:
+    async def _fetch_artist_images(
+        self, artist_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Fetch images for an artist."""
         thumb = hit.get("thumb")
         if not artist_id:
@@ -47,7 +51,9 @@ class ImageFetcher:
             logger.warning(f"Failed to fetch artist images: {str(e)}")
         return None, thumb
 
-    async def _fetch_release_images(self, release_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None) -> Tuple[Optional[str], Optional[str]]:
+    async def _fetch_release_images(
+        self, release_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Fetch images for a release."""
         cover = hit.get("cover_image")
         thumb = hit.get("thumb")

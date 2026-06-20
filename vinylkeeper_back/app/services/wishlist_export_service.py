@@ -162,4 +162,3 @@ class WishlistExportService:
         date_str = datetime.now(UTC).strftime("%Y-%m-%d")
         safe_username = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in (username or "user")).strip("_")
         return f"wishlist_{safe_username}_{date_str}_{suffix}"
-

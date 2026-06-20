@@ -1,14 +1,14 @@
 def new_place_suggestion_template(
-    place_name: str, 
-    place_city: str, 
-    place_country: str, 
+    place_name: str,
+    place_city: str,
+    place_country: str,
     place_type: str,
-    username: str, 
+    username: str,
     user_email: str,
     place_description: str = None
 ) -> str:
     description_html = f"<li><strong>Description:</strong> {place_description}</li>" if place_description else ""
-    
+
     return f"""<!DOCTYPE html>
     <html>
     <body>
@@ -26,4 +26,4 @@ def new_place_suggestion_template(
         <br/>
         <p>Not needed to answer to this email.</p>
     </body>
-    </html>""" 
+    </html>"""

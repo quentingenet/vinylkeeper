@@ -1,8 +1,6 @@
 import logging
 import os
-import traceback
 from logging.config import dictConfig
-from logging.handlers import TimedRotatingFileHandler
 from app.core.config_env import settings
 
 # Determine log level based on environment

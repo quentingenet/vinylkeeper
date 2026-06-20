@@ -40,15 +40,15 @@ async def transaction_context(session: AsyncSession) -> AsyncGenerator[AsyncSess
 class TransactionalMixin:
     """
     Mixin for repositories to provide transaction-aware methods.
-    
+
     This mixin provides methods that don't commit automatically,
     allowing services to manage transactions at a higher level.
     Optimized to reduce unnecessary flushes.
     """
-    
+
     async def _add_entity(self, entity: Any, flush: bool = False) -> None:
         """Add entity to session without committing.
-        
+
         Args:
             entity: The entity to add
             flush: If True, flush immediately to get the ID. Default False for performance.
@@ -56,7 +56,7 @@ class TransactionalMixin:
         self.db.add(entity)
         if flush:
             await self.db.flush()  # Only flush when explicitly requested
-    
+
     async def _delete_entity(self, entity: Any, flush: bool = False) -> None:
         """Delete entity from session without committing.
 
@@ -67,11 +67,11 @@ class TransactionalMixin:
         await self.db.delete(entity)
         if flush:
             await self.db.flush()  # Only flush when explicitly requested
-    
+
     async def _refresh_entity(self, entity: Any) -> None:
         """Refresh entity from database without committing."""
         await self.db.refresh(entity)
-    
+
     async def _flush_if_needed(self) -> None:
         """Flush the session if needed. Can be called explicitly when IDs are required."""
         await self.db.flush()

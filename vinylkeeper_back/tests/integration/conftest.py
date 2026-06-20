@@ -6,8 +6,6 @@ from email_validator import EmailNotValidError
 from app.main import app
 from app.deps.deps import get_user_service
 from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
-from app.core.security import hash_password
-
 from tests.conftest import make_user
 
 

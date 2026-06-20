@@ -154,5 +154,3 @@ def set_defaults(mapper, connection, target):
     """Set default values before insertion."""
     if not target.user_uuid:
         target.user_uuid = uuid.uuid4()
-
-

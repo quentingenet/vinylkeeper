@@ -50,5 +50,3 @@ def handle_app_exceptions(func: Callable) -> Callable:
         except Exception as e:
             _handle_unexpected_error(func.__name__, kwargs, e)
     return wrapper
-
-

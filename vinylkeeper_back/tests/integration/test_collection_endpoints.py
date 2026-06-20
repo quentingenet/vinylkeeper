@@ -11,7 +11,6 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     DuplicateFieldError,
 )
-from tests.conftest import make_user
 
 
 # ---------------------------------------------------------------------------

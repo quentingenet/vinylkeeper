@@ -1,4 +1,3 @@
-from typing import List
 from app.repositories.wishlist_repository import WishlistRepository
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
@@ -23,9 +22,6 @@ from app.core.enums import EntityTypeEnum
 from app.core.transaction import transaction_context
 
 from app.models.wishlist_model import Wishlist
-from app.models.reference_data.entity_types import EntityType
-from app.models.reference_data.external_sources import ExternalSource
-from sqlalchemy import select
 
 
 class WishlistService:
@@ -35,7 +31,9 @@ class WishlistService:
         self.wishlist_repo = wishlist_repo
         self.external_ref_repo = external_ref_repo
 
-    async def _find_or_create_entity(self, request: AddToWishlistRequest, external_source_id: int = None) -> AlbumResponse | ArtistResponse:
+    async def _find_or_create_entity(
+        self, request: AddToWishlistRequest, external_source_id: int = None
+    ) -> AlbumResponse | ArtistResponse:
         """Find existing entity or create new one"""
         try:
             external_id = request.get_external_id()
@@ -102,7 +100,9 @@ class WishlistService:
                         # If creation fails (e.g., due to race condition), try to find again
                         logger.warning(
                             f"Failed to create artist, trying to find existing: {str(create_error)}")
-                        entity = await self.external_ref_repo.find_artist_by_external_id(external_id, external_source_id)
+                        entity = await self.external_ref_repo.find_artist_by_external_id(
+                            external_id, external_source_id
+                        )
                         if not entity:
                             # Still not found, re-raise the original error
                             raise create_error
@@ -146,7 +146,6 @@ class WishlistService:
 
             # Check if item already exists in wishlist
             existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
-            is_new = False
             if existing:
                 wishlist_response = self._build_wishlist_response(
                     existing, request.entity_type.value, request.source)
@@ -162,9 +161,6 @@ class WishlistService:
 
             # Find or create entity (pass external_source_id to avoid duplicate query)
             await self._find_or_create_entity(request, external_source_id)
-
-            # Create wishlist item
-            entity_type_id = await self.external_ref_repo.get_entity_type_id(request.entity_type)
 
             async with transaction_context(self.wishlist_repo.db):
                 result = await self.wishlist_repo.add_to_wishlist(
@@ -251,7 +247,9 @@ class WishlistService:
                 message="Limit must be between 1 and 50"
             )
 
-    async def get_user_wishlist_paginated(self, user_id: int, page: int = 1, limit: int = 8) -> PaginatedWishlistResponse:
+    async def get_user_wishlist_paginated(
+        self, user_id: int, page: int = 1, limit: int = 8
+    ) -> PaginatedWishlistResponse:
         """Get paginated wishlist items for a user (lightweight DTO)"""
         try:
             self._validate_pagination_params(page, limit)

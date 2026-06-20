@@ -7,6 +7,7 @@ from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
+
 @router.get("/stats", response_model=DashboardStatsResponse)
 @handle_app_exceptions
 async def get_dashboard_stats(

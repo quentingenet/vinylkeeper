@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator
 from datetime import datetime
 
 from app.schemas import BaseSchema

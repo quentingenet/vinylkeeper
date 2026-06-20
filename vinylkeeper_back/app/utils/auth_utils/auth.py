@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-import os
 from pathlib import Path
 
 from fastapi import Request, Depends, Response
@@ -16,6 +15,7 @@ from app.repositories.user_repository import UserRepository
 from app.core.exceptions import RefreshTokenNotFoundError, UnauthorizedError, InvalidResetTokenError
 from app.core.logging import logger
 
+
 # Load keys
 def load_keys():
     """Load JWT keys with error handling"""
@@ -27,7 +27,10 @@ def load_keys():
             private_key = key_file.read()
         return public_key, private_key
     except FileNotFoundError as e:
-        raise RuntimeError(f"JWT keys not found in {base_path}. Please ensure public_key.pem and private_key.pem exist. Error: {e}")
+        raise RuntimeError(
+            f"JWT keys not found in {base_path}. Please ensure public_key.pem and private_key.pem exist. Error: {e}"
+        )
+
 
 # Load keys with error handling
 try:
@@ -158,17 +161,22 @@ def set_token_cookie(
     else:
         max_age = custom_max_age or REFRESH_TOKEN_EXPIRE_MINUTES * 60
 
-    is_production = settings.APP_ENV != "development"
-    
+    app_env = settings.APP_ENV.lower()
+    use_secure_cookie = app_env not in {"development", "local", "test"}
+    cookie_domain = (
+            settings.COOKIE_DOMAIN
+            if use_secure_cookie and settings.COOKIE_DOMAIN
+            else None
+        )
+
+
     response.set_cookie(
         key=f"{token_type.value}_token",
         value=token,
         max_age=max_age,
         httponly=True,
-        secure=is_production,
-        samesite="none" if is_production else "lax",
+        secure= use_secure_cookie,
+        samesite="none" if use_secure_cookie else "lax",
         path="/",
-        domain=settings.COOKIE_DOMAIN or None
+        domain=cookie_domain
     )
-
-

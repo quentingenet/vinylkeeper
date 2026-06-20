@@ -47,7 +47,8 @@ class ExportService:
         export_kind = "collection_albums"
         export_format = "csv"
         logger.info(
-            f"Export requested: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id}"
+            f"Export requested: kind={export_kind} format={export_format}"
+            f" user_id={user_id} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -66,12 +67,14 @@ class ExportService:
 
             response = self._stream_csv(filename=filename, rows=row_iter())
             logger.info(
-                f"Export success: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} rows={rows_count}"
+                f"Export success: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} rows={rows_count}"
             )
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
             )
             raise
 
@@ -81,7 +84,8 @@ class ExportService:
         export_kind = "collection_artists"
         export_format = "csv"
         logger.info(
-            f"Export requested: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id}"
+            f"Export requested: kind={export_kind} format={export_format}"
+            f" user_id={user_id} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -102,12 +106,14 @@ class ExportService:
 
             response = self._stream_csv(filename=filename, rows=row_iter())
             logger.info(
-                f"Export success: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} rows={rows_count}"
+                f"Export success: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} rows={rows_count}"
             )
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
             )
             raise
 
@@ -117,7 +123,8 @@ class ExportService:
         export_kind = "collection_albums"
         export_format = "ods"
         logger.info(
-            f"Export requested: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id}"
+            f"Export requested: kind={export_kind} format={export_format}"
+            f" user_id={user_id} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -137,12 +144,14 @@ class ExportService:
             )
             response = self._file_response(export_file)
             logger.info(
-                f"Export success: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} rows={len(rows)}"
+                f"Export success: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} rows={len(rows)}"
             )
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
             )
             raise
 
@@ -152,7 +161,8 @@ class ExportService:
         export_kind = "collection_artists"
         export_format = "ods"
         logger.info(
-            f"Export requested: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id}"
+            f"Export requested: kind={export_kind} format={export_format}"
+            f" user_id={user_id} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -172,12 +182,14 @@ class ExportService:
             )
             response = self._file_response(export_file)
             logger.info(
-                f"Export success: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} rows={len(rows)}"
+                f"Export success: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} rows={len(rows)}"
             )
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
             )
             raise
 
@@ -373,4 +385,3 @@ class ExportService:
         if len(parts) == 2:
             return parts[0], parts[1]
         return "", full_title
-

@@ -8,8 +8,6 @@ from sqlalchemy import (
     event,
     func,
     CheckConstraint,
-    and_,
-    exists
 )
 from sqlalchemy.orm import relationship, validates
 from app.models.base import Base

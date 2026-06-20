@@ -11,6 +11,7 @@ from app.utils.auth_utils.auth import (
     create_reset_token,
     create_token,
     get_current_user,
+    set_token_cookie,
     verify_access_token,
     verify_refresh_token,
     verify_reset_token,
@@ -153,8 +154,41 @@ class TestResetToken:
 
 
 # ---------------------------------------------------------------------------
+# set_token_cookie
+# ---------------------------------------------------------------------------
+
+class TestSetTokenCookie:
+    @pytest.mark.parametrize("app_env", ["development", "local", "test"])
+    def test_non_production_envs_use_local_cookie_attributes(self, app_env):
+        response = MagicMock()
+        token = create_token("uuid-123", TokenType.ACCESS)
+
+        with patch("app.utils.auth_utils.auth.settings.APP_ENV", app_env):
+            set_token_cookie(response, token, TokenType.ACCESS)
+
+        response.set_cookie.assert_called_once()
+        cookie_kwargs = response.set_cookie.call_args.kwargs
+        assert cookie_kwargs["key"] == "access_token"
+        assert cookie_kwargs["secure"] is False
+        assert cookie_kwargs["samesite"] == "lax"
+
+    def test_production_env_uses_secure_cross_site_cookie_attributes(self):
+        response = MagicMock()
+        token = create_token("uuid-123", TokenType.ACCESS)
+
+        with patch("app.utils.auth_utils.auth.settings.APP_ENV", "production"):
+            set_token_cookie(response, token, TokenType.ACCESS)
+
+        response.set_cookie.assert_called_once()
+        cookie_kwargs = response.set_cookie.call_args.kwargs
+        assert cookie_kwargs["key"] == "access_token"
+        assert cookie_kwargs["secure"] is True
+        assert cookie_kwargs["samesite"] == "none"
+
+# ---------------------------------------------------------------------------
 # get_current_user
 # ---------------------------------------------------------------------------
+
 
 class TestGetCurrentUser:
     async def test_returns_user_with_valid_token(self, regular_user):

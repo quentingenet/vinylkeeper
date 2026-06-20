@@ -1,6 +1,4 @@
 from enum import Enum
-import os
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from smtplib import SMTP_SSL
@@ -11,6 +9,7 @@ from app.mails.templates_mails.contact_message import contact_message_template
 from app.mails.templates_mails.new_place_suggestion import new_place_suggestion_template
 from app.core.config_env import settings
 import asyncio
+
 
 class MailSubject(Enum):
     PasswordReset = "Password reset"
@@ -55,7 +54,7 @@ async def send_mail(to: str, subject: MailSubject, **kwargs):
         msg['Subject'] = subject.value
         template = get_template(subject, **kwargs)
         msg.attach(MIMEText(template, 'html'))
-        
+
         # Execute SMTP operations in thread pool to avoid blocking event loop
         await asyncio.to_thread(_send_mail_sync, to, msg)
         logger.info(f"{subject.value} - mail sent with success to {to}")
@@ -72,6 +71,3 @@ def _send_mail_sync(to: str, msg: MIMEMultipart):
         server.sendmail(settings.SMTP_FROM_ADDRESS, to, msg.as_string())
     finally:
         server.quit()
-
-
-

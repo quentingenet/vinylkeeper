@@ -14,7 +14,7 @@ from app.core.exceptions import (
 )
 from app.utils.auth_utils.auth import create_reset_token
 
-from tests.conftest import make_user, make_user_repo
+from tests.conftest import make_user_repo
 
 
 # ---------------------------------------------------------------------------

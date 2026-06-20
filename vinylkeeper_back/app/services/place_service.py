@@ -45,12 +45,8 @@ class PlaceService:
             # Validate place data
             self._validate_place_data(place_data)
 
-            # Get place type ID from name
-            place_type_id = await self._get_place_type_id_by_name(place_data.place_type_id)
-
             # Prepare place data
             place_dict = place_data.model_dump()
-            place_dict["place_type_id"] = place_type_id
             place_dict["submitted_by_id"] = user.id
             # New places are not moderated initially
             place_dict["is_moderated"] = False
@@ -73,16 +69,28 @@ class PlaceService:
                     place_dict["longitude"] = coordinates[1]
                 else:
                     logger.error(
-                        f"Failed to geocode {place_data.city}, {place_data.country}. Cannot create place without valid coordinates.")
+                        f"Failed to geocode {place_data.city}, {place_data.country}."
+                        " Cannot create place without valid coordinates."
+                    )
                     raise ValidationError(
                         error_code=4000,
-                        message=f"Could not find coordinates for {place_data.city}, {place_data.country}. Please check the city and country names."
+                        message=(
+                            f"Could not find coordinates for {place_data.city}, {place_data.country}."
+                            " Please check the city and country names."
+                        )
                     )
             # Coordinates are already valid, no action needed
 
             async with transaction_context(self.repository.db):
                 created_place = await self.repository.create_place(place_dict)
-                moderation_request = await self._create_moderation_request(created_place.id, user.id)
+                await self._create_moderation_request(created_place.id, user.id)
+
+            # Reload with relations (new place has is_valid=False, use internal method)
+            full_place = await self.repository.get_place_by_id_internal(created_place.id)
+            place_type_name = (
+                full_place.place_type.name if (full_place and full_place.place_type)
+                else str(place_data.place_type_id)
+            )
 
             # Notify admins after commit (email failure must not roll back DB)
             try:
@@ -92,7 +100,7 @@ class PlaceService:
                     place_name=created_place.name,
                     place_city=created_place.city,
                     place_country=created_place.country,
-                    place_type=place_data.place_type_id,
+                    place_type=place_type_name,
                     username=user.username,
                     user_email=user.email,
                     place_description=created_place.description,
@@ -110,9 +118,9 @@ class PlaceService:
             likes_count = await self.repository.get_place_likes_count(created_place.id)
             is_liked = False  # New place, so not liked by anyone yet
 
-            # Create response with all data
+            # Create response with all data (use full_place for loaded relations, fallback to created_place)
             response = self._create_place_response(
-                created_place, likes_count, is_liked)
+                full_place or created_place, likes_count, is_liked)
 
             return response
 
@@ -143,7 +151,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",
@@ -196,7 +204,9 @@ class PlaceService:
                 details={}
             )
 
-    async def get_all_places(self, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
+    async def get_all_places(
+        self, user: Optional[User] = None, page: int = 1, limit: int = 20
+    ) -> PaginatedPlaceResponse:
         """Get moderated places with pagination. User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
@@ -245,7 +255,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to update place",
@@ -270,7 +280,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete place",
@@ -302,7 +312,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to like place",
@@ -334,14 +344,16 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to unlike place",
                 details={}
             )
 
-    async def search_places(self, search_term: str, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
+    async def search_places(
+        self, search_term: str, user: Optional[User] = None, page: int = 1, limit: int = 20
+    ) -> PaginatedPlaceResponse:
         """Search places by name, city, or country (only moderated places). User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
@@ -359,14 +371,16 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to search places",
                 details={}
             )
 
-    async def get_places_by_type(self, place_type_id: int, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
+    async def get_places_by_type(
+        self, place_type_id: int, user: Optional[User] = None, page: int = 1, limit: int = 20
+    ) -> PaginatedPlaceResponse:
         """Get places by type (only moderated places). User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
@@ -384,14 +398,18 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places by type",
                 details={}
             )
 
-    async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float, user: Optional[User] = None, page: int = 1, limit: int = 20) -> PaginatedPlaceResponse:
+    async def get_places_in_region(
+        self,
+        min_lat: float, max_lat: float, min_lng: float, max_lng: float,
+        user: Optional[User] = None, page: int = 1, limit: int = 20
+    ) -> PaginatedPlaceResponse:
         """Get places within a geographic region (only moderated places). User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
@@ -409,7 +427,7 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places in region",
@@ -436,7 +454,9 @@ class PlaceService:
             )
 
             # Create the moderation request in database
-            moderation_request = await self.moderation_request_repository.create_request(moderation_request_data.model_dump())
+            moderation_request = await self.moderation_request_repository.create_request(
+                moderation_request_data.model_dump()
+            )
 
             return moderation_request
         except ServerError:
@@ -503,25 +523,9 @@ class PlaceService:
                 message="Country is required"
             )
 
-        if not data.place_type_id or len(data.place_type_id.strip()) == 0:
-            raise ValidationError(
-                error_code=4000,
-                message="Place type is required"
-            )
-
-    async def _get_place_type_id_by_name(self, place_type_name: str) -> int:
-        """Get place type ID from name"""
-        place_type = await self.repository.get_place_type_by_name(place_type_name)
-
-        if not place_type:
-            raise ValidationError(
-                error_code=4000,
-                message=f"Place type '{place_type_name}' not found"
-            )
-
-        return place_type.id
-
-    async def get_all_places_admin(self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[PlaceResponse]:
+    async def get_all_places_admin(
+        self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[PlaceResponse]:
         """Get all places (admin only - includes non-moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.get_all_places(limit, offset)
@@ -539,7 +543,7 @@ class PlaceService:
             return response_places
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all places",
@@ -561,7 +565,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except Exception:
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",

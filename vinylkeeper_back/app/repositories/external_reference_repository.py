@@ -1,8 +1,8 @@
-from typing import List, Optional, Dict
+from typing import Optional, Dict
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime, timezone
 from app.models.wishlist_model import Wishlist
 from app.models.album_model import Album
 from app.models.artist_model import Artist
@@ -13,10 +13,8 @@ from app.schemas.album_schema import AlbumCreate
 from app.schemas.artist_schema import ArtistCreate
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import (
-    ResourceNotFoundError,
     ValidationError,
     ServerError,
-    AppException
 )
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
@@ -26,7 +24,6 @@ from app.repositories.album_repository import AlbumRepository
 from app.repositories.artist_repository import ArtistRepository
 from app.models.collection_album import CollectionAlbum
 from app.models.association_tables import CollectionArtist
-from app.models.reference_data.vinyl_state import VinylState
 from app.utils.vinyl_state_mapping import VinylStateMapping
 
 
@@ -134,7 +131,9 @@ class ExternalReferenceRepository(TransactionalMixin):
         """Find an artist by its external ID and source"""
         return await self.artist_repo.get_by_external_id(external_id, external_source_id)
 
-    async def find_collection_album_by_external_id(self, collection_id: int, external_id: str) -> Optional[CollectionAlbum]:
+    async def find_collection_album_by_external_id(
+        self, collection_id: int, external_id: str
+    ) -> Optional[CollectionAlbum]:
         """Find a collection album by collection ID and external album ID"""
         try:
             from app.models.collection_album import CollectionAlbum
@@ -193,7 +192,9 @@ class ExternalReferenceRepository(TransactionalMixin):
                 details={}
             )
 
-    async def find_wishlist_item(self, user_id: int, external_id: str, entity_type: EntityTypeEnum) -> Optional[Wishlist]:
+    async def find_wishlist_item(
+        self, user_id: int, external_id: str, entity_type: EntityTypeEnum
+    ) -> Optional[Wishlist]:
         """Find a wishlist item by user ID and external ID"""
         return await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, entity_type)
 
@@ -215,7 +216,9 @@ class ExternalReferenceRepository(TransactionalMixin):
         """Find a collection by ID with optional relations loading"""
         return await self.collection_repo.get_by_id(collection_id, load_relations=load_relations)
 
-    async def add_album_to_collection(self, collection: Collection, album: Album, album_data: Optional[dict] = None, is_new_entity: bool = False) -> tuple[CollectionAlbum, bool]:
+    async def add_album_to_collection(
+        self, collection: Collection, album: Album, album_data: Optional[dict] = None, is_new_entity: bool = False
+    ) -> tuple[CollectionAlbum, bool]:
         """Add an album to a collection with optional album state data"""
         try:
             # Check if album is already in collection
@@ -238,7 +241,6 @@ class ExternalReferenceRepository(TransactionalMixin):
 
                 # Update only CollectionAlbum.updated_at when adding existing album
                 # Never modify created_at - it represents the initial addition date
-                from datetime import datetime, timezone
                 existing.updated_at = datetime.now(timezone.utc)
                 # Preserve created_at if it's None (for old records)
                 if existing.created_at is None:
@@ -248,7 +250,6 @@ class ExternalReferenceRepository(TransactionalMixin):
                 return existing, False
 
             # Create new collection album association with explicit timestamps
-            from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
             collection_album = CollectionAlbum(
                 collection_id=collection.id,
@@ -305,7 +306,9 @@ class ExternalReferenceRepository(TransactionalMixin):
             logger.error(f"Failed to find artist in collection: {str(e)}")
             return None
 
-    async def add_artist_to_collection(self, collection: Collection, artist: Artist, is_new_entity: bool = False) -> dict:
+    async def add_artist_to_collection(
+        self, collection: Collection, artist: Artist, is_new_entity: bool = False
+    ) -> dict:
         """Add an artist to a collection"""
         try:
             # Check if artist is already in collection
@@ -318,7 +321,6 @@ class ExternalReferenceRepository(TransactionalMixin):
 
             if not existing:
                 # Create new association with explicit timestamps
-                from datetime import datetime, timezone
                 now = datetime.now(timezone.utc)
                 collection_artist_obj = CollectionArtist(
                     collection_id=collection.id,
@@ -333,7 +335,6 @@ class ExternalReferenceRepository(TransactionalMixin):
             else:
                 # Update only existing association's updated_at
                 # Never modify created_at - it represents the initial addition date
-                from datetime import datetime, timezone
                 existing.updated_at = datetime.now(timezone.utc)
                 # Preserve created_at if it's None (for old records)
                 if existing.created_at is None:
@@ -374,7 +375,7 @@ class ExternalReferenceRepository(TransactionalMixin):
 
             if collection_album:
                 await self._delete_entity(collection_album)
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove album from collection",
@@ -394,7 +395,7 @@ class ExternalReferenceRepository(TransactionalMixin):
 
             if collection_artist_obj:
                 await self._delete_entity(collection_artist_obj)
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove artist from collection",

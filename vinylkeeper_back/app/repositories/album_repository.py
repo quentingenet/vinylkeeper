@@ -41,7 +41,9 @@ class AlbumRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
-            logger.error(f"Error retrieving album by external ID {external_album_id} from source {external_source_id}: {str(e)}")
+            logger.error(
+                f"Error retrieving album by external ID {external_album_id} from source {external_source_id}: {str(e)}"
+            )
             raise ServerError(
                 error_code=5000,
                 message="Failed to get album by external id",

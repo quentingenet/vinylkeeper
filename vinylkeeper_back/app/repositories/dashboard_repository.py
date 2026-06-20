@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, case, and_
+from sqlalchemy import func, select, case
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.album_model import Album
 from app.models.artist_model import Artist
@@ -131,7 +131,7 @@ class DashboardRepository:
 
             public_collections_count_subq = (
                 select(func.count(Collection.id).label('count'))
-                .filter(Collection.owner_id == user_id, Collection.is_public == True)
+                .filter(Collection.owner_id == user_id, Collection.is_public.is_(True))
                 .scalar_subquery()
             )
 
@@ -166,10 +166,10 @@ class DashboardRepository:
         try:
             # Use conditional aggregation to get both counts in one query
             query = select(
-                func.sum(case((Place.is_moderated == True, 1), else_=0)).label(
+                func.sum(case((Place.is_moderated.is_(True), 1), else_=0)).label(
                     'moderated_count'),
                 func.count(Place.id).label('global_count')
-            ).filter(Place.is_valid == True)
+            ).filter(Place.is_valid.is_(True))
 
             result = await self.db.execute(query)
             row = result.first()
@@ -233,7 +233,7 @@ class DashboardRepository:
             ).exists()
 
             count_query = select(func.count(distinct(Collection.id)))
-            count_query = count_query.filter(Collection.is_public == True)
+            count_query = count_query.filter(Collection.is_public.is_(True))
             count_query = count_query.filter(has_albums | has_artists)
 
             result = await self.db.execute(count_query)

@@ -1,22 +1,15 @@
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-
 
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.place_repository import PlaceRepository
 from app.models.moderation_request_model import ModerationRequest
-from app.models.place_model import Place
-from app.models.reference_data.moderation_statuses import ModerationStatus
 from app.schemas.moderation_request_schema import (
-    ModerationRequestCreate,
-    ModerationRequestUpdate,
     ModerationRequestResponse,
     ModerationRequestListResponse
 )
 from app.core.exceptions import (
     AppException,
     ResourceNotFoundError,
-    ForbiddenError,
     ValidationError,
     ServerError
 )
@@ -32,7 +25,9 @@ class ModerationService:
         self.moderation_repository = moderation_repository
         self.place_repository = place_repository
 
-    async def get_all_moderation_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> ModerationRequestListResponse:
+    async def get_all_moderation_requests(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> ModerationRequestListResponse:
         """Get all moderation requests with statistics."""
         try:
             requests = await self.moderation_repository.get_all_requests(limit, offset)
@@ -77,11 +72,15 @@ class ModerationService:
                 details={}
             )
 
-    async def get_pending_moderation_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequestResponse]:
+    async def get_pending_moderation_requests(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[ModerationRequestResponse]:
         """Get pending moderation requests."""
         try:
             # Get pending status ID from database
-            pending_status = await self.moderation_repository.get_moderation_status_by_name(ModerationStatusEnum.PENDING.value)
+            pending_status = await self.moderation_repository.get_moderation_status_by_name(
+                ModerationStatusEnum.PENDING.value
+            )
 
             if not pending_status:
                 raise ServerError(
@@ -110,7 +109,9 @@ class ModerationService:
                 details={}
             )
 
-    async def update_moderation_request_status(self, request_id: int, new_status: str, admin_user_id: int) -> ModerationRequestResponse:
+    async def update_moderation_request_status(
+        self, request_id: int, new_status: str, admin_user_id: int
+    ) -> ModerationRequestResponse:
         """Update moderation request status and handle place moderation with transactional integrity."""
         try:
             # Get the moderation request
@@ -133,7 +134,9 @@ class ModerationService:
                 if new_status == ModerationStatusEnum.APPROVED.value:
                     await self.place_repository.update_place(request.place_id, {"is_moderated": True})
                 elif new_status == ModerationStatusEnum.REJECTED.value:
-                    await self.place_repository.update_place(request.place_id, {"is_moderated": False, "is_valid": False})
+                    await self.place_repository.update_place(
+                        request.place_id, {"is_moderated": False, "is_valid": False}
+                    )
 
             reloaded_request = await self.moderation_repository.get_request_by_id(request_id)
 
@@ -152,11 +155,15 @@ class ModerationService:
 
     async def approve_moderation_request(self, request_id: int, admin_user_id: int) -> ModerationRequestResponse:
         """Approve a moderation request."""
-        return await self.update_moderation_request_status(request_id, ModerationStatusEnum.APPROVED.value, admin_user_id)
+        return await self.update_moderation_request_status(
+            request_id, ModerationStatusEnum.APPROVED.value, admin_user_id
+        )
 
     async def reject_moderation_request(self, request_id: int, admin_user_id: int) -> ModerationRequestResponse:
         """Reject a moderation request."""
-        return await self.update_moderation_request_status(request_id, ModerationStatusEnum.REJECTED.value, admin_user_id)
+        return await self.update_moderation_request_status(
+            request_id, ModerationStatusEnum.REJECTED.value, admin_user_id
+        )
 
     async def get_moderation_stats(self) -> dict:
         """Get moderation statistics."""

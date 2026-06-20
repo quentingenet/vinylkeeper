@@ -11,7 +11,7 @@ class VinylState(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False, index=True)
     description = Column(String(255), nullable=True)
-    
+
     record_collections = relationship(
         "CollectionAlbum",
         foreign_keys="CollectionAlbum.state_record",

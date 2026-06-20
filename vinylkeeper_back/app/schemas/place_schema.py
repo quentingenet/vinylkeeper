@@ -43,7 +43,7 @@ class PlaceBase(BaseModel):
 
 class PlaceCreate(PlaceBase):
     """Schema for creating a new place."""
-    place_type_id: str = Field(min_length=1, max_length=50)
+    place_type_id: int = Field(gt=0)
     submitted_by_id: Optional[int] = Field(None, gt=0)
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
@@ -59,9 +59,7 @@ class PlaceUpdate(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180, le=180)
     description: Optional[str] = Field(None, max_length=600)
     source_url: Optional[str] = Field(None, max_length=255)
-    place_type_id: Optional[str] = Field(None, min_length=1, max_length=50)
-    is_moderated: Optional[bool] = Field(None)
-    is_valid: Optional[bool] = Field(None)
+    place_type_id: Optional[int] = Field(None, gt=0)
 
     model_config = ConfigDict(extra="forbid")
 

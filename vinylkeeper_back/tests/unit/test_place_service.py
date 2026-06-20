@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.place_service import PlaceService
 from app.schemas.place_schema import PlaceCreate, PlaceUpdate, PaginatedPlaceResponse
-from app.core.exceptions import ForbiddenError, ResourceNotFoundError, ServerError, ValidationError
+from app.core.exceptions import ForbiddenError, ServerError, ValidationError
 
 from tests.conftest import make_user
 
@@ -144,9 +144,13 @@ class TestCreatePlace:
         mod_repo.create_request = AsyncMock(return_value=MagicMock())
         user = make_user()
 
-        with patch("app.services.place_service.geocode_city", new_callable=AsyncMock, return_value=(48.8566, 2.3522)) as mock_geocode, \
-             patch("app.services.place_service.send_mail", new_callable=AsyncMock, return_value=True), \
-             patch.object(service, "_create_place_response", return_value=MagicMock()):
+        geocode_patch = patch(
+            "app.services.place_service.geocode_city",
+            new_callable=AsyncMock, return_value=(48.8566, 2.3522)
+        )
+        send_mail_patch = patch("app.services.place_service.send_mail", new_callable=AsyncMock, return_value=True)
+        resp_patch = patch.object(service, "_create_place_response", return_value=MagicMock())
+        with geocode_patch as mock_geocode, send_mail_patch, resp_patch:
             await service.create_place(make_place_data(latitude=None, longitude=None), user)
 
         mock_geocode.assert_awaited_once()
@@ -189,8 +193,11 @@ class TestCreatePlace:
         mod_repo.create_request = AsyncMock(return_value=MagicMock())
         user = make_user()
 
-        with patch("app.services.place_service.send_mail", new_callable=AsyncMock, side_effect=Exception("SMTP down")), \
-             patch.object(service, "_create_place_response", return_value=MagicMock()):
+        send_mail_patch = patch(
+            "app.services.place_service.send_mail",
+            new_callable=AsyncMock, side_effect=Exception("SMTP down")
+        )
+        with send_mail_patch, patch.object(service, "_create_place_response", return_value=MagicMock()):
             await service.create_place(make_place_data(), user)  # pas d'exception
 
 

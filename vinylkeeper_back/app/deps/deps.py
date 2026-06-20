@@ -119,7 +119,9 @@ def get_collection_service(
     wishlist_repository: WishlistRepository = Depends(get_wishlist_repository),
     place_repository: PlaceRepository = Depends(get_place_repository)
 ) -> CollectionService:
-    return CollectionService(repository, like_repository, collection_album_repository, wishlist_repository, place_repository)
+    return CollectionService(
+        repository, like_repository, collection_album_repository, wishlist_repository, place_repository
+    )
 
 
 def get_search_service(request: Request) -> SearchService:

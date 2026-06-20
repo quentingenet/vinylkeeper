@@ -1,19 +1,14 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 from app.main import app
 from app.deps.deps import get_user_service
 from app.utils.auth_utils.auth import create_token, TokenType
 from app.core.exceptions import (
-    AccountLockedError,
     DuplicateEmailError,
     EmailNotFoundError,
     InvalidCredentialsError,
     InvalidResetTokenError,
-    RefreshTokenNotFoundError,
-    TermsNotAcceptedError,
 )
-from tests.conftest import make_user
 
 
 # ---------------------------------------------------------------------------

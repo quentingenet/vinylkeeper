@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Path, Query, Body
-from typing import List, Optional
+from typing import List
 from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
@@ -149,7 +149,7 @@ async def delete_place(
     service: PlaceService = Depends(get_place_service)
 ):
     """Delete a place"""
-    deleted = await service.delete_place(user, place_id)
+    await service.delete_place(user, place_id)
     return {"message": "Place deleted successfully"}
 
 

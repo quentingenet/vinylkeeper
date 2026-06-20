@@ -41,9 +41,3 @@ export const vinylStates = [
   { id: VinylStateEnum.POOR, name: "Poor" },
 ];
 
-export enum PlaceType {
-  FLEA_MARKET = "flea market",
-  SHOP = "shop",
-  EXHIBITION = "music or records exhibition",
-  OTHER = "other",
-}

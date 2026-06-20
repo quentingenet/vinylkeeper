@@ -23,7 +23,7 @@ from app.core.exceptions import (
 from app.services.collection_service import CollectionService
 from app.schemas.collection_schema import CollectionCreate
 from app.core.transaction import transaction_context
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from app.core.config_env import settings
 from app.core.logging import logger
 
@@ -213,7 +213,6 @@ class UserService:
             "created_at": user.created_at,
             "is_accepted_terms": user.is_accepted_terms
         }
-
 
     async def send_contact_message(self, user: User, message_data: ContactMessageRequest) -> ContactMessageResponse:
         """Send contact message"""

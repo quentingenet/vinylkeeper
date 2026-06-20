@@ -12,7 +12,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, validates
 
 from app.models.base import Base
-from app.models.association_tables import CollectionArtist
 
 
 class Collection(Base):
@@ -96,4 +95,5 @@ class Collection(Base):
         return description
 
     def __repr__(self):
-        return f"<Collection(name={self.name}, owner_id={self.owner_id}, mood={self.mood.name if self.mood else 'None'})>"
+        mood_name = self.mood.name if self.mood else 'None'
+        return f"<Collection(name={self.name}, owner_id={self.owner_id}, mood={mood_name})>"

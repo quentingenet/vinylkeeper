@@ -1,13 +1,12 @@
 import re
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from uuid import UUID
 from email_validator import validate_email, EmailNotValidError
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas import BaseSchema
-from app.core.enums import RoleEnum
 
 
 def _validate_email_value(v: str, check_deliverability: bool = True) -> str:

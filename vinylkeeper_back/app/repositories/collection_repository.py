@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import select, func, or_, and_, case, delete
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func, and_, case, delete
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.collection_album import CollectionAlbum
-from app.models.association_tables import CollectionArtist, collection_artist
+from app.models.association_tables import CollectionArtist
 from app.models.like_model import Like
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -43,7 +43,9 @@ class CollectionRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_by_id(self, collection_id: int, load_relations: bool = True, load_minimal: bool = False) -> Collection:
+    async def get_by_id(
+        self, collection_id: int, load_relations: bool = True, load_minimal: bool = False
+    ) -> Collection:
         """
         Get a collection by its ID with optimized relation loading.
 
@@ -111,7 +113,7 @@ class CollectionRepository(TransactionalMixin):
             query = select(func.count(Collection.id)).filter(
                 and_(
                     Collection.owner_id == owner_id,
-                    Collection.is_public == True
+                    Collection.is_public.is_(True)
                 )
             )
             result = await self.db.execute(query)
@@ -329,15 +331,16 @@ class CollectionRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: Optional[int] = None, sort_by: str = "updated_at") -> Tuple[List[Collection], int]:
+    async def get_public_collections(
+        self, page: int = 1, limit: int = 10, exclude_user_id: Optional[int] = None, sort_by: str = "updated_at"
+    ) -> Tuple[List[Collection], int]:
         """Get all public collections with pagination and sorting.
         Only returns collections with at least one album, artist, or wishlist item."""
         try:
             from app.models.like_model import Like
-            from app.models.wishlist_model import Wishlist
 
             # Build base query
-            query = select(Collection).filter(Collection.is_public == True)
+            query = select(Collection).filter(Collection.is_public.is_(True))
 
             if exclude_user_id:
                 query = query.filter(Collection.owner_id != exclude_user_id)
@@ -362,7 +365,7 @@ class CollectionRepository(TransactionalMixin):
             # Get total count BEFORE applying grouping for likes_count
             from sqlalchemy import distinct
             count_query = select(func.count(distinct(Collection.id)))
-            count_query = count_query.filter(Collection.is_public == True)
+            count_query = count_query.filter(Collection.is_public.is_(True))
             if exclude_user_id:
                 count_query = count_query.filter(
                     Collection.owner_id != exclude_user_id)
@@ -549,8 +552,6 @@ class CollectionRepository(TransactionalMixin):
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Collection], int]:
         """Get user's collections with pagination and optimized relation loading (list view)."""
         try:
-            from app.models.association_tables import CollectionArtist, collection_artist
-
             # Build base query
             query = select(Collection).filter(Collection.owner_id == user_id)
 
@@ -621,8 +622,10 @@ class CollectionRepository(TransactionalMixin):
             logger.error(f"Error counting user collections: {str(e)}")
             return 0
 
-    async def get_collection_artists_paginated(self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> Tuple[List[tuple], int]:
-        """Get paginated artists from a collection with optimized relation loading, sorted by collection_artist.created_at."""
+    async def get_collection_artists_paginated(
+        self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
+    ) -> Tuple[List[tuple], int]:
+        """Get paginated artists from a collection with optimized relation loading."""
         try:
             # Determine sort order
             if sort_order == "oldest":

@@ -126,7 +126,6 @@ class ExternalReferenceService:
                 )
 
             existing = await self.repository.find_wishlist_item(user_id, external_id, request.entity_type)
-            is_new = False
             if existing:
                 wishlist_response = self._build_wishlist_response(
                     existing, request.entity_type.value, request.source)
@@ -208,7 +207,9 @@ class ExternalReferenceService:
                 details={}
             )
 
-    async def add_to_collection(self, user_id: int, collection_id: int, request: AddToCollectionRequest) -> AddToCollectionResponse:
+    async def add_to_collection(
+        self, user_id: int, collection_id: int, request: AddToCollectionRequest
+    ) -> AddToCollectionResponse:
         """Add an album or artist to a collection"""
         try:
             external_id = request.get_external_id()
@@ -241,16 +242,22 @@ class ExternalReferenceService:
                     if state_record:
                         state_record_str = state_record.value if hasattr(
                             state_record, 'value') else str(state_record)
-                        processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(state_record_str)
+                        processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(
+                            state_record_str
+                        )
 
                     state_cover = processed_album_data.pop(
                         'state_cover', None)
                     if state_cover:
                         state_cover_str = state_cover.value if hasattr(
                             state_cover, 'value') else str(state_cover)
-                        processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(state_cover_str)
+                        processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(
+                            state_cover_str
+                        )
 
-                collection_item, is_new_album = await self.repository.add_album_to_collection(collection, album, processed_album_data, is_new_entity)
+                collection_item, is_new_album = await self.repository.add_album_to_collection(
+                    collection, album, processed_album_data, is_new_entity
+                )
             else:
                 artist = entity
 
@@ -270,7 +277,7 @@ class ExternalReferenceService:
             if request.entity_type == EntityTypeEnum.ALBUM:
                 # CollectionAlbum has a composite primary key — collection_id used as surrogate id
                 item_response = CollectionItemResponse(
-                    id=collection_item.collection_id,  # CollectionAlbum has a composite primary key — collection_id used as surrogate id
+                    id=collection_item.collection_id,
                     external_id=external_id,
                     entity_type=request.entity_type.value,
                     title=request.title,
@@ -295,7 +302,8 @@ class ExternalReferenceService:
                     created_at=created_at
                 )
 
-            message = f"{'Added' if is_new else 'Already have'} {request.entity_type.value} '{request.title}' in collection '{collection.name}'"
+            verb = 'Added' if is_new else 'Already have'
+            message = f"{verb} {request.entity_type.value} '{request.title}' in collection '{collection.name}'"
 
             final_response = AddToCollectionResponse(
                 item=item_response,
@@ -322,14 +330,18 @@ class ExternalReferenceService:
                 details={}
             )
 
-    async def remove_from_collection(self, user_id: int, collection_id: int, external_id: str, entity_type: EntityTypeEnum) -> bool:
+    async def remove_from_collection(
+        self, user_id: int, collection_id: int, external_id: str, entity_type: EntityTypeEnum
+    ) -> bool:
         """Remove an album or artist from a collection"""
         try:
             collection = await self._verify_collection_access(collection_id, user_id)
 
             # find by external_id directly to avoid external_source_id resolution issues
             if entity_type == EntityTypeEnum.ALBUM:
-                collection_album = await self.repository.find_collection_album_by_external_id(collection_id, external_id)
+                collection_album = await self.repository.find_collection_album_by_external_id(
+                    collection_id, external_id
+                )
 
                 if not collection_album:
                     raise ResourceNotFoundError("Album", external_id)

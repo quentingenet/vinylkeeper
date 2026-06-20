@@ -34,10 +34,10 @@ VINYL_STATE_DESCRIPTIONS = {
 async def check_reference_data_exists(db: AsyncSession) -> bool:
     reference_models = [
         Role, ModerationStatus, PlaceType,
-        EntityType, VinylState, 
+        EntityType, VinylState,
         Mood, ExternalSource
     ]
-    
+
     for model in reference_models:
         result = await db.execute(select(model))
         if not result.scalars().first():

@@ -41,7 +41,10 @@ class ArtistRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
-            logger.error(f"Error retrieving artist by external ID {external_artist_id} from source {external_source_id}: {str(e)}")
+            logger.error(
+                f"Error retrieving artist by external ID {external_artist_id}"
+                f" from source {external_source_id}: {str(e)}"
+            )
             raise ServerError(
                 error_code=5000,
                 message="Failed to get artist by external id",

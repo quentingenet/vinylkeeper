@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from sqlalchemy.exc import IntegrityError
 
 from app.repositories.collection_repository import CollectionRepository
@@ -15,7 +15,6 @@ from app.schemas.collection_schema import (
     CollectionListItemResponse,
     CollectionDetailResponse,
     CollectionAlbumResponse,
-    CollectionArtistResponse,
     PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
     CollectionSearchResponse
@@ -156,7 +155,9 @@ class CollectionService:
         collection = await self.repository.get_by_id(collection_id, load_relations=True)
         return await self._build_collection_response(collection)
 
-    async def update_collection(self, user_id: int, collection_id: int, collection_data: CollectionUpdate) -> CollectionResponse:
+    async def update_collection(
+        self, user_id: int, collection_id: int, collection_data: CollectionUpdate
+    ) -> CollectionResponse:
         """Update a collection"""
         async with transaction_context(self.repository.db):
             collection = await self._get_owned_collection(user_id, collection_id)
@@ -181,7 +182,9 @@ class CollectionService:
             await self.repository.delete(collection)
         return True
 
-    async def add_album_to_collection(self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate) -> CollectionAlbumResponse:
+    async def add_album_to_collection(
+        self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate
+    ) -> CollectionAlbumResponse:
         """Add an album to a collection"""
         async with transaction_context(self.collection_album_repository.db):
             await self._get_owned_collection(user_id, collection_id)
@@ -192,7 +195,9 @@ class CollectionService:
         album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_data.album_id)
         return collection_mapper.album_to_collection_album_response(album, collection_album)
 
-    async def update_album_metadata(self, user_id: int, collection_id: int, album_id: int, metadata: CollectionAlbumUpdate) -> CollectionAlbumResponse:
+    async def update_album_metadata(
+        self, user_id: int, collection_id: int, album_id: int, metadata: CollectionAlbumUpdate
+    ) -> CollectionAlbumResponse:
         """Update album metadata in a collection"""
         async with transaction_context(self.collection_album_repository.db):
             await self._get_owned_collection(user_id, collection_id)
@@ -237,7 +242,9 @@ class CollectionService:
                 details={}
             )
 
-    async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[CollectionListItemResponse], int]:
+    async def get_user_collections(
+        self, user_id: int, page: int = 1, limit: int = 10
+    ) -> Tuple[List[CollectionListItemResponse], int]:
         """Get user's collections with pagination (optimized list view, lightweight response)."""
         try:
             collections, total = await self.repository.get_user_collections(user_id, page, limit)
@@ -281,7 +288,14 @@ class CollectionService:
                 details={}
             )
 
-    async def get_public_collections(self, page: int = 1, limit: int = 10, exclude_user_id: int = None, user_id: int = None, sort_by: str = "updated_at") -> Tuple[List[CollectionListItemResponse], int]:
+    async def get_public_collections(
+        self,
+        page: int = 1,
+        limit: int = 10,
+        exclude_user_id: int = None,
+        user_id: int = None,
+        sort_by: str = "updated_at"
+    ) -> Tuple[List[CollectionListItemResponse], int]:
         """Get public collections with pagination (optimized list view, lightweight response)."""
         try:
             collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id, sort_by)
@@ -446,7 +460,9 @@ class CollectionService:
                 details={}
             )
 
-    async def get_collection_albums_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> PaginatedAlbumsResponse:
+    async def get_collection_albums_paginated(
+        self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
+    ) -> PaginatedAlbumsResponse:
         """Get paginated albums from a collection"""
         try:
             collection = await self.repository.get_by_id(collection_id)
@@ -485,7 +501,9 @@ class CollectionService:
                 details={}
             )
 
-    async def get_collection_artists_paginated(self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest") -> PaginatedArtistsResponse:
+    async def get_collection_artists_paginated(
+        self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
+    ) -> PaginatedArtistsResponse:
         """Get paginated artists from a collection"""
         try:
             collection = await self.repository.get_by_id(collection_id)
@@ -494,7 +512,9 @@ class CollectionService:
 
             self._assert_collection_accessible(collection, user_id)
 
-            artists_data, total = await self.repository.get_collection_artists_paginated(collection_id, page, limit, sort_order)
+            artists_data, total = await self.repository.get_collection_artists_paginated(
+                collection_id, page, limit, sort_order
+            )
 
             artist_responses = [
                 collection_mapper.artist_to_collection_artist_response(artist, collection_artist)
@@ -522,7 +542,9 @@ class CollectionService:
                 details={}
             )
 
-    async def search_collection_items(self, collection_id: int, user_id: int, query: str, search_type: str = "both") -> dict:
+    async def search_collection_items(
+        self, collection_id: int, user_id: int, query: str, search_type: str = "both"
+    ) -> dict:
         """Search for items in a collection"""
         try:
             collection = await self.repository.get_by_id(collection_id)
@@ -580,14 +602,19 @@ class CollectionService:
                 details={}
             )
 
-    async def _build_collection_response(self, collection, user_id=None, likes_count=None, is_liked=None) -> CollectionResponse:
+    async def _build_collection_response(
+        self, collection, user_id=None, likes_count=None, is_liked=None
+    ) -> CollectionResponse:
         """Build a CollectionResponse from a Collection instance using preloaded data."""
         artists = []
         if hasattr(collection, 'collection_artists') and collection.collection_artists:
             for collection_artist in collection.collection_artists:
                 if hasattr(collection_artist, 'artist') and collection_artist.artist:
                     artists.append(
-                        collection_mapper.artist_to_collection_artist_response(collection_artist.artist, collection_artist))
+                        collection_mapper.artist_to_collection_artist_response(
+                            collection_artist.artist, collection_artist
+                        )
+                    )
 
         albums = []
         if hasattr(collection, 'collection_albums') and collection.collection_albums:
@@ -623,7 +650,9 @@ class CollectionService:
             is_liked_by_user=is_liked,
         )
 
-    def _build_collection_list_item(self, collection, user_id=None, likes_count=None, is_liked=None, albums_count=0, artists_count=0) -> CollectionListItemResponse:
+    def _build_collection_list_item(
+        self, collection, user_id=None, likes_count=None, is_liked=None, albums_count=0, artists_count=0
+    ) -> CollectionListItemResponse:
         """Build lightweight collection list item response."""
         owner = None
         if hasattr(collection, 'owner') and collection.owner:

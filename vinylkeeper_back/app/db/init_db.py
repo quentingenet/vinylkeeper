@@ -18,13 +18,14 @@ if not all([DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
     raise EnvironmentError(
         "One or more database environment variables are not set.")
 
+
 async def init_db():
     """Initialize database tables"""
     engine = create_async_engine(DATABASE_URL)
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     await engine.dispose()
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ from .user_schema import (
 
 # Collection schemas
 from .collection_schema import (
-    CollectionCreate, CollectionUpdate, CollectionResponse, 
+    CollectionCreate, CollectionUpdate, CollectionResponse,
     CollectionDetailResponse, CollectionAlbumResponse
 )
 
@@ -45,7 +45,7 @@ __all__ = [
     "UserCreate", "UserUpdate", "UserResponse",
     "UserSettingsResponse", "UserMeResponse",
     # Collection
-    "CollectionCreate", "CollectionUpdate", "CollectionResponse", 
+    "CollectionCreate", "CollectionUpdate", "CollectionResponse",
     "CollectionDetailResponse", "CollectionAlbumResponse",
     # Album
     "AlbumCreate", "AlbumUpdate", "AlbumResponse", "AlbumDetailResponse",
@@ -59,4 +59,4 @@ __all__ = [
     "LikeCreate", "LikeResponse",
     "PlaceCreate", "PlaceResponse",
     "ModerationRequestCreate", "ModerationRequestResponse",
-] 
+]

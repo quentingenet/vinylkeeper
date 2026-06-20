@@ -5,7 +5,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.moderation_request_model import ModerationRequest
-from app.models.place_model import Place
 from app.models.reference_data.moderation_statuses import ModerationStatus
 from app.core.enums import ModerationStatusEnum
 from app.core.exceptions import ResourceNotFoundError, ServerError
@@ -19,7 +18,9 @@ class ModerationRequestRepository(TransactionalMixin):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all_requests(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequest]:
+    async def get_all_requests(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[ModerationRequest]:
         """Get all moderation requests with optional pagination."""
         try:
             query = select(ModerationRequest)
@@ -45,7 +46,9 @@ class ModerationRequestRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_requests_by_status(self, status_id: int, limit: Optional[int] = None, offset: Optional[int] = None) -> List[ModerationRequest]:
+    async def get_requests_by_status(
+        self, status_id: int, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[ModerationRequest]:
         """Get moderation requests by status with optional pagination."""
         try:
             query = select(ModerationRequest).filter(

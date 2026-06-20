@@ -1,17 +1,6 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    ForeignKey,
-    UniqueConstraint
-)
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.models.base import Base
-from app.models.album_model import Album
-from app.models.collection_model import Collection
-from app.models.user_model import User
-from app.models.reference_data.vinyl_state import VinylState
 
 
 class CollectionAlbum(Base):

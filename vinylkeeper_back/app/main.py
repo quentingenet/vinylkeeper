@@ -28,9 +28,11 @@ app.include_router(places.router, prefix="/api/places")
 app.include_router(admin.router, prefix="/api/vk-admin")
 app.include_router(images.router, prefix="/api/images")
 
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to the VinylKeeper API"}
+
 
 @app.get("/health")
 async def health():
