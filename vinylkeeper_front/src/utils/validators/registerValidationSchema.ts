@@ -9,10 +9,10 @@ import {
 export const registerValidationSchema = yup.object({
   username: yup
     .string()
-    .min(3, "Username must contain at least 3 characters")
+    .min(2, "Username must contain at least 2 characters")
     .matches(
       /^[a-z0-9._-]+$/,
-      "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)"
+      "Username must be lowercase, only letters (a-z), numbers, dots (.), hyphens (-) and underscores (_) allowed"
     )
     .matches(
       /^[a-z0-9].*[a-z0-9]$|^[a-z0-9]$/,

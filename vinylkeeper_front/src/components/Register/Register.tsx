@@ -148,11 +148,8 @@ const Register = ({
                       <Person2 />
                     </InputAdornment>
                   ),
-                  style: { textTransform: "lowercase" },
                 }}
-                {...register("username", {
-                  setValueAs: (value: unknown): string => String(value).toLowerCase(),
-                })}
+                {...register("username")}
               />
             </Grid>
 

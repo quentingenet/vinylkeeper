@@ -1,11 +1,10 @@
-from typing import List, Optional
-
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.place_repository import PlaceRepository
 from app.models.moderation_request_model import ModerationRequest
 from app.schemas.moderation_request_schema import (
     ModerationRequestResponse,
-    ModerationRequestListResponse
+    ModerationRequestListResponse,
+    PaginatedModerationRequestResponse,
 )
 from app.core.exceptions import (
     AppException,
@@ -26,21 +25,21 @@ class ModerationService:
         self.place_repository = place_repository
 
     async def get_all_moderation_requests(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
+        self, page: int = 1, limit: int = 10
     ) -> ModerationRequestListResponse:
-        """Get all moderation requests with statistics."""
+        """Get all moderation requests with statistics and pagination."""
         try:
+            offset = (page - 1) * limit
             requests = await self.moderation_repository.get_all_requests(limit, offset)
             stats = await self.moderation_repository.get_moderation_request_stats()
-
-            response_requests = []
-            for request in requests:
-                response_requests.append(
-                    self._create_moderation_request_response(request))
+            total = stats["total"]
 
             return ModerationRequestListResponse(
-                items=response_requests,
-                total=stats["total"],
+                items=[self._create_moderation_request_response(r) for r in requests],
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=max(1, -(-total // limit)),
                 pending_count=stats["pending"],
                 approved_count=stats["approved"],
                 rejected_count=stats["rejected"]
@@ -73,11 +72,10 @@ class ModerationService:
             )
 
     async def get_pending_moderation_requests(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[ModerationRequestResponse]:
-        """Get pending moderation requests."""
+        self, page: int = 1, limit: int = 10
+    ) -> PaginatedModerationRequestResponse:
+        """Get pending moderation requests with pagination."""
         try:
-            # Get pending status ID from database
             pending_status = await self.moderation_repository.get_moderation_status_by_name(
                 ModerationStatusEnum.PENDING.value
             )
@@ -88,21 +86,25 @@ class ModerationService:
                     message="Pending moderation status not found in database"
                 )
 
-            requests = await self.moderation_repository.get_requests_by_status(pending_status.id, limit, offset)
+            offset = (page - 1) * limit
+            requests = await self.moderation_repository.get_requests_by_status(
+                pending_status.id, limit, offset
+            )
+            total = await self.moderation_repository.count_requests_by_status_id(pending_status.id)
 
-            response_requests = []
-            for request in requests:
-                response_requests.append(
-                    self._create_moderation_request_response(request))
-
-            return response_requests
+            return PaginatedModerationRequestResponse(
+                items=[self._create_moderation_request_response(r) for r in requests],
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=max(1, -(-total // limit)),
+            )
         except ServerError:
             raise
         except AppException:
             raise
         except Exception as e:
-            logger.error(
-                f"Error getting pending moderation requests: {str(e)}")
+            logger.error(f"Error getting pending moderation requests: {str(e)}")
             raise ServerError(
                 error_code=5000,
                 message="Failed to get pending moderation requests",

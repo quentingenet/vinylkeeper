@@ -8,8 +8,6 @@ import {
 } from "@models/IRequestProxy";
 
 export class SearchApiService extends BaseApiService {
-  private cache: Map<string, unknown> = new Map();
-
   async searchMusic(requestToSend: IRequestToSend): Promise<DiscogsData[]> {
     try {
       return await this.post<DiscogsData[]>(
@@ -66,9 +64,6 @@ export class SearchApiService extends BaseApiService {
     }
   }
 
-  clearCache(): void {
-    this.cache.clear();
-  }
 }
 
 const searchApiServiceInstance = new SearchApiService();
@@ -80,7 +75,6 @@ export const searchApiService = {
     searchApiServiceInstance.getArtistMetadata(artistId),
   getAlbumMetadata: (albumId: string) =>
     searchApiServiceInstance.getAlbumMetadata(albumId),
-  clearCache: () => searchApiServiceInstance.clearCache(),
 };
 
 export default searchApiService;

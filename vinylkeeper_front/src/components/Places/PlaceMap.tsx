@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import { Icon } from "leaflet";
+import { divIcon } from "leaflet";
 import {
   Box,
   Typography,
@@ -13,13 +13,16 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Fab,
 } from "@mui/material";
 import {
   Favorite,
   FavoriteBorder,
   Close,
   ExpandMore,
+  Add,
 } from "@mui/icons-material";
+import { growItem } from "@utils/Animations";
 import { usePlaceLike } from "@hooks/usePlaceLike";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -28,23 +31,23 @@ import {
   PlaceMapResponse,
 } from "@services/PlaceApiService";
 import "leaflet/dist/leaflet.css";
+import "./vinyl-marker.css";
 import { queryKeys } from "@utils/queryKeys";
 
-// Leaflet workaround: _getIconUrl is an internal method not exposed in the types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+const vinylIcon = divIcon({
+  html: `<div class="vinyl-marker"><img src="/images/vinylKeeper.svg" alt="vinyl spot" /></div>`,
+  className: "",
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  popupAnchor: [0, -14],
 });
 
 interface PlaceMapProps {
   mapPlaces: PlaceMapResponse[];
+  onAddPlace?: () => void;
 }
 
-const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
+const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
   const defaultZoom = 5;
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -93,7 +96,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
         selectedLocation!.country,
         selectedLocation!.city
       ),
-    enabled: selectedLocation !== null,
+    enabled: selectedLocation !== null && selectedLocation.country !== "" && selectedLocation.city !== "",
     staleTime: 5 * 60 * 1000,
   });
 
@@ -149,6 +152,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
             <Marker
               key={marker.key}
               position={[marker.latitude, marker.longitude]}
+              icon={vinylIcon}
               eventHandlers={{
                 click: () =>
                   handleMarkerClick(marker.country, marker.city),
@@ -156,6 +160,54 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces }) => {
             />
           ))}
         </MapContainer>
+
+        {onAddPlace && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 1000,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 0.5,
+              pointerEvents: "auto",
+            }}
+          >
+            <Fab
+              color="primary"
+              aria-label="add place"
+              onClick={onAddPlace}
+              sx={{
+                backgroundColor: "#C9A726",
+                "&:hover": { backgroundColor: "#B8961F" },
+                animation: `${growItem} 1.3s infinite`,
+                boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+              }}
+            >
+              <Add />
+            </Fab>
+            <Typography
+              variant="caption"
+              onClick={onAddPlace}
+              sx={{
+                color: "#fff",
+                backgroundColor: "rgba(0,0,0,0.6)",
+                borderRadius: 1,
+                px: 1.5,
+                py: 0.3,
+                fontWeight: 600,
+                letterSpacing: 0.3,
+                cursor: "pointer",
+                userSelect: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Add a place
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Places at Coordinates Modal with Accordion */}
@@ -268,58 +320,24 @@ interface PlaceDetailsContentProps {
 const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
-  const [optimisticIsLiked, setOptimisticIsLiked] = useState(place.is_liked);
-  const [optimisticLikesCount, setOptimisticLikesCount] = useState(
-    place.likes_count
-  );
 
-  const handleError = (_error: Error) => {
-    // Revert optimistic updates on error
-    setOptimisticIsLiked(place.is_liked);
-    setOptimisticLikesCount(place.likes_count);
-  };
+  // is_liked and likes_count are driven by the React Query cache (optimistic update in usePlaceLike)
+  const { like, unlike, isLiking, isUnliking } = usePlaceLike(place.id);
 
-  const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
-    usePlaceLike(place.id, handleError);
-
-  // Update optimistic state when place changes
   React.useEffect(() => {
-    setOptimisticIsLiked(place.is_liked ?? false);
-    setOptimisticLikesCount(place.likes_count ?? 0);
-  }, [place.id, place.is_liked, place.likes_count]);
-
-  // Handle errors by reverting to previous state
-  React.useEffect(() => {
-    if (likeError || unlikeError) {
-      setOptimisticIsLiked(place.is_liked);
-      setOptimisticLikesCount(place.likes_count);
-    }
-  }, [likeError, unlikeError, place.is_liked, place.likes_count]);
-
-  // Animation effect for likes count
-  React.useEffect(() => {
-    if (likeBounce) return;
     setLikeBounce(true);
     const timeout = setTimeout(() => setLikeBounce(false), 350);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [optimisticLikesCount]);
+  }, [place.likes_count]);
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-
     if (isLiking || isUnliking || likeCooldown) return;
-
     setLikeCooldown(true);
     setTimeout(() => setLikeCooldown(false), 1000);
-
-    if (optimisticIsLiked) {
-      setOptimisticIsLiked(false);
-      setOptimisticLikesCount((prev) => Math.max(0, prev - 1));
+    if (place.is_liked) {
       unlike();
     } else {
-      setOptimisticIsLiked(true);
-      setOptimisticLikesCount((prev) => prev + 1);
       like();
     }
   };
@@ -382,7 +400,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
           onClick={handleLikeClick}
           disabled={isLiking || isUnliking || likeCooldown}
           sx={{
-            color: optimisticIsLiked ? "#FFD700" : "#e4e4e4",
+            color: place.is_liked ? "#FFD700" : "#e4e4e4",
             transition: "transform 0.15s, color 0.15s",
             "&:hover": {
               transform: "scale(1.1)",
@@ -393,9 +411,9 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
             },
           }}
         >
-          {optimisticIsLiked ? <Favorite /> : <FavoriteBorder />}
+          {place.is_liked ? <Favorite /> : <FavoriteBorder />}
         </IconButton>
-        {optimisticLikesCount > 0 && (
+        {place.likes_count > 0 && (
           <Typography
             variant="body1"
             sx={{
@@ -407,8 +425,8 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
               display: "inline-block",
             }}
           >
-            {optimisticLikesCount}{" "}
-            {optimisticLikesCount === 1 ? "like" : "likes"}
+            {place.likes_count}{" "}
+            {place.likes_count === 1 ? "like" : "likes"}
           </Typography>
         )}
       </Box>

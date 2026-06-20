@@ -18,7 +18,9 @@ class ArtistRepository(TransactionalMixin):
     async def get_by_id(self, artist_id: int) -> Optional[Artist]:
         """Get an artist by ID"""
         try:
-            query = select(Artist).filter(Artist.id == artist_id)
+            query = select(Artist).options(
+                selectinload(Artist.external_source)
+            ).filter(Artist.id == artist_id)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:

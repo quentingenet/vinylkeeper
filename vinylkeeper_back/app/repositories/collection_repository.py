@@ -619,8 +619,12 @@ class CollectionRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar() or 0
         except SQLAlchemyError as e:
-            logger.error(f"Error counting user collections: {str(e)}")
-            return 0
+            logger.error(f"Error counting user collections for user {user_id}: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to count user collections",
+                details={},
+            )
 
     async def get_collection_artists_paginated(
         self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
@@ -660,9 +664,12 @@ class CollectionRepository(TransactionalMixin):
 
             return artists_with_association, total
         except SQLAlchemyError as e:
-            logger.error(
-                f"Error getting collection artists paginated: {str(e)}")
-            return [], 0
+            logger.error(f"Error getting collection artists paginated for collection {collection_id}: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get collection artists",
+                details={},
+            )
 
     async def get_collection_artists(self, collection_id: int, sort_order: str = "newest") -> List[tuple]:
         """Get all artists from a collection with association metadata (for exports)."""
@@ -773,8 +780,12 @@ class CollectionRepository(TransactionalMixin):
                 "places_count": row.places_count or 0,
             }
         except SQLAlchemyError as e:
-            logger.error(f"Error getting user stats all for user {user_id}: {str(e)}")
-            return {"collections_count": 0, "wishlist_count": 0, "likes_count": 0, "places_count": 0}
+            logger.error(f"Error getting user stats for user {user_id}: {str(e)}")
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get user statistics",
+                details={},
+            )
 
     async def refresh(self, collection: Collection) -> Collection:
         """Refresh a collection object from the database."""

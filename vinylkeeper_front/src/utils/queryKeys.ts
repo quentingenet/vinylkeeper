@@ -25,7 +25,9 @@ export const queryKeys = {
   },
   moderation: {
     all: () => ["moderation-requests"] as const,
+    list: (page: number, limit: number) => ["moderation-requests", page, limit] as const,
     pending: () => ["pending-moderation-requests"] as const,
+    pendingList: (page: number, limit: number) => ["pending-moderation-requests", page, limit] as const,
     stats: () => ["moderation-stats"] as const,
   },
   dashboard: {

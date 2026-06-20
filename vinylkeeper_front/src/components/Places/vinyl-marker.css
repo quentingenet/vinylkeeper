@@ -1,0 +1,19 @@
+.vinyl-marker {
+  display: block;
+  line-height: 0;
+}
+
+.vinyl-marker img {
+  width: 28px;
+  height: 28px;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.7));
+  animation: vinyl-spin 4s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@keyframes vinyl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

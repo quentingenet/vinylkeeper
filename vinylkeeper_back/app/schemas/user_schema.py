@@ -23,9 +23,9 @@ def _validate_username_value(v: str) -> str:
         raise ValueError("Username cannot be empty")
     if len(v) < 2:
         raise ValueError("Username must contain at least 2 characters")
-    if not re.match(r'^[a-zA-Z0-9._-]+$', v):
+    if not re.match(r'^[a-z0-9._-]+$', v):
         raise ValueError(
-            "Username can only contain letters, numbers, dots (.), hyphens (-), and underscores (_)")
+            "Username can only contain lowercase letters, numbers, dots (.), hyphens (-), and underscores (_)")
     if v.startswith(('.', '-', '_')) or v.endswith(('.', '-', '_')):
         raise ValueError(
             "Username cannot start or end with dots, hyphens, or underscores")

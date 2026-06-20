@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import Request, Depends, Response
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.security import HTTPBearer
+
 from typing import Optional
 
 from app.core.config_env import settings
@@ -43,8 +43,6 @@ except RuntimeError as e:
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRE_MINUTES = settings.REFRESH_TOKEN_EXPIRE_MINUTES
-
-security = HTTPBearer()
 
 
 class TokenType(str, Enum):
@@ -169,13 +167,12 @@ def set_token_cookie(
             else None
         )
 
-
     response.set_cookie(
         key=f"{token_type.value}_token",
         value=token,
         max_age=max_age,
         httponly=True,
-        secure= use_secure_cookie,
+        secure=use_secure_cookie,
         samesite="none" if use_secure_cookie else "lax",
         path="/",
         domain=cookie_domain

@@ -191,11 +191,7 @@ export const useCollections = (
   });
 
   // Optimistic delete collection mutation
-  const deleteCollectionMutation = useMutation<
-    { message: string },
-    ApiError,
-    number
-  >({
+  const deleteCollectionMutation = useMutation<void, ApiError, number>({
     mutationFn: (collectionId: number) =>
       collectionApiService.deleteCollection(collectionId),
     onMutate: async (collectionId) => {

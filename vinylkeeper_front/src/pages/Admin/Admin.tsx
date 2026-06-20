@@ -9,6 +9,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Button,
   Chip,
   Card,
@@ -35,10 +36,13 @@ import { adminApiService, ModerationRequest } from "@services/AdminApiService";
 import { useUserContext } from "@contexts/UserContext";
 import useDetectMobile from "@hooks/useDetectMobile";
 
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
+
 const Admin: React.FC = () => {
   const { isMobile } = useDetectMobile();
   const { currentUser } = useUserContext();
   const queryClient = useQueryClient();
+
   const [selectedRequest, setSelectedRequest] =
     useState<ModerationRequest | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -51,7 +55,14 @@ const Admin: React.FC = () => {
     message: string;
   }>({ open: false, severity: "success", message: "" });
 
-  // Check if user has admin permissions
+  // Pagination state — "All Requests" table
+  const [allPage, setAllPage] = useState(0); // MUI TablePagination is 0-indexed
+  const [allRowsPerPage, setAllRowsPerPage] = useState(10);
+
+  // Pagination state — "Pending Requests" table
+  const [pendingPage, setPendingPage] = useState(0);
+  const [pendingRowsPerPage, setPendingRowsPerPage] = useState(10);
+
   const isAdmin = currentUser?.is_admin === true;
 
   const getErrorMessage = (error: unknown): string => {
@@ -61,23 +72,23 @@ const Admin: React.FC = () => {
     return "An unexpected error occurred. Please try again.";
   };
 
-  // Fetch moderation requests
+  // Fetch all moderation requests (paginated)
   const {
     data: moderationData,
     isLoading: isLoadingRequests,
     error: requestsError,
   } = useQuery({
-    queryKey: queryKeys.moderation.all(),
-    queryFn: () => adminApiService.getModerationRequests(),
+    queryKey: queryKeys.moderation.list(allPage + 1, allRowsPerPage),
+    queryFn: () => adminApiService.getModerationRequests(allPage + 1, allRowsPerPage),
     enabled: isAdmin,
     staleTime: 0,
     gcTime: 5 * 60 * 1000,
   });
 
-  // Fetch pending requests
-  const { data: pendingRequests, isLoading: isLoadingPending } = useQuery({
-    queryKey: queryKeys.moderation.pending(),
-    queryFn: () => adminApiService.getPendingModerationRequests(),
+  // Fetch pending requests (paginated)
+  const { data: pendingData, isLoading: isLoadingPending } = useQuery({
+    queryKey: queryKeys.moderation.pendingList(pendingPage + 1, pendingRowsPerPage),
+    queryFn: () => adminApiService.getPendingModerationRequests(pendingPage + 1, pendingRowsPerPage),
     enabled: isAdmin,
     staleTime: 0,
     gcTime: 5 * 60 * 1000,
@@ -92,39 +103,24 @@ const Admin: React.FC = () => {
     gcTime: 5 * 60 * 1000,
   });
 
+  const invalidateModerationQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.moderation.all() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.moderation.pending() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.moderation.stats() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.places.all(), refetchType: "all" }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.places.map(), refetchType: "all" }),
+    ]);
+  };
+
   // Approve mutation
   const approveMutation = useMutation({
     mutationFn: (requestId: number) =>
       adminApiService.approveModerationRequest(requestId),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.moderation.all(),
-          refetchType: "active",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.moderation.pending(),
-          refetchType: "active",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.moderation.stats(),
-          refetchType: "active",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.places.all(),
-          refetchType: "all",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.places.map(),
-          refetchType: "all",
-        }),
-      ]);
+      await invalidateModerationQueries();
       setModerationActionError(null);
-      setFeedback({
-        open: true,
-        severity: "success",
-        message: "Moderation request approved.",
-      });
+      setFeedback({ open: true, severity: "success", message: "Moderation request approved." });
       setDetailDialogOpen(false);
       setSelectedRequest(null);
     },
@@ -140,34 +136,9 @@ const Admin: React.FC = () => {
     mutationFn: (requestId: number) =>
       adminApiService.rejectModerationRequest(requestId),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.moderation.all(),
-          refetchType: "active",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.moderation.pending(),
-          refetchType: "active",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.moderation.stats(),
-          refetchType: "active",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.places.all(),
-          refetchType: "all",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.places.map(),
-          refetchType: "all",
-        }),
-      ]);
+      await invalidateModerationQueries();
       setModerationActionError(null);
-      setFeedback({
-        open: true,
-        severity: "success",
-        message: "Moderation request rejected.",
-      });
+      setFeedback({ open: true, severity: "success", message: "Moderation request rejected." });
       setDetailDialogOpen(false);
       setSelectedRequest(null);
     },
@@ -221,7 +192,14 @@ const Admin: React.FC = () => {
     });
   };
 
-  // If user is not admin, show access denied
+  const tablePaginationSx = {
+    color: "#fffbf9",
+    "& .MuiTablePagination-selectIcon": { color: "#C9A726" },
+    "& .MuiTablePagination-actions button": { color: "#C9A726" },
+    "& .MuiTablePagination-actions button.Mui-disabled": { color: "#555" },
+    "& .MuiSelect-select": { color: "#fffbf9" },
+  };
+
   if (!isAdmin) {
     return (
       <Box
@@ -238,10 +216,7 @@ const Admin: React.FC = () => {
         <Typography variant="h4" sx={{ color: "#C9A726", mb: 2 }}>
           Administrator Access Required
         </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: "#fffbf9", textAlign: "center" }}
-        >
+        <Typography variant="body1" sx={{ color: "#fffbf9", textAlign: "center" }}>
           You must have administrator privileges to access this page.
         </Typography>
       </Box>
@@ -272,9 +247,7 @@ const Admin: React.FC = () => {
         </Alert>
       </Snackbar>
 
-      <Box
-        sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "wrap" }}
-      >
+      <Box sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "wrap" }}>
         <AdminPanelSettings
           sx={{ fontSize: { xs: 24, sm: 28, md: 32 }, color: "#C9A726", mr: 2 }}
         />
@@ -303,160 +276,47 @@ const Admin: React.FC = () => {
             maxWidth: "800px",
           }}
         >
-          <Card
-            sx={{
-              bgcolor: "#3f3f41",
-              color: "#fffbf9",
-              width: { xs: "40%", sm: "100%" },
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <CardContent
-              sx={{ textAlign: "center", width: "100%", p: { xs: 1, sm: 2 } }}
+          {[
+            { label: "Total", value: stats?.total, color: "#C9A726" },
+            { label: "Pending", value: stats?.pending, color: "#ff9800" },
+            { label: "Approved", value: stats?.approved, color: "#4caf50" },
+            { label: "Rejected", value: stats?.rejected, color: "#f44336" },
+          ].map(({ label, value, color }) => (
+            <Card
+              key={label}
+              sx={{
+                bgcolor: "#3f3f41",
+                color: "#fffbf9",
+                width: { xs: "40%", sm: "100%" },
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+              }}
             >
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "#C9A726",
-                  fontSize: { xs: "0.875rem", sm: "1.25rem" },
-                }}
-              >
-                Total
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
-              >
-                {isLoadingStats ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  stats?.total || 0
-                )}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card
-            sx={{
-              bgcolor: "#3f3f41",
-              color: "#fffbf9",
-              width: { xs: "40%", sm: "100%" },
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <CardContent
-              sx={{ textAlign: "center", width: "100%", p: { xs: 1, sm: 2 } }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "#ff9800",
-                  fontSize: { xs: "0.875rem", sm: "1.25rem" },
-                }}
-              >
-                Pending
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
-              >
-                {isLoadingStats ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  stats?.pending || 0
-                )}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card
-            sx={{
-              bgcolor: "#3f3f41",
-              color: "#fffbf9",
-              width: { xs: "40%", sm: "100%" },
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <CardContent
-              sx={{ textAlign: "center", width: "100%", p: { xs: 1, sm: 2 } }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "#4caf50",
-                  fontSize: { xs: "0.875rem", sm: "1.25rem" },
-                }}
-              >
-                Approved
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
-              >
-                {isLoadingStats ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  stats?.approved || 0
-                )}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card
-            sx={{
-              bgcolor: "#3f3f41",
-              color: "#fffbf9",
-              width: { xs: "40%", sm: "100%" },
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <CardContent
-              sx={{ textAlign: "center", width: "100%", p: { xs: 1, sm: 2 } }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "#f44336",
-                  fontSize: { xs: "0.875rem", sm: "1.25rem" },
-                }}
-              >
-                Rejected
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
-              >
-                {isLoadingStats ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  stats?.rejected || 0
-                )}
-              </Typography>
-            </CardContent>
-          </Card>
+              <CardContent sx={{ textAlign: "center", width: "100%", p: { xs: 1, sm: 2 } }}>
+                <Typography
+                  variant="h6"
+                  sx={{ color, fontSize: { xs: "0.875rem", sm: "1.25rem" } }}
+                >
+                  {label}
+                </Typography>
+                <Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}>
+                  {isLoadingStats ? <CircularProgress size={24} /> : (value ?? 0)}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))}
         </Box>
       </Box>
 
-      {/* Error Alert */}
+      {/* Error Alerts */}
       {requestsError && (
         <Alert severity="error" sx={{ mb: 3 }}>
           Error loading moderation requests
         </Alert>
       )}
-
       {moderationActionError && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {moderationActionError}
@@ -466,123 +326,70 @@ const Admin: React.FC = () => {
       {/* Pending Requests Section */}
       <Typography
         variant="h5"
-        sx={{
-          color: "#C9A726",
-          mb: 2,
-          fontSize: { xs: "1.25rem", sm: "1.5rem" },
-        }}
+        sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
       >
-        Pending Requests ({pendingRequests?.length || 0})
+        Pending Requests ({pendingData?.total ?? 0})
       </Typography>
 
       {isLoadingPending ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
         </Box>
-      ) : pendingRequests && pendingRequests.length > 0 ? (
-        <TableContainer
-          component={Paper}
-          sx={{ bgcolor: "#3f3f41", mb: 4, overflowX: "auto" }}
-        >
-          <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
-            <TableHead>
-              <TableRow>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Place
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  City
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  User
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Date
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {pendingRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {request.place?.name || "N/A"}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {request.place?.city}, {request.place?.country}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {request.user?.username || "N/A"}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {formatDate(request.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      onClick={() => handleViewDetails(request)}
-                      sx={{ color: "#C9A726" }}
-                      size="small"
+      ) : pendingData && pendingData.items.length > 0 ? (
+        <Paper sx={{ bgcolor: "#3f3f41", mb: 4, overflowX: "auto" }}>
+          <TableContainer>
+            <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
+              <TableHead>
+                <TableRow>
+                  {["Place", "City", "User", "Date", "Actions"].map((h) => (
+                    <TableCell
+                      key={h}
+                      sx={{ color: "#C9A726", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                     >
-                      <Visibility />
-                    </IconButton>
-                  </TableCell>
+                      {h}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {pendingData.items.map((request) => (
+                  <TableRow key={request.id}>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {request.place?.name ?? "N/A"}
+                    </TableCell>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {request.place?.city}, {request.place?.country}
+                    </TableCell>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {request.user?.username ?? "N/A"}
+                    </TableCell>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {formatDate(request.created_at)}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "#C9A726" }} size="small">
+                        <Visibility />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={pendingData.total}
+            page={pendingPage}
+            rowsPerPage={pendingRowsPerPage}
+            rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+            onPageChange={(_e, newPage) => setPendingPage(newPage)}
+            onRowsPerPageChange={(e) => {
+              setPendingRowsPerPage(parseInt(e.target.value, 10));
+              setPendingPage(0);
+            }}
+            sx={tablePaginationSx}
+          />
+        </Paper>
       ) : (
         <Alert severity="info" sx={{ mb: 4 }}>
           No pending requests
@@ -592,13 +399,9 @@ const Admin: React.FC = () => {
       {/* All Requests Section */}
       <Typography
         variant="h5"
-        sx={{
-          color: "#C9A726",
-          mb: 2,
-          fontSize: { xs: "1.25rem", sm: "1.5rem" },
-        }}
+        sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
       >
-        All Requests
+        All Requests ({moderationData?.total ?? 0})
       </Typography>
 
       {isLoadingRequests ? (
@@ -606,121 +409,63 @@ const Admin: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : moderationData ? (
-        <TableContainer
-          component={Paper}
-          sx={{ bgcolor: "#3f3f41", overflowX: "auto" }}
-        >
-          <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
-            <TableHead>
-              <TableRow>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Place
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  City
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  User
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Status
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Date
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {moderationData.items.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {request.place?.name || "N/A"}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {request.place?.city}, {request.place?.country}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {request.user?.username || "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusChip(request.status?.name || "unknown")}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#fffbf9",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    {formatDate(request.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      onClick={() => handleViewDetails(request)}
-                      sx={{ color: "#C9A726" }}
-                      size="small"
+        <Paper sx={{ bgcolor: "#3f3f41", overflowX: "auto" }}>
+          <TableContainer>
+            <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
+              <TableHead>
+                <TableRow>
+                  {["Place", "City", "User", "Status", "Date", "Actions"].map((h) => (
+                    <TableCell
+                      key={h}
+                      sx={{ color: "#C9A726", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                     >
-                      <Visibility />
-                    </IconButton>
-                  </TableCell>
+                      {h}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {moderationData.items.map((request) => (
+                  <TableRow key={request.id}>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {request.place?.name ?? "N/A"}
+                    </TableCell>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {request.place?.city}, {request.place?.country}
+                    </TableCell>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {request.user?.username ?? "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusChip(request.status?.name ?? "unknown")}
+                    </TableCell>
+                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                      {formatDate(request.created_at)}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "#C9A726" }} size="small">
+                        <Visibility />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={moderationData.total}
+            page={allPage}
+            rowsPerPage={allRowsPerPage}
+            rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+            onPageChange={(_e, newPage) => setAllPage(newPage)}
+            onRowsPerPageChange={(e) => {
+              setAllRowsPerPage(parseInt(e.target.value, 10));
+              setAllPage(0);
+            }}
+            sx={tablePaginationSx}
+          />
+        </Paper>
       ) : null}
 
       {/* Detail Dialog */}
@@ -738,9 +483,7 @@ const Admin: React.FC = () => {
           },
         }}
       >
-        <DialogTitle
-          sx={{ color: "#C9A726", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
-        >
+        <DialogTitle sx={{ color: "#C9A726", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
           Moderation Request Details
         </DialogTitle>
         <DialogContent>
@@ -748,83 +491,45 @@ const Admin: React.FC = () => {
             <Box>
               <Typography
                 variant="h6"
-                sx={{
-                  color: "#C9A726",
-                  mb: 2,
-                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
-                }}
+                sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
               >
                 {selectedRequest.place?.name}
               </Typography>
 
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                useFlexGap
-                flexWrap="wrap"
-              >
-                <Stack
-                  spacing={1}
-                  sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}
-                >
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} useFlexGap flexWrap="wrap">
+                <Stack spacing={1} sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}>
                   <Typography
                     variant="subtitle2"
-                    sx={{
-                      color: "#C9A726",
-                      fontSize: { xs: "0.875rem", sm: "1rem" },
-                    }}
+                    sx={{ color: "#C9A726", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                   >
                     Place Information
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                  >
+                  <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                     <strong>City:</strong> {selectedRequest.place?.city},{" "}
                     {selectedRequest.place?.country}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                  >
+                  <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                     <strong>Description:</strong>{" "}
-                    {selectedRequest.place?.description || "No description"}
+                    {selectedRequest.place?.description ?? "No description"}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                  >
+                  <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                     <strong>Current Status:</strong>{" "}
-                    {getStatusChip(selectedRequest.status?.name || "unknown")}
+                    {getStatusChip(selectedRequest.status?.name ?? "unknown")}
                   </Typography>
                 </Stack>
 
-                <Stack
-                  spacing={1}
-                  sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}
-                >
+                <Stack spacing={1} sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}>
                   <Typography
                     variant="subtitle2"
-                    sx={{
-                      color: "#C9A726",
-                      fontSize: { xs: "0.875rem", sm: "1rem" },
-                    }}
+                    sx={{ color: "#C9A726", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                   >
                     Request Information
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                  >
-                    <strong>Submitted by:</strong>{" "}
-                    {selectedRequest.user?.username}
+                  <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                    <strong>Submitted by:</strong> {selectedRequest.user?.username}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                  >
-                    <strong>Submission Date:</strong>{" "}
-                    {formatDate(selectedRequest.created_at)}
+                  <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                    <strong>Submission Date:</strong> {formatDate(selectedRequest.created_at)}
                   </Typography>
                 </Stack>
               </Stack>
@@ -833,11 +538,7 @@ const Admin: React.FC = () => {
                 <Box sx={{ mt: 3, p: 2, bgcolor: "#2a2a2a", borderRadius: 1 }}>
                   <Typography
                     variant="subtitle2"
-                    sx={{
-                      color: "#C9A726",
-                      mb: 2,
-                      fontSize: { xs: "0.875rem", sm: "1rem" },
-                    }}
+                    sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "0.875rem", sm: "1rem" } }}
                   >
                     Available Actions
                   </Typography>
@@ -879,10 +580,7 @@ const Admin: React.FC = () => {
         <DialogActions>
           <Button
             onClick={() => setDetailDialogOpen(false)}
-            sx={{
-              color: "#C9A726",
-              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            }}
+            sx={{ color: "#C9A726", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
           >
             Close
           </Button>

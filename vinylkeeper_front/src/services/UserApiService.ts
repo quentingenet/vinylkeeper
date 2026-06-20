@@ -145,9 +145,9 @@ export class UserApiService extends BaseApiService {
     }
   }
 
-  async deleteAccount(): Promise<{ message: string }> {
+  async deleteAccount(): Promise<void> {
     try {
-      return await this.delete<{ message: string }>("/users/me");
+      return await this.delete<void>("/users/me");
     } catch {
       throw new Error("Failed to delete account. Please try again.");
     }

@@ -1,4 +1,5 @@
 import { logger } from "@utils/logger";
+import { isApiError } from "@utils/apiError";
 import React, { useState, useEffect } from "react";
 import {
   Modal,
@@ -160,8 +161,10 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
       await onSubmit(data);
       reset();
       setShowSuccessDialog(true);
-    } catch {
-      setError("Failed to add place. Please try again.");
+    } catch (err: unknown) {
+      logger.error("Error submitting place:", err);
+      const message = isApiError(err) ? err.message : "Failed to add place. Please try again.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -196,8 +199,8 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
           sx={{
             bgcolor: "#3f3f41",
             borderRadius: "5px",
-            width: isMobile ? "85dvw" : "25vw",
-            maxWidth: "800px",
+            width: isMobile ? "90dvw" : { sm: 520, md: 600 },
+            maxWidth: "90vw",
             maxHeight: isMobile ? "80dvh" : "90vh",
             overflowY: "auto",
             boxShadow: 6,
@@ -242,7 +245,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
           <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }}>
             <Box sx={{ maxWidth: "600px", margin: "0 auto" }}>
               <Typography variant="h6" sx={{ mb: 2, color: "#C9A726" }}>
-                Place informations
+                Place details
               </Typography>
 
               <TextField

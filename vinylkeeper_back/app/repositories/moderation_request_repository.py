@@ -21,14 +21,13 @@ class ModerationRequestRepository(TransactionalMixin):
     async def get_all_requests(
         self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[ModerationRequest]:
-        """Get all moderation requests with optional pagination."""
+        """Get all moderation requests with optional pagination (newest first)."""
         try:
-            query = select(ModerationRequest)
-            query = query.options(
+            query = select(ModerationRequest).options(
                 selectinload(ModerationRequest.place),
                 selectinload(ModerationRequest.user),
                 selectinload(ModerationRequest.status)
-            )
+            ).order_by(ModerationRequest.created_at.desc())
 
             if offset:
                 query = query.offset(offset)
@@ -49,15 +48,15 @@ class ModerationRequestRepository(TransactionalMixin):
     async def get_requests_by_status(
         self, status_id: int, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[ModerationRequest]:
-        """Get moderation requests by status with optional pagination."""
+        """Get moderation requests by status with optional pagination (newest first)."""
         try:
             query = select(ModerationRequest).filter(
-                ModerationRequest.status_id == status_id)
-            query = query.options(
+                ModerationRequest.status_id == status_id
+            ).options(
                 selectinload(ModerationRequest.place),
                 selectinload(ModerationRequest.user),
                 selectinload(ModerationRequest.status)
-            )
+            ).order_by(ModerationRequest.created_at.desc())
 
             if offset:
                 query = query.offset(offset)
@@ -72,6 +71,22 @@ class ModerationRequestRepository(TransactionalMixin):
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests by status",
+                details={}
+            )
+
+    async def count_requests_by_status_id(self, status_id: int) -> int:
+        """Get count of moderation requests by status ID."""
+        try:
+            query = select(func.count(ModerationRequest.id)).filter(
+                ModerationRequest.status_id == status_id
+            )
+            result = await self.db.execute(query)
+            return result.scalar()
+        except SQLAlchemyError as e:
+            logger.error(f"Error counting moderation requests by status_id {status_id}: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to count moderation requests by status",
                 details={}
             )
 

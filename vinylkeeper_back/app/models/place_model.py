@@ -22,9 +22,9 @@ class Place(Base):
     id = Column(Integer, primary_key=True)
 
     name = Column(String(255), nullable=False, index=True)
-    address = Column(String(255), nullable=True)
-    city = Column(String(100), nullable=True, index=True)
-    country = Column(String(100), nullable=True, index=True)
+    address = Column(String(255), nullable=False)
+    city = Column(String(100), nullable=False, index=True)
+    country = Column(String(100), nullable=False, index=True)
 
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)

@@ -83,8 +83,8 @@ export class CollectionApiService extends BaseApiService {
     );
   }
 
-  async deleteCollection(collectionId: number): Promise<{ message: string }> {
-    return this.delete<{ message: string }>(`/collections/${collectionId}`);
+  async deleteCollection(collectionId: number): Promise<void> {
+    return this.delete<void>(`/collections/${collectionId}`);
   }
 
   async switchCollectionVisibility(
@@ -144,19 +144,15 @@ export class CollectionApiService extends BaseApiService {
   async removeAlbumFromCollection(
     collectionId: number,
     albumId: number
-  ): Promise<{ success: boolean; message: string }> {
-    return this.delete<{ success: boolean; message: string }>(
-      `/collections/${collectionId}/albums/${albumId}`
-    );
+  ): Promise<void> {
+    return this.delete<void>(`/collections/${collectionId}/albums/${albumId}`);
   }
 
   async removeArtistFromCollection(
     collectionId: number,
     artistId: number
-  ): Promise<{ success: boolean; message: string }> {
-    return this.delete<{ success: boolean; message: string }>(
-      `/collections/${collectionId}/artists/${artistId}`
-    );
+  ): Promise<void> {
+    return this.delete<void>(`/collections/${collectionId}/artists/${artistId}`);
   }
 
   async getCollectionAlbumsPaginated(

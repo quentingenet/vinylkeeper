@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.user_schema import UserMiniResponse
@@ -16,9 +17,9 @@ class PlaceTypeResponse(BaseModel):
 class PlaceBase(BaseModel):
     """Base schema for place data."""
     name: str = Field(min_length=1, max_length=255)
-    address: str = Field(max_length=255)
-    city: str = Field(max_length=100)
-    country: str = Field(max_length=100)
+    address: str = Field(min_length=1, max_length=255)
+    city: str = Field(min_length=1, max_length=100)
+    country: str = Field(min_length=1, max_length=100)
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
     description: Optional[str] = Field(None, max_length=600)
@@ -32,6 +33,24 @@ class PlaceBase(BaseModel):
         if not v or len(v.strip()) == 0:
             raise ValueError("Place name cannot be empty")
         return v.strip()
+
+    @field_validator("address", "city", "country")
+    @classmethod
+    def validate_and_trim_text_fields(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Field cannot be empty or whitespace only")
+        return stripped
+
+    @field_validator("source_url")
+    @classmethod
+    def validate_source_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v.strip() == "":
+            return None
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError("source_url must be a valid HTTP or HTTPS URL")
+        return v
 
     @field_validator("latitude", "longitude")
     @classmethod
@@ -62,6 +81,16 @@ class PlaceUpdate(BaseModel):
     place_type_id: Optional[int] = Field(None, gt=0)
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("source_url")
+    @classmethod
+    def validate_source_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v.strip() == "":
+            return None
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError("source_url must be a valid HTTP or HTTPS URL")
+        return v
 
     @model_validator(mode='after')
     def validate_fields(self) -> 'PlaceUpdate':
@@ -128,3 +157,9 @@ class PlaceMapResponse(BaseModel):
     country: Optional[str] = Field(None, description="Country name")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlaceMutationResponse(BaseModel):
+    """Response schema for place create and update operations."""
+    message: str
+    place: PublicPlaceResponse

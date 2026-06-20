@@ -6,6 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.place_schema import PlaceTypeResponse
 from app.schemas.user_schema import UserMiniResponse
 
+MODERATION_DEFAULT_LIMIT = 10
+MODERATION_MAX_LIMIT = 100
+
 
 class ModerationStatusResponse(BaseModel):
     """Schema for moderation status response."""
@@ -95,9 +98,21 @@ class ModerationRequestResponse(ModerationRequestInDB):
 
 
 class ModerationRequestListResponse(BaseModel):
-    """Schema for list of moderation requests."""
+    """Schema for paginated list of all moderation requests (admin)."""
     items: list[ModerationRequestResponse]
     total: int
+    page: int
+    limit: int
+    total_pages: int
     pending_count: int
     approved_count: int
     rejected_count: int
+
+
+class PaginatedModerationRequestResponse(BaseModel):
+    """Schema for paginated list of moderation requests filtered by status."""
+    items: list[ModerationRequestResponse]
+    total: int
+    page: int
+    limit: int
+    total_pages: int

@@ -10,7 +10,6 @@ from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
     AddToCollectionRequest,
     WishlistItemResponse,
-    CollectionItemResponse,
     AddToWishlistResponse,
     AddToCollectionResponse
 )
@@ -164,14 +163,3 @@ async def get_wishlist_item_detail(
     """Get detailed wishlist item by ID (public - any authenticated user can view)"""
     item = await service.get_wishlist_item_detail(wishlist_id)
     return item.model_dump()
-
-
-@router.get("/collection", response_model=list[CollectionItemResponse])
-@handle_app_exceptions
-async def get_collection_items(
-    current_user: User = Depends(get_current_user),
-    service: ExternalReferenceService = Depends(get_external_reference_service)
-):
-    """Get user's collection items"""
-    items = await service.get_collection_items(current_user.id)
-    return items

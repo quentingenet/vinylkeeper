@@ -35,7 +35,7 @@ export interface Place {
   is_moderated?: boolean;
   is_valid?: boolean;
   likes_count: number;
-  is_liked?: boolean;
+  is_liked: boolean;
   created_at: string;
   updated_at: string;
 }

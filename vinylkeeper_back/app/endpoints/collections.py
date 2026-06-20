@@ -6,7 +6,9 @@ from app.schemas.collection_schema import (
     CollectionResponse,
     CollectionVisibilityUpdate,
     PaginatedCollectionListResponse,
-    CollectionAlbumResponse
+    CollectionAlbumResponse,
+    CollectionCreateResponse,
+    MessageResponse,
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -22,7 +24,7 @@ from app.core.logging import logger
 router = APIRouter()
 
 
-@router.post("/add", status_code=status.HTTP_201_CREATED)
+@router.post("/add", status_code=status.HTTP_201_CREATED, response_model=CollectionCreateResponse)
 @handle_app_exceptions
 async def create_collection(
     data: CollectionCreate,
@@ -31,10 +33,10 @@ async def create_collection(
 ):
     collection = await service.create_collection(data, user.id)
     logger.info(f"Collection created: {collection.id} by user {user.id}")
-    return {
-        "message": "Collection created successfully",
-        "collection_id": collection.id
-    }
+    return CollectionCreateResponse(
+        message="Collection created successfully",
+        collection_id=collection.id
+    )
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=PaginatedCollectionListResponse)
@@ -90,7 +92,7 @@ async def get_collection_by_id(
     return CollectionResponse.model_validate(collection).model_dump()
 
 
-@router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK)
+@router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
 @handle_app_exceptions
 async def switch_area_collection(
     collection_id: int = Path(..., gt=0),
@@ -108,10 +110,10 @@ async def switch_area_collection(
             error_code=4000,
             message="Failed to update collection visibility"
         )
-    return {"message": "Collection visibility updated successfully"}
+    return MessageResponse(message="Collection visibility updated successfully")
 
 
-@router.patch("/update/{collection_id}", status_code=status.HTTP_200_OK)
+@router.patch("/update/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
 @handle_app_exceptions
 async def update_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -125,10 +127,10 @@ async def update_collection(
             error_code=4000,
             message="Failed to update collection"
         )
-    return {"message": "Collection updated successfully"}
+    return MessageResponse(message="Collection updated successfully")
 
 
-@router.delete("/{collection_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def delete_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -136,7 +138,6 @@ async def delete_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.delete_collection(user.id, collection_id)
-    return {"message": "Collection deleted successfully"}
 
 
 @router.get("/{collection_id}/details", status_code=status.HTTP_200_OK, response_model=CollectionDetailResponse)
@@ -181,7 +182,7 @@ async def get_collection_artists_paginated(
     return response.model_dump()
 
 
-@router.delete("/{collection_id}/albums/{album_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{collection_id}/albums/{album_id}", status_code=status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def remove_album_from_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -191,10 +192,9 @@ async def remove_album_from_collection(
 ):
     await service.remove_album_from_collection(user.id, collection_id, album_id)
     logger.info(f"Album {album_id} removed from collection {collection_id} by user {user.id}")
-    return {"message": "Album removed from collection successfully"}
 
 
-@router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def remove_artist_from_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -204,7 +204,6 @@ async def remove_artist_from_collection(
 ):
     await service.remove_artist_from_collection(user.id, collection_id, artist_id)
     logger.info(f"Artist {artist_id} removed from collection {collection_id} by user {user.id}")
-    return {"message": "Artist removed from collection successfully"}
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)

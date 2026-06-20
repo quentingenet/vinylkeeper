@@ -25,6 +25,9 @@
 📊 **Dashboard**  
 Get a quick overview of your collection with insightful stats: genres, decades, top artists, and more.
 
+🌍 **Interactive map**  
+Discover & share vinyl places around the world with the community.
+
 📀 **Collections**  
 Browse and manage your vinyl records, organized to your preferences.
 
@@ -34,23 +37,14 @@ Add new vinyls manually or search via Deezer integration.
 🔍 **Explore**  
 Discover artists and albums using a powerful search connected to the Deezer API.
 
-🎯 **Suggestions**  
-Smart recommendations based on your library and listening habits.
-
 💖 **Wishlist**  
 Keep track of the vinyls you’d love to add to your collection someday.
-
-🔄 **Loans**  
-Manage borrowed vinyls—know what you lent, to whom, and when.
 
 ⚙️ **Settings**  
 Customize your profile, preferences, and account options.
 
-🌍 **Interactive map**  
-Discover & share vinyl places around the world with the community.
-
 👥 **Community**  
-See other users' collections, follow vinyl lovers, share discoveries and messages.
+See other users' collections, follow vinyl lovers, share discoveries...
 
 🔐 **Secure Authentication**  
 JWT-based login, with refresh token handling via secure HTTPOnly cookies.

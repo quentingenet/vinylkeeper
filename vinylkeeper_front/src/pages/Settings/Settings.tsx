@@ -65,6 +65,16 @@ export default function Settings() {
     text: string;
   } | null>(null);
   const contactFormRef = useRef<HTMLFormElement>(null);
+  const passwordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (passwordTimerRef.current) clearTimeout(passwordTimerRef.current);
+      if (contactTimerRef.current) clearTimeout(contactTimerRef.current);
+    };
+  }, []);
+
   const [passwordMessage, setPasswordMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -96,14 +106,16 @@ export default function Settings() {
         text: "Password changed successfully!",
       });
       reset();
-      setTimeout(() => setPasswordMessage(null), 3000);
+      if (passwordTimerRef.current) clearTimeout(passwordTimerRef.current);
+      passwordTimerRef.current = setTimeout(() => setPasswordMessage(null), 3000);
     },
     onError: (e: Error) => {
       setPasswordMessage({
         type: "error",
         text: e.message || "Failed to change password",
       });
-      setTimeout(() => setPasswordMessage(null), 5000);
+      if (passwordTimerRef.current) clearTimeout(passwordTimerRef.current);
+      passwordTimerRef.current = setTimeout(() => setPasswordMessage(null), 5000);
     },
   });
 
@@ -130,14 +142,16 @@ export default function Settings() {
         text: "Contact message sent successfully!",
       });
       setContactModalOpen(false);
-      setTimeout(() => setContactMessage(null), 3000);
+      if (contactTimerRef.current) clearTimeout(contactTimerRef.current);
+      contactTimerRef.current = setTimeout(() => setContactMessage(null), 3000);
     },
     onError: (e: Error) => {
       setContactMessage({
         type: "error",
         text: e.message || "Failed to send contact message",
       });
-      setTimeout(() => setContactMessage(null), 5000);
+      if (contactTimerRef.current) clearTimeout(contactTimerRef.current);
+      contactTimerRef.current = setTimeout(() => setContactMessage(null), 5000);
     },
   });
 

@@ -32,9 +32,20 @@ export interface ModerationRequest {
 export interface ModerationRequestList {
   items: ModerationRequest[];
   total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
   pending_count: number;
   approved_count: number;
   rejected_count: number;
+}
+
+export interface PaginatedModerationRequestResponse {
+  items: ModerationRequest[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }
 
 export interface ModerationStats {
@@ -46,30 +57,20 @@ export interface ModerationStats {
 
 class AdminApiService extends BaseApiService {
   async getModerationRequests(
-    limit?: number,
-    offset?: number
+    page = 1,
+    limit = 10
   ): Promise<ModerationRequestList> {
-    const params = new URLSearchParams();
-    if (limit) params.append("limit", limit.toString());
-    if (offset) params.append("offset", offset.toString());
-
-    const query = params.toString() ? `?${params.toString()}` : "";
     return this.get<ModerationRequestList>(
-      `/vk-admin/moderation-requests${query}`
+      `/vk-admin/moderation-requests?page=${page}&limit=${limit}`
     );
   }
 
   async getPendingModerationRequests(
-    limit?: number,
-    offset?: number
-  ): Promise<ModerationRequest[]> {
-    const params = new URLSearchParams();
-    if (limit) params.append("limit", limit.toString());
-    if (offset) params.append("offset", offset.toString());
-
-    const query = params.toString() ? `?${params.toString()}` : "";
-    return this.get<ModerationRequest[]>(
-      `/vk-admin/moderation-requests/pending${query}`
+    page = 1,
+    limit = 10
+  ): Promise<PaginatedModerationRequestResponse> {
+    return this.get<PaginatedModerationRequestResponse>(
+      `/vk-admin/moderation-requests/pending?page=${page}&limit=${limit}`
     );
   }
 

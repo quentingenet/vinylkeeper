@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Union
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
@@ -261,16 +261,10 @@ class ExternalReferenceService:
             else:
                 artist = entity
 
-                is_new_artist = False
                 existing_artist = await self.repository.find_artist_in_collection(collection.id, artist.id)
-
-                if existing_artist:
-                    # still called to update CollectionArtist.updated_at
-                    collection_item = await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
-                    is_new_artist = False
-                else:
-                    is_new_artist = True
-                    collection_item = await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
+                # still called even if existing, to update CollectionArtist.updated_at
+                collection_item = await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
+                is_new_artist = existing_artist is None
 
             is_new = is_new_album if request.entity_type == EntityTypeEnum.ALBUM else is_new_artist
 
@@ -313,9 +307,6 @@ class ExternalReferenceService:
                 collection_name=collection.name
             )
 
-            async with transaction_context(self.repository.db):
-                pass
-
             return final_response
 
         except AppException:
@@ -355,9 +346,6 @@ class ExternalReferenceService:
 
                 await self.repository.remove_artist_from_collection(collection, artist)
 
-            async with transaction_context(self.repository.db):
-                pass
-
             return True
 
         except ResourceNotFoundError:
@@ -372,18 +360,3 @@ class ExternalReferenceService:
                 details={}
             )
 
-    async def get_collection_items(self, user_id: int) -> List[CollectionItemResponse]:
-        """Get user's collection items"""
-        try:
-            # This method should be implemented based on your collection structure
-            # For now, returning empty list as placeholder
-            return []
-        except AppException:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to get collection items: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get collection items",
-                details={}
-            )

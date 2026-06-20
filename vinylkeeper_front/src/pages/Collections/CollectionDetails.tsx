@@ -33,14 +33,15 @@ import {
 } from "@mui/material";
 import { useEffect, useState, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { useDocumentTitle } from "@hooks/useDocumentTitle";
 import { useUserContext } from "@contexts/UserContext";
 import { useDebounce } from "@hooks/useDebounce";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
-import { API_VK_URL, VinylStateEnum } from "@utils/GlobalUtils";
+import { VinylStateEnum } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
-import { triggerBrowserDownloadFromUrl } from "@utils/DownloadUtils";
+import { triggerBrowserDownload } from "@utils/DownloadUtils";
 import styles from "../../styles/pages/Collection.module.scss";
 import MediaCard from "@components/Collections/MediaCard";
 import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
@@ -323,28 +324,39 @@ export default function CollectionDetails() {
     setIsExporting(false);
   };
 
-  const handleExport = (
+  const handleExport = async (
     exportKey: string,
     pathSuffix: string,
-    _fallbackFilename: string
+    fallbackFilename: string
   ) => {
     setActiveExportKey(exportKey);
     setIsExporting(true);
-    triggerBrowserDownloadFromUrl(
-      `${API_VK_URL}/collections/${collectionId}/export/${pathSuffix}`
-    );
     setExportMenuAnchorEl(null);
-    finishExportUi();
+    try {
+      const { blob, filename } = await collectionApiService.exportCollectionFile(
+        Number(collectionId),
+        pathSuffix
+      );
+      triggerBrowserDownload(blob, filename || fallbackFilename);
+    } catch (err) {
+      logger.error("Export failed:", err);
+    } finally {
+      finishExportUi();
+    }
   };
 
-  const handleExportWishlist = (exportKey: string, format: "csv" | "ods") => {
+  const handleExportWishlist = async (exportKey: string, format: "csv" | "ods") => {
     setActiveExportKey(exportKey);
     setIsExporting(true);
-    triggerBrowserDownloadFromUrl(
-      `${API_VK_URL}/external-references/wishlist/export/${format}`
-    );
     setExportMenuAnchorEl(null);
-    finishExportUi();
+    try {
+      const { blob, filename } = await collectionApiService.exportMyWishlistFile(format);
+      triggerBrowserDownload(blob, filename || `wishlist.${format}`);
+    } catch (err) {
+      logger.error("Wishlist export failed:", err);
+    } finally {
+      finishExportUi();
+    }
   };
 
   const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -484,14 +496,9 @@ export default function CollectionDetails() {
     }
   };
 
-  useEffect(() => {
-    if (collectionDetails?.name) {
-      document.title = `${collectionDetails.name} - VinylKeeper`;
-    }
-    return () => {
-      document.title = "VinylKeeper";
-    };
-  }, [collectionDetails]);
+  useDocumentTitle(
+    collectionDetails?.name ? `${collectionDetails.name} - VinylKeeper` : null
+  );
 
   if (isLoadingDetails) {
     return (
@@ -606,7 +613,7 @@ export default function CollectionDetails() {
               >
                 <MenuItem
                   onClick={() =>
-                    handleExport(
+                    void handleExport(
                       "collection_albums_csv",
                       "albums.csv",
                       `collection_${collectionId}_albums.csv`
@@ -628,7 +635,7 @@ export default function CollectionDetails() {
                 </MenuItem>
                 <MenuItem
                   onClick={() =>
-                    handleExport(
+                    void handleExport(
                       "collection_albums_ods",
                       "albums.ods",
                       `collection_${collectionId}_albums.ods`
@@ -650,7 +657,7 @@ export default function CollectionDetails() {
                 </MenuItem>
                 <MenuItem
                   onClick={() =>
-                    handleExport(
+                    void handleExport(
                       "collection_artists_csv",
                       "artists.csv",
                       `collection_${collectionId}_artists.csv`
@@ -672,7 +679,7 @@ export default function CollectionDetails() {
                 </MenuItem>
                 <MenuItem
                   onClick={() =>
-                    handleExport(
+                    void handleExport(
                       "collection_artists_ods",
                       "artists.ods",
                       `collection_${collectionId}_artists.ods`
@@ -693,7 +700,7 @@ export default function CollectionDetails() {
                   )}
                 </MenuItem>
                 <MenuItem
-                  onClick={() => handleExportWishlist("wishlist_csv", "csv")}
+                  onClick={() => void handleExportWishlist("wishlist_csv", "csv")}
                 >
                   {isExporting && activeExportKey === "wishlist_csv" ? (
                     <Box display="flex" alignItems="center" gap={1}>
@@ -708,7 +715,7 @@ export default function CollectionDetails() {
                   )}
                 </MenuItem>
                 <MenuItem
-                  onClick={() => handleExportWishlist("wishlist_ods", "ods")}
+                  onClick={() => void handleExportWishlist("wishlist_ods", "ods")}
                 >
                   {isExporting && activeExportKey === "wishlist_ods" ? (
                     <Box display="flex" alignItems="center" gap={1}>

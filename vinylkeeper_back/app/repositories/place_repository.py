@@ -45,7 +45,7 @@ class PlaceRepository(TransactionalMixin):
             selectinload(Place.submitted_by)
         ).filter(
             and_(Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        )
+        ).order_by(Place.name)
 
         if offset is not None and offset > 0:
             query = query.offset(offset)
@@ -76,9 +76,7 @@ class PlaceRepository(TransactionalMixin):
         return result.all()
 
     async def get_places_by_location(self, country: str, city: str) -> List[Place]:
-        """Get all moderated places in the given country and city (empty string matches NULL)."""
-        country_match = (Place.country == country) if country else Place.country.is_(None)
-        city_match = (Place.city == city) if city else Place.city.is_(None)
+        """Get all moderated places in the given country and city."""
         query = select(Place).options(
             selectinload(Place.place_type),
             selectinload(Place.submitted_by)
@@ -86,10 +84,10 @@ class PlaceRepository(TransactionalMixin):
             and_(
                 Place.is_valid.is_(True),
                 Place.is_moderated.is_(True),
-                country_match,
-                city_match
+                Place.country == country,
+                Place.city == city,
             )
-        )
+        ).order_by(Place.name)
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -201,17 +199,6 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalar()
 
-    async def get_places_by_type(self, place_type_id: int) -> List[Place]:
-        """Get all places of a specific type."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(Place.place_type_id == place_type_id, Place.is_valid.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
     async def count_moderated_places_by_type(self, place_type_id: int) -> int:
         """Count all moderated places of a specific type."""
         query = select(func.count(Place.id)).filter(
@@ -231,29 +218,11 @@ class PlaceRepository(TransactionalMixin):
         ).filter(
             and_(Place.place_type_id == place_type_id,
                  Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        )
+        ).order_by(Place.name)
         if offset is not None and offset > 0:
             query = query.offset(offset)
         if limit is not None:
             query = query.limit(limit)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def search_places(self, search_term: str) -> List[Place]:
-        """Search all places by name, city, or country."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(
-                Place.is_valid.is_(True),
-                or_(
-                    Place.name.ilike(f"%{search_term}%"),
-                    Place.city.ilike(f"%{search_term}%"),
-                    Place.country.ilike(f"%{search_term}%")
-                )
-            )
-        )
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -290,28 +259,11 @@ class PlaceRepository(TransactionalMixin):
                     Place.country.ilike(f"%{search_term}%")
                 )
             )
-        )
+        ).order_by(Place.name)
         if offset is not None and offset > 0:
             query = query.offset(offset)
         if limit is not None:
             query = query.limit(limit)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def get_places_in_region(self, min_lat: float, max_lat: float, min_lng: float, max_lng: float) -> List[Place]:
-        """Get all places within a geographic region."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(
-                Place.is_valid.is_(True),
-                Place.latitude >= min_lat,
-                Place.latitude <= max_lat,
-                Place.longitude >= min_lng,
-                Place.longitude <= max_lng
-            )
-        )
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -350,7 +302,7 @@ class PlaceRepository(TransactionalMixin):
                 Place.longitude >= min_lng,
                 Place.longitude <= max_lng
             )
-        )
+        ).order_by(Place.name)
         if offset is not None and offset > 0:
             query = query.offset(offset)
         if limit is not None:
@@ -383,35 +335,6 @@ class PlaceRepository(TransactionalMixin):
             PlaceLike.place_id == place_id)
         result = await self.db.execute(query)
         return result.scalar()
-
-    async def get_places_likes_counts(self, place_ids: List[int]) -> dict:
-        """Get likes counts for multiple places in one query."""
-        query = select(PlaceLike.place_id, func.count(PlaceLike.id)).filter(
-            PlaceLike.place_id.in_(place_ids)
-        ).group_by(PlaceLike.place_id)
-
-        result = await self.db.execute(query)
-        likes_counts = {place_id: count for place_id, count in result.all()}
-
-        # Ensure all place_ids have a count (even if 0)
-        for place_id in place_ids:
-            if place_id not in likes_counts:
-                likes_counts[place_id] = 0
-
-        return likes_counts
-
-    async def get_user_places_likes(self, user_id: int, place_ids: List[int]) -> dict:
-        """Get which places are liked by a user in one query."""
-        query = select(PlaceLike.place_id).filter(
-            and_(PlaceLike.user_id == user_id,
-                 PlaceLike.place_id.in_(place_ids))
-        )
-
-        result = await self.db.execute(query)
-        liked_place_ids = {row[0] for row in result.all()}
-
-        # Create a dict mapping place_id to is_liked boolean
-        return {place_id: place_id in liked_place_ids for place_id in place_ids}
 
     async def get_places_likes_info_batch(self, user_id: Optional[int], place_ids: List[int]) -> dict:
         """Get both likes counts and user likes status in a single optimized query."""
@@ -471,6 +394,14 @@ class PlaceRepository(TransactionalMixin):
         query = select(ModerationStatus).filter(
             ModerationStatus.name == status_name)
         result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_place_type_by_id(self, place_type_id: int):
+        """Get a place type by ID."""
+        from app.models.reference_data.place_types import PlaceType
+        result = await self.db.execute(
+            select(PlaceType).filter(PlaceType.id == place_type_id)
+        )
         return result.scalar_one_or_none()
 
     async def get_all_place_types(self) -> List:

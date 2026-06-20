@@ -232,3 +232,14 @@ class PaginatedCollectionListResponse(BaseSchema):
     page: int = Field(gt=0, description="Current page number")
     limit: int = Field(gt=0, description="Number of items per page")
     total_pages: int = Field(ge=0, description="Total number of pages")
+
+
+class CollectionCreateResponse(BaseSchema):
+    """Response schema for collection creation."""
+    message: str
+    collection_id: int
+
+
+class MessageResponse(BaseSchema):
+    """Generic response schema for operations that return only a message."""
+    message: str

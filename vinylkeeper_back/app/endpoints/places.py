@@ -4,7 +4,10 @@ from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
     PaginatedPlaceResponse,
-    PlaceMapResponse
+    PlaceMapResponse,
+    PublicPlaceResponse,
+    PlaceTypeResponse,
+    PlaceMutationResponse,
 )
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
 from app.services.place_service import PlaceService
@@ -16,7 +19,7 @@ from app.utils.endpoint_utils import handle_app_exceptions
 router = APIRouter()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=PlaceMutationResponse)
 @handle_app_exceptions
 async def create_place(
     data: PlaceCreate,
@@ -25,7 +28,7 @@ async def create_place(
 ):
     """Create a new place"""
     place = await service.create_place(data, user)
-    return {"message": "Place created successfully", "place": place.model_dump()}
+    return PlaceMutationResponse(message="Place created successfully", place=place)
 
 
 @router.get("/", response_model=PaginatedPlaceResponse, status_code=status.HTTP_200_OK)
@@ -51,11 +54,11 @@ async def get_map_places(
     return places
 
 
-@router.get("/by-location", status_code=status.HTTP_200_OK)
+@router.get("/by-location", status_code=status.HTTP_200_OK, response_model=List[PublicPlaceResponse])
 @handle_app_exceptions
 async def get_places_by_location(
-    country: str = Query("", description="Country name (empty treated as null in DB)"),
-    city: str = Query("", description="City name (empty treated as null in DB)"),
+    country: str = Query(..., min_length=1, description="Country name"),
+    city: str = Query(..., min_length=1, description="City name"),
     user: User = Depends(get_current_user),
     service: PlaceService = Depends(get_place_service)
 ):
@@ -64,7 +67,7 @@ async def get_places_by_location(
     return [place.model_dump() for place in places]
 
 
-@router.get("/place-types", status_code=status.HTTP_200_OK)
+@router.get("/place-types", status_code=status.HTTP_200_OK, response_model=List[PlaceTypeResponse])
 @handle_app_exceptions
 async def get_place_types(
     service: PlaceService = Depends(get_place_service)
@@ -116,7 +119,7 @@ async def get_places_in_region(
     return await service.get_places_in_region(min_lat, max_lat, min_lng, max_lng, user, page, limit)
 
 
-@router.get("/{place_id}", status_code=status.HTTP_200_OK)
+@router.get("/{place_id}", status_code=status.HTTP_200_OK, response_model=PublicPlaceResponse)
 @handle_app_exceptions
 async def get_place_by_id(
     place_id: int = Path(..., gt=0, title="Place ID"),
@@ -128,7 +131,7 @@ async def get_place_by_id(
     return place.model_dump()
 
 
-@router.patch("/{place_id}", status_code=status.HTTP_200_OK)
+@router.patch("/{place_id}", status_code=status.HTTP_200_OK, response_model=PlaceMutationResponse)
 @handle_app_exceptions
 async def update_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
@@ -138,10 +141,10 @@ async def update_place(
 ):
     """Update a place"""
     updated_place = await service.update_place(user, place_id, data)
-    return {"message": "Place updated successfully", "place": updated_place.model_dump()}
+    return PlaceMutationResponse(message="Place updated successfully", place=updated_place)
 
 
-@router.delete("/{place_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{place_id}", status_code=status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def delete_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
@@ -150,7 +153,6 @@ async def delete_place(
 ):
     """Delete a place"""
     await service.delete_place(user, place_id)
-    return {"message": "Place deleted successfully"}
 
 
 @router.post("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)

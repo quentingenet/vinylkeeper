@@ -177,8 +177,12 @@ class TestGetPendingModerationRequests:
         service, mod_repo, _ = make_service()
         mod_repo.get_moderation_status_by_name = AsyncMock(return_value=make_status(status_id=1))
         mod_repo.get_requests_by_status = AsyncMock(return_value=[])
+        mod_repo.count_requests_by_status_id = AsyncMock(return_value=0)
 
-        result = await service.get_pending_moderation_requests()
+        result = await service.get_pending_moderation_requests(page=1, limit=10)
 
-        assert result == []
-        mod_repo.get_requests_by_status.assert_awaited_once_with(1, None, None)
+        assert result.items == []
+        assert result.total == 0
+        assert result.page == 1
+        assert result.total_pages == 1
+        mod_repo.get_requests_by_status.assert_awaited_once_with(1, 10, 0)

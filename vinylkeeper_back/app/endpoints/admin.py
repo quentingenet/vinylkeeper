@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, status, Path, Query
-from typing import List, Optional
 
 from app.schemas.moderation_request_schema import (
     ModerationRequestResponse,
-    ModerationRequestListResponse
+    ModerationRequestListResponse,
+    PaginatedModerationRequestResponse,
+    MODERATION_DEFAULT_LIMIT,
+    MODERATION_MAX_LIMIT,
 )
 from app.services.moderation_service import ModerationService
 from app.deps.deps import get_moderation_service, require_admin
@@ -18,29 +20,27 @@ router = APIRouter()
 async def get_moderation_requests(
     user: User = Depends(require_admin),
     service: ModerationService = Depends(get_moderation_service),
-    limit: Optional[int] = Query(None, gt=0, le=100),
-    offset: Optional[int] = Query(None, ge=0)
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(MODERATION_DEFAULT_LIMIT, gt=0, le=MODERATION_MAX_LIMIT, description="Items per page"),
 ):
-    """Get all moderation requests (admin only)"""
-    requests = await service.get_all_moderation_requests(limit, offset)
-    return requests
+    """Get all moderation requests with pagination (admin only)"""
+    return await service.get_all_moderation_requests(page, limit)
 
 
 @router.get(
     "/moderation-requests/pending",
-    response_model=List[ModerationRequestResponse],
+    response_model=PaginatedModerationRequestResponse,
     status_code=status.HTTP_200_OK
 )
 @handle_app_exceptions
 async def get_pending_moderation_requests(
     user: User = Depends(require_admin),
     service: ModerationService = Depends(get_moderation_service),
-    limit: Optional[int] = Query(None, gt=0, le=100),
-    offset: Optional[int] = Query(None, ge=0)
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(MODERATION_DEFAULT_LIMIT, gt=0, le=MODERATION_MAX_LIMIT, description="Items per page"),
 ):
-    """Get pending moderation requests (admin only)"""
-    requests = await service.get_pending_moderation_requests(limit, offset)
-    return requests
+    """Get pending moderation requests with pagination (admin only)"""
+    return await service.get_pending_moderation_requests(page, limit)
 
 
 @router.get(

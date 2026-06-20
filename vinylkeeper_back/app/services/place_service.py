@@ -1,6 +1,8 @@
 import asyncio
 from typing import List, Optional
 
+from sqlalchemy.exc import IntegrityError
+
 from app.repositories.place_repository import PlaceRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.models.place_model import Place
@@ -44,6 +46,12 @@ class PlaceService:
         try:
             # Validate place data
             self._validate_place_data(place_data)
+
+            if not await self.repository.get_place_type_by_id(place_data.place_type_id):
+                raise ValidationError(
+                    error_code=4000,
+                    message=f"Place type with ID {place_data.place_type_id} not found"
+                )
 
             # Prepare place data
             place_dict = place_data.model_dump()
@@ -151,7 +159,8 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in get_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",
@@ -244,6 +253,14 @@ class PlaceService:
                 )
 
             update_dict = place_data.model_dump(exclude_unset=True)
+
+            if "place_type_id" in update_dict:
+                if not await self.repository.get_place_type_by_id(update_dict["place_type_id"]):
+                    raise ValidationError(
+                        error_code=4000,
+                        message=f"Place type with ID {update_dict['place_type_id']} not found"
+                    )
+
             async with transaction_context(self.repository.db):
                 updated_place = await self.repository.update_place(place_id, update_dict)
 
@@ -255,7 +272,8 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in update_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to update place",
@@ -280,7 +298,8 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in delete_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete place",
@@ -288,31 +307,43 @@ class PlaceService:
             )
 
     async def like_place(self, user: User, place_id: int) -> dict:
-        """Like a place. User resolved from token (uuid)."""
+        """Like a place (idempotent). User resolved from token (uuid)."""
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
 
             if await self.repository.is_place_liked_by_user(user.id, place_id):
-                raise ValidationError(
-                    error_code=4000,
-                    message="User has already liked this place"
-                )
+                likes_count = await self.repository.get_place_likes_count(place_id)
+                return {
+                    "message": f"Already liked {place.name}",
+                    "likes_count": likes_count,
+                    "is_liked": True
+                }
 
-            async with transaction_context(self.repository.db):
-                await self.repository.like_place(user.id, place_id)
+            try:
+                async with transaction_context(self.repository.db):
+                    await self.repository.like_place(user.id, place_id)
+            except IntegrityError:
+                # Race condition: another request inserted between our check and insert.
+                # The DB unique constraint (uq_user_place_like) enforced correctness.
+                likes_count = await self.repository.get_place_likes_count(place_id)
+                return {
+                    "message": f"Already liked {place.name}",
+                    "likes_count": likes_count,
+                    "is_liked": True
+                }
 
             likes_count = await self.repository.get_place_likes_count(place_id)
-
             return {
                 "message": f"Successfully liked {place.name}",
                 "likes_count": likes_count,
                 "is_liked": True
             }
-        except (ResourceNotFoundError, ValidationError):
+        except ResourceNotFoundError:
             raise
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in like_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to like place",
@@ -320,31 +351,33 @@ class PlaceService:
             )
 
     async def unlike_place(self, user: User, place_id: int) -> dict:
-        """Unlike a place. User resolved from token (uuid)."""
+        """Unlike a place (idempotent). User resolved from token (uuid)."""
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
 
             if not await self.repository.is_place_liked_by_user(user.id, place_id):
-                raise ValidationError(
-                    error_code=4000,
-                    message="User has not liked this place"
-                )
+                likes_count = await self.repository.get_place_likes_count(place_id)
+                return {
+                    "message": f"Not liked {place.name}",
+                    "likes_count": likes_count,
+                    "is_liked": False
+                }
 
             async with transaction_context(self.repository.db):
                 await self.repository.unlike_place(user.id, place_id)
 
             likes_count = await self.repository.get_place_likes_count(place_id)
-
             return {
                 "message": f"Successfully unliked {place.name}",
                 "likes_count": likes_count,
                 "is_liked": False
             }
-        except (ResourceNotFoundError, ValidationError):
+        except ResourceNotFoundError:
             raise
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in unlike_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to unlike place",
@@ -371,7 +404,8 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in search_places: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to search places",
@@ -398,7 +432,8 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in get_places_by_type: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places by type",
@@ -427,7 +462,8 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in get_places_in_region: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places in region",
@@ -511,6 +547,12 @@ class PlaceService:
                 message="Place name is required"
             )
 
+        if not data.address or len(data.address.strip()) == 0:
+            raise ValidationError(
+                error_code=4000,
+                message="Address is required"
+            )
+
         if not data.city or len(data.city.strip()) == 0:
             raise ValidationError(
                 error_code=4000,
@@ -523,27 +565,40 @@ class PlaceService:
                 message="Country is required"
             )
 
+        if (data.latitude is None) != (data.longitude is None):
+            raise ValidationError(
+                error_code=4000,
+                message="Both latitude and longitude are required"
+            )
+
     async def get_all_places_admin(
         self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[PlaceResponse]:
         """Get all places (admin only - includes non-moderated places). User resolved from token (uuid)."""
         try:
             places = await self.repository.get_all_places(limit, offset)
+            if not places:
+                return []
 
-            response_places = []
-            for place in places:
-                likes_count = await self.repository.get_place_likes_count(place.id)
-                is_liked = False
-                if user:
-                    is_liked = await self.repository.is_place_liked_by_user(user.id, place.id)
+            place_ids = [p.id for p in places]
+            likes_info = await self.repository.get_places_likes_info_batch(
+                user.id if user else None, place_ids
+            )
+            counts = likes_info["counts"]
+            user_likes = likes_info["user_likes"]
 
-                response_places.append(self._create_place_response(
-                    place, likes_count, is_liked))
-
-            return response_places
+            return [
+                self._create_place_response(
+                    place,
+                    counts.get(place.id, 0),
+                    user_likes.get(place.id, False)
+                )
+                for place in places
+            ]
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in _build_public_place_responses: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all places",
@@ -553,7 +608,9 @@ class PlaceService:
     async def get_place_admin(self, place_id: int, user: Optional[User] = None) -> PlaceResponse:
         """Get a place by ID (admin only - includes non-moderated places). User resolved from token (uuid)."""
         try:
-            place = await self.repository.get_place_by_id(place_id)
+            place = await self.repository.get_place_by_id_internal(place_id)
+            if not place:
+                raise ResourceNotFoundError("Place", place_id)
 
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = False
@@ -565,7 +622,8 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception:
+        except Exception as e:
+            logger.error("Unexpected error in get_place_admin: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get place",

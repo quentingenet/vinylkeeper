@@ -163,7 +163,7 @@ async def change_my_password(
     return {"message": "Password changed successfully"}
 
 
-@router.delete("/me", status_code=status.HTTP_200_OK)
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def delete_my_account(
     current_user=Depends(get_current_user),
@@ -171,11 +171,9 @@ async def delete_my_account(
 ):
     """Delete current user account"""
     success = await user_service.delete_user(current_user)
-    logger.info(
-        f"User deleted: {current_user.username} - {current_user.email}")
+    logger.info(f"User deleted: {current_user.username} - {current_user.email}")
     if not success:
         raise UserNotFoundError(str(current_user.user_uuid))
-    return {"message": "Account deleted successfully"}
 
 
 @router.post("/contact", status_code=status.HTTP_200_OK)

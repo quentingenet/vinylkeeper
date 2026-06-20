@@ -375,7 +375,8 @@ class ExportService:
             return ""
         try:
             return value.isoformat()
-        except Exception:
+        except Exception as e:
+            logger.warning("Could not format datetime value %r: %s", value, e)
             return str(value)
 
     def _split_album_title(self, full_title: Optional[str]) -> tuple[str, str]:
