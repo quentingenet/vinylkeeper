@@ -11,7 +11,7 @@ import {
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@utils/queryKeys";
-import VinylSpinner from "@components/UI/VinylSpinner";
+import LoadingCenter from "@components/UI/LoadingCenter";
 
 export default function Places() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,11 +39,7 @@ export default function Places() {
   };
 
   if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
 
   if (error) {

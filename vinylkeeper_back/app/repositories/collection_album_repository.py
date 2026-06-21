@@ -317,13 +317,12 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             collection_album = await self.find_by_collection_and_album(collection_id, album_id)
             if not collection_album:
-                raise ResourceNotFoundError("Album", album_id)
+                logger.warning(f"Album {album_id} not found in collection {collection_id}, skipping delete")
+                return False
 
             await self.delete(collection_album)
             return True
 
-        except ResourceNotFoundError:
-            raise
         except SQLAlchemyError as e:
             logger.error(f"Error removing album from collection: {str(e)}")
             raise ServerError(

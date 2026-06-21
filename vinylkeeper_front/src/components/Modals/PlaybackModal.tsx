@@ -1,30 +1,16 @@
-import { logger } from "@utils/logger";
 import { useState, useEffect } from "react";
 import {
   Modal,
   Box,
   Typography,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
   Chip,
   Fade,
   Backdrop,
   IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Snackbar,
   Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { musicStreamingService } from "@services/MusicStreamingService";
 import {
   useAlbumMetadata,
   useArtistMetadata,
@@ -32,11 +18,13 @@ import {
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUpdateAlbumStates } from "@hooks/useCollections";
 import { useParams } from "react-router-dom";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+import { VinylStateEnum } from "@utils/GlobalUtils";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import AlbumStateEditor from "@components/Modals/AlbumStateEditor";
+import StreamingLinksAccordion from "@components/Modals/StreamingLinksAccordion";
+import TracklistAccordion from "@components/Modals/TracklistAccordion";
 
 export interface PlaybackItem {
   id: string;
@@ -44,7 +32,7 @@ export interface PlaybackItem {
   artist: string;
   image_url?: string;
   itemType: "album" | "artist";
-  internalId?: string; // Internal ID for database operations
+  internalId?: string;
   albumData?: {
     state_record?: VinylStateEnum;
     state_cover?: VinylStateEnum;
@@ -73,7 +61,6 @@ export default function PlaybackModal({
   const { id: collectionId } = useParams<{ id: string }>();
   const updateAlbumStatesMutation = useUpdateAlbumStates();
 
-  // States for album conditions
   const [coverState, setCoverState] = useState<VinylStateEnum | null>(null);
   const [discState, setDiscState] = useState<VinylStateEnum | null>(null);
   const [purchaseDate, setPurchaseDate] = useState<string>("");
@@ -81,7 +68,6 @@ export default function PlaybackModal({
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  // Function to reset album states
   const resetAlbumStates = () => {
     setCoverState(null);
     setDiscState(null);
@@ -90,25 +76,17 @@ export default function PlaybackModal({
     setIsDatePickerOpen(false);
   };
 
-  // Initialize states with existing data when item changes
   useEffect(() => {
     if (item?.itemType === "album" && item.albumData) {
       setCoverState(item.albumData.state_cover || null);
       setDiscState(item.albumData.state_record || null);
-
-      // Set acquisition month/year directly from the YYYY-MM format
-      if (item.albumData.acquisition_month_year) {
-        setPurchaseDate(item.albumData.acquisition_month_year);
-      } else {
-        setPurchaseDate("");
-      }
+      setPurchaseDate(item.albumData.acquisition_month_year || "");
     } else if (item?.itemType === "artist") {
       resetAlbumStates();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id, item?.itemType]);
 
-  // Reset states when modal closes
   useEffect(() => {
     if (!isOpen) {
       resetAlbumStates();
@@ -122,11 +100,7 @@ export default function PlaybackModal({
     error: albumError,
   } = useAlbumMetadata(
     item?.itemType === "album"
-      ? {
-          id: item.id,
-          artist: item.artist,
-          title: item.title,
-        }
+      ? { id: item.id, artist: item.artist, title: item.title }
       : undefined
   );
 
@@ -140,92 +114,27 @@ export default function PlaybackModal({
       : undefined
   );
 
-  const isLoading =
-    item?.itemType === "album" ? isAlbumLoading : isArtistLoading;
+  const isLoading = item?.itemType === "album" ? isAlbumLoading : isArtistLoading;
   const error = item?.itemType === "album" ? albumError : artistError;
-
-  if (!item) return null;
-
-  const handleStreamingRedirect = (
-    platformName: string,
-    itemType: "album" | "artist"
-  ) => {
-    if (!item) return;
-
-    const queryParts: string[] = [];
-
-    if (itemType === "album") {
-      if (item.artist) queryParts.push(item.artist);
-      queryParts.push(item.title);
-    } else {
-      queryParts.push(item.title);
-    }
-
-    // Remove duplicates
-    const uniqueParts = Array.from(new Set(queryParts));
-    const searchQuery = encodeURIComponent(uniqueParts.join(" "));
-
-    let url = "";
-
-    switch (platformName.toLowerCase()) {
-      case "spotify":
-        url = `${import.meta.env.VITE_SPOTIFY_WEB_URL}/${searchQuery}`;
-        break;
-
-      case "deezer":
-        url = `${import.meta.env.VITE_DEEZER_WEB_URL}/${searchQuery}`;
-        break;
-
-      case "youtubemusic":
-      case "youtube music":
-        url = `${import.meta.env.VITE_YOUTUBE_MUSIC_URL}?q=${searchQuery}`;
-        break;
-
-      default:
-        logger.warn("Unsupported platform:", platformName);
-        return;
-    }
-
-    if (isMobile) {
-      window.location.href = url;
-    } else {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  };
-
   const hasAtLeastOneField =
     discState !== null || coverState !== null || purchaseDate !== "";
 
   const handleUpdateAlbumStates = async () => {
-    if (!item || item.itemType !== "album" || !collectionId) {
+    if (!item || item.itemType !== "album" || !collectionId || !item.internalId || !hasAtLeastOneField) {
       return;
     }
-
-    if (!item.internalId) {
-      return;
-    }
-
-    if (!hasAtLeastOneField) {
-      return;
-    }
-
-    const albumId = item.internalId;
 
     setIsUpdating(true);
     try {
-      const updateData = {
-        state_record: discState,
-        state_cover: coverState,
-        acquisition_month_year: purchaseDate || null,
-      };
-
       await updateAlbumStatesMutation.mutateAsync({
         collectionId: parseInt(collectionId),
-        albumId: parseInt(albumId),
-        data: updateData,
+        albumId: parseInt(item.internalId),
+        data: {
+          state_record: discState,
+          state_cover: coverState,
+          acquisition_month_year: purchaseDate || null,
+        },
       });
-
-      // Show success toast
       setShowSuccessToast(true);
     } catch {
       // Error handling is done by the mutation
@@ -247,6 +156,8 @@ export default function PlaybackModal({
     p: 3,
     overflow: "auto",
   };
+
+  if (!item) return null;
 
   return (
     <>
@@ -271,9 +182,7 @@ export default function PlaybackModal({
                 component="h2"
                 sx={{ color: "#C9A726", fontWeight: "bold" }}
               >
-                {item?.itemType === "album"
-                  ? "Album details"
-                  : "Artist details"}
+                {item.itemType === "album" ? "Album details" : "Artist details"}
               </Typography>
               <IconButton onClick={onClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
@@ -293,27 +202,19 @@ export default function PlaybackModal({
             ) : (
               <>
                 <Box display="flex" alignItems="center" mb={3}>
-                  {(item?.itemType === "album"
+                  {(item.itemType === "album"
                     ? albumMetadata?.image_url
-                    : item?.image_url) && (
+                    : item.image_url) && (
                     <img
-                      src={
-                        item?.itemType === "album"
-                          ? buildProxyImageUrl(
-                              albumMetadata?.image_url || "",
-                              240,
-                              240,
-                              85,
-                              true
-                            )
-                          : buildProxyImageUrl(
-                              item?.image_url || "",
-                              240,
-                              240,
-                              85,
-                              true
-                            )
-                      }
+                      src={buildProxyImageUrl(
+                        (item.itemType === "album"
+                          ? albumMetadata?.image_url
+                          : item.image_url) || "",
+                        240,
+                        240,
+                        85,
+                        true
+                      )}
                       alt={item.title}
                       style={{
                         width: 120,
@@ -334,15 +235,12 @@ export default function PlaybackModal({
                     </Typography>
                   </Box>
                 </Box>
-                {/* Genres Section */}
-                {item?.itemType === "album" &&
+
+                {item.itemType === "album" &&
                   albumMetadata?.genres &&
                   albumMetadata.genres.length > 0 && (
                     <Box mb={3}>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ color: "#C9A726", mb: 1 }}
-                      >
+                      <Typography variant="subtitle1" sx={{ color: "#C9A726", mb: 1 }}>
                         Genres
                       </Typography>
                       <Box display="flex" flexWrap="wrap" gap={1}>
@@ -359,9 +257,7 @@ export default function PlaybackModal({
                             sx={{
                               backgroundColor: "#C9A726",
                               color: "#fffbf9",
-                              "&:hover": {
-                                backgroundColor: "#b38f1f",
-                              },
+                              "&:hover": { backgroundColor: "#b38f1f" },
                             }}
                           />
                         ))}
@@ -369,306 +265,41 @@ export default function PlaybackModal({
                     </Box>
                   )}
 
-                {/* Album States Accordion */}
-                {item?.itemType === "album" &&
+                {item.itemType === "album" &&
                   context === "collection" &&
-                  (!isExplorePage ||
-                    coverState ||
-                    discState ||
-                    purchaseDate) && (
-                    <Accordion
-                      sx={{
-                        backgroundColor: "#3f3f41",
-                        color: "#fffbf9",
-                        mb: 2,
-                        "&:before": { display: "none" },
-                        "& .MuiAccordionSummary-root": {
-                          backgroundColor: "#1F1F1F",
-                          color: "#C9A726",
-                          fontWeight: "bold",
-                        },
-                        "& .MuiAccordionSummary-expandIconWrapper": {
-                          color: "#C9A726",
-                        },
-                        "& .MuiAccordionDetails-root": {
-                          backgroundColor: "#2a2a2a",
-                        },
+                  (!isExplorePage || coverState || discState || purchaseDate) && (
+                    <AlbumStateEditor
+                      coverState={coverState}
+                      discState={discState}
+                      purchaseDate={purchaseDate}
+                      isOwner={isOwner === true}
+                      isUpdating={isUpdating}
+                      hasAtLeastOneField={hasAtLeastOneField}
+                      isDatePickerOpen={isDatePickerOpen}
+                      onCoverChange={(v) => setCoverState((v as VinylStateEnum) || null)}
+                      onDiscChange={(v) => setDiscState((v as VinylStateEnum) || null)}
+                      onDateChange={(newValue) => {
+                        setPurchaseDate(newValue ? format(newValue, "yyyy-MM") : "");
+                        setIsDatePickerOpen(false);
                       }}
-                    >
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          Album states
-                        </Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Box display="flex" flexDirection="column" gap={2}>
-                          <FormControl fullWidth size="small">
-                            <InputLabel
-                              id="cover-state-label"
-                              sx={{
-                                color: "#e4e4e4",
-                                "&.Mui-focused": { color: "#C9A726" },
-                                "&.MuiInputLabel-shrink": { color: "#C9A726" },
-                              }}
-                            >
-                              Cover state
-                            </InputLabel>
-                            <Select
-                              labelId="cover-state-label"
-                              id="cover-state-select"
-                              value={coverState || ""}
-                              label="Cover state"
-                              onChange={(e) =>
-                                setCoverState(e.target.value || null)
-                              }
-                              disabled={isOwner !== true}
-                              variant="outlined"
-                              sx={{
-                                color: "#fffbf9",
-                                "& .MuiSelect-icon": { color: "#C9A726" },
-                              }}
-                            >
-                              {vinylStates.map((state) => (
-                                <MenuItem key={state.id} value={state.id}>
-                                  {state.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-
-                          <FormControl fullWidth size="small">
-                            <InputLabel
-                              id="record-state-label"
-                              sx={{
-                                color: "#e4e4e4",
-                                "&.Mui-focused": { color: "#C9A726" },
-                                "&.MuiInputLabel-shrink": { color: "#C9A726" },
-                              }}
-                            >
-                              Record state
-                            </InputLabel>
-                            <Select
-                              labelId="record-state-label"
-                              id="record-state-select"
-                              value={discState || ""}
-                              label="Record state"
-                              onChange={(e) =>
-                                setDiscState(e.target.value || null)
-                              }
-                              disabled={isOwner !== true}
-                              variant="outlined"
-                              sx={{
-                                color: "#fffbf9",
-                                "& .MuiSelect-icon": { color: "#C9A726" },
-                              }}
-                            >
-                              {vinylStates.map((state) => (
-                                <MenuItem key={state.id} value={state.id}>
-                                  {state.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-
-                          <DatePicker
-                            label="Acquisition month"
-                            value={
-                              purchaseDate
-                                ? parse(purchaseDate, "yyyy-MM", new Date())
-                                : null
-                            }
-                            onChange={(newValue) => {
-                              setPurchaseDate(
-                                newValue ? format(newValue, "yyyy-MM") : ""
-                              );
-                              setIsDatePickerOpen(false);
-                            }}
-                            open={isDatePickerOpen}
-                            onOpen={() =>
-                              isOwner === true && setIsDatePickerOpen(true)
-                            }
-                            onClose={() => setIsDatePickerOpen(false)}
-                            disabled={isOwner !== true}
-                            views={["month", "year"]}
-                            slotProps={{
-                              textField: {
-                                fullWidth: true,
-                                size: "small",
-                                helperText:
-                                  isOwner === true
-                                    ? "Select acquisition month and year"
-                                    : "Read-only",
-                                onClick: () =>
-                                  isOwner === true && setIsDatePickerOpen(true),
-                                sx: {
-                                  "& .MuiOutlinedInput-root": {
-                                    color: "#fffbf9",
-                                    "& fieldset": {
-                                      borderColor: "#C9A726",
-                                    },
-                                    "&:hover fieldset": {
-                                      borderColor: "#b38f1f",
-                                    },
-                                    "&.Mui-focused fieldset": {
-                                      borderColor: "#C9A726",
-                                    },
-                                    "&.Mui-disabled": {
-                                      color: "#999",
-                                      "& fieldset": {
-                                        borderColor: "#666",
-                                      },
-                                    },
-                                  },
-                                  "& .MuiInputLabel-root": {
-                                    color: "#fffbf9",
-                                    "&.Mui-focused": {
-                                      color: "#C9A726",
-                                    },
-                                    "&.Mui-disabled": {
-                                      color: "#666",
-                                    },
-                                  },
-                                  "& .MuiFormHelperText-root": {
-                                    color: "#e4e4e4",
-                                  },
-                                },
-                              },
-                              popper: {
-                                sx: {
-                                  "& .MuiPaper-root": {
-                                    backgroundColor: "#3f3f41",
-                                    color: "#fffbf9",
-                                  },
-                                  "& .MuiPickersCalendarHeader-root": {
-                                    color: "#fffbf9",
-                                  },
-                                  "& .MuiPickersYear-yearButton": {
-                                    color: "#fffbf9",
-                                    "&.Mui-selected": {
-                                      backgroundColor: "#C9A726",
-                                      color: "#000",
-                                    },
-                                    "&:hover": {
-                                      backgroundColor:
-                                        "rgba(201, 167, 38, 0.2)",
-                                    },
-                                  },
-                                  "& .MuiPickersMonth-monthButton": {
-                                    color: "#fffbf9",
-                                    "&.Mui-selected": {
-                                      backgroundColor: "#C9A726",
-                                      color: "#000",
-                                    },
-                                    "&:hover": {
-                                      backgroundColor:
-                                        "rgba(201, 167, 38, 0.2)",
-                                    },
-                                  },
-                                },
-                              },
-                            }}
-                          />
-
-                          {isOwner === true && (
-                            <Button
-                              variant="contained"
-                              onClick={() => { void handleUpdateAlbumStates(); }}
-                              disabled={isUpdating || !hasAtLeastOneField}
-                              sx={{
-                                backgroundColor: "#C9A726",
-                                color: "#1F1F1F",
-                                fontWeight: "bold",
-                                mt: 2,
-                                "&:hover": {
-                                  backgroundColor: "#b38f1f",
-                                },
-                                "&:disabled": {
-                                  backgroundColor: "#666",
-                                  color: "#999",
-                                },
-                              }}
-                            >
-                              {isUpdating
-                                ? "Updating..."
-                                : "Update Album States"}
-                            </Button>
-                          )}
-                        </Box>
-                      </AccordionDetails>
-                    </Accordion>
+                      onDatePickerOpen={() => setIsDatePickerOpen(true)}
+                      onDatePickerClose={() => setIsDatePickerOpen(false)}
+                      onUpdate={() => { void handleUpdateAlbumStates(); }}
+                    />
                   )}
 
-                {/* Tracklist Accordion */}
-                {item?.itemType === "album" && albumMetadata?.tracklist && (
-                  <Accordion
-                    sx={{
-                      backgroundColor: "#3f3f41",
-                      color: "#fffbf9",
-                      mb: 2,
-                      "&:before": { display: "none" },
-                      "& .MuiAccordionSummary-root": {
-                        backgroundColor: "#1F1F1F",
-                        color: "#C9A726",
-                        fontWeight: "bold",
-                      },
-                      "& .MuiAccordionSummary-expandIconWrapper": {
-                        color: "#C9A726",
-                      },
-                      "& .MuiAccordionDetails-root": {
-                        backgroundColor: "#2a2a2a",
-                      },
-                    }}
-                  >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        Tracklist
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <List sx={{ maxHeight: 200, overflow: "auto", p: 0 }}>
-                        {albumMetadata.tracklist.map((track, index) => (
-                          <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
-                            <ListItemText
-                              primary={
-                                <Typography sx={{ color: "#fffbf9" }}>
-                                  {track.position} {track.title}
-                                </Typography>
-                              }
-                              secondary={
-                                <Typography sx={{ color: "#e4e4e4" }}>
-                                  {track.duration}
-                                </Typography>
-                              }
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </AccordionDetails>
-                  </Accordion>
+                {item.itemType === "album" && albumMetadata?.tracklist && (
+                  <TracklistAccordion tracklist={albumMetadata.tracklist} />
                 )}
 
-                {/* Artist Biography */}
-                {item?.itemType === "artist" && artistMetadata?.biography && (
+                {item.itemType === "artist" && artistMetadata?.biography && (
                   <Box mb={3}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ color: "#C9A726", mb: 1 }}
-                    >
+                    <Typography variant="subtitle1" sx={{ color: "#C9A726", mb: 1 }}>
                       Biography
                     </Typography>
-                    <Box
-                      sx={{
-                        p: 2,
-                        maxHeight: 200,
-                        overflow: "auto",
-                      }}
-                    >
+                    <Box sx={{ p: 2, maxHeight: 200, overflow: "auto" }}>
                       <Typography
-                        sx={{
-                          color: "#fffbf9",
-                          whiteSpace: "pre-line",
-                          lineHeight: 1.6,
-                        }}
+                        sx={{ color: "#fffbf9", whiteSpace: "pre-line", lineHeight: 1.6 }}
                       >
                         {artistMetadata.biography}
                       </Typography>
@@ -676,15 +307,11 @@ export default function PlaybackModal({
                   </Box>
                 )}
 
-                {/* Artist Genres */}
-                {item?.itemType === "artist" &&
+                {item.itemType === "artist" &&
                   artistMetadata?.genres &&
                   artistMetadata.genres.length > 0 && (
                     <Box mb={3}>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ color: "#C9A726", mb: 1 }}
-                      >
+                      <Typography variant="subtitle1" sx={{ color: "#C9A726", mb: 1 }}>
                         Genres
                       </Typography>
                       <Box display="flex" flexWrap="wrap" gap={1}>
@@ -696,9 +323,7 @@ export default function PlaybackModal({
                             sx={{
                               backgroundColor: "#C9A726",
                               color: "#fffbf9",
-                              "&:hover": {
-                                backgroundColor: "#b38f1f",
-                              },
+                              "&:hover": { backgroundColor: "#b38f1f" },
                             }}
                           />
                         ))}
@@ -706,69 +331,19 @@ export default function PlaybackModal({
                     </Box>
                   )}
 
-                {/* Listen on Accordion */}
-                <Accordion
-                  sx={{
-                    backgroundColor: "#3f3f41",
-                    color: "#fffbf9",
-                    mb: 2,
-                    "&:before": { display: "none" },
-                    "& .MuiAccordionSummary-root": {
-                      backgroundColor: "#1F1F1F",
-                      color: "#C9A726",
-                      fontWeight: "bold",
-                    },
-                    "& .MuiAccordionSummary-expandIconWrapper": {
-                      color: "#C9A726",
-                    },
-                    "& .MuiAccordionDetails-root": {
-                      backgroundColor: "#2a2a2a",
-                    },
-                  }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Listen on
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Box display="flex" flexDirection="column" gap={2}>
-                      {musicStreamingService.getPlatforms().map((platform) => (
-                        <Button
-                          key={platform.name}
-                          variant="contained"
-                          fullWidth
-                          onClick={() =>
-                            handleStreamingRedirect(
-                              platform.name,
-                              item?.itemType
-                            )
-                          }
-                          sx={{
-                            backgroundColor: "#1F1F1F",
-                            color: "#C9A726",
-                            "&:hover": {
-                              backgroundColor: "#C9A726",
-                              color: "#1F1F1F",
-                            },
-                            py: 1.5,
-                          }}
-                          startIcon={<span>{platform.icon}</span>}
-                        >
-                          Listen on {platform.name}
-                        </Button>
-                      ))}
-                    </Box>
-                  </AccordionDetails>
-                </Accordion>
+                <StreamingLinksAccordion
+                  itemTitle={item.title}
+                  itemArtist={item.artist}
+                  itemType={item.itemType}
+                />
 
-                {(!albumMetadata?.tracklist && item?.itemType === "album") ||
-                (!artistMetadata?.biography && item?.itemType === "artist") ? (
+                {(!albumMetadata?.tracklist && item.itemType === "album") ||
+                (!artistMetadata?.biography && item.itemType === "artist") ? (
                   <Typography
                     variant="body2"
                     sx={{ color: "#e4e4e4", mt: 2, textAlign: "center" }}
                   >
-                    {item?.itemType === "album"
+                    {item.itemType === "album"
                       ? "Tracklist not available"
                       : "Biography not available"}
                   </Typography>
@@ -792,9 +367,7 @@ export default function PlaybackModal({
             backgroundColor: "#C9A726",
             color: "#1F1F1F",
             fontWeight: "bold",
-            "& .MuiAlert-icon": {
-              color: "#1F1F1F",
-            },
+            "& .MuiAlert-icon": { color: "#1F1F1F" },
           }}
         >
           Album states updated successfully!

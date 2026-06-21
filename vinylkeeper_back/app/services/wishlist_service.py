@@ -1,3 +1,4 @@
+from typing import Optional
 from app.repositories.wishlist_repository import WishlistRepository
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
@@ -248,13 +249,16 @@ class WishlistService:
             )
 
     async def get_user_wishlist_paginated(
-        self, user_id: int, page: int = 1, limit: int = 8
+        self, user_id: int, page: int = 1, limit: int = 8,
+        search: Optional[str] = None, sort_order: str = "newest"
     ) -> PaginatedWishlistResponse:
-        """Get paginated wishlist items for a user (lightweight DTO)"""
+        """Get paginated wishlist items for a user with optional search and sort."""
         try:
             self._validate_pagination_params(page, limit)
 
-            items, total = await self.wishlist_repo.get_user_wishlist_paginated(user_id, page, limit)
+            items, total = await self.wishlist_repo.get_user_wishlist_paginated(
+                user_id, page, limit, search, sort_order
+            )
 
             list_responses = []
             for item in items:

@@ -3,7 +3,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
-import VinylSpinner from "@components/UI/VinylSpinner";
+import LoadingCenter from "@components/UI/LoadingCenter";
 import { useState, useCallback } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
@@ -94,16 +94,7 @@ export default function Collections() {
   }
 
   if (collectionsLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
 
   return (

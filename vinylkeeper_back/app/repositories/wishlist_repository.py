@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
@@ -129,19 +129,30 @@ class WishlistRepository(TransactionalMixin):
             )
 
     async def get_user_wishlist_paginated(
-        self, user_id: int, page: int = 1, limit: int = 8
+        self, user_id: int, page: int = 1, limit: int = 8,
+        search: Optional[str] = None, sort_order: str = "newest"
     ) -> Tuple[List[Wishlist], int]:
-        """Get paginated wishlist items for a user (lightweight query, no heavy relations)"""
+        """Get paginated wishlist items for a user with optional search and sort."""
         try:
             offset = (page - 1) * limit
 
-            query = select(Wishlist).filter(Wishlist.user_id ==
-                                            user_id).offset(offset).limit(limit)
+            base_filter = Wishlist.user_id == user_id
+            if search and search.strip():
+                base_filter = and_(base_filter, Wishlist.title.ilike(f"%{search.strip()}%"))
+
+            order_clause = Wishlist.created_at.desc() if sort_order == "newest" else Wishlist.created_at.asc()
+
+            query = (
+                select(Wishlist)
+                .filter(base_filter)
+                .order_by(order_clause)
+                .offset(offset)
+                .limit(limit)
+            )
             result = await self.db.execute(query)
             items = result.scalars().all()
 
-            count_query = select(func.count(Wishlist.id)).filter(
-                Wishlist.user_id == user_id)
+            count_query = select(func.count(Wishlist.id)).filter(base_filter)
             count_result = await self.db.execute(count_query)
             total = count_result.scalar() or 0
 

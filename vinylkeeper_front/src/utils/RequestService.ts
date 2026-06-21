@@ -67,6 +67,9 @@ const requestService = async <T = unknown>({
 
   try {
     const response = await ky(urlToFetch, options);
+
+    if (response.status === 204) return null as T;
+
     const contentType = response.headers.get("content-type");
 
     if (!contentType) return null as T;

@@ -135,6 +135,14 @@ const NavBar: React.FC<NavBarProps> = ({
         justifyContent="center"
         px={1}
         py={1}
+        onClick={toggleMenu}
+        sx={{
+          cursor: "pointer",
+          transition: "background-color 0.3s ease",
+          "&:hover": {
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+          },
+        }}
       >
         <Typography
           variant="h5"
@@ -151,7 +159,7 @@ const NavBar: React.FC<NavBarProps> = ({
           Vinyl Keeper
         </Typography>
         <IconButton
-          onClick={toggleMenu}
+   
           sx={{
             animation: `${growItem} 1s ease infinite`,
             color: colorYellow,

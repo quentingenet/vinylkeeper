@@ -15,7 +15,7 @@ import {
 } from "@services/CollectionApiService";
 import CollectionItem from "@components/Collections/CollectionItem";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
-import VinylSpinner from "@components/UI/VinylSpinner";
+import LoadingCenter from "@components/UI/LoadingCenter";
 import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useNavigate } from "react-router-dom";
@@ -54,16 +54,7 @@ export default function Explore() {
   };
 
   if (isLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
 
   if (error) {

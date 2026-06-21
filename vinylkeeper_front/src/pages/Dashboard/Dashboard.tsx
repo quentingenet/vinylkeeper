@@ -27,7 +27,7 @@ import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { truncateText } from "@utils/GlobalUtils";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
-import VinylSpinner from "@components/UI/VinylSpinner";
+import LoadingCenter from "@components/UI/LoadingCenter";
 import TutorialModal from "@components/Modals/TutorialModal";
 import { useUserContext } from "@contexts/UserContext";
 import { useState, useEffect, useRef } from "react";
@@ -225,11 +225,7 @@ export default function Dashboard() {
   }, []);
 
   if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" my={4}>
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
   if (!isLoading && isError) {
     return (
@@ -245,11 +241,7 @@ export default function Dashboard() {
   }
 
   if (!data) {
-    return (
-      <Box display="flex" justifyContent="center" my={4}>
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
 
   const chartData = {

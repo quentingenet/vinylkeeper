@@ -18,15 +18,12 @@ import { useWishlist } from "@hooks/useWishlist";
 import {
   Typography,
   Box,
-  Button,
-  Menu,
-  MenuItem,
-  ListItemText,
   Tabs,
   Tab,
   FormControl,
   InputLabel,
   Select,
+  MenuItem,
   SelectChangeEvent,
   TextField,
   InputAdornment,
@@ -37,15 +34,15 @@ import { useDocumentTitle } from "@hooks/useDocumentTitle";
 import { useUserContext } from "@contexts/UserContext";
 import { useDebounce } from "@hooks/useDebounce";
 import SearchIcon from "@mui/icons-material/Search";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { VinylStateEnum } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
-import { triggerBrowserDownload } from "@utils/DownloadUtils";
-import styles from "../../styles/pages/Collection.module.scss";
-import MediaCard from "@components/Collections/MediaCard";
 import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
-import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import CollectionExportMenu from "@components/Collections/CollectionExportMenu";
+import CollectionItemGrid from "@components/Collections/CollectionItemGrid";
+import WishlistTabContent from "@components/Collections/WishlistTabContent";
+import LoadingCenter from "@components/UI/LoadingCenter";
+import EmptyState from "@components/UI/EmptyState";
 import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface TabPanelProps {
@@ -86,6 +83,12 @@ function TabPanel(props: TabPanelProps) {
 
 type SortOrder = "newest" | "oldest";
 
+const TAB = {
+  ALBUMS: 0,
+  ARTISTS: 1,
+  WISHLIST: 2,
+} as const;
+
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
   const collectionId = id ? parseInt(id) : 0;
@@ -102,10 +105,6 @@ export default function CollectionDetails() {
 
   // Sort order state
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
-  const [exportMenuAnchorEl, setExportMenuAnchorEl] =
-    useState<null | HTMLElement>(null);
-  const [activeExportKey, setActiveExportKey] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -158,7 +157,7 @@ export default function CollectionDetails() {
         limit,
         sortOrder
       ),
-    enabled: !!collectionId && tabValue === 0,
+    enabled: !!collectionId && tabValue === TAB.ALBUMS,
   });
 
   // Artists paginated query
@@ -175,20 +174,23 @@ export default function CollectionDetails() {
         limit,
         sortOrder
       ),
-    enabled: !!collectionId && tabValue === 1,
+    enabled: !!collectionId && tabValue === TAB.ARTISTS,
   });
 
   // Wishlist query - load collection owner's wishlist with pagination (public)
-  const shouldLoadWishlist = tabValue === 2 && !!collectionDetails?.owner_uuid;
+  const shouldLoadWishlist = tabValue === TAB.WISHLIST && !!collectionDetails?.owner_uuid;
   const ownerUuid = collectionDetails?.owner_uuid != null ? collectionDetails.owner_uuid : undefined;
+
+  const wishlistSearch = tabValue === TAB.WISHLIST && debouncedSearchTerm.length >= 2 ? debouncedSearchTerm : undefined;
 
   const {
     wishlistItems: ownerWishlistItems,
     totalPages: wishlistTotalPages,
+    total: wishlistTotal,
     wishlistLoading: isLoadingWishlist,
-  } = useWishlist(wishlistPage, wishlistLimit, shouldLoadWishlist, ownerUuid);
+  } = useWishlist(wishlistPage, wishlistLimit, shouldLoadWishlist, ownerUuid, sortOrder, wishlistSearch);
 
-  // Search query with debounced term
+  // Search query with debounced term (albums and artists only — wishlist uses server-side search)
   const {
     data: searchResults,
     isLoading: isLoadingSearch,
@@ -197,7 +199,7 @@ export default function CollectionDetails() {
     queryKey: queryKeys.collections.searchQuery(collectionId, debouncedSearchTerm, tabValue),
     queryFn: () => {
       const searchType =
-        tabValue === 0 ? "album" : tabValue === 1 ? "artist" : "both";
+        tabValue === TAB.ALBUMS ? "album" : "artist";
       return collectionApiService.searchCollectionItems(
         collectionId,
         debouncedSearchTerm,
@@ -208,14 +210,14 @@ export default function CollectionDetails() {
       !!debouncedSearchTerm.trim() &&
       debouncedSearchTerm.length >= 2 &&
       !!collectionId &&
-      tabValue !== 2, // Disable for wishlist tab
+      tabValue !== TAB.WISHLIST,
   });
 
   // Convert WishlistItemListResponse to WishlistItemResponse for compatibility
   const wishlistItemsAsResponse: WishlistItemResponse[] = useMemo(() => {
     return ownerWishlistItems.map((item) => ({
       id: item.id,
-      user_id: 0, // Not used in frontend, kept for compatibility
+      user_id: 0,
       external_id: item.external_id,
       entity_type_id: item.entity_type === "album" ? 1 : 2,
       external_source_id: 0,
@@ -226,21 +228,6 @@ export default function CollectionDetails() {
       source: "",
     }));
   }, [ownerWishlistItems]);
-
-  // Filter wishlist items for search (client-side filtering)
-  const filteredWishlistItems = useMemo(() => {
-    if (
-      tabValue !== 2 ||
-      !debouncedSearchTerm.trim() ||
-      debouncedSearchTerm.length < 2
-    ) {
-      return wishlistItemsAsResponse;
-    }
-
-    return wishlistItemsAsResponse.filter((item) =>
-      item.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    );
-  }, [wishlistItemsAsResponse, debouncedSearchTerm, tabValue]);
 
   const removeAlbumMutation = useMutation({
     mutationFn: (albumId: number) =>
@@ -282,22 +269,24 @@ export default function CollectionDetails() {
     onSuccess: (_data, wishlistId) => {
       queryClient.setQueriesData<PaginatedWishlistResponse>(
         { queryKey: queryKeys.wishlist.all() },
-        (old) =>
-          old
-            ? { ...old, items: old.items.filter((item) => item.id !== wishlistId) }
-            : old
+        (old) => {
+          if (!old) return old;
+          const hadItem = old.items.some((item) => item.id === wishlistId);
+          return {
+            ...old,
+            items: old.items.filter((item) => item.id !== wishlistId),
+            total: hadItem ? Math.max(0, old.total - 1) : old.total,
+          };
+        }
       );
+      // Avoid empty page after last-item deletion: go back to the previous page
+      if (ownerWishlistItems.length === 1 && wishlistPage > 1) {
+        setWishlistPage((prev) => prev - 1);
+      }
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.wishlist.all() });
     },
   });
-
-  const finishExportUi = () => {
-    window.setTimeout(() => {
-      setIsExporting(false);
-      setActiveExportKey(null);
-    }, 1200);
-  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     // If user is not logged in and tries to access wishlist tab (index 2), redirect to albums tab
@@ -312,51 +301,7 @@ export default function CollectionDetails() {
     setSortOrder(event.target.value as SortOrder);
     setAlbumsPage(1);
     setArtistsPage(1);
-  };
-
-  const handleOpenExportMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setExportMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleCloseExportMenu = () => {
-    setExportMenuAnchorEl(null);
-    setActiveExportKey(null);
-    setIsExporting(false);
-  };
-
-  const handleExport = async (
-    exportKey: string,
-    pathSuffix: string,
-    fallbackFilename: string
-  ) => {
-    setActiveExportKey(exportKey);
-    setIsExporting(true);
-    setExportMenuAnchorEl(null);
-    try {
-      const { blob, filename } = await collectionApiService.exportCollectionFile(
-        Number(collectionId),
-        pathSuffix
-      );
-      triggerBrowserDownload(blob, filename || fallbackFilename);
-    } catch (err) {
-      logger.error("Export failed:", err);
-    } finally {
-      finishExportUi();
-    }
-  };
-
-  const handleExportWishlist = async (exportKey: string, format: "csv" | "ods") => {
-    setActiveExportKey(exportKey);
-    setIsExporting(true);
-    setExportMenuAnchorEl(null);
-    try {
-      const { blob, filename } = await collectionApiService.exportMyWishlistFile(format);
-      triggerBrowserDownload(blob, filename || `wishlist.${format}`);
-    } catch (err) {
-      logger.error("Wishlist export failed:", err);
-    } finally {
-      finishExportUi();
-    }
+    setWishlistPage(1);
   };
 
   const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -364,10 +309,13 @@ export default function CollectionDetails() {
     setSearchTerm(value);
   };
 
-  useDebounce(() => setDebouncedSearchTerm(searchTerm), 500, [searchTerm]);
+  useDebounce(() => {
+    setDebouncedSearchTerm(searchTerm);
+    if (tabValue === TAB.WISHLIST) setWishlistPage(1);
+  }, 500, [searchTerm]);
 
   const handleSearch = () => {
-    if (searchTerm.trim() && searchTerm.length >= 2) {
+    if (searchTerm.trim() && searchTerm.length >= 2 && tabValue !== TAB.WISHLIST) {
       void refetchSearch();
     }
   };
@@ -389,19 +337,6 @@ export default function CollectionDetails() {
       default:
         return "Search";
     }
-  };
-
-  // Function to sort wishlist items by date
-  const getSortedWishlistItems = (items: WishlistItemResponse[]) => {
-    if (!items) return [];
-
-    const sorted = [...items].sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-    });
-
-    return sorted;
   };
 
   const handlePlayClick = (item: PlayableItem, type: "album" | "artist") => {
@@ -501,16 +436,7 @@ export default function CollectionDetails() {
   );
 
   if (isLoadingDetails) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
 
   if (!isLoadingDetails && detailsError) {
@@ -524,16 +450,7 @@ export default function CollectionDetails() {
   }
 
   if (!collectionDetails) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <VinylSpinner />
-      </Box>
-    );
+    return <LoadingCenter />;
   }
 
   const isOwner = !!(
@@ -579,159 +496,7 @@ export default function CollectionDetails() {
             columnGap: 2,
           }}
         >
-          {isOwner && (
-            <>
-              <Button
-                variant="text"
-                size="small"
-                onClick={handleOpenExportMenu}
-                startIcon={<FileDownloadIcon fontSize="small" />}
-                disabled={isExporting}
-                sx={{
-                  minHeight: 30,
-                  paddingY: 0.25,
-                  paddingX: 1,
-                  lineHeight: 1.2,
-                  textTransform: "none",
-                }}
-              >
-                Export to
-              </Button>
-              <Menu
-                anchorEl={exportMenuAnchorEl}
-                open={Boolean(exportMenuAnchorEl)}
-                onClose={handleCloseExportMenu}
-                MenuListProps={{ dense: true }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      "& .MuiMenuItem-root": { py: 0.25, minHeight: 32 },
-                      "& .MuiTypography-root": { fontSize: "0.95rem" },
-                    },
-                  },
-                }}
-              >
-                <MenuItem
-                  onClick={() =>
-                    void handleExport(
-                      "collection_albums_csv",
-                      "albums.csv",
-                      `collection_${collectionId}_albums.csv`
-                    )
-                  }
-                >
-                  {isExporting &&
-                  activeExportKey === "collection_albums_csv" ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <VinylSpinner size={18} />
-                      <Typography variant="caption">Exporting…</Typography>
-                    </Box>
-                  ) : (
-                    <ListItemText
-                      primary="Collection albums (CSV)"
-                      primaryTypographyProps={{ variant: "caption" }}
-                    />
-                  )}
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    void handleExport(
-                      "collection_albums_ods",
-                      "albums.ods",
-                      `collection_${collectionId}_albums.ods`
-                    )
-                  }
-                >
-                  {isExporting &&
-                  activeExportKey === "collection_albums_ods" ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <VinylSpinner size={18} />
-                      <Typography variant="caption">Exporting…</Typography>
-                    </Box>
-                  ) : (
-                    <ListItemText
-                      primary="Collection albums (ODS)"
-                      primaryTypographyProps={{ variant: "caption" }}
-                    />
-                  )}
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    void handleExport(
-                      "collection_artists_csv",
-                      "artists.csv",
-                      `collection_${collectionId}_artists.csv`
-                    )
-                  }
-                >
-                  {isExporting &&
-                  activeExportKey === "collection_artists_csv" ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <VinylSpinner size={18} />
-                      <Typography variant="caption">Exporting…</Typography>
-                    </Box>
-                  ) : (
-                    <ListItemText
-                      primary="Collection artists (CSV)"
-                      primaryTypographyProps={{ variant: "caption" }}
-                    />
-                  )}
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    void handleExport(
-                      "collection_artists_ods",
-                      "artists.ods",
-                      `collection_${collectionId}_artists.ods`
-                    )
-                  }
-                >
-                  {isExporting &&
-                  activeExportKey === "collection_artists_ods" ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <VinylSpinner size={18} />
-                      <Typography variant="caption">Exporting…</Typography>
-                    </Box>
-                  ) : (
-                    <ListItemText
-                      primary="Collection artists (ODS)"
-                      primaryTypographyProps={{ variant: "caption" }}
-                    />
-                  )}
-                </MenuItem>
-                <MenuItem
-                  onClick={() => void handleExportWishlist("wishlist_csv", "csv")}
-                >
-                  {isExporting && activeExportKey === "wishlist_csv" ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <VinylSpinner size={18} />
-                      <Typography variant="caption">Exporting…</Typography>
-                    </Box>
-                  ) : (
-                    <ListItemText
-                      primary="My wishlist (CSV)"
-                      primaryTypographyProps={{ variant: "caption" }}
-                    />
-                  )}
-                </MenuItem>
-                <MenuItem
-                  onClick={() => void handleExportWishlist("wishlist_ods", "ods")}
-                >
-                  {isExporting && activeExportKey === "wishlist_ods" ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <VinylSpinner size={18} />
-                      <Typography variant="caption">Exporting…</Typography>
-                    </Box>
-                  ) : (
-                    <ListItemText
-                      primary="My wishlist (ODS)"
-                      primaryTypographyProps={{ variant: "caption" }}
-                    />
-                  )}
-                </MenuItem>
-              </Menu>
-            </>
-          )}
+          {isOwner && <CollectionExportMenu collectionId={collectionId} />}
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Created on{" "}
@@ -796,13 +561,13 @@ export default function CollectionDetails() {
               justifyContent: "flex-end",
             }}
           >
-            {((tabValue === 0 &&
+            {((tabValue === TAB.ALBUMS &&
             albumsData?.items &&
             albumsData.items.length > 0) ||
-            (tabValue === 1 &&
+            (tabValue === TAB.ARTISTS &&
               artistsData?.items &&
               artistsData.items.length > 0) ||
-            (tabValue === 2 && wishlistItemsAsResponse.length > 0)) && (
+            tabValue === TAB.WISHLIST) && (
               <FormControl sx={{ width: isMobile ? 320 : 150 }}>
                 <InputLabel sx={{ color: "text.secondary" }}>
                   Sort Order
@@ -858,346 +623,109 @@ export default function CollectionDetails() {
 
       {/* Contenu normal */}
       <Box sx={{ mt: 3 }}>
-        <TabPanel value={tabValue} index={0}>
+        <TabPanel value={tabValue} index={TAB.ALBUMS}>
           {isLoadingSearch ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <VinylSpinner />
-            </Box>
+            <LoadingCenter />
           ) : searchTerm.trim() && searchTerm.length < 2 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                textAlign="center"
-              >
-                Please enter at least 2 characters to search.
-              </Typography>
-            </Box>
+            <EmptyState message="Please enter at least 2 characters to search." />
           ) : searchResults && debouncedSearchTerm.trim() ? (
-            // Show search results
             searchResults.albums.length === 0 ? (
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight="200px"
-              >
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  No albums found matching "{debouncedSearchTerm}".
-                </Typography>
-              </Box>
+              <EmptyState message={`No albums found matching "${debouncedSearchTerm}".`} />
             ) : (
               <>
                 <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                  Search results for "{debouncedSearchTerm}" (
-                  {searchResults.albums.length} albums)
+                  Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({searchResults.albums.length} albums)
                 </Typography>
-                <div className={styles.resultsContainer}>
-                  {(searchResults.albums || []).map((album) => (
-                    <MediaCard
-                      key={album.id}
-                      item={album}
-                      itemType="album"
-                      onPlay={() => handlePlayClick(album, "album")}
-                      onDelete={isOwner ? () => handleDeleteAlbum(album) : undefined}
-                      imageSize={{ w: 300, h: 300, q: 75 }}
-                    />
-                  ))}
-                </div>
+                <CollectionItemGrid
+                  items={searchResults.albums}
+                  itemType="album"
+                  onPlay={(item) => handlePlayClick(item as CollectionAlbumResponse, "album")}
+                  onDelete={isOwner ? (item) => handleDeleteAlbum(item as CollectionAlbumResponse) : undefined}
+                  imageSize={{ w: 300, h: 300, q: 75 }}
+                />
               </>
             )
           ) : isLoadingAlbums ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <VinylSpinner />
-            </Box>
+            <LoadingCenter />
           ) : !isLoadingAlbums && albumsError ? (
             <Typography variant="h6" color="error">
               Error loading albums
             </Typography>
           ) : albumsData?.items.length === 0 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                textAlign="center"
-              >
-                No albums in this collection yet.
-              </Typography>
-            </Box>
+            <EmptyState message="No albums in this collection yet." />
           ) : (
-            <>
-              <div className={styles.resultsContainer}>
-                {(albumsData?.items || []).map((album) => (
-                  <MediaCard
-                    key={album.id}
-                    item={album}
-                    itemType="album"
-                    onPlay={() => handlePlayClick(album, "album")}
-                    onDelete={isOwner ? () => handleDeleteAlbum(album) : undefined}
-                    imageSize={{ w: 500, h: 500, q: 85 }}
-                  />
-                ))}
-              </div>
-              {albumsData && albumsData.total_pages > 1 && (
-                <Box display="flex" justifyContent="center" mt={3}>
-                  <PaginationWithEllipsis
-                    count={albumsData.total_pages}
-                    page={albumsPage}
-                    onChange={(newPage) => setAlbumsPage(newPage)}
-                    color="primary"
-                    size={isMobile ? "medium" : "large"}
-                  />
-                </Box>
-              )}
-            </>
+            <CollectionItemGrid
+              items={albumsData?.items ?? []}
+              itemType="album"
+              onPlay={(item) => handlePlayClick(item as CollectionAlbumResponse, "album")}
+              onDelete={isOwner ? (item) => handleDeleteAlbum(item as CollectionAlbumResponse) : undefined}
+              imageSize={{ w: 500, h: 500, q: 85 }}
+              totalPages={albumsData?.total_pages}
+              page={albumsPage}
+              onPageChange={setAlbumsPage}
+              isMobile={isMobile}
+            />
           )}
         </TabPanel>
 
-        <TabPanel value={tabValue} index={1}>
+        <TabPanel value={tabValue} index={TAB.ARTISTS}>
           {isLoadingSearch ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <VinylSpinner />
-            </Box>
+            <LoadingCenter />
           ) : searchTerm.trim() && searchTerm.length < 2 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                textAlign="center"
-              >
-                Please enter at least 2 characters to search.
-              </Typography>
-            </Box>
+            <EmptyState message="Please enter at least 2 characters to search." />
           ) : searchResults && debouncedSearchTerm.trim() ? (
-            // Show search results
             searchResults.artists.length === 0 ? (
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight="200px"
-              >
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  No artists found matching "{debouncedSearchTerm}".
-                </Typography>
-              </Box>
+              <EmptyState message={`No artists found matching "${debouncedSearchTerm}".`} />
             ) : (
               <>
                 <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                  Search results for "{debouncedSearchTerm}" (
-                  {searchResults.artists.length} artists)
+                  Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({searchResults.artists.length} artists)
                 </Typography>
-                <div className={styles.resultsContainer}>
-                  {(searchResults.artists || []).map((artist) => (
-                    <MediaCard
-                      key={artist.id}
-                      item={artist}
-                      itemType="artist"
-                      onPlay={() => handlePlayClick(artist, "artist")}
-                      onDelete={isOwner ? () => handleDeleteArtist(artist) : undefined}
-                      imageSize={{ w: 300, h: 300, q: 75 }}
-                    />
-                  ))}
-                </div>
+                <CollectionItemGrid
+                  items={searchResults.artists}
+                  itemType="artist"
+                  onPlay={(item) => handlePlayClick(item as CollectionArtistResponse, "artist")}
+                  onDelete={isOwner ? (item) => handleDeleteArtist(item as CollectionArtistResponse) : undefined}
+                  imageSize={{ w: 300, h: 300, q: 75 }}
+                />
               </>
             )
           ) : isLoadingArtists ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <VinylSpinner />
-            </Box>
+            <LoadingCenter />
           ) : !isLoadingArtists && artistsError ? (
             <Typography variant="h6" color="error">
               Error loading artists
             </Typography>
           ) : artistsData?.items.length === 0 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                textAlign="center"
-              >
-                No artists in this collection yet.
-              </Typography>
-            </Box>
+            <EmptyState message="No artists in this collection yet." />
           ) : (
-            <>
-              <div className={styles.resultsContainer}>
-                {(artistsData?.items || []).map((artist) => (
-                  <MediaCard
-                    key={artist.id}
-                    item={artist}
-                    itemType="artist"
-                    onPlay={() => handlePlayClick(artist, "artist")}
-                    onDelete={isOwner ? () => handleDeleteArtist(artist) : undefined}
-                    imageSize={{ w: 500, h: 500, q: 85 }}
-                  />
-                ))}
-              </div>
-              {artistsData && artistsData.total_pages > 1 && (
-                <Box display="flex" justifyContent="center" mt={3}>
-                  <PaginationWithEllipsis
-                    count={artistsData.total_pages}
-                    page={artistsPage}
-                    onChange={(newPage) => setArtistsPage(newPage)}
-                    color="primary"
-                    size={isMobile ? "medium" : "large"}
-                  />
-                </Box>
-              )}
-            </>
+            <CollectionItemGrid
+              items={artistsData?.items ?? []}
+              itemType="artist"
+              onPlay={(item) => handlePlayClick(item as CollectionArtistResponse, "artist")}
+              onDelete={isOwner ? (item) => handleDeleteArtist(item as CollectionArtistResponse) : undefined}
+              imageSize={{ w: 500, h: 500, q: 85 }}
+              totalPages={artistsData?.total_pages}
+              page={artistsPage}
+              onPageChange={setArtistsPage}
+              isMobile={isMobile}
+            />
           )}
         </TabPanel>
 
-        <TabPanel value={tabValue} index={2}>
-          {isLoadingWishlist && tabValue === 2 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <VinylSpinner />
-            </Box>
-          ) : searchTerm.trim() && searchTerm.length < 2 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                textAlign="center"
-              >
-                Please enter at least 2 characters to search.
-              </Typography>
-            </Box>
-          ) : searchTerm.trim() && debouncedSearchTerm.trim() ? (
-            // Show filtered wishlist results
-            filteredWishlistItems.length === 0 ? (
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight="200px"
-              >
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  No wishlist items found matching "{debouncedSearchTerm}".
-                </Typography>
-              </Box>
-            ) : (
-              <>
-                <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                  Search results for "{debouncedSearchTerm}" (
-                  {filteredWishlistItems.length} items)
-                </Typography>
-                <div className={styles.resultsContainer}>
-                  {getSortedWishlistItems(filteredWishlistItems).map((item) => (
-                    <MediaCard
-                      key={item.id}
-                      item={item}
-                      itemType="wishlist"
-                      onPlay={() => handlePlayClick(item, item.entity_type === "album" ? "album" : "artist")}
-                      onDelete={isOwner ? () => handleDeleteWishlistItem(item) : undefined}
-                      imageSize={{ w: 300, h: 300, q: 75 }}
-                    />
-                  ))}
-                </div>
-              </>
-            )
-          ) : wishlistItemsAsResponse.length === 0 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                textAlign="center"
-              >
-                Your wishlist is empty.
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              <div className={styles.resultsContainer}>
-                {getSortedWishlistItems(filteredWishlistItems).map((item) => (
-                  <MediaCard
-                    key={item.id}
-                    item={item}
-                    itemType="wishlist"
-                    onPlay={() => handlePlayClick(item, item.entity_type === "album" ? "album" : "artist")}
-                    onDelete={isOwner ? () => handleDeleteWishlistItem(item) : undefined}
-                    imageSize={{ w: 300, h: 300, q: 75 }}
-                  />
-                ))}
-              </div>
-              {wishlistTotalPages > 1 && !debouncedSearchTerm.trim() && (
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                  <PaginationWithEllipsis
-                    count={wishlistTotalPages}
-                    page={wishlistPage}
-                    onChange={(newPage) => setWishlistPage(newPage)}
-                  />
-                </Box>
-              )}
-            </>
-          )}
+        <TabPanel value={tabValue} index={TAB.WISHLIST}>
+          <WishlistTabContent
+            isLoading={isLoadingWishlist}
+            searchTerm={searchTerm}
+            debouncedSearchTerm={debouncedSearchTerm}
+            items={wishlistItemsAsResponse}
+            total={wishlistTotal}
+            totalPages={wishlistTotalPages}
+            page={wishlistPage}
+            onPageChange={setWishlistPage}
+            onPlay={handlePlayClick}
+            onDelete={isOwner ? handleDeleteWishlistItem : undefined}
+          />
         </TabPanel>
       </Box>
 
@@ -1205,7 +733,7 @@ export default function CollectionDetails() {
         isOpen={playbackModalOpen}
         onClose={handleClosePlaybackModal}
         item={selectedPlaybackItem}
-        context={tabValue === 2 ? "wishlist" : "collection"}
+        context={tabValue === TAB.WISHLIST ? "wishlist" : "collection"}
         isOwner={isOwner}
         isExplorePage={isFromExplore}
       />

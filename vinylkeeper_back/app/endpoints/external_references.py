@@ -102,6 +102,8 @@ async def get_user_wishlist_paginated(
     limit: int = Query(8, gt=0, le=50, description="Number of items per page"),
     user_uuid: Optional[str] = Query(
         None, description="User UUID to get wishlist for (defaults to current user)"),
+    search: Optional[str] = Query(None, max_length=255, description="Search by title"),
+    sort_order: str = Query("newest", pattern="^(newest|oldest)$", description="Sort order"),
     current_user: User = Depends(get_current_user),
     service: WishlistService = Depends(get_wishlist_service),
     user_service: UserService = Depends(get_user_service),
@@ -131,7 +133,7 @@ async def get_user_wishlist_paginated(
     else:
         target_user_id = current_user.id
 
-    return await service.get_user_wishlist_paginated(target_user_id, page, limit)
+    return await service.get_user_wishlist_paginated(target_user_id, page, limit, search, sort_order)
 
 
 @router.get("/wishlist/export/csv")

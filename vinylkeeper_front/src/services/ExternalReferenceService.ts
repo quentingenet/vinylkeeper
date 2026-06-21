@@ -71,13 +71,21 @@ export class ExternalReferenceService extends BaseApiService {
   async getUserWishlistPaginated(
     page: number = 1,
     limit: number = 8,
-    userUuid?: string
+    userUuid?: string,
+    sortOrder: string = "newest",
+    search?: string
   ): Promise<PaginatedWishlistResponse> {
     try {
-      const url = userUuid 
-        ? `${this.endpoint}/wishlist?page=${page}&limit=${limit}&user_uuid=${userUuid}`
-        : `${this.endpoint}/wishlist?page=${page}&limit=${limit}`;
-      return await this.get<PaginatedWishlistResponse>(url);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        sort_order: sortOrder,
+      });
+      if (userUuid) params.set("user_uuid", userUuid);
+      if (search?.trim()) params.set("search", search.trim());
+      return await this.get<PaginatedWishlistResponse>(
+        `${this.endpoint}/wishlist?${params.toString()}`
+      );
     } catch (error) {
       logger.error("Error fetching paginated wishlist:", error);
       throw new Error("Failed to fetch wishlist items");
@@ -128,8 +136,14 @@ export const externalReferenceApiService = {
       externalId,
       entityType
     ),
-  getUserWishlistPaginated: (page: number = 1, limit: number = 8, userUuid?: string) =>
-    externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userUuid),
+  getUserWishlistPaginated: (
+    page: number = 1,
+    limit: number = 8,
+    userUuid?: string,
+    sortOrder: string = "newest",
+    search?: string
+  ) =>
+    externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userUuid, sortOrder, search),
   getWishlistItemDetail: (wishlistId: number) =>
     externalReferenceServiceInstance.getWishlistItemDetail(wishlistId),
   getCollectionItems: () =>

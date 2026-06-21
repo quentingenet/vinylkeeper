@@ -40,8 +40,8 @@ export const queryKeys = {
   wishlist: {
     all: () => ["wishlist"] as const,
     forUser: (userUuid: string | undefined) => ["wishlist", userUuid] as const,
-    forUserPage: (userUuid: string | undefined, page: number) =>
-      ["wishlist", userUuid, page] as const,
+    forUserPage: (userUuid: string | undefined, page: number, sortOrder?: string, search?: string) =>
+      ["wishlist", userUuid, page, sortOrder, search] as const,
     item: (id: number | null) => ["wishlistItem", id] as const,
   },
   userSettings: {

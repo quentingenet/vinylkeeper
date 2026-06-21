@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from "react";
+import React, { memo } from "react";
 import {
   Modal,
   Box,
@@ -14,52 +14,28 @@ import {
   IconButton,
   Alert,
   Tooltip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Stack,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  collectionApiService,
-  CollectionListItemResponse,
-} from "@services/CollectionApiService";
-import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import {
   IAlbumRequestResults,
   IArtistRequestResults,
 } from "@models/IRequestProxy";
-import {
-  AddToWishlistRequest,
-  AddToCollectionRequest,
-} from "@models/IExternalReference";
+import { type CollectionListItemResponse } from "@services/CollectionApiService";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { format, parse } from "date-fns";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { truncateText, vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
-import { queryKeys } from "@utils/queryKeys";
+import { truncateText } from "@utils/GlobalUtils";
 import { growItem } from "@utils/Animations";
+import { useAddToCollection, type AlbumStateData } from "@hooks/useAddToCollection";
+import AlbumStateForm from "@components/AddVinyls/AlbumStateForm";
 
 interface AddToCollectionModalProps {
   open: boolean;
   onClose: () => void;
   item: IAlbumRequestResults | IArtistRequestResults | null;
   itemType: "album" | "artist";
-}
-
-interface AlbumStateData {
-  state_cover?: VinylStateEnum | null;
-  state_record?: VinylStateEnum | null;
-  acquisition_month_year?: string | null;
 }
 
 interface CollectionSelectionModalProps {
@@ -73,9 +49,12 @@ interface CollectionSelectionModalProps {
   successMessage?: string;
   messageType?: "success" | "warning" | "info" | "error";
   isLoading?: boolean;
-  isAddingToCollection?: boolean; // New prop for collection addition state
+  isAddingToCollection?: boolean;
   albumStateData?: AlbumStateData;
-  onAlbumStateChange?: (field: keyof AlbumStateData, value: AlbumStateData[keyof AlbumStateData]) => void;
+  onAlbumStateChange?: (
+    field: keyof AlbumStateData,
+    value: AlbumStateData[keyof AlbumStateData]
+  ) => void;
   isDatePickerOpen?: boolean;
   setIsDatePickerOpen?: (open: boolean) => void;
 }
@@ -93,14 +72,9 @@ const modalStyle = (isMobile: boolean) => ({
   p: 2,
   maxHeight: "80vh",
   overflow: "auto",
-  "& .MuiListItemText-primary": {
-    wordBreak: "break-word",
-  },
-  "& .MuiListItemText-secondary": {
-    wordBreak: "break-word",
-  },
+  "& .MuiListItemText-primary": { wordBreak: "break-word" },
+  "& .MuiListItemText-secondary": { wordBreak: "break-word" },
 });
-
 
 const getAlertStyle = (
   messageType: "success" | "warning" | "info" | "error"
@@ -154,22 +128,6 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
   }) => {
     const { isMobile } = useDetectMobile();
 
-    const handleDateChange = (newValue: Date | null) => {
-      onAlbumStateChange?.(
-        "acquisition_month_year",
-        newValue ? format(newValue, "yyyy-MM") : null
-      );
-      setIsDatePickerOpen?.(false);
-    };
-
-    const handleDatePickerOpen = () => {
-      setIsDatePickerOpen?.(true);
-    };
-
-    const handleDatePickerClose = () => {
-      setIsDatePickerOpen?.(false);
-    };
-
     return (
       <Modal
         open={open}
@@ -202,208 +160,20 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
             )}
 
             <Typography variant="body2" sx={{ color: "#fffbf9" }} mb={2}>
-              Add "
+              Add &ldquo;
               {itemType === "album"
                 ? (item as IAlbumRequestResults).title
                 : (item as IArtistRequestResults).title}
-              " to a collection:
+              &rdquo; to a collection:
             </Typography>
 
-            {/* Album States Accordion - Only show for albums */}
             {itemType === "album" && albumStateData && onAlbumStateChange && (
-              <Accordion
-                sx={{
-                  backgroundColor: "#3f3f41",
-                  color: "#fffbf9",
-                  mb: 2,
-                  "&:before": { display: "none" },
-                  "& .MuiAccordionSummary-root": {
-                    backgroundColor: "#1F1F1F",
-                    color: "#C9A726",
-                    fontWeight: "bold",
-                  },
-                  "& .MuiAccordionSummary-expandIconWrapper": {
-                    color: "#C9A726",
-                  },
-                  "& .MuiAccordionDetails-root": {
-                    backgroundColor: "#2a2a2a",
-                    padding: "16px",
-                  },
-                }}
-              >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    Album states (Optional)
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Box display="flex" flexDirection="column" gap={2}>
-                    <Box display="flex" flexDirection="column" gap={2}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel
-                          id="cover-state-label"
-                          sx={{
-                            color: "#fffbf9",
-                            "&.Mui-focused": { color: "#C9A726" },
-                            "&.MuiInputLabel-shrink": { color: "#C9A726" },
-                          }}
-                        >
-                          Cover state
-                        </InputLabel>
-                        <Select
-                          labelId="cover-state-label"
-                          id="cover-state-select"
-                          value={albumStateData.state_cover || ""}
-                          label="Cover state"
-                          onChange={(e) =>
-                            onAlbumStateChange(
-                              "state_cover",
-                              e.target.value || null
-                            )
-                          }
-                          variant="outlined"
-                          sx={{
-                            color: "#fffbf9",
-                            "& .MuiSelect-icon": { color: "#C9A726" },
-                          }}
-                        >
-                          {vinylStates.map((state) => (
-                            <MenuItem key={state.id} value={state.id}>
-                              {state.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-
-                      <FormControl fullWidth size="small">
-                        <InputLabel
-                          id="record-state-label"
-                          sx={{
-                            color: "#fffbf9",
-                            "&.Mui-focused": { color: "#C9A726" },
-                            "&.MuiInputLabel-shrink": { color: "#C9A726" },
-                          }}
-                        >
-                          Record state
-                        </InputLabel>
-                        <Select
-                          labelId="record-state-label"
-                          id="record-state-select"
-                          value={albumStateData.state_record || ""}
-                          label="Record state"
-                          onChange={(e) =>
-                            onAlbumStateChange(
-                              "state_record",
-                              e.target.value || null
-                            )
-                          }
-                          variant="outlined"
-                          sx={{
-                            color: "#fffbf9",
-                            "& .MuiSelect-icon": { color: "#C9A726" },
-                          }}
-                        >
-                          {vinylStates.map((state) => (
-                            <MenuItem key={state.id} value={state.id}>
-                              {state.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-
-                    <DatePicker
-                      label="Acquisition month"
-                      value={
-                        albumStateData.acquisition_month_year
-                          ? parse(
-                              albumStateData.acquisition_month_year,
-                              "yyyy-MM",
-                              new Date()
-                            )
-                          : null
-                      }
-                      onChange={handleDateChange}
-                      open={isDatePickerOpen || false}
-                      onOpen={handleDatePickerOpen}
-                      onClose={handleDatePickerClose}
-                      views={["month", "year"]}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          helperText: "Select acquisition month and year",
-                          onClick: handleDatePickerOpen,
-                          sx: {
-                            color: "#fffbf9",
-                            "& .MuiOutlinedInput-root": {
-                              color: "#fffbf9",
-                              "& fieldset": {
-                                borderColor: "#C9A726",
-                              },
-                              "&:hover fieldset": {
-                                borderColor: "#b38f1f",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#C9A726",
-                              },
-                              "&.Mui-disabled": {
-                                color: "#999",
-                                "& fieldset": {
-                                  borderColor: "#666",
-                                },
-                              },
-                            },
-                            "& .MuiInputLabel-root": {
-                              color: "#fffbf9",
-                              "&.Mui-focused": {
-                                color: "#C9A726",
-                              },
-                              "&.Mui-disabled": {
-                                color: "#666",
-                              },
-                            },
-                            "& .MuiFormHelperText-root": {
-                              color: "#e4e4e4",
-                            },
-                          },
-                        },
-                        popper: {
-                          sx: {
-                            "& .MuiPaper-root": {
-                              backgroundColor: "#3f3f41",
-                              color: "#fffbf9",
-                            },
-                            "& .MuiPickersCalendarHeader-root": {
-                              color: "#fffbf9",
-                            },
-                            "& .MuiPickersYear-yearButton": {
-                              color: "#fffbf9",
-                              "&.Mui-selected": {
-                                backgroundColor: "#C9A726",
-                                color: "#000",
-                              },
-                              "&:hover": {
-                                backgroundColor: "rgba(201, 167, 38, 0.2)",
-                              },
-                            },
-                            "& .MuiPickersMonth-monthButton": {
-                              color: "#fffbf9",
-                              "&.Mui-selected": {
-                                backgroundColor: "#C9A726",
-                                color: "#000",
-                              },
-                              "&:hover": {
-                                backgroundColor: "rgba(201, 167, 38, 0.2)",
-                              },
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                </AccordionDetails>
-              </Accordion>
+              <AlbumStateForm
+                albumStateData={albumStateData}
+                onAlbumStateChange={onAlbumStateChange}
+                isDatePickerOpen={isDatePickerOpen ?? false}
+                setIsDatePickerOpen={setIsDatePickerOpen ?? (() => {})}
+              />
             )}
 
             {isLoading ? (
@@ -450,7 +220,6 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                         sx={{
                           cursor: isAddingToCollection ? "wait" : "pointer",
                         }}
-                        // Click handled by ListItemButton below
                       >
                         <AddCircleOutlineIcon
                           fontSize="large"
@@ -459,10 +228,10 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                             animation: `${growItem} 1s ease infinite`,
                           }}
                         />
-
                         <ListItem disablePadding>
                           <ListItemButton
                             onClick={() => onAddToCollection(collection.id)}
+                            disabled={isAddingToCollection}
                             sx={{
                               borderRadius: 1,
                               transition: "background-color 0.2s",
@@ -517,190 +286,24 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
   item,
   itemType,
 }) => {
-  const [showCollectionSelection, setShowCollectionSelection] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
-  const [messageType, setMessageType] = useState<
-    "success" | "warning" | "info" | "error"
-  >("success");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
-  // Album state data
-  const [albumStateData, setAlbumStateData] = useState<{
-    state_record: VinylStateEnum | null;
-    state_cover: VinylStateEnum | null;
-    acquisition_month_year: string | null;
-  }>({
-    state_record: null,
-    state_cover: null,
-    acquisition_month_year: null,
-  });
-
   const { isMobile } = useDetectMobile();
-  const queryClient = useQueryClient();
-
-  const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
-    queryKey: queryKeys.collections.all(),
-    queryFn: () => collectionApiService.getCollections(1, 100),
-    enabled: open,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-  });
-
-  const collections = collectionsData?.items || [];
-
-  const handleMutationSuccess = (
-    queryKey: string,
-    customMessage?: string,
-    isNew?: boolean
-  ) => {
-    // Protect against multiple calls with empty data
-    if (!customMessage && isNew === undefined) {
-      return;
-    }
-
-    const successMessage = customMessage || `Successfully added to ${queryKey}`;
-
-    // Determine message type based on context and isNew flag
-    let messageType: "success" | "warning" | "info" | "error" = "success";
-
-    if (customMessage?.includes("Error")) {
-      messageType = "error";
-    } else if (isNew === false) {
-      // Item already exists
-      messageType = "warning";
-    } else if (isNew === true) {
-      // New item added
-      messageType = "success";
-    } else {
-      // Fallback to text analysis if isNew is undefined
-      if (customMessage?.includes("Already have")) {
-        messageType = "warning";
-      } else if (customMessage?.includes("Added")) {
-        messageType = "success";
-      }
-    }
-
-    setMessageType(messageType);
-    setSuccessMessage(successMessage);
-    setIsDatePickerOpen(false); // Close date picker on success
-    setTimeout(() => {
-      setSuccessMessage("");
-      handleClose(); // Close modal after success message
-    }, 1500);
-  };
-
-  const handleMutationError = (error: Error) => {
-    const errorMessage = error.message.includes("Error adding to")
-      ? error.message
-      : "An error occurred while adding to collection";
-    setSuccessMessage(errorMessage);
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
-
-  const handleAlbumStateChange = (field: keyof AlbumStateData, value: AlbumStateData[keyof AlbumStateData]) => {
-    setAlbumStateData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const addToWishlistMutation = useMutation({
-    mutationFn: (albumData: AddToWishlistRequest) => {
-      return externalReferenceApiService.addToWishlist(albumData);
-    },
-    onSuccess: async (response) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.wishlist.all() });
-      handleMutationSuccess("wishlist", response.message, response.is_new);
-    },
-    onError: handleMutationError,
-  });
-
-  const addToCollectionMutation = useMutation({
-    mutationFn: (data: {
-      collectionId: number;
-      item: AddToCollectionRequest;
-    }) => {
-      return externalReferenceApiService.addToCollection(
-        data.collectionId,
-        data.item
-      );
-    },
-    onSuccess: async (response, variables) => {
-      const isAlbum = variables.item.entity_type === "album";
-      const itemQueryKey = isAlbum
-        ? ["collectionAlbums", variables.collectionId]
-        : ["collectionArtists", variables.collectionId];
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(variables.collectionId) }),
-        queryClient.invalidateQueries({ queryKey: itemQueryKey }),
-      ]);
-      handleMutationSuccess("collections", response.message, response.is_new);
-    },
-    onError: handleMutationError,
-  });
-
-  const handleAddToWishlist = () => {
-    if (!item) return;
-    addToWishlistMutation.mutate({
-      external_id: item.id.toString(),
-      entity_type: itemType.toLowerCase() as "album" | "artist",
-      title:
-        itemType === "album"
-          ? (item as IAlbumRequestResults).title || item.id.toString()
-          : (item as IArtistRequestResults).title || item.id.toString(),
-      image_url: item.picture || "",
-      source: "discogs",
-    });
-  };
-
-  const handleAddToCollection = async (collectionId: number) => {
-    // Prevent multiple calls while mutation is pending
-    if (addToCollectionMutation.isPending) {
-      return;
-    }
-
-    setSuccessMessage("Adding to collection...");
-
-    try {
-      await addToCollectionMutation.mutateAsync({
-        collectionId: collectionId,
-        item: {
-          external_id: item?.id.toString() || "",
-          entity_type: itemType.toLowerCase() as "album" | "artist",
-          title: item?.title || "",
-          image_url: item?.picture || "",
-          source: "discogs",
-          album_data: {
-            state_record: albumStateData.state_record || undefined,
-            state_cover: albumStateData.state_cover || undefined,
-            acquisition_month_year:
-              albumStateData.acquisition_month_year || undefined,
-          },
-        },
-      });
-
-      // Response is handled by mutation onSuccess callback
-      // No need to call handleMutationSuccess here
-    } catch (err) {
-      handleMutationError(
-        err instanceof Error ? err : new Error("An error occurred")
-      );
-    }
-  };
-
-  const handleClose = useCallback(() => {
-    setShowCollectionSelection(false);
-    setSuccessMessage("");
-    setIsDatePickerOpen(false); // Close date picker when modal closes
-    // Reset album state data when modal is closed
-    setAlbumStateData({
-      state_cover: null,
-      state_record: null,
-      acquisition_month_year: null,
-    });
-    onClose();
-  }, [onClose]);
+  const {
+    showCollectionSelection,
+    setShowCollectionSelection,
+    successMessage,
+    messageType,
+    albumStateData,
+    isDatePickerOpen,
+    setIsDatePickerOpen,
+    collections,
+    collectionsLoading,
+    isAddingToWishlist,
+    isAddingToCollection,
+    handleAlbumStateChange,
+    handleAddToWishlist,
+    handleAddToCollection,
+    handleClose,
+  } = useAddToCollection(item, itemType, open, onClose);
 
   if (!item) return null;
 
@@ -723,7 +326,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
               <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
                 Add to collection
               </Typography>
-              <IconButton onClick={onClose} size="small">
+              <IconButton onClick={handleClose} size="small">
                 <CloseIcon sx={{ color: "#fffbf9" }} />
               </IconButton>
             </Box>
@@ -737,21 +340,17 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
             <Box display="flex" flexDirection="column" gap={2}>
               <Tooltip
                 title={
-                  addToWishlistMutation.isPending
+                  isAddingToWishlist
                     ? "Adding to wishlist..."
                     : "Add to wishlist"
                 }
                 arrow
                 sx={{
                   "& .MuiTooltip-tooltip": {
-                    backgroundColor: addToWishlistMutation.isPending
-                      ? "#4caf50"
-                      : "#C9A726",
-                    color: addToWishlistMutation.isPending ? "#fff" : "#000",
+                    backgroundColor: isAddingToWishlist ? "#4caf50" : "#C9A726",
+                    color: isAddingToWishlist ? "#fff" : "#000",
                     fontSize: "0.875rem",
-                    fontWeight: addToWishlistMutation.isPending
-                      ? "bold"
-                      : "normal",
+                    fontWeight: isAddingToWishlist ? "bold" : "normal",
                   },
                 }}
               >
@@ -760,7 +359,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                     variant="contained"
                     startIcon={<FavoriteIcon />}
                     onClick={handleAddToWishlist}
-                    disabled={addToWishlistMutation.isPending}
+                    disabled={isAddingToWishlist}
                     sx={{
                       bgcolor: "#C9A726",
                       "&:hover": { bgcolor: "#b08c1f" },
@@ -768,7 +367,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                       width: "100%",
                     }}
                   >
-                    {addToWishlistMutation.isPending ? (
+                    {isAddingToWishlist ? (
                       <VinylSpinner size={24} />
                     ) : (
                       "Add to wishlist"
@@ -832,11 +431,13 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         item={item}
         itemType={itemType}
         collections={collections}
-        onAddToCollection={(collectionId) => { void handleAddToCollection(collectionId); }}
+        onAddToCollection={(collectionId) => {
+          void handleAddToCollection(collectionId);
+        }}
         successMessage={successMessage}
         messageType={messageType}
-        isLoading={addToCollectionMutation.isPending}
-        isAddingToCollection={addToCollectionMutation.isPending}
+        isLoading={collectionsLoading}
+        isAddingToCollection={isAddingToCollection}
         albumStateData={albumStateData}
         onAlbumStateChange={handleAlbumStateChange}
         isDatePickerOpen={isDatePickerOpen}
