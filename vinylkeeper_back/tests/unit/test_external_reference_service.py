@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.core.enums import EntityTypeEnum
+from app.core.exceptions import ServerError
 from app.models.collection_album import CollectionAlbum
 from app.schemas.external_reference_schema import AddToCollectionRequest
 from app.services.external_reference_service import ExternalReferenceService
@@ -70,3 +71,29 @@ async def test_add_to_collection_runs_repo_work_inside_transaction_context():
 
     assert response.is_new is True
     assert response.collection_name == collection.name
+
+
+@pytest.mark.asyncio
+async def test_add_to_collection_unexpected_error_raises_server_error():
+    repo = MagicMock()
+    repo.db = MagicMock()
+    service = ExternalReferenceService(repo)
+
+    request = AddToCollectionRequest(
+        external_id="ext-456",
+        entity_type=EntityTypeEnum.ALBUM,
+        title="Failing Album",
+        image_url="https://example.com/cover.jpg",
+        source="discogs",
+    )
+
+    service._verify_collection_access = AsyncMock(
+        side_effect=RuntimeError("unexpected DB failure")
+    )
+
+    with patch("app.services.external_reference_service.transaction_context") as mock_tx:
+        mock_tx.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+        mock_tx.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with pytest.raises(ServerError):
+            await service.add_to_collection(1, 7, request)

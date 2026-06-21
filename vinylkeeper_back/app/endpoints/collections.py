@@ -9,6 +9,8 @@ from app.schemas.collection_schema import (
     CollectionAlbumResponse,
     CollectionCreateResponse,
     MessageResponse,
+    PaginatedAlbumsResponse,
+    PaginatedArtistsResponse,
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -81,7 +83,7 @@ async def get_public_collections(
     )
 
 
-@router.get("/{collection_id}", status_code=status.HTTP_200_OK)
+@router.get("/{collection_id}", status_code=status.HTTP_200_OK, response_model=CollectionResponse)
 @handle_app_exceptions
 async def get_collection_by_id(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -89,7 +91,7 @@ async def get_collection_by_id(
     service: CollectionService = Depends(get_collection_service),
 ):
     collection = await service.get_collection_by_id(collection_id, user.id)
-    return CollectionResponse.model_validate(collection).model_dump()
+    return CollectionResponse.model_validate(collection)
 
 
 @router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
@@ -130,7 +132,7 @@ async def update_collection(
     return MessageResponse(message="Collection updated successfully")
 
 
-@router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
 @handle_app_exceptions
 async def delete_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -138,6 +140,7 @@ async def delete_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.delete_collection(user.id, collection_id)
+    return MessageResponse(message="Collection deleted successfully")
 
 
 @router.get("/{collection_id}/details", status_code=status.HTTP_200_OK, response_model=CollectionDetailResponse)
@@ -152,7 +155,7 @@ async def get_collection_details(
     return details
 
 
-@router.get("/{collection_id}/albums", status_code=status.HTTP_200_OK)
+@router.get("/{collection_id}/albums", status_code=status.HTTP_200_OK, response_model=PaginatedAlbumsResponse)
 @handle_app_exceptions
 async def get_collection_albums_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -163,11 +166,10 @@ async def get_collection_albums_paginated(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    response = await service.get_collection_albums_paginated(collection_id, user.id, page, limit, sort_order)
-    return response.model_dump()
+    return await service.get_collection_albums_paginated(collection_id, user.id, page, limit, sort_order)
 
 
-@router.get("/{collection_id}/artists", status_code=status.HTTP_200_OK)
+@router.get("/{collection_id}/artists", status_code=status.HTTP_200_OK, response_model=PaginatedArtistsResponse)
 @handle_app_exceptions
 async def get_collection_artists_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -178,8 +180,7 @@ async def get_collection_artists_paginated(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    response = await service.get_collection_artists_paginated(collection_id, user.id, page, limit, sort_order)
-    return response.model_dump()
+    return await service.get_collection_artists_paginated(collection_id, user.id, page, limit, sort_order)
 
 
 @router.delete("/{collection_id}/albums/{album_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -218,8 +219,7 @@ async def like_collection(
     return LikeStatusResponse(
         collection_id=collection_id,
         liked=True,
-        likes_count=result["likes_count"],
-        message=result["message"]
+        likes_count=result["likes_count"]
     )
 
 
@@ -235,8 +235,7 @@ async def unlike_collection(
     return LikeStatusResponse(
         collection_id=collection_id,
         liked=False,
-        likes_count=result["likes_count"],
-        message=result["message"]
+        likes_count=result["likes_count"]
     )
 
 

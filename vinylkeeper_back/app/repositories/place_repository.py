@@ -56,7 +56,7 @@ class PlaceRepository(TransactionalMixin):
         return result.scalars().all()
 
     async def get_map_places(self) -> List[tuple]:
-        """Get all moderated places with coordinates for map markers (grouping by country+city)."""
+        """Get all moderated places with coordinates for map markers. Grouping by country+city is done client-side."""
         query = select(
             Place.id,
             Place.latitude,

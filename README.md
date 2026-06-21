@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://vinylkeeper.org/">
-    <img src="https://github.com/quentingenet/vinylkeeper/blob/develop/vinylkeeper_preview.webp" alt="VinylKeeper preview">
+    <img src="https://github.com/quentingenet/vinylkeeper/blob/main/vinylkeeper_preview.webp" alt="VinylKeeper preview">
   </a>
 </p>
 
@@ -114,7 +114,7 @@ Visit **http://localhost:5173** in your browser to access the VinylKeeper applic
 We welcome contributions to improve Vinyl Keeper! To contribute:
 
 1. Fork this repository.
-2. Create a feature branch **from develop** (`git checkout -b feat/amazing-feature`).
+2. Create a feature branch **from main** (`git checkout -b feat/amazing-feature`).
 3. Commit your changes (`git commit -m 'Add some amazing feature'`).
 4. Push to the branch (`git push origin feat/amazing-feature`).
 5. Open a Pull Request.

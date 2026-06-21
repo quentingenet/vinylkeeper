@@ -83,8 +83,8 @@ export class CollectionApiService extends BaseApiService {
     );
   }
 
-  async deleteCollection(collectionId: number): Promise<void> {
-    return this.delete<void>(`/collections/${collectionId}`);
+  async deleteCollection(collectionId: number): Promise<{ message: string }> {
+    return this.delete<{ message: string }>(`/collections/${collectionId}`);
   }
 
   async switchCollectionVisibility(
@@ -198,8 +198,8 @@ export class CollectionApiService extends BaseApiService {
       state_cover?: string | null;
       acquisition_month_year?: string | null;
     }
-  ): Promise<{ success: boolean; message: string }> {
-    return this.patch<{ success: boolean; message: string }>(
+  ): Promise<CollectionAlbumResponse> {
+    return this.patch<CollectionAlbumResponse>(
       `/collections/${collectionId}/albums/${albumId}/metadata`,
       data
     );
@@ -305,7 +305,7 @@ export const collectionApiService = {
       state_cover?: string | null;
       acquisition_month_year?: string | null;
     }
-  ) =>
+  ): Promise<CollectionAlbumResponse> =>
     collectionApiServiceInstance.updateAlbumMetadata(
       collectionId,
       albumId,

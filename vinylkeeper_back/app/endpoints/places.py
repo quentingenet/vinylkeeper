@@ -64,7 +64,7 @@ async def get_places_by_location(
 ):
     """Get all moderated places in the given country and city (for map popup)."""
     places = await service.get_places_by_location(country, city, user)
-    return [place.model_dump() for place in places]
+    return places
 
 
 @router.get("/place-types", status_code=status.HTTP_200_OK, response_model=List[PlaceTypeResponse])
@@ -128,7 +128,7 @@ async def get_place_by_id(
 ):
     """Get a place by ID (only moderated places)"""
     place = await service.get_place(place_id, user)
-    return place.model_dump()
+    return place
 
 
 @router.patch("/{place_id}", status_code=status.HTTP_200_OK, response_model=PlaceMutationResponse)

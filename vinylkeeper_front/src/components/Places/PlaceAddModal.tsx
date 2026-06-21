@@ -21,7 +21,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import { Close, MyLocation, CheckCircle } from "@mui/icons-material";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { placeApiService, PlaceTypeData } from "@services/PlaceApiService";
@@ -110,6 +110,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors },
     reset,
   } = useForm<PlaceFormData>({
@@ -257,43 +258,55 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
                 sx={formFieldStyle}
               />
 
-              <FormControl fullWidth sx={formFieldStyle}>
-                <InputLabel>Place type</InputLabel>
-                <Select
-                  {...register("place_type_id", { valueAsNumber: true })}
-                  error={!!errors.place_type_id}
-                  label="Place type"
-                >
-                  {placeTypes.map((type) => (
-                    <MenuItem key={type.id} value={type.id}>
-                      {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Controller
+                name="place_type_id"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth sx={formFieldStyle}>
+                    <InputLabel>Place type</InputLabel>
+                    <Select
+                      {...field}
+                      value={field.value ?? ""}
+                      error={!!errors.place_type_id}
+                      label="Place type"
+                    >
+                      {placeTypes.map((type) => (
+                        <MenuItem key={type.id} value={type.id}>
+                          {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              />
 
-              <FormControl fullWidth sx={formFieldStyle}>
-                <InputLabel>Country</InputLabel>
-                <Select
-                  {...register("country")}
-                  error={!!errors.country}
-                  label="Country"
-                  defaultValue="France"
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 300,
-                      },
-                    },
-                  }}
-                >
-                  {countries.map((country) => (
-                    <MenuItem key={country.code} value={country.name}>
-                      {country.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Controller
+                name="country"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth sx={formFieldStyle}>
+                    <InputLabel>Country</InputLabel>
+                    <Select
+                      {...field}
+                      error={!!errors.country}
+                      label="Country"
+                      MenuProps={{
+                        PaperProps: {
+                          style: {
+                            maxHeight: 300,
+                          },
+                        },
+                      }}
+                    >
+                      {countries.map((country) => (
+                        <MenuItem key={country.code} value={country.name}>
+                          {country.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              />
 
               <TextField
                 fullWidth

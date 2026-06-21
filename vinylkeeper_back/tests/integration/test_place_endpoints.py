@@ -246,8 +246,7 @@ class TestGetPlaceTypes:
 class TestGetPlaceById:
     async def test_success_returns_200(self, place_client):
         client, service, _ = place_client
-        place = _make_place()
-        service.get_place = AsyncMock(return_value=place)
+        service.get_place = AsyncMock(return_value=_make_public_place_response())
 
         resp = await client.get("/api/places/1")
 

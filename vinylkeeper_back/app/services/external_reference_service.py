@@ -316,8 +316,11 @@ class ExternalReferenceService:
             raise
         except Exception as e:
             logger.error(f"Failed to add to collection: {str(e)}")
-            logger.error(f"User ID: {user_id}, Collection ID: {collection_id}")
-            logger.error(f"Request data: {request.model_dump()}")
+            logger.error(
+                f"User ID: {user_id}, Collection ID: {collection_id}, "
+                f"entity_type: {request.entity_type}, "
+                f"external_id: {request.external_id}"
+            )
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to collection",

@@ -17,9 +17,9 @@ export interface PlaceMapResponse {
 export interface Place {
   id: number;
   name: string;
-  address?: string;
-  city?: string;
-  country?: string;
+  address: string;
+  city: string;
+  country: string;
   latitude?: number;
   longitude?: number;
   description?: string;
@@ -28,12 +28,6 @@ export interface Place {
     id: number;
     name: string;
   };
-  submitted_by?: {
-    username: string;
-    user_uuid: string;
-  };
-  is_moderated?: boolean;
-  is_valid?: boolean;
   likes_count: number;
   is_liked: boolean;
   created_at: string;
