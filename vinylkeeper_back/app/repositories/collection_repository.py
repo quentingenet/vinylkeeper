@@ -33,10 +33,10 @@ class CollectionRepository(TransactionalMixin):
             return collection
         except IntegrityError as e:
             logger.error(
-                f"Database integrity error creating collection: {str(e)}")
+                f"Database integrity error creating collection: {str(e)}", exc_info=True)
             raise DuplicateFieldError("name", collection.name)
         except SQLAlchemyError as e:
-            logger.error(f"Unexpected error creating collection: {str(e)}")
+            logger.error(f"Unexpected error creating collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to create collection",
@@ -82,7 +82,7 @@ class CollectionRepository(TransactionalMixin):
             raise
         except SQLAlchemyError as e:
             logger.error(
-                f"Error retrieving collection {collection_id}: {str(e)}")
+                f"Error retrieving collection {collection_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to retrieve collection",
@@ -100,7 +100,7 @@ class CollectionRepository(TransactionalMixin):
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(
-                f"Error finding collection by name and owner: {str(e)}")
+                f"Error finding collection by name and owner: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to find collection",
@@ -120,7 +120,7 @@ class CollectionRepository(TransactionalMixin):
             return result.scalar() or 0
         except SQLAlchemyError as e:
             logger.error(
-                f"Error counting public collections for owner {owner_id}: {str(e)}")
+                f"Error counting public collections for owner {owner_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to count public collections by owner",
@@ -136,10 +136,10 @@ class CollectionRepository(TransactionalMixin):
             return collection
         except IntegrityError as e:
             logger.error(
-                f"Database integrity error updating collection: {str(e)}")
+                f"Database integrity error updating collection: {str(e)}", exc_info=True)
             raise DuplicateFieldError("name", collection.name)
         except SQLAlchemyError as e:
-            logger.error(f"Unexpected error updating collection: {str(e)}")
+            logger.error(f"Unexpected error updating collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to update collection",
@@ -152,7 +152,7 @@ class CollectionRepository(TransactionalMixin):
             await self._delete_entity(collection)
             return True
         except SQLAlchemyError as e:
-            logger.error(f"Error deleting collection: {str(e)}")
+            logger.error(f"Error deleting collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to delete collection",
@@ -209,7 +209,7 @@ class CollectionRepository(TransactionalMixin):
                 await self.db.flush()
 
         except SQLAlchemyError as e:
-            logger.error(f"Error adding albums to collection: {str(e)}")
+            logger.error(f"Error adding albums to collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to add albums to collection",
@@ -267,7 +267,7 @@ class CollectionRepository(TransactionalMixin):
                 await self.db.flush()
 
         except SQLAlchemyError as e:
-            logger.error(f"Error adding artists to collection: {str(e)}")
+            logger.error(f"Error adding artists to collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to add artists to collection",
@@ -284,7 +284,7 @@ class CollectionRepository(TransactionalMixin):
                 )
             )
         except SQLAlchemyError as e:
-            logger.error(f"Error removing albums from collection: {str(e)}")
+            logger.error(f"Error removing albums from collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to remove albums from collection",
@@ -301,7 +301,7 @@ class CollectionRepository(TransactionalMixin):
                 )
             )
         except SQLAlchemyError as e:
-            logger.error(f"Error removing artists from collection: {str(e)}")
+            logger.error(f"Error removing artists from collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to remove artists from collection",
@@ -324,7 +324,7 @@ class CollectionRepository(TransactionalMixin):
                 return True
             return False
         except SQLAlchemyError as e:
-            logger.error(f"Error removing artist from collection: {str(e)}")
+            logger.error(f"Error removing artist from collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to remove artist from collection",
@@ -439,7 +439,7 @@ class CollectionRepository(TransactionalMixin):
 
             return collections, total
         except SQLAlchemyError as e:
-            logger.error(f"Error retrieving public collections: {str(e)}")
+            logger.error(f"Error retrieving public collections: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to retrieve public collections",
@@ -492,7 +492,7 @@ class CollectionRepository(TransactionalMixin):
             }
         except SQLAlchemyError as e:
             logger.error(
-                f"Error getting collection counts for collection {collection_id}: {str(e)}")
+                f"Error getting collection counts for collection {collection_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection counts",
@@ -605,7 +605,7 @@ class CollectionRepository(TransactionalMixin):
 
             return collections, total
         except SQLAlchemyError as e:
-            logger.error(f"Error retrieving user collections: {str(e)}")
+            logger.error(f"Error retrieving user collections: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to retrieve user collections",
@@ -619,7 +619,7 @@ class CollectionRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar() or 0
         except SQLAlchemyError as e:
-            logger.error(f"Error counting user collections for user {user_id}: {str(e)}")
+            logger.error(f"Error counting user collections for user {user_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to count user collections",
@@ -664,7 +664,10 @@ class CollectionRepository(TransactionalMixin):
 
             return artists_with_association, total
         except SQLAlchemyError as e:
-            logger.error(f"Error getting collection artists paginated for collection {collection_id}: {str(e)}")
+            logger.error(
+                f"Error getting collection artists paginated for collection {collection_id}: {str(e)}",
+                exc_info=True
+            )
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection artists",
@@ -692,7 +695,7 @@ class CollectionRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.all()
         except SQLAlchemyError as e:
-            logger.error(f"Error getting collection artists: {str(e)}")
+            logger.error(f"Error getting collection artists: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection artists",
@@ -735,7 +738,7 @@ class CollectionRepository(TransactionalMixin):
 
             return results
         except SQLAlchemyError as e:
-            logger.error(f"Error searching collection items: {str(e)}")
+            logger.error(f"Error searching collection items: {str(e)}", exc_info=True)
             return {"albums": [], "artists": []}
 
     async def get_user_stats_all(self, user_id: int) -> dict:
@@ -780,7 +783,7 @@ class CollectionRepository(TransactionalMixin):
                 "places_count": row.places_count or 0,
             }
         except SQLAlchemyError as e:
-            logger.error(f"Error getting user stats for user {user_id}: {str(e)}")
+            logger.error(f"Error getting user stats for user {user_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get user statistics",
@@ -794,7 +797,7 @@ class CollectionRepository(TransactionalMixin):
             return collection
         except SQLAlchemyError as e:
             logger.error(
-                f"Error refreshing collection {collection.id}: {str(e)}")
+                f"Error refreshing collection {collection.id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to refresh collection",

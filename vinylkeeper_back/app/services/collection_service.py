@@ -99,53 +99,6 @@ class CollectionService:
             created_collection = await self.repository.get_by_id(created_collection.id, load_relations=True)
             return await self._build_collection_response(created_collection, user_id)
 
-    async def get_user_collections_count(self, user_id: int) -> int:
-        """Get count of user's collections"""
-        try:
-            return await self.repository.count_user_collections(user_id)
-        except Exception as e:
-            logger.error(f"Error getting user collections count: {str(e)}")
-            return 0
-
-    async def get_user_wishlist_count(self, user_id: int) -> int:
-        """Get count of user's wishlist items"""
-        try:
-            return await self.wishlist_repository.count_user_wishlist_items(user_id)
-        except Exception as e:
-            logger.error(f"Error getting user wishlist count: {str(e)}")
-            return 0
-
-    async def get_user_likes_count(self, user_id: int) -> int:
-        """Get count of user's likes"""
-        try:
-            return await self.like_repository.count_user_likes(user_id)
-        except Exception as e:
-            logger.error(f"Error getting user likes count: {str(e)}")
-            return 0
-
-    async def get_user_places_count(self, user_id: int) -> int:
-        """Get count of user's places"""
-        try:
-            return await self.place_repository.count_places_by_user(user_id)
-        except Exception as e:
-            logger.error(f"Error getting user places count: {str(e)}")
-            return 0
-
-    async def get_user_me_counts(self, user_id: int) -> dict:
-        """Get only counts needed for /me endpoint (optimized - only collections)"""
-        try:
-            collections_count = await self.get_user_collections_count(user_id)
-
-            return {
-                "collections_count": collections_count
-            }
-        except Exception as e:
-            logger.error(
-                f"Error getting user me counts for user {user_id}: {str(e)}")
-            return {
-                "collections_count": 0
-            }
-
     async def get_user_counts_batch(self, user_id: int) -> dict:
         """Get all user counts in a single SQL query."""
         return await self.repository.get_user_stats_all(user_id)
@@ -384,14 +337,6 @@ class CollectionService:
             "likes_count": likes_count,
             "is_liked": False
         }
-
-    async def get_collection_likes(self, collection_id: int) -> int:
-        """Get the number of likes for a collection"""
-        try:
-            return await self.like_repository.count_likes(collection_id)
-        except Exception as e:
-            logger.error(f"Error getting collection likes: {str(e)}")
-            return 0
 
     async def get_collection_by_id(self, collection_id: int, user_id: int) -> CollectionResponse:
         """Get a collection by ID with proper access control"""

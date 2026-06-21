@@ -49,7 +49,7 @@ class WishlistRepository(TransactionalMixin):
             await self._refresh_entity(wishlist_item)
             return wishlist_item
         except SQLAlchemyError as e:
-            logger.error(f"Error adding to wishlist: {str(e)}")
+            logger.error(f"Error adding to wishlist: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to wishlist",
@@ -65,7 +65,7 @@ class WishlistRepository(TransactionalMixin):
             return wishlist
         except SQLAlchemyError as e:
             logger.error(
-                f"Error creating wishlist item for user {wishlist.user_id}: {str(e)}")
+                f"Error creating wishlist item for user {wishlist.user_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
@@ -87,7 +87,7 @@ class WishlistRepository(TransactionalMixin):
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(
-                f"Database error in find_by_user_and_external_id: {str(e)}")
+                f"Database error in find_by_user_and_external_id: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to find wishlist item",
@@ -102,7 +102,7 @@ class WishlistRepository(TransactionalMixin):
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(
-                f"Error retrieving wishlist item {wishlist_id}: {str(e)}")
+                f"Error retrieving wishlist item {wishlist_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item by ID",
@@ -121,7 +121,7 @@ class WishlistRepository(TransactionalMixin):
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(
-                f"Error retrieving wishlist item {wishlist_id} with relations: {str(e)}")
+                f"Error retrieving wishlist item {wishlist_id} with relations: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item by ID with relations",
@@ -148,7 +148,7 @@ class WishlistRepository(TransactionalMixin):
             return items, total
         except SQLAlchemyError as e:
             logger.error(
-                f"Error getting paginated wishlist items for user {user_id}: {str(e)}")
+                f"Error getting paginated wishlist items for user {user_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get paginated wishlist items",
@@ -172,7 +172,7 @@ class WishlistRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalars().all()
         except SQLAlchemyError as e:
-            logger.error(f"Error getting wishlist export data: {str(e)}")
+            logger.error(f"Error getting wishlist export data: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist items",
@@ -188,7 +188,7 @@ class WishlistRepository(TransactionalMixin):
             return wishlist
         except SQLAlchemyError as e:
             logger.error(
-                f"Error updating wishlist item {wishlist.id}: {str(e)}")
+                f"Error updating wishlist item {wishlist.id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to update wishlist item",
@@ -205,7 +205,7 @@ class WishlistRepository(TransactionalMixin):
             return False
         except SQLAlchemyError as e:
             logger.error(
-                f"Error deleting wishlist item {wishlist_id}: {str(e)}")
+                f"Error deleting wishlist item {wishlist_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to delete wishlist item",
@@ -219,5 +219,5 @@ class WishlistRepository(TransactionalMixin):
             result = await self.db.execute(query)
             return result.scalar()
         except SQLAlchemyError as e:
-            logger.error(f"Error counting user wishlist items: {str(e)}")
+            logger.error(f"Error counting user wishlist items: {str(e)}", exc_info=True)
             return 0

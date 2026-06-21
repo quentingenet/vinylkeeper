@@ -34,7 +34,7 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.first()
         except SQLAlchemyError as e:
-            logger.error(f"Error getting latest album: {str(e)}")
+            logger.error(f"Error getting latest album: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get latest album",
@@ -73,7 +73,7 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.all()
         except SQLAlchemyError as e:
-            logger.error(f"Error getting recent albums: {str(e)}")
+            logger.error(f"Error getting recent albums: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get recent albums",
@@ -97,7 +97,7 @@ class DashboardRepository:
             result = await self.db.execute(query)
             return result.first()
         except SQLAlchemyError as e:
-            logger.error(f"Error getting latest artist: {str(e)}")
+            logger.error(f"Error getting latest artist: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get latest artist",
@@ -154,7 +154,7 @@ class DashboardRepository:
             }
         except SQLAlchemyError as e:
             logger.error(
-                f"Error getting user stats batch for user {user_id}: {str(e)}")
+                f"Error getting user stats batch for user {user_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get user stats batch",
@@ -179,7 +179,7 @@ class DashboardRepository:
                 'global_total': row.global_count or 0 if row else 0
             }
         except SQLAlchemyError as e:
-            logger.error(f"Error getting places counts batch: {str(e)}")
+            logger.error(f"Error getting places counts batch: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places counts batch",
@@ -212,7 +212,7 @@ class DashboardRepository:
                 'artists_total': row.artists_total or 0 if row else 0
             }
         except SQLAlchemyError as e:
-            logger.error(f"Error getting global collections counts: {str(e)}")
+            logger.error(f"Error getting global collections counts: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get global collections counts",
@@ -240,7 +240,7 @@ class DashboardRepository:
             count = result.scalar()
             return count or 0
         except SQLAlchemyError as e:
-            logger.error(f"Error getting public collections count: {str(e)}")
+            logger.error(f"Error getting public collections count: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get public collections count",

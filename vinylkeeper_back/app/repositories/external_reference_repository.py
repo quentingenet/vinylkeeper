@@ -97,7 +97,7 @@ class ExternalReferenceRepository(TransactionalMixin):
             return await self.album_repo.create(album)
         except SQLAlchemyError as e:
             logger.error(
-                f"Error creating album with external ID {album_data.external_album_id}: {str(e)}")
+                f"Error creating album with external ID {album_data.external_album_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to create album",
@@ -116,7 +116,7 @@ class ExternalReferenceRepository(TransactionalMixin):
             return await self.artist_repo.create(artist)
         except SQLAlchemyError as e:
             logger.error(
-                f"Error creating artist with external ID {artist_data.external_artist_id}: {str(e)}")
+                f"Error creating artist with external ID {artist_data.external_artist_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to create artist",
@@ -148,7 +148,7 @@ class ExternalReferenceRepository(TransactionalMixin):
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(
-                f"Error finding collection album by external ID: {str(e)}")
+                f"Error finding collection album by external ID: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to find collection album by external ID",
@@ -169,7 +169,7 @@ class ExternalReferenceRepository(TransactionalMixin):
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(
-                f"Error finding collection artist by external ID: {str(e)}")
+                f"Error finding collection artist by external ID: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to find collection artist by external ID",
@@ -185,7 +185,7 @@ class ExternalReferenceRepository(TransactionalMixin):
             return wishlist_item
         except SQLAlchemyError as e:
             logger.error(
-                f"Error creating wishlist item for user {wishlist_data.get('user_id')}: {str(e)}")
+                f"Error creating wishlist item for user {wishlist_data.get('user_id')}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to create wishlist item",
@@ -205,7 +205,7 @@ class ExternalReferenceRepository(TransactionalMixin):
             return True
         except SQLAlchemyError as e:
             logger.error(
-                f"Error removing wishlist item {wishlist_item.id}: {str(e)}")
+                f"Error removing wishlist item {wishlist_item.id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove wishlist item",
@@ -272,7 +272,8 @@ class ExternalReferenceRepository(TransactionalMixin):
             return collection_album, True
         except SQLAlchemyError as e:
             logger.error(
-                f"Error adding album {album.id} to collection {collection.id}: {str(e)}"
+                f"Error adding album {album.id} to collection {collection.id}: {str(e)}",
+                exc_info=True
             )
             raise ServerError(
                 error_code=5000,
@@ -299,7 +300,7 @@ class ExternalReferenceRepository(TransactionalMixin):
                 }
             return None
         except SQLAlchemyError as e:
-            logger.error(f"Failed to find artist in collection: {str(e)}")
+            logger.error(f"Failed to find artist in collection: {str(e)}", exc_info=True)
             return None
 
     async def add_artist_to_collection(
@@ -348,7 +349,8 @@ class ExternalReferenceRepository(TransactionalMixin):
             }
         except SQLAlchemyError as e:
             logger.error(
-                f"Failed to add artist {artist.id} to collection {collection.id}: {str(e)}"
+                f"Failed to add artist {artist.id} to collection {collection.id}: {str(e)}",
+                exc_info=True
             )
             raise ServerError(
                 error_code=5000,
