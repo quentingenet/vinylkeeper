@@ -132,7 +132,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
   const formFieldStyle = {
     mb: 2,
     "& .MuiOutlinedInput-root": {
-      color: "#fffbf9",
+      color: "text.primary",
       "& fieldset": {
         borderColor: "#666",
       },
@@ -198,7 +198,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
       >
         <Box
           sx={{
-            bgcolor: "#3f3f41",
+            bgcolor: "background.default",
             borderRadius: "5px",
             width: isMobile ? "90dvw" : { sm: 520, md: 600 },
             maxWidth: "90vw",
@@ -209,7 +209,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
             mb: isMobile ? "5dvh" : 0,
             p: isMobile ? 2 : 4,
             position: "relative",
-            color: "#fffbf9",
+            color: "text.primary",
           }}
         >
           <IconButton
@@ -219,7 +219,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
               right: 8,
               top: 8,
               zIndex: 1,
-              color: "#fffbf9",
+              color: "text.primary",
             }}
           >
             <Close />
@@ -231,7 +231,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
               mb: 3,
               textAlign: "center",
               fontWeight: "bold",
-              color: "#C9A726",
+              color: "primary.main",
             }}
           >
             🎯 Add new place
@@ -245,7 +245,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
 
           <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }}>
             <Box sx={{ maxWidth: "600px", margin: "0 auto" }}>
-              <Typography variant="h6" sx={{ mb: 2, color: "#C9A726" }}>
+              <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
                 Place details
               </Typography>
 
@@ -358,9 +358,9 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
                     isLoading ? <CircularProgress size={20} /> : <MyLocation />
                   }
                   sx={{
-                    backgroundColor: "#C9A726",
+                    backgroundColor: "primary.main",
                     "&:hover": {
-                      backgroundColor: "#B8961F",
+                      backgroundColor: "primary.dark",
                     },
                     "&:disabled": {
                       backgroundColor: "#666",
@@ -383,8 +383,8 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
         fullWidth
         PaperProps={{
           sx: {
-            bgcolor: "#3f3f41",
-            color: "#fffbf9",
+            bgcolor: "background.default",
+            color: "text.primary",
             borderRadius: "8px",
           },
         }}
@@ -394,15 +394,15 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
             display: "flex",
             alignItems: "center",
             gap: 1,
-            color: "#C9A726",
+            color: "primary.main",
             fontWeight: "bold",
           }}
         >
-          <CheckCircle sx={{ color: "#C9A726" }} />
+          <CheckCircle sx={{ color: "primary.main" }} />
           Place Submitted Successfully!
         </DialogTitle>
         <DialogContent>
-          <Typography sx={{ color: "#fffbf9", mb: 2 }}>
+          <Typography sx={{ color: "text.primary", mb: 2 }}>
             Thank you for your contribution! Your place suggestion has been
             submitted and will be reviewed by our moderation team before being
             displayed on the map.
@@ -417,9 +417,9 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
             onClick={handleSuccessDialogClose}
             variant="contained"
             sx={{
-              backgroundColor: "#C9A726",
+              backgroundColor: "primary.main",
               "&:hover": {
-                backgroundColor: "#B8961F",
+                backgroundColor: "primary.dark",
               },
             }}
           >

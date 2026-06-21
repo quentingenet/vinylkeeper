@@ -25,7 +25,7 @@ class WishlistExportService:
     async def export_my_wishlist_csv(self, user_id: int, username: str) -> StreamingResponse:
         export_kind = "wishlist"
         export_format = "csv"
-        logger.info(f"Export requested: kind={export_kind} format={export_format} user_id={user_id}")
+        logger.info(f"Export requested: kind={export_kind} format={export_format} user={username}")
         try:
             items = await self.wishlist_repository.get_user_wishlist_all(user_id)
             filename = self._build_filename(username=username, suffix="wishlist.csv")
@@ -38,19 +38,19 @@ class WishlistExportService:
 
             response = self._stream_csv(filename=filename, rows=row_iter())
             logger.info(
-                f"Export success: kind={export_kind} format={export_format} user_id={user_id} rows={rows_count}"
+                f"Export success: kind={export_kind} format={export_format} user={username} rows={rows_count}"
             )
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user_id={user_id} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format} user={username} error={str(e)}"
             )
             raise
 
     async def export_my_wishlist_ods(self, user_id: int, username: str) -> Response:
         export_kind = "wishlist"
         export_format = "ods"
-        logger.info(f"Export requested: kind={export_kind} format={export_format} user_id={user_id}")
+        logger.info(f"Export requested: kind={export_kind} format={export_format} user={username}")
         try:
             items = await self.wishlist_repository.get_user_wishlist_all(user_id)
             filename = self._build_filename(username=username, suffix="wishlist.ods")
@@ -62,12 +62,12 @@ class WishlistExportService:
                 content=self._build_ods(sheet_name="Wishlist", headers=headers, rows=rows),
             )
             logger.info(
-                f"Export success: kind={export_kind} format={export_format} user_id={user_id} rows={len(rows)}"
+                f"Export success: kind={export_kind} format={export_format} user={username} rows={len(rows)}"
             )
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user_id={user_id} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format} user={username} error={str(e)}"
             )
             raise
 

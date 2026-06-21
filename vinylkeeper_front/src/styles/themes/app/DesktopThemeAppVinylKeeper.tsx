@@ -7,6 +7,7 @@ const DesktopThemeAppVinylKeeper = createTheme({
     mode: "dark",
     primary: {
       main: "#C9A726",
+      dark: "#B8961F",
     },
     background: {
       default: "#3f3f41",

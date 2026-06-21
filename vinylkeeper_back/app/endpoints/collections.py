@@ -34,7 +34,7 @@ async def create_collection(
     service: CollectionService = Depends(get_collection_service)
 ):
     collection = await service.create_collection(data, user.id)
-    logger.info(f"Collection created: {collection.id} by user {user.id}")
+    logger.info(f"Collection created: {collection.id} by user {user.username}")
     return CollectionCreateResponse(
         message="Collection created successfully",
         collection_id=collection.id
@@ -192,7 +192,7 @@ async def remove_album_from_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.remove_album_from_collection(user.id, collection_id, album_id)
-    logger.info(f"Album {album_id} removed from collection {collection_id} by user {user.id}")
+    logger.info(f"Album {album_id} removed from collection {collection_id} by user {user.username}")
 
 
 @router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -204,7 +204,7 @@ async def remove_artist_from_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.remove_artist_from_collection(user.id, collection_id, artist_id)
-    logger.info(f"Artist {artist_id} removed from collection {collection_id} by user {user.id}")
+    logger.info(f"Artist {artist_id} removed from collection {collection_id} by user {user.username}")
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
@@ -215,7 +215,7 @@ async def like_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     result = await service.like_collection(user.id, collection_id)
-    logger.info(f"Collection {collection_id} liked by user {user.id}, likes: {result['likes_count']}")
+    logger.info(f"Collection {collection_id} liked by user {user.username}, likes: {result['likes_count']}")
     return LikeStatusResponse(
         collection_id=collection_id,
         liked=True,
@@ -231,7 +231,7 @@ async def unlike_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     result = await service.unlike_collection(user.id, collection_id)
-    logger.info(f"Collection {collection_id} unliked by user {user.id}, likes: {result['likes_count']}")
+    logger.info(f"Collection {collection_id} unliked by user {user.username}, likes: {result['likes_count']}")
     return LikeStatusResponse(
         collection_id=collection_id,
         liked=False,

@@ -272,12 +272,8 @@ class ExternalReferenceRepository(TransactionalMixin):
             return collection_album, True
         except SQLAlchemyError as e:
             logger.error(
-                f"Error adding album {album.id} to collection {collection.id}: {str(e)}")
-            logger.error(f"Album object: {album}")
-            logger.error(f"Collection object: {collection}")
-            logger.error(f"Album data: {album_data}")
-            logger.error(
-                f"Collection ID: {collection.id}, Album ID: {album.id}")
+                f"Error adding album {album.id} to collection {collection.id}: {str(e)}"
+            )
             raise ServerError(
                 error_code=5000,
                 message="Failed to add album to collection",
@@ -351,11 +347,9 @@ class ExternalReferenceRepository(TransactionalMixin):
                 "created_at": created_at
             }
         except SQLAlchemyError as e:
-            logger.error(f"Failed to add artist to collection: {str(e)}")
             logger.error(
-                f"Collection ID: {collection.id}, Artist ID: {artist.id}")
-            logger.error(f"Collection object: {collection}")
-            logger.error(f"Artist object: {artist}")
+                f"Failed to add artist {artist.id} to collection {collection.id}: {str(e)}"
+            )
             raise ServerError(
                 error_code=5000,
                 message="Failed to add artist to collection",

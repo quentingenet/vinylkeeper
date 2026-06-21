@@ -131,8 +131,7 @@ async def get_user_wishlist_paginated(
     else:
         target_user_id = current_user.id
 
-    response = await service.get_user_wishlist_paginated(target_user_id, page, limit)
-    return response.model_dump()
+    return await service.get_user_wishlist_paginated(target_user_id, page, limit)
 
 
 @router.get("/wishlist/export/csv")
@@ -161,5 +160,4 @@ async def get_wishlist_item_detail(
     service: WishlistService = Depends(get_wishlist_service)
 ):
     """Get detailed wishlist item by ID (public - any authenticated user can view)"""
-    item = await service.get_wishlist_item_detail(wishlist_id)
-    return item.model_dump()
+    return await service.get_wishlist_item_detail(wishlist_id)

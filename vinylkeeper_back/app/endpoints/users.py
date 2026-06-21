@@ -171,7 +171,7 @@ async def delete_my_account(
 ):
     """Delete current user account"""
     success = await user_service.delete_user(current_user)
-    logger.info(f"User deleted: {current_user.username} - {current_user.email}")
+    logger.info(f"User deleted: {current_user.username}")
     if not success:
         raise UserNotFoundError(str(current_user.user_uuid))
 
