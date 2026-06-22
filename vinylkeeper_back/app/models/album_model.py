@@ -32,7 +32,7 @@ class Album(Base):
                    comment="Cached title of the album")
 
     external_source_id = Column(Integer, ForeignKey(
-        "external_sources.id"), nullable=False)
+        "external_sources.id"), nullable=False, index=True)
     external_source = relationship(
         "ExternalSource", back_populates="albums", lazy="selectin")
 

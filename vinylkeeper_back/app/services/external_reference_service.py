@@ -1,4 +1,7 @@
 from typing import Union
+
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
     AddToWishlistRequest,
@@ -107,8 +110,8 @@ class ExternalReferenceService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to find or create entity: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to find or create entity: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to find or create entity",
@@ -162,8 +165,8 @@ class ExternalReferenceService:
 
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to add to wishlist: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to add to wishlist: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to wishlist",
@@ -198,8 +201,8 @@ class ExternalReferenceService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to remove from wishlist: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to remove from wishlist: {str(e)}", exc_info=True)
             logger.error(f"User ID: {user_id}, Wishlist ID: {wishlist_id}")
             raise ServerError(
                 error_code=5000,
@@ -315,7 +318,7 @@ class ExternalReferenceService:
         except AppException:
             raise
         except Exception as e:
-            logger.error(f"Failed to add to collection: {str(e)}")
+            logger.error(f"Failed to add to collection: {str(e)}", exc_info=True)
             logger.error(
                 f"User ID: {user_id}, Collection ID: {collection_id}, "
                 f"entity_type: {request.entity_type}, "
@@ -359,8 +362,8 @@ class ExternalReferenceService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to remove from collection: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to remove from collection: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove from collection",

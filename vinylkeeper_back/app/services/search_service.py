@@ -251,7 +251,7 @@ class SearchService:
         except ValidationError:
             raise
         except Exception as e:
-            logger.error(f"Search error: {str(e)}")
+            logger.error(f"Search error: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                 message="Failed to search music",
@@ -455,7 +455,7 @@ class SearchService:
                 )
         except Exception as e:
             logger.error(
-                f"Unexpected error fetching album metadata for ID {album_id}: {str(e)}")
+                f"Unexpected error fetching album metadata for ID {album_id}: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                 message="Failed to fetch album metadata",

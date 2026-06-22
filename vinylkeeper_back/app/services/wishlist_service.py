@@ -22,6 +22,8 @@ from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
 from app.core.transaction import transaction_context
 
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 from app.models.wishlist_model import Wishlist
 
 
@@ -127,8 +129,8 @@ class WishlistService:
 
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to find or create entity: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to find or create entity: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to find or create entity",
@@ -185,7 +187,7 @@ class WishlistService:
         except AppException:
             raise
         except Exception as e:
-            logger.error(f"Failed to add to wishlist: {str(e)}")
+            logger.error(f"Failed to add to wishlist: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to add to wishlist",
@@ -227,8 +229,8 @@ class WishlistService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to remove from wishlist: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to remove from wishlist: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to remove from wishlist",
@@ -277,7 +279,7 @@ class WishlistService:
                     list_responses.append(list_response)
                 except Exception as e:
                     logger.error(
-                        f"Error processing wishlist item {item.id}: {str(e)}")
+                        f"Error processing wishlist item {item.id}: {str(e)}", exc_info=True)
                     continue
 
             total_pages = (total + limit - 1) // limit if total > 0 else 0
@@ -294,8 +296,8 @@ class WishlistService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to get paginated wishlist: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to get paginated wishlist: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get paginated wishlist",
@@ -318,8 +320,8 @@ class WishlistService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to get wishlist item detail: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to get wishlist item detail: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get wishlist item detail",

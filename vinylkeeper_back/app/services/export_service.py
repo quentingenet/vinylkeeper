@@ -74,7 +74,8 @@ class ExportService:
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                exc_info=True
             )
             raise
 
@@ -113,7 +114,8 @@ class ExportService:
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                exc_info=True
             )
             raise
 
@@ -151,7 +153,8 @@ class ExportService:
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                exc_info=True
             )
             raise
 
@@ -189,7 +192,8 @@ class ExportService:
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}"
+                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                exc_info=True
             )
             raise
 

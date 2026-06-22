@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Optional
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.repositories.place_repository import PlaceRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
@@ -136,8 +136,8 @@ class PlaceService:
             raise e
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error creating place: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error creating place: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to create place",
@@ -159,7 +159,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in get_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -188,8 +188,8 @@ class PlaceService:
             ]
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error in get_map_places: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error in get_map_places: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get map places",
@@ -205,8 +205,8 @@ class PlaceService:
             return await self._build_public_place_responses(places, user.id)
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error in get_places_by_location: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error in get_places_by_location: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places by location",
@@ -233,8 +233,8 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error in get_all_places: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error in get_all_places: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get places",
@@ -272,7 +272,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in update_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -298,7 +298,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in delete_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -342,7 +342,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in like_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -376,7 +376,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in unlike_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -404,7 +404,7 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in search_places: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -432,7 +432,7 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in get_places_by_type: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -462,7 +462,7 @@ class PlaceService:
             )
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in get_places_in_region: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
@@ -499,8 +499,8 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to create moderation request: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Failed to create moderation request: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to create moderation request",
@@ -529,7 +529,7 @@ class PlaceService:
                 is_liked = user_likes.get(place.id, False) if user_id else False
                 result.append(self._create_public_place_response(place, likes_count, is_liked))
             except Exception as e:
-                logger.error(f"Error building response for place {place.id}: {e}")
+                logger.error(f"Error building response for place {place.id}: {e}", exc_info=True)
                 continue
         return result
 
@@ -597,8 +597,8 @@ class PlaceService:
             ]
         except AppException:
             raise
-        except Exception as e:
-            logger.error("Unexpected error in _build_public_place_responses: %s", e, exc_info=True)
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error("Unexpected error in get_all_places_admin: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get all places",
@@ -622,7 +622,7 @@ class PlaceService:
             raise
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error("Unexpected error in get_place_admin: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,

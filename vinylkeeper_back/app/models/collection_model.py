@@ -22,7 +22,7 @@ class Collection(Base):
     description = Column(String(255), nullable=True)
     is_public = Column(Boolean, default=False, nullable=False)
 
-    mood_id = Column(Integer, ForeignKey("moods.id"), nullable=True)
+    mood_id = Column(Integer, ForeignKey("moods.id"), nullable=True, index=True)
     mood = relationship("Mood", back_populates="collections", lazy="selectin")
 
     owner_id = Column(Integer, ForeignKey(

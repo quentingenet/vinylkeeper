@@ -162,7 +162,7 @@ class ImageProxyService:
 
             return output.getvalue()
         except Exception as e:
-            logger.error(f"Failed to process image: {str(e)}")
+            logger.error(f"Failed to process image: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to process image"

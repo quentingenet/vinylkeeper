@@ -43,7 +43,8 @@ class WishlistExportService:
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user={username} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format} user={username} error={str(e)}",
+                exc_info=True
             )
             raise
 
@@ -67,7 +68,8 @@ class WishlistExportService:
             return response
         except Exception as e:
             logger.error(
-                f"Export failed: kind={export_kind} format={export_format} user={username} error={str(e)}"
+                f"Export failed: kind={export_kind} format={export_format} user={username} error={str(e)}",
+                exc_info=True
             )
             raise
 

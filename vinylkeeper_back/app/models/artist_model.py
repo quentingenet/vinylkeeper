@@ -38,6 +38,7 @@ class Artist(Base):
         Integer,
         ForeignKey("external_sources.id"),
         nullable=False,
+        index=True,
         comment="Reference to external source (e.g. MusicBrainz)"
     )
     external_source = relationship(

@@ -174,7 +174,7 @@ class UserService:
                 logger.info(
                     f"New user email sent to admin for user {user.username}")
         except Exception as e:
-            logger.error(f"Failed to send new user email: {str(e)}")
+            logger.error(f"Failed to send new user email: {str(e)}", exc_info=True)
 
     async def get_all_users(self, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
         """Get all users with pagination"""

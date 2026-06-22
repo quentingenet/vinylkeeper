@@ -32,11 +32,10 @@ Discover & share vinyl places around the world with the community.
 Browse and manage your vinyl records, organized to your preferences.
 
 ➕ **Add Vinyls**  
-Add new vinyls manually or search via Deezer integration.
+Add new vinyls manually or search via Discogs integration.
 
 🔍 **Explore**  
-Discover artists and albums using a powerful search connected to the Deezer API.
-
+Discover artists and albums using a powerful search connected to the Discogs API.
 💖 **Wishlist**  
 Keep track of the vinyls you’d love to add to your collection someday.
 

@@ -1,5 +1,8 @@
 import time
 from typing import Any
+
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 from app.repositories.dashboard_repository import DashboardRepository
 from app.models.user_model import User
 from app.schemas.dashboard_schema import DashboardStatsResponse, LatestAddition
@@ -113,7 +116,7 @@ class DashboardService:
             return result
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error(f"Dashboard error: {e}", exc_info=True)
             raise ServerError(
                 error_code=5000,

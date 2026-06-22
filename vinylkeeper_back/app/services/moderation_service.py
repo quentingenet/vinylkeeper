@@ -1,3 +1,5 @@
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.place_repository import PlaceRepository
 from app.models.moderation_request_model import ModerationRequest
@@ -46,8 +48,8 @@ class ModerationService:
             )
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting moderation requests: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting moderation requests: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation requests",
@@ -63,8 +65,8 @@ class ModerationService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting moderation request: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting moderation request: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation request",
@@ -103,8 +105,8 @@ class ModerationService:
             raise
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting pending moderation requests: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting pending moderation requests: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get pending moderation requests",
@@ -148,7 +150,7 @@ class ModerationService:
         except AppException:
             raise
         except Exception as e:
-            logger.error(f"Error updating moderation request status: {str(e)}")
+            logger.error(f"Error updating moderation request status: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to update moderation request status",
@@ -173,8 +175,8 @@ class ModerationService:
             return await self.moderation_repository.get_moderation_request_stats()
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting moderation stats: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting moderation stats: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
                 message="Failed to get moderation statistics",

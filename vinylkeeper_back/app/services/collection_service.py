@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
@@ -187,8 +187,8 @@ class CollectionService:
 
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting collection albums: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting collection albums: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection albums",
@@ -225,7 +225,7 @@ class CollectionService:
                     collection_responses.append(response)
                 except Exception as collection_error:
                     logger.error(
-                        f"Error processing collection {collection.id}: {str(collection_error)}")
+                        f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
                     continue
 
             return collection_responses, total
@@ -233,8 +233,8 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting user collections: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting user collections: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get user collections",
@@ -275,7 +275,7 @@ class CollectionService:
                     collection_responses.append(response)
                 except Exception as collection_error:
                     logger.error(
-                        f"Error processing collection {collection.id}: {str(collection_error)}")
+                        f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
                     continue
 
             return collection_responses, total
@@ -283,8 +283,8 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting public collections: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting public collections: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get public collections",
@@ -350,8 +350,8 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error getting collection by ID: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting collection by ID: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection",
@@ -396,9 +396,9 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error(
-                f"Error getting collection details lightweight: {str(e)}")
+                f"Error getting collection details lightweight: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection details",
@@ -437,9 +437,9 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error(
-                f"Error getting collection albums paginated: {str(e)}")
+                f"Error getting collection albums paginated: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection albums",
@@ -478,9 +478,9 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             logger.error(
-                f"Error getting collection artists paginated: {str(e)}")
+                f"Error getting collection artists paginated: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection artists",
@@ -539,8 +539,8 @@ class CollectionService:
             raise e
         except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Error searching collection items: {str(e)}")
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error searching collection items: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to search collection items",
