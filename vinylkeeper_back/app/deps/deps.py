@@ -1,9 +1,7 @@
-from uuid import UUID
-
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user_model import User
-from app.core.exceptions import ForbiddenError, ErrorCode, ResourceNotFoundError
+from app.core.exceptions import ForbiddenError, ErrorCode
 from app.utils.auth_utils.auth import get_current_user
 
 # Repositories
@@ -44,23 +42,6 @@ def require_admin(user: User = Depends(get_current_user)) -> User:
 # Repository Dependencies
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
-
-
-async def get_user_id_by_uuid(
-    user_uuid: UUID,
-    user_repo: UserRepository = Depends(get_user_repository),
-) -> int:
-    """Resolve a public user_uuid path/query param to the internal user_id.
-
-    Usage in endpoints:
-        @router.get("/collections/owner/{user_uuid}")
-        async def get_collections(owner_id: int = Depends(get_user_id_by_uuid)):
-            ...
-    """
-    user = await user_repo.get_user_by_uuid(str(user_uuid))
-    if not user:
-        raise ResourceNotFoundError("User", str(user_uuid))
-    return user.id
 
 
 def get_collection_repository(db: AsyncSession = Depends(get_db)) -> CollectionRepository:
@@ -117,10 +98,9 @@ def get_collection_service(
     collection_album_repository: CollectionAlbumRepository = Depends(
         get_collection_album_repository),
     wishlist_repository: WishlistRepository = Depends(get_wishlist_repository),
-    place_repository: PlaceRepository = Depends(get_place_repository)
 ) -> CollectionService:
     return CollectionService(
-        repository, like_repository, collection_album_repository, wishlist_repository, place_repository
+        repository, like_repository, collection_album_repository, wishlist_repository
     )
 
 

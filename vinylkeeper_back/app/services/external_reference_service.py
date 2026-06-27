@@ -318,6 +318,7 @@ class ExternalReferenceService:
         except AppException:
             raise
         except Exception as e:
+            # Intentional broad catch: any unhandled error becomes a generic ServerError
             logger.error(f"Failed to add to collection: {str(e)}", exc_info=True)
             logger.error(
                 f"User ID: {user_id}, Collection ID: {collection_id}, "

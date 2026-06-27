@@ -11,6 +11,7 @@ from app.schemas.collection_schema import (
     MessageResponse,
     PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
+    CollectionSearchResponse,
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -254,7 +255,7 @@ async def update_album_metadata(
     return updated_metadata
 
 
-@router.get("/{collection_id}/search", status_code=status.HTTP_200_OK)
+@router.get("/{collection_id}/search", response_model=CollectionSearchResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def search_collection_items(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
@@ -263,9 +264,8 @@ async def search_collection_items(
         "both", description="Search type: 'album', 'artist', 'albums', 'artists', or 'both'"),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
-):
-    results = await service.search_collection_items(collection_id, user.id, q, search_type)
-    return results
+) -> CollectionSearchResponse:
+    return await service.search_collection_items(collection_id, user.id, q, search_type)
 
 
 @router.get("/{collection_id}/export/albums.csv", status_code=status.HTTP_200_OK)

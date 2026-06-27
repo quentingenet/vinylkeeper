@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
@@ -19,7 +19,7 @@ class ModerationRequestRepository(TransactionalMixin):
         self.db = db
 
     async def get_all_requests(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
+        self, limit: int | None = None, offset: int | None = None
     ) -> List[ModerationRequest]:
         """Get all moderation requests with optional pagination (newest first)."""
         try:
@@ -46,7 +46,7 @@ class ModerationRequestRepository(TransactionalMixin):
             )
 
     async def get_requests_by_status(
-        self, status_id: int, limit: Optional[int] = None, offset: Optional[int] = None
+        self, status_id: int, limit: int | None = None, offset: int | None = None
     ) -> List[ModerationRequest]:
         """Get moderation requests by status with optional pagination (newest first)."""
         try:

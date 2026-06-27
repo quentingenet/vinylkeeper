@@ -1,5 +1,6 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Path
+from fastapi import APIRouter, Depends, Query, Path, Response
+from fastapi import status as http_status
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.external_reference_service import ExternalReferenceService
@@ -46,7 +47,7 @@ async def add_to_wishlist(
     return wishlist_item
 
 
-@router.delete("/wishlist/{wishlist_id}", response_model=bool)
+@router.delete("/wishlist/{wishlist_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def remove_from_wishlist(
     wishlist_id: int,
@@ -54,8 +55,8 @@ async def remove_from_wishlist(
     service: WishlistService = Depends(get_wishlist_service)
 ):
     """Remove an item from user's wishlist"""
-    result = await service.remove_from_wishlist(current_user.id, wishlist_id)
-    return result
+    await service.remove_from_wishlist(current_user.id, wishlist_id)
+    return Response(status_code=http_status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/collection/{collection_id}/add", response_model=AddToCollectionResponse)
@@ -72,7 +73,7 @@ async def add_to_collection(
     return collection_item
 
 
-@router.delete("/collection/{collection_id}/remove", response_model=bool)
+@router.delete("/collection/{collection_id}/remove", status_code=http_status.HTTP_204_NO_CONTENT)
 @handle_app_exceptions
 async def remove_from_collection(
     collection_id: int,
@@ -82,7 +83,6 @@ async def remove_from_collection(
     service: ExternalReferenceService = Depends(get_external_reference_service)
 ):
     """Remove an item from user's collection"""
-    # Convert entity_type string to EntityTypeEnum
     try:
         entity_type_enum = EntityTypeEnum(entity_type)
     except ValueError:
@@ -91,8 +91,8 @@ async def remove_from_collection(
             message=f"Invalid entity_type: {entity_type}"
         )
 
-    result = await service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
-    return result
+    await service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
+    return Response(status_code=http_status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/wishlist", response_model=PaginatedWishlistResponse)

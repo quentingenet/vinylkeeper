@@ -1,4 +1,3 @@
-# app/models/reference/external_source_model.py
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from app.models.base import Base

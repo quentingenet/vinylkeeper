@@ -79,4 +79,5 @@ class AlbumResponse(AlbumInDB):
 
 
 class AlbumDetailResponse(AlbumResponse):
+    """Schema for detailed album data in API responses."""
     pass

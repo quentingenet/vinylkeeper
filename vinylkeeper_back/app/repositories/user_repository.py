@@ -166,7 +166,7 @@ class UserRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_all_users(self, skip: int = 0, limit: int = 100) -> List[User]:
+    async def get_all_users(self, skip: int = 0, limit: int = 50) -> List[User]:
         """Get all users with pagination"""
         try:
             result = await self.db.execute(select(User).offset(skip).limit(limit))

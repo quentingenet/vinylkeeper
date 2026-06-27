@@ -1,4 +1,3 @@
-# app/core/handlers.py
 import traceback
 from fastapi import Request, status
 from fastapi.responses import JSONResponse

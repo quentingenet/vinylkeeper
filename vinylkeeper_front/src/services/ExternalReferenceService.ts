@@ -42,9 +42,9 @@ export class ExternalReferenceService extends BaseApiService {
     }
   }
 
-  async removeFromWishlist(wishlistId: number): Promise<boolean> {
+  async removeFromWishlist(wishlistId: number): Promise<void> {
     try {
-      return await this.delete<boolean>(
+      await this.delete<void>(
         `${this.endpoint}/wishlist/${wishlistId}`
       );
     } catch (error) {
@@ -57,9 +57,9 @@ export class ExternalReferenceService extends BaseApiService {
     collectionId: number,
     externalId: string,
     entityType: "album" | "artist"
-  ): Promise<boolean> {
+  ): Promise<void> {
     try {
-      return await this.delete<boolean>(
+      await this.delete<void>(
         `${this.endpoint}/collection/${collectionId}/remove?external_id=${externalId}&entity_type=${entityType}`
       );
     } catch (error) {

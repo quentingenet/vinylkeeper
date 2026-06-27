@@ -120,7 +120,7 @@ class LikeRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_likes_info(self, collection_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
+    async def get_likes_info(self, collection_id: int, user_id: int | None = None) -> Dict[str, Any]:
         """
         Get likes count and is_liked status in a single query (optimized).
 

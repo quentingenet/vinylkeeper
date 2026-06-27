@@ -15,7 +15,7 @@ class PlaceRepository(TransactionalMixin):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all_places(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Place]:
+    async def get_all_places(self, limit: int | None = None, offset: int | None = None) -> List[Place]:
         """Get all places with optional pagination."""
         query = select(Place).options(
             selectinload(Place.place_type),
@@ -38,7 +38,7 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalar_one()
 
-    async def get_all_moderated_places(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[Place]:
+    async def get_all_moderated_places(self, limit: int | None = None, offset: int | None = None) -> List[Place]:
         """Get all moderated places with optional pagination."""
         query = select(Place).options(
             selectinload(Place.place_type),
@@ -209,7 +209,7 @@ class PlaceRepository(TransactionalMixin):
         return result.scalar_one()
 
     async def get_moderated_places_by_type(
-        self, place_type_id: int, limit: Optional[int] = None, offset: Optional[int] = None
+        self, place_type_id: int, limit: int | None = None, offset: int | None = None
     ) -> List[Place]:
         """Get all moderated places of a specific type."""
         query = select(Place).options(
@@ -243,7 +243,7 @@ class PlaceRepository(TransactionalMixin):
         return result.scalar_one()
 
     async def search_moderated_places(
-        self, search_term: str, limit: Optional[int] = None, offset: Optional[int] = None
+        self, search_term: str, limit: int | None = None, offset: int | None = None
     ) -> List[Place]:
         """Search moderated places by name, city, or country."""
         query = select(Place).options(
@@ -287,7 +287,7 @@ class PlaceRepository(TransactionalMixin):
     async def get_moderated_places_in_region(
         self,
         min_lat: float, max_lat: float, min_lng: float, max_lng: float,
-        limit: Optional[int] = None, offset: Optional[int] = None
+        limit: int | None = None, offset: int | None = None
     ) -> List[Place]:
         """Get moderated places within a geographic region."""
         query = select(Place).options(
@@ -336,7 +336,7 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         return result.scalar()
 
-    async def get_places_likes_info_batch(self, user_id: Optional[int], place_ids: List[int]) -> dict:
+    async def get_places_likes_info_batch(self, user_id: int | None, place_ids: List[int]) -> dict:
         """Get both likes counts and user likes status in a single optimized query."""
         if not place_ids:
             return {'counts': {}, 'user_likes': {}}

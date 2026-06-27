@@ -57,9 +57,8 @@ def make_service():
     album_repo.db = make_db()
 
     wishlist_repo = AsyncMock()
-    place_repo = AsyncMock()
 
-    service = CollectionService(repo, like_repo, album_repo, wishlist_repo, place_repo)
+    service = CollectionService(repo, like_repo, album_repo, wishlist_repo)
     return service, repo, like_repo, album_repo
 
 

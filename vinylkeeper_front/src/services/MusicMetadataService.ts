@@ -9,6 +9,7 @@ export interface AlbumMetadataParams {
   title: string;
 }
 
+// Direct fetch intentional: /request-proxy/music-metadata/* are public endpoints — no auth needed, BaseApiService excluded.
 export const fetchAlbumMetadata = async (
   params: AlbumMetadataParams
 ): Promise<AlbumMetadata> => {
@@ -70,10 +71,10 @@ export const fetchArtistMetadata = async (
 export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
   return useQuery({
     queryKey: queryKeys.metadata.album(params?.id),
-    queryFn: () => fetchAlbumMetadata(params!),
+    queryFn: () => params ? fetchAlbumMetadata(params) : Promise.reject(new Error("params required")),
     enabled: !!params?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -82,10 +83,10 @@ export const useAlbumMetadata = (params?: AlbumMetadataParams) => {
 export const useArtistMetadata = (artistId?: string) => {
   return useQuery({
     queryKey: queryKeys.metadata.artist(artistId),
-    queryFn: () => fetchArtistMetadata(artistId!),
+    queryFn: () => fetchArtistMetadata(artistId ?? ""),
     enabled: !!artistId && artistId.trim() !== "",
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

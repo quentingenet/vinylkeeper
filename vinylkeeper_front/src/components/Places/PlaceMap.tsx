@@ -65,7 +65,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
       if (!groups.has(key)) {
         groups.set(key, []);
       }
-      groups.get(key)!.push(place);
+      groups.get(key)?.push(place);
     });
     return groups;
   }, [mapPlaces]);
@@ -93,8 +93,8 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
     queryKey: queryKeys.places.byLocation(selectedLocation?.country, selectedLocation?.city),
     queryFn: () =>
       placeApiService.getPlacesByLocation(
-        selectedLocation!.country,
-        selectedLocation!.city
+        selectedLocation?.country ?? "",
+        selectedLocation?.city ?? ""
       ),
     enabled: selectedLocation !== null && selectedLocation.country !== "" && selectedLocation.city !== "",
     staleTime: 5 * 60 * 1000,

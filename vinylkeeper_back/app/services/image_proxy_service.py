@@ -173,7 +173,7 @@ class ImageProxyService:
         src: str,
         width: int,
         height: int,
-        quality: Optional[int] = None,
+        quality: int | None = None,
         accept_webp: bool = True,
         cacheable: bool = False
     ) -> Tuple[bytes, str]:

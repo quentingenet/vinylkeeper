@@ -118,7 +118,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_vinyl_state_id(self, state_name: str) -> Optional[int]:
+    async def get_vinyl_state_id(self, state_name: str) -> int | None:
         """Get vinyl state ID by name using mapping"""
         return VinylStateMapping.get_id_from_name(state_name)
 

@@ -1,4 +1,3 @@
-# app/models/reference/entity_type_model.py
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from app.models.base import Base

@@ -51,7 +51,7 @@ class CollectionBase(BaseSchema):
         default=False,
         description="Whether the collection is visible to other users"
     )
-    mood_id: Optional[int] = Field(
+    mood_id: int | None = Field(
         None,
         gt=0,
         description="Optional ID of the mood"
@@ -117,7 +117,7 @@ class CollectionUpdate(BaseSchema):
         max_length=255
     )
     is_public: Optional[bool] = None
-    mood_id: Optional[int] = Field(
+    mood_id: int | None = Field(
         None,
         gt=0,
         description="ID of the mood"
@@ -159,7 +159,7 @@ class CollectionListItemResponse(BaseSchema):
     name: str
     description: Optional[str] = None
     is_public: bool
-    mood_id: Optional[int] = None
+    mood_id: int | None = None
     owner: Optional[UserMiniResponse] = None
     likes_count: int = Field(default=0)
     is_liked_by_user: bool = Field(default=False)
@@ -179,7 +179,7 @@ class CollectionDetailResponse(BaseSchema):
     name: str
     description: Optional[str] = None
     is_public: bool
-    mood_id: Optional[int] = None
+    mood_id: int | None = None
     owner_uuid: Optional[UUID] = Field(
         None,
         description="Owner's UUID (no id exposed to frontend)")

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.main import app
 from app.deps.deps import get_collection_service
 from app.utils.auth_utils.auth import get_current_user
+from app.schemas.collection_schema import CollectionSearchResponse
 from app.core.exceptions import (
     DuplicateCollectionNameError,
     ForbiddenError,
@@ -305,10 +306,12 @@ class TestUpdateCollection:
 class TestSearchCollectionItems:
     async def test_success_returns_results(self, coll_client):
         client, service, _ = coll_client
-        service.search_collection_items = AsyncMock(return_value={
-            "albums": [{"id": 1, "title": "Blue"}],
-            "artists": [],
-        })
+        service.search_collection_items = AsyncMock(return_value=CollectionSearchResponse(
+            albums=[],
+            artists=[],
+            query="blue",
+            search_type="album",
+        ))
 
         resp = await client.get("/api/collections/1/search?q=blue&search_type=album")
 

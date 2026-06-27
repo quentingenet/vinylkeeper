@@ -332,7 +332,7 @@ class CollectionRepository(TransactionalMixin):
             )
 
     async def get_public_collections(
-        self, page: int = 1, limit: int = 10, exclude_user_id: Optional[int] = None, sort_by: str = "updated_at"
+        self, page: int = 1, limit: int = 10, exclude_user_id: int | None = None, sort_by: str = "updated_at"
     ) -> Tuple[List[Collection], int]:
         """Get all public collections with pagination and sorting.
         Only returns collections with at least one album, artist, or wishlist item."""
@@ -512,7 +512,7 @@ class CollectionRepository(TransactionalMixin):
         # Create a dict mapping collection_id to is_liked boolean
         return {collection_id: collection_id in liked_collection_ids for collection_id in collection_ids}
 
-    async def get_collections_likes_info_batch(self, user_id: Optional[int], collection_ids: List[int]) -> dict:
+    async def get_collections_likes_info_batch(self, user_id: int | None, collection_ids: List[int]) -> dict:
         """Get both likes counts and user likes status in a single optimized query."""
         if not collection_ids:
             return {'counts': {}, 'user_likes': {}}

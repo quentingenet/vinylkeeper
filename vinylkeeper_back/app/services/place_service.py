@@ -44,7 +44,6 @@ class PlaceService:
     async def create_place(self, place_data: PlaceCreate, user: User) -> PlaceResponse:
         """Create a new place and automatically create a moderation request with transactional integrity"""
         try:
-            # Validate place data
             self._validate_place_data(place_data)
 
             if not await self.repository.get_place_type_by_id(place_data.place_type_id):
@@ -53,10 +52,8 @@ class PlaceService:
                     message=f"Place type with ID {place_data.place_type_id} not found"
                 )
 
-            # Prepare place data
             place_dict = place_data.model_dump()
             place_dict["submitted_by_id"] = user.id
-            # New places are not moderated initially
             place_dict["is_moderated"] = False
 
             # Check if coordinates are valid, if not, try to geocode
@@ -87,8 +84,6 @@ class PlaceService:
                             " Please check the city and country names."
                         )
                     )
-            # Coordinates are already valid, no action needed
-
             async with transaction_context(self.repository.db):
                 created_place = await self.repository.create_place(place_dict)
                 await self._create_moderation_request(created_place.id, user.id)
@@ -515,7 +510,7 @@ class PlaceService:
         return PlaceResponse.model_validate(place)
 
     async def _build_public_place_responses(
-        self, places: List[Place], user_id: Optional[int]
+        self, places: List[Place], user_id: int | None
     ) -> List[PublicPlaceResponse]:
         """Build PublicPlaceResponse list with likes; shared by get_all_places and get_places_by_location."""
         place_ids = [p.id for p in places]
@@ -569,65 +564,6 @@ class PlaceService:
             raise ValidationError(
                 error_code=4000,
                 message="Both latitude and longitude are required"
-            )
-
-    async def get_all_places_admin(
-        self, user: Optional[User] = None, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[PlaceResponse]:
-        """Get all places (admin only - includes non-moderated places). User resolved from token (uuid)."""
-        try:
-            places = await self.repository.get_all_places(limit, offset)
-            if not places:
-                return []
-
-            place_ids = [p.id for p in places]
-            likes_info = await self.repository.get_places_likes_info_batch(
-                user.id if user else None, place_ids
-            )
-            counts = likes_info["counts"]
-            user_likes = likes_info["user_likes"]
-
-            return [
-                self._create_place_response(
-                    place,
-                    counts.get(place.id, 0),
-                    user_likes.get(place.id, False)
-                )
-                for place in places
-            ]
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error("Unexpected error in get_all_places_admin: %s", e, exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get all places",
-                details={}
-            )
-
-    async def get_place_admin(self, place_id: int, user: Optional[User] = None) -> PlaceResponse:
-        """Get a place by ID (admin only - includes non-moderated places). User resolved from token (uuid)."""
-        try:
-            place = await self.repository.get_place_by_id_internal(place_id)
-            if not place:
-                raise ResourceNotFoundError("Place", place_id)
-
-            likes_count = await self.repository.get_place_likes_count(place_id)
-            is_liked = False
-            if user:
-                is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
-
-            return self._create_place_response(place, likes_count, is_liked)
-        except ResourceNotFoundError:
-            raise
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error("Unexpected error in get_place_admin: %s", e, exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get place",
-                details={}
             )
 
     async def get_place_types(self) -> List:

@@ -8,7 +8,6 @@ Create Date: 2025-09-04 19:34:20.233628+02:00
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -22,7 +21,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     # Remove duplicate indexes that are redundant with primary keys
     # These indexes consume space and provide no performance benefit
-    
+
     # Single column ID indexes (duplicates of primary keys)
     op.drop_index('ix_albums_id', 'albums')
     op.drop_index('ix_artists_id', 'artists')

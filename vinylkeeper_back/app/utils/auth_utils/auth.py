@@ -16,8 +16,7 @@ from app.core.exceptions import RefreshTokenNotFoundError, UnauthorizedError, In
 from app.core.logging import logger
 
 
-# Load keys
-def load_keys():
+def load_keys() -> tuple[bytes, bytes]:
     """Load JWT keys with error handling"""
     base_path = Path(__file__).parent.parent.parent / "keys"
     try:
@@ -32,14 +31,12 @@ def load_keys():
         )
 
 
-# Load keys with error handling
 try:
     PUBLIC_KEY, PRIVATE_KEY = load_keys()
 except RuntimeError as e:
     logger.error(f"ERROR: {e}")
     raise
 
-# Use global settings instance
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRE_MINUTES = settings.REFRESH_TOKEN_EXPIRE_MINUTES
@@ -51,7 +48,6 @@ class TokenType(str, Enum):
     RESET = "reset"
 
 
-# Create a JWT token with an explicit token type
 def create_token(user_uuid: str, token_type: TokenType) -> str:
     """Create a JWT token"""
     if token_type == TokenType.ACCESS:
@@ -68,7 +64,6 @@ def create_token(user_uuid: str, token_type: TokenType) -> str:
     return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
 
 
-# Decode and validate a token, ensuring correct type
 def verify_token(token: str, expected_type: Optional[TokenType] = None) -> str:
     """Verify a JWT token and return the user UUID"""
     try:
@@ -80,7 +75,6 @@ def verify_token(token: str, expected_type: Optional[TokenType] = None) -> str:
         raise UnauthorizedError("Invalid token")
 
 
-# Verify an access token from cookies
 def verify_access_token(request: Request) -> str:
     token = request.cookies.get("access_token")
     if not token:
@@ -88,7 +82,6 @@ def verify_access_token(request: Request) -> str:
     return verify_token(token, expected_type=TokenType.ACCESS)
 
 
-# Verify a refresh token from cookies
 def verify_refresh_token(request: Request) -> str:
     """Verify a refresh token from cookies"""
     refresh_token = request.cookies.get("refresh_token")
@@ -104,7 +97,6 @@ def verify_refresh_token(request: Request) -> str:
         raise UnauthorizedError("Invalid refresh token")
 
 
-# Create a short-lived reset token for password reset
 def create_reset_token(user_uuid: str) -> str:
     try:
         expire = datetime.now(
@@ -112,10 +104,10 @@ def create_reset_token(user_uuid: str) -> str:
         to_encode = {"sub": str(user_uuid), "exp": expire, "type": TokenType.RESET.value}
         return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
     except Exception as e:
-        raise ValueError(f"Failed to create reset token: {str(e)}")
+        logger.error("Failed to create reset token", exc_info=True, extra={"error": str(e)})
+        raise ValueError("Failed to create reset token")
 
 
-# Verify a password reset token
 def verify_reset_token(token: str) -> str:
     try:
         payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
@@ -129,7 +121,6 @@ def verify_reset_token(token: str) -> str:
         raise InvalidResetTokenError()
 
 
-# Retrieve the current user from access token
 async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
@@ -146,12 +137,11 @@ async def get_current_user(
     return user
 
 
-# Set a token in cookie with appropriate attributes
 def set_token_cookie(
     response: Response,
     token: str,
     token_type: TokenType,
-    custom_max_age: Optional[int] = None
+    custom_max_age: int | None = None
 ) -> None:
     """Set a token cookie"""
     if token_type == TokenType.ACCESS:

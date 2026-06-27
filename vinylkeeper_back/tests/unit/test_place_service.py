@@ -255,20 +255,6 @@ class TestDeletePlace:
         repo.delete_place.assert_awaited_once_with(1)
 
 
-class TestGetPlaceAdmin:
-    async def test_uses_internal_lookup_to_include_non_moderated_places(self):
-        service, repo, *_ = make_service()
-        place = make_place(place_id=7)
-        repo.get_place_by_id_internal = AsyncMock(return_value=place)
-        repo.get_place_likes_count = AsyncMock(return_value=4)
-        repo.is_place_liked_by_user = AsyncMock(return_value=False)
-
-        result = await service.get_place_admin(place_id=7)
-
-        repo.get_place_by_id_internal.assert_awaited_once_with(7)
-        assert result is not None
-
-
 class TestLikePlace:
     async def test_already_liked_is_idempotent(self):
         """Liker une place déjà likée retourne l'état courant sans erreur."""

@@ -31,7 +31,7 @@ class VinylStateMapping:
     }
 
     @classmethod
-    def get_id_from_name(cls, name: str) -> Optional[int]:
+    def get_id_from_name(cls, name: str) -> int | None:
         """Get vinyl state ID from name"""
         if not name:
             return None

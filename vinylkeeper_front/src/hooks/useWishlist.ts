@@ -32,6 +32,7 @@ export const useWishlist = (
   const cacheKey = queryKeys.wishlist.forUserPage(
     userUuid ?? currentUser?.user_uuid,
     page,
+    itemsPerPage,
     sortOrder,
     search
   );
@@ -51,7 +52,7 @@ export const useWishlist = (
         sortOrder,
         search
       ),
-    staleTime: 0,
+    staleTime: 0, // Always refetch on mount/focus: wishlist mutates from multiple pages (CollectionDetails, WishlistPage), cross-tab freshness matters
     gcTime: 30 * 60 * 1000,
     retry: 1,
     retryDelay: 1000,
@@ -93,7 +94,9 @@ export const useWishlistItemDetail = (
   } = useQuery<WishlistItemResponse, ApiError>({
     queryKey: queryKeys.wishlist.item(wishlistId),
     queryFn: () =>
-      externalReferenceApiService.getWishlistItemDetail(wishlistId!),
+      wishlistId !== null
+        ? externalReferenceApiService.getWishlistItemDetail(wishlistId)
+        : Promise.reject(new Error("wishlistId required")),
     enabled: enabled && wishlistId !== null,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,

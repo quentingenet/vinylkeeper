@@ -23,9 +23,9 @@ from app.core.exceptions import (
 from app.services.collection_service import CollectionService
 from app.schemas.collection_schema import CollectionCreate
 from app.core.transaction import transaction_context
-from typing import List, Tuple
 from app.core.config_env import settings
 from app.core.logging import logger
+from app.core.enums import RoleEnum
 
 
 class UserService:
@@ -159,7 +159,11 @@ class UserService:
                 raise PasswordUpdateError()
 
     async def send_new_user_registered_email(self, user: User) -> None:
-        """Send email to admin about new user registration"""
+        """Send email to admin about new user registration. Skipped in dev or for admin users."""
+        is_dev = settings.APP_ENV == "development"
+        is_admin = user.role and user.role.name == RoleEnum.ADMIN.value and user.is_superuser
+        if is_dev or is_admin:
+            return
         try:
             email_sent = await send_mail(
                 to=settings.EMAIL_ADMIN,
@@ -175,12 +179,6 @@ class UserService:
                     f"New user email sent to admin for user {user.username}")
         except Exception as e:
             logger.error(f"Failed to send new user email: {str(e)}", exc_info=True)
-
-    async def get_all_users(self, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
-        """Get all users with pagination"""
-        users = await self.repository.get_all_users(skip, limit)
-        total_count = await self.repository.count_users()
-        return users, total_count
 
     async def delete_user(self, user: User) -> bool:
         """Delete a user"""

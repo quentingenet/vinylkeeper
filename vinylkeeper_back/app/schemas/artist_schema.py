@@ -61,4 +61,5 @@ class ArtistResponse(ArtistInDB):
 
 
 class ArtistDetailResponse(ArtistResponse):
+    """Schema for detailed artist data in API responses."""
     pass

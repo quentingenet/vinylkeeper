@@ -30,7 +30,7 @@ async def transaction_context(session: AsyncSession) -> AsyncGenerator[AsyncSess
                 await session.flush()
                 await session.commit()
             except Exception as e:
-                logger.error(f"❌ Transaction rolled back due to error: {str(e)}")
+                logger.error(f"Transaction rolled back due to error: {str(e)}")
                 await session.rollback()
                 raise
     finally:

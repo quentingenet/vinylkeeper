@@ -1,6 +1,7 @@
 import { logger } from "@utils/logger";
 import { isApiError } from "@utils/apiError";
 import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Modal,
   Box,
@@ -78,33 +79,29 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [placeTypes, setPlaceTypes] = useState<PlaceTypeData[]>([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [countriesResponse, types] = await Promise.all([
-          fetch("/data/countries.json"),
-          placeApiService.getPlaceTypes(),
-        ]);
-        if (!countriesResponse.ok) {
-          throw new Error("Failed to load countries list.");
-        }
-        const countriesData = await countriesResponse.json() as Country[];
-        setCountries(countriesData);
-        setPlaceTypes(types);
-      } catch (error) {
-        logger.error("Error loading data:", error);
-        setError("Failed to load form data. Please reopen the modal.");
-      }
-    };
+  const { data: countries = [], isError: countriesError } = useQuery<Country[]>({
+    queryKey: ["countries"],
+    queryFn: async () => {
+      const response = await fetch("/data/countries.json");
+      if (!response.ok) throw new Error("Failed to load countries list.");
+      return response.json() as Promise<Country[]>;
+    },
+    enabled: open,
+    staleTime: Infinity,
+  });
 
-    if (open) {
-      void loadData();
-    }
-  }, [open]);
+  const { data: placeTypes = [], isError: typesError } = useQuery<PlaceTypeData[]>({
+    queryKey: ["place-types"],
+    queryFn: () => placeApiService.getPlaceTypes(),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const loadError = countriesError || typesError
+    ? "Failed to load form data. Please reopen the modal."
+    : null;
 
   const {
     register,
@@ -122,7 +119,6 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
     },
   });
 
-  // Set default country when countries are loaded
   useEffect(() => {
     if (countries.length > 0 && open) {
       setValue("country", "France");
@@ -237,9 +233,9 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
             🎯 Add new place
           </Typography>
 
-          {error && (
+          {(error || loadError) && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+              {error ?? loadError}
             </Alert>
           )}
 

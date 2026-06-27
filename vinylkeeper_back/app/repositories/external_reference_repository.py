@@ -398,6 +398,6 @@ class ExternalReferenceRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_vinyl_state_id(self, state_name: str) -> Optional[int]:
+    async def get_vinyl_state_id(self, state_name: str) -> int | None:
         """Get the vinyl state ID using mapping"""
         return VinylStateMapping.get_id_from_name(state_name)

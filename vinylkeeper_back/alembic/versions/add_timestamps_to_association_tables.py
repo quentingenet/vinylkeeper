@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'add_timestamps_assoc'
@@ -47,7 +46,7 @@ def upgrade() -> None:
         unique=False,
         postgresql_where=sa.text('updated_at IS NOT NULL')
     )
-    
+
     op.create_index(
         'ix_collection_artist_updated_at',
         'collection_artist',

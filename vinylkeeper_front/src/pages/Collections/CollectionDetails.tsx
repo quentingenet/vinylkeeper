@@ -191,21 +191,15 @@ export default function CollectionDetails() {
   } = useWishlist(wishlistPage, wishlistLimit, shouldLoadWishlist, ownerUuid, sortOrder, wishlistSearch);
 
   // Search query with debounced term (albums and artists only — wishlist uses server-side search)
+  const searchType = tabValue === TAB.ALBUMS ? "album" : "artist";
   const {
     data: searchResults,
     isLoading: isLoadingSearch,
     refetch: refetchSearch,
   } = useQuery({
-    queryKey: queryKeys.collections.searchQuery(collectionId, debouncedSearchTerm, tabValue),
-    queryFn: () => {
-      const searchType =
-        tabValue === TAB.ALBUMS ? "album" : "artist";
-      return collectionApiService.searchCollectionItems(
-        collectionId,
-        debouncedSearchTerm,
-        searchType
-      );
-    },
+    queryKey: queryKeys.collections.searchQuery(collectionId, debouncedSearchTerm, searchType),
+    queryFn: () =>
+      collectionApiService.searchCollectionItems(collectionId, debouncedSearchTerm, searchType),
     enabled:
       !!debouncedSearchTerm.trim() &&
       debouncedSearchTerm.length >= 2 &&
@@ -320,7 +314,6 @@ export default function CollectionDetails() {
     }
   };
 
-  // Clear search when tab changes
   useEffect(() => {
     setSearchTerm("");
     setDebouncedSearchTerm("");
@@ -518,9 +511,7 @@ export default function CollectionDetails() {
             justifyContent: "space-between",
           }}
         >
-          {/* Search section */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {/* Search bar */}
             <TextField
               sx={{ width: isMobile ? "320px" : "400px" }}
               label={`${getSearchPlaceholder()} in my collection`}
@@ -551,7 +542,6 @@ export default function CollectionDetails() {
             />
           </Box>
 
-          {/* Sort order dropdown */}
           <Box
             sx={{
               display: "flex",

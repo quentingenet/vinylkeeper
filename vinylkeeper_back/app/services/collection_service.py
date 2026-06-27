@@ -5,7 +5,6 @@ from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.wishlist_repository import WishlistRepository
-from app.repositories.place_repository import PlaceRepository
 from app.models.collection_model import Collection
 from app.mappers import collection_mapper
 from app.schemas.collection_schema import (
@@ -46,13 +45,11 @@ class CollectionService:
         like_repository: LikeRepository,
         collection_album_repository: CollectionAlbumRepository,
         wishlist_repository: WishlistRepository,
-        place_repository: PlaceRepository
     ):
         self.repository = repository
         self.like_repository = like_repository
         self.collection_album_repository = collection_album_repository
         self.wishlist_repository = wishlist_repository
-        self.place_repository = place_repository
 
     async def _get_owned_collection(self, user_id: int, collection_id: int) -> Collection:
         collection = await self.repository.get_by_id(collection_id)
@@ -174,26 +171,6 @@ class CollectionService:
             collection = await self._get_owned_collection(user_id, collection_id)
             await self.repository.remove_artist(collection, artist_id)
         return True
-
-    async def get_collection_albums(self, collection_id: int) -> List[CollectionAlbumResponse]:
-        """Get all albums in a collection"""
-        try:
-            albums = await self.collection_album_repository.get_collection_albums(collection_id)
-
-            return [
-                collection_mapper.album_to_collection_album_response(album, collection_album)
-                for album, collection_album in albums
-            ]
-
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting collection albums: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection albums",
-                details={}
-            )
 
     async def get_user_collections(
         self, user_id: int, page: int = 1, limit: int = 10
@@ -364,7 +341,6 @@ class CollectionService:
         Uses aggregated queries for counts and likes.
         """
         try:
-            # Load collection with minimal relations (only owner, no albums/artists/likes)
             collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
             if not collection:
                 raise ResourceNotFoundError("Collection", collection_id)

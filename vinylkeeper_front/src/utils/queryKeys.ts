@@ -2,7 +2,7 @@ export const queryKeys = {
   collections: {
     all: () => ["collections"] as const,
     forUser: (userUuid: string | undefined) => ["collections", userUuid] as const,
-    list: (userUuid: string | undefined, page: number) => ["collections", userUuid, page] as const,
+    list: (userUuid: string | undefined, page: number, itemsPerPage?: number) => ["collections", userUuid, page, itemsPerPage] as const,
     detail: (id: number) => ["collectionDetails", id] as const,
     public: {
       all: () => ["publicCollections"] as const,
@@ -13,7 +13,7 @@ export const queryKeys = {
     artists: (id: number) => ["collectionArtists", id] as const,
     artistsPage: (id: number, page: number, sort: string) => ["collectionArtists", id, page, sort] as const,
     search: (id: number) => ["collectionSearch", id] as const,
-    searchQuery: (id: number, term: string, tab: number) => ["collectionSearch", id, term, tab] as const,
+    searchQuery: (id: number, term: string, searchType: string) => ["collectionSearch", id, term, searchType] as const,
   },
   places: {
     all: () => ["places"] as const,
@@ -40,8 +40,8 @@ export const queryKeys = {
   wishlist: {
     all: () => ["wishlist"] as const,
     forUser: (userUuid: string | undefined) => ["wishlist", userUuid] as const,
-    forUserPage: (userUuid: string | undefined, page: number, sortOrder?: string, search?: string) =>
-      ["wishlist", userUuid, page, sortOrder, search] as const,
+    forUserPage: (userUuid: string | undefined, page: number, itemsPerPage?: number, sortOrder?: string, search?: string) =>
+      ["wishlist", userUuid, page, itemsPerPage, sortOrder, search] as const,
     item: (id: number | null) => ["wishlistItem", id] as const,
   },
   userSettings: {

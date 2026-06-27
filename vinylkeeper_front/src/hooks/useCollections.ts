@@ -43,7 +43,7 @@ export const useCollections = (
     if (currentUser?.user_uuid) {
       // Only invalidate if we don't have data for the current page
       const currentData = queryClient.getQueryData(
-        queryKeys.collections.list(currentUser?.user_uuid, page)
+        queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage)
       );
       if (!currentData) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
@@ -57,7 +57,7 @@ export const useCollections = (
     error,
     isError,
   } = useQuery<PaginatedCollectionListResponse, ApiError>({
-    queryKey: queryKeys.collections.list(currentUser?.user_uuid, page),
+    queryKey: queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
     queryFn: () => collectionApiService.getCollections(page, itemsPerPage),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
@@ -105,15 +105,14 @@ export const useCollections = (
   >({
     mutationFn: collectionApiService.createCollection,
     onMutate: async (newCollection) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) });
 
       const previousCollections =
         queryClient.getQueryData<PaginatedCollectionListResponse>(
-          queryKeys.collections.list(currentUser?.user_uuid, page)
+          queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage)
         );
 
-      if (previousCollections) {
+      if (previousCollections && currentUser) {
         const optimisticCollection: CollectionListItemResponse = {
           id: -(Date.now()),
           name: newCollection.name,
@@ -126,14 +125,14 @@ export const useCollections = (
           likes_count: 0,
           is_liked_by_user: false,
           owner: {
-            username: currentUser!.username,
-            user_uuid: currentUser!.user_uuid,
+            username: currentUser.username,
+            user_uuid: currentUser.user_uuid,
           },
           image_preview: null,
         };
 
         queryClient.setQueryData<PaginatedCollectionListResponse>(
-          queryKeys.collections.list(currentUser?.user_uuid, page),
+          queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
           {
             ...previousCollections,
             items: [optimisticCollection, ...previousCollections.items],
@@ -153,7 +152,7 @@ export const useCollections = (
         context.previousCollections
       ) {
         queryClient.setQueryData(
-          queryKeys.collections.list(currentUser?.user_uuid, page),
+          queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
           context.previousCollections
         );
       }
@@ -167,7 +166,7 @@ export const useCollections = (
       ) {
         const currentData =
           queryClient.getQueryData<PaginatedCollectionListResponse>(
-            queryKeys.collections.list(currentUser?.user_uuid, page)
+            queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage)
           );
 
         if (currentData) {
@@ -177,7 +176,7 @@ export const useCollections = (
           );
 
           queryClient.setQueryData<PaginatedCollectionListResponse>(
-            queryKeys.collections.list(currentUser?.user_uuid, page),
+            queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
             { ...currentData, items: updatedItems }
           );
         }
@@ -195,17 +194,16 @@ export const useCollections = (
     mutationFn: (collectionId: number) =>
       collectionApiService.deleteCollection(collectionId),
     onMutate: async (collectionId) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.collections.forUser(currentUser?.user_uuid) });
 
       const previousCollections =
         queryClient.getQueryData<PaginatedCollectionListResponse>(
-          queryKeys.collections.list(currentUser?.user_uuid, page)
+          queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage)
         );
 
       if (previousCollections) {
         queryClient.setQueryData<PaginatedCollectionListResponse>(
-          queryKeys.collections.list(currentUser?.user_uuid, page),
+          queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
           {
             ...previousCollections,
             items: previousCollections.items.filter(
@@ -227,7 +225,7 @@ export const useCollections = (
         context.previousCollections
       ) {
         queryClient.setQueryData(
-          queryKeys.collections.list(currentUser?.user_uuid, page),
+          queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
           context.previousCollections
         );
       }
@@ -249,7 +247,7 @@ export const useCollections = (
     handleSwitchVisibility,
     refreshCollections: () => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.collections.list(currentUser?.user_uuid, page),
+        queryKey: queryKeys.collections.list(currentUser?.user_uuid, page, itemsPerPage),
       });
     },
     createCollection: createCollectionMutation.mutate,

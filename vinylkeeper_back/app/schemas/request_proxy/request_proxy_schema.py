@@ -139,11 +139,11 @@ class DiscogsData(BaseModel):
         None,
         description="Extra large picture URL"
     )
-    nb_album: Optional[int] = Field(
+    nb_album: int | None = Field(
         None,
         description="Number of albums"
     )
-    nb_fan: Optional[int] = Field(
+    nb_fan: int | None = Field(
         None,
         description="Number of fans"
     )
@@ -159,11 +159,11 @@ class DiscogsData(BaseModel):
         None,
         description="MD5 hash of the image"
     )
-    genre_id: Optional[int] = Field(
+    genre_id: int | None = Field(
         None,
         description="Genre ID"
     )
-    nb_tracks: Optional[int] = Field(
+    nb_tracks: int | None = Field(
         None,
         description="Number of tracks"
     )

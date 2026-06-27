@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 from dotenv import load_dotenv
-from app.models import *
+from app.models import *  # noqa: F401, F403 — required for Alembic autogenerate to detect all models
 
 load_dotenv(dotenv_path=os.path.join(
     os.path.dirname(__file__), "../app/.env.development"))
@@ -48,7 +48,7 @@ def run_migrations_online():
     # For async support, we need to use the sync URL for Alembic
     sync_url = config.get_main_option("sqlalchemy.url").replace("postgresql+asyncpg://", "postgresql://")
     config.set_main_option('sqlalchemy.url', sync_url)
-    
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",

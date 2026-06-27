@@ -327,3 +327,25 @@ class ContactMessageResponse(BaseModel):
     sent_at: datetime = Field(description="Timestamp when message was sent")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MessageResponse(BaseModel):
+    """Generic single-message response for operations that return only a status message."""
+    message: str = Field(description="Operation result message")
+
+
+class LoginResponse(BaseModel):
+    """Response schema for /auth endpoint."""
+    isLoggedIn: bool = Field(description="Whether the user is now logged in")
+
+
+class RegisterResponse(BaseModel):
+    """Response schema for /register endpoint."""
+    message: str = Field(description="Registration result message")
+    isLoggedIn: bool = Field(description="Whether the user is now logged in")
+
+
+class TokenRefreshResponse(BaseModel):
+    """Response schema for /refresh-token endpoint."""
+    message: str = Field(description="Token refresh result message")
+    isLoggedIn: bool = Field(description="Whether the user is still logged in")

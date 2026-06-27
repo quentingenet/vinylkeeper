@@ -175,7 +175,6 @@ export default function Dashboard() {
   }, [data]);
 
   // Show tutorial for new users who haven't seen it yet
-  // is_tutorial_seen is calculated by backend based on number_of_connections > 2
   // We persist tutorial seen status in localStorage to avoid showing it multiple times in the same session
   useEffect(() => {
     if (currentUser && !currentUser.is_tutorial_seen) {
@@ -722,7 +721,7 @@ export default function Dashboard() {
                   component={Link}
                   to="/explore"
                   sx={{
-                    color: "#c9a726",
+                    color: "primary.main",
                     textDecoration: "none",
                     fontSize: "1.25rem",
                     fontWeight: 500,
@@ -749,9 +748,6 @@ export default function Dashboard() {
         open={showTutorial}
         onClose={() => {
           setShowTutorial(false);
-          // Persist tutorial seen status in localStorage for this session
-          // This prevents showing the tutorial multiple times during the same session
-          // when number_of_connections < 2
           if (currentUser) {
             const tutorialSeenKey = `tutorial_seen_${currentUser.user_uuid}`;
             localStorage.setItem(tutorialSeenKey, "true");
