@@ -22,11 +22,14 @@ class CollectionAlbum(Base):
     updated_at = Column(DateTime(timezone=True),
                         nullable=True)
 
+    # raise: dead relation (0 read sites) and the main link in the
+    # Collection -> collection_albums -> Album -> album_collections -> Collection
+    # reload loop. Never deleted via ORM cascade (Album/Album repo .delete() unused).
     collection = relationship(
-        "Collection", back_populates="collection_albums", lazy="selectin")
+        "Collection", back_populates="collection_albums", lazy="raise")
     album = relationship(
-        "Album", back_populates="album_collections", lazy="selectin")
+        "Album", back_populates="album_collections", lazy="raise")
     state_record_ref = relationship("VinylState", foreign_keys=[
-                                    state_record], lazy="selectin")
+                                    state_record], lazy="raise")
     state_cover_ref = relationship("VinylState", foreign_keys=[
-                                   state_cover], lazy="selectin")
+                                   state_cover], lazy="raise")

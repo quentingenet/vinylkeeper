@@ -100,14 +100,6 @@ class User(Base):
         passive_deletes=True
     )
 
-    loans = relationship(
-        "Loan",
-        back_populates="user",
-        lazy="noload",
-        cascade="all, delete-orphan",
-        passive_deletes=True
-    )
-
     wishlist_items = relationship(
         "Wishlist",
         back_populates="user",

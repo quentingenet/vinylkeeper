@@ -63,14 +63,14 @@ class CollectionRepository(TransactionalMixin):
                 query = query.options(
                     selectinload(Collection.owner),
                     selectinload(Collection.collection_albums).selectinload(
-                        CollectionAlbum.album),
+                        CollectionAlbum.album).selectinload(Album.external_source),
                     selectinload(Collection.collection_albums).selectinload(
                         CollectionAlbum.state_record_ref),
                     selectinload(Collection.collection_albums).selectinload(
                         CollectionAlbum.state_cover_ref),
-                    selectinload(Collection.artists),
+                    selectinload(Collection.collection_artists).selectinload(
+                        CollectionArtist.artist).selectinload(Artist.external_source),
                     selectinload(Collection.mood),
-                    selectinload(Collection.likes)
                 )
 
             result = await self.db.execute(query)
@@ -712,6 +712,7 @@ class CollectionRepository(TransactionalMixin):
                     select(Album, CollectionAlbum)
                     .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                     .options(
+                        selectinload(Album.external_source),
                         selectinload(CollectionAlbum.state_record_ref),
                         selectinload(CollectionAlbum.state_cover_ref),
                     )

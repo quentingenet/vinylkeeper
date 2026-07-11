@@ -28,6 +28,11 @@ class CollectionAlbumRepository(TransactionalMixin):
             # Flush to get the ID
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
+            # state_record_ref/state_cover_ref are lazy="raise" and unset on this
+            # freshly-flushed instance; the mapper reads them right after this call.
+            await self.db.refresh(
+                collection_album, attribute_names=["state_record_ref", "state_cover_ref"]
+            )
             return collection_album
         except SQLAlchemyError as e:
             logger.error(
@@ -44,6 +49,9 @@ class CollectionAlbumRepository(TransactionalMixin):
             # Flush to ensure changes are persisted
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
+            await self.db.refresh(
+                collection_album, attribute_names=["state_record_ref", "state_cover_ref"]
+            )
             return collection_album
         except SQLAlchemyError as e:
             logger.error(
@@ -145,6 +153,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                 select(Album, CollectionAlbum)
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .options(
+                    selectinload(Album.external_source),
                     selectinload(CollectionAlbum.state_record_ref),
                     selectinload(CollectionAlbum.state_cover_ref)
                 )
@@ -180,6 +189,8 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             query = select(Album).join(
                 CollectionAlbum, Album.id == CollectionAlbum.album_id
+            ).options(
+                selectinload(Album.external_source)
             ).filter(
                 CollectionAlbum.collection_id == collection_id,
                 Album.id == album_id

@@ -21,8 +21,11 @@ class CollectionArtist(Base):
 
     collection = relationship(
         "Collection", back_populates="collection_artists", overlaps="collections")
+    # selectin: Collection.collection_artists is eager-loaded via selectin, and
+    # collection_service._build_collection_response reads .artist on each row.
+    # Without this, .artist stays unloaded and raises MissingGreenlet under AsyncSession.
     artist = relationship(
-        "Artist", back_populates="collection_artists", overlaps="collections")
+        "Artist", back_populates="collection_artists", overlaps="collections", lazy="selectin")
 
 
 # Keep a reference to the table for backward compatibility with code using .c notation

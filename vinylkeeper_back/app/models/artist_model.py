@@ -8,6 +8,7 @@ from sqlalchemy import (
     func
 )
 from sqlalchemy.orm import relationship, validates
+from app.core.orm_utils import is_loaded
 from app.models.base import Base
 
 
@@ -42,7 +43,7 @@ class Artist(Base):
         comment="Reference to external source (e.g. MusicBrainz)"
     )
     external_source = relationship(
-        "ExternalSource", back_populates="artists", lazy="selectin")
+        "ExternalSource", back_populates="artists", lazy="raise")
 
     created_at = Column(DateTime(timezone=True),
                         server_default=func.now(), nullable=False)
@@ -53,18 +54,24 @@ class Artist(Base):
     # Non-mapped aggregated count, populated by repository queries
     collections_count = 0
 
+    # raise: dead relation (0 read sites). ArtistRepository.delete() is
+    # unused, so the delete-orphan cascade never needs this loaded.
     collection_artists = relationship(
         "CollectionArtist",
         back_populates="artist",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="raise"
     )
 
+    # raise: dead relation (0 read sites) and the single biggest fan-out
+    # source in the app — loading any Artist used to eager-load every
+    # Collection (across all users) containing it, each of which then
+    # cascaded through its own full selectin chain.
     collections = relationship(
         "Collection",
         secondary="collection_artist",
         back_populates="artists",
-        lazy="selectin",
+        lazy="raise",
         overlaps="collection_artists"
     )
 
@@ -76,4 +83,6 @@ class Artist(Base):
         return value
 
     def __repr__(self):
-        return f"<Artist(external_artist_id={self.external_artist_id}, source={self.external_source.name})>"
+        loaded = is_loaded(self, 'external_source') and self.external_source
+        source_name = self.external_source.name if loaded else 'None'
+        return f"<Artist(external_artist_id={self.external_artist_id}, source={source_name})>"

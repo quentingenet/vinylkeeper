@@ -10,6 +10,12 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ValidationError,
 )
+from app.models.collection_model import Collection
+from app.models.association_tables import CollectionArtist
+from app.models.artist_model import Artist
+from app.models.collection_album import CollectionAlbum
+from app.models.album_model import Album
+from app.models.reference_data.external_sources import ExternalSource
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +277,75 @@ class TestGetCollectionById:
             result = await service.get_collection_by_id(collection_id=1, user_id=1)
 
         assert result is not None
+
+
+# ---------------------------------------------------------------------------
+# _build_collection_response — real (non-mocked) ORM relationship objects
+#
+# Regression test for the CollectionArtist.artist eager-load bug: every other
+# test in this file uses col.collection_artists = [] on a MagicMock, which
+# never exercises the `collection_artist.artist` attribute access in
+# collection_service._build_collection_response. Real ORM instances are used
+# here instead so that a real (non-Mock) relationship is actually read.
+#
+# Note: this does NOT reproduce the MissingGreenlet failure mode itself
+# (these objects are transient, never attached to a session, so unset
+# relationships just default to None/[] instead of triggering a lazy load).
+# That requires a real AsyncSession round-trip — see the Phase B integration
+# tests for that coverage.
+# ---------------------------------------------------------------------------
+
+class TestBuildCollectionResponseRealObjects:
+    async def test_artists_and_albums_are_mapped_from_real_relations(self):
+        service, *_ = make_service()
+
+        now = datetime.now(timezone.utc)
+        collection = Collection(
+            id=1, name="Real Collection", description=None,
+            is_public=True, owner_id=1, mood_id=None,
+            created_at=now, updated_at=now,
+        )
+        collection.owner = None
+
+        source = ExternalSource(id=1, name="musicbrainz")
+
+        artist = Artist(
+            id=10, external_artist_id="123", external_source_id=1,
+            title="Real Artist", image_url=None,
+            created_at=now, updated_at=now,
+        )
+        artist.external_source = source
+
+        collection_artist = CollectionArtist(
+            collection_id=1, artist_id=10, created_at=now, updated_at=now,
+        )
+        collection_artist.artist = artist
+        collection.collection_artists = [collection_artist]
+
+        album = Album(
+            id=20, external_album_id="456", external_source_id=1,
+            title="Real Album", image_url=None,
+            created_at=now, updated_at=now,
+        )
+        album.external_source = source
+
+        collection_album = CollectionAlbum(
+            collection_id=1, album_id=20, created_at=now, updated_at=now,
+        )
+        collection_album.album = album
+        collection.collection_albums = [collection_album]
+
+        response = await service._build_collection_response(
+            collection, user_id=1, likes_count=0, is_liked=False
+        )
+
+        assert len(response.artists) == 1
+        assert response.artists[0].id == 10
+        assert response.artists[0].external_source["name"] == "musicbrainz"
+
+        assert len(response.albums) == 1
+        assert response.albums[0].id == 20
+        assert response.albums[0].external_source["name"] == "musicbrainz"
 
 
 # ---------------------------------------------------------------------------

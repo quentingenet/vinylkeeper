@@ -6,6 +6,7 @@ from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.wishlist_repository import WishlistRepository
 from app.models.collection_model import Collection
+from app.core.orm_utils import is_loaded
 from app.mappers import collection_mapper
 from app.schemas.collection_schema import (
     CollectionCreate,
@@ -351,7 +352,7 @@ class CollectionService:
 
             owner = None
             owner_uuid = None
-            if hasattr(collection, 'owner') and collection.owner:
+            if is_loaded(collection, 'owner') and collection.owner:
                 owner = collection_mapper.user_to_mini_response(collection.owner)
                 owner_uuid = collection.owner.user_uuid
 
@@ -528,9 +529,9 @@ class CollectionService:
     ) -> CollectionResponse:
         """Build a CollectionResponse from a Collection instance using preloaded data."""
         artists = []
-        if hasattr(collection, 'collection_artists') and collection.collection_artists:
+        if is_loaded(collection, 'collection_artists') and collection.collection_artists:
             for collection_artist in collection.collection_artists:
-                if hasattr(collection_artist, 'artist') and collection_artist.artist:
+                if is_loaded(collection_artist, 'artist') and collection_artist.artist:
                     artists.append(
                         collection_mapper.artist_to_collection_artist_response(
                             collection_artist.artist, collection_artist
@@ -538,14 +539,14 @@ class CollectionService:
                     )
 
         albums = []
-        if hasattr(collection, 'collection_albums') and collection.collection_albums:
+        if is_loaded(collection, 'collection_albums') and collection.collection_albums:
             for collection_album in collection.collection_albums:
-                if hasattr(collection_album, 'album') and collection_album.album:
+                if is_loaded(collection_album, 'album') and collection_album.album:
                     albums.append(collection_mapper.album_to_collection_album_response(
                         collection_album.album, collection_album))
 
         owner = None
-        if hasattr(collection, 'owner') and collection.owner:
+        if is_loaded(collection, 'owner') and collection.owner:
             owner = collection_mapper.user_to_mini_response(collection.owner)
 
         if likes_count is None:
@@ -576,7 +577,7 @@ class CollectionService:
     ) -> CollectionListItemResponse:
         """Build lightweight collection list item response."""
         owner = None
-        if hasattr(collection, 'owner') and collection.owner:
+        if is_loaded(collection, 'owner') and collection.owner:
             owner = collection_mapper.user_to_mini_response(collection.owner)
 
         if likes_count is None:

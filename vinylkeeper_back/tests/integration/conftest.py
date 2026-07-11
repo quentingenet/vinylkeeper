@@ -1,11 +1,18 @@
+import uuid
 import pytest
+import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import AsyncClient, ASGITransport
 from email_validator import EmailNotValidError
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from app.main import app
 from app.deps.deps import get_user_service
 from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
+from app.core.security import hash_password
+from app.models.user_model import User
+from app.models.reference_data.roles import Role
 from tests.conftest import make_user
 
 
@@ -60,6 +67,68 @@ async def client():
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             yield c
     app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Infra tests d'intégration réels (Phase B) — vraie AsyncSession Postgres
+#
+# Opt-in uniquement : seuls les tests qui demandent real_session déclenchent
+# une vraie connexion. La base pointée contient une copie des données de
+# prod — chaque test tourne dans une transaction externe + SAVEPOINT
+# (join_transaction_mode="create_savepoint"), annulée à la fin. Même les
+# session.commit() internes de transaction_context() ne libèrent qu'un
+# SAVEPOINT, jamais la transaction externe : rien n'est jamais écrit
+# durablement.
+# ---------------------------------------------------------------------------
+
+REAL_TEST_DATABASE_URL = "postgresql+asyncpg://testeur:ton_mot_de_passe_ici@localhost:5432/vinylkeeper_db"
+
+
+@pytest_asyncio.fixture
+async def real_engine():
+    """Function-scoped : pytest-asyncio ouvre une event loop par test, et les
+    connexions asyncpg ne survivent pas au changement de loop."""
+    engine = create_async_engine(REAL_TEST_DATABASE_URL)
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def real_session(real_engine):
+    async with real_engine.connect() as conn:
+        await conn.begin()
+        session_factory = async_sessionmaker(
+            bind=conn, expire_on_commit=False, join_transaction_mode="create_savepoint"
+        )
+        session = session_factory()
+        try:
+            yield session
+        finally:
+            await session.close()
+            await conn.rollback()
+
+
+async def make_real_test_user(session: AsyncSession, **overrides) -> User:
+    role_id = overrides.pop("role_id", None)
+    if role_id is None:
+        role_id = (await session.execute(select(Role.id).limit(1))).scalar_one()
+    defaults = dict(
+        username=f"itest_{uuid.uuid4().hex[:12]}",
+        email=f"itest_{uuid.uuid4().hex[:12]}@example.com",
+        password=hash_password("Str0ng!Passw0rd"),
+        is_accepted_terms=True,
+        is_active=True,
+        role_id=role_id,
+        user_uuid=uuid.uuid4(),
+    )
+    defaults.update(overrides)
+    user = User(**defaults)
+    session.add(user)
+    await session.flush()
+    # role is lazy="selectin": auto-loaded on SELECT, but not on a freshly
+    # constructed+flushed instance. Refresh so callers can read user.role.
+    await session.refresh(user, attribute_names=["role"])
+    return user
 
 
 # ---------------------------------------------------------------------------

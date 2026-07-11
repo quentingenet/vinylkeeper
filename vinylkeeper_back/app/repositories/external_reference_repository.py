@@ -139,8 +139,11 @@ class ExternalReferenceRepository(TransactionalMixin):
             from app.models.collection_album import CollectionAlbum
             from app.models.album_model import Album
             from sqlalchemy import select
+            from sqlalchemy.orm import selectinload
 
-            query = select(CollectionAlbum).filter(
+            query = select(CollectionAlbum).options(
+                selectinload(CollectionAlbum.album)
+            ).filter(
                 CollectionAlbum.collection_id == collection_id
             ).join(Album).filter(Album.external_album_id == external_id)
 

@@ -14,6 +14,7 @@ from odf.text import P
 
 from app.core.exceptions import ForbiddenError, ResourceNotFoundError
 from app.core.logging import logger
+from app.core.orm_utils import is_loaded
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.association_tables import CollectionArtist
@@ -338,7 +339,7 @@ class ExportService:
             collection.name or "",
             str(album.id),
             album.external_album_id or "",
-            album.external_source.name if getattr(album, "external_source", None) else "",
+            album.external_source.name if is_loaded(album, "external_source") and album.external_source else "",
             artist_name,
             album_title,
             album.title or "",
@@ -361,7 +362,7 @@ class ExportService:
             collection.name or "",
             str(artist.id),
             artist.external_artist_id or "",
-            artist.external_source.name if getattr(artist, "external_source", None) else "",
+            artist.external_source.name if is_loaded(artist, "external_source") and artist.external_source else "",
             artist.title or "",
             self._format_dt(collection_artist.created_at),
             self._format_dt(collection_artist.updated_at),

@@ -58,6 +58,9 @@ class ArtistRepository(TransactionalMixin):
         try:
             await self._add_entity(artist, flush=True)  # Flush to get the ID
             await self._refresh_entity(artist)
+            # external_source is lazy="raise"; callers (wishlist_service,
+            # external_reference_service) read it right after create().
+            await self.db.refresh(artist, attribute_names=["external_source"])
             return artist
         except SQLAlchemyError as e:
             logger.error(f"Error creating artist: {str(e)}")

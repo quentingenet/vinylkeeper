@@ -11,6 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, validates
 
+from app.core.orm_utils import is_loaded
 from app.models.base import Base
 
 
@@ -23,24 +24,24 @@ class Collection(Base):
     is_public = Column(Boolean, default=False, nullable=False)
 
     mood_id = Column(Integer, ForeignKey("moods.id"), nullable=True, index=True)
-    mood = relationship("Mood", back_populates="collections", lazy="selectin")
+    mood = relationship("Mood", back_populates="collections", lazy="raise")
 
     owner_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False, index=True)
-    owner = relationship("User", back_populates="collections", lazy="selectin")
+    owner = relationship("User", back_populates="collections", lazy="raise")
 
     collection_albums = relationship(
         "CollectionAlbum",
         back_populates="collection",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="raise"
     )
 
     collection_artists = relationship(
         "CollectionArtist",
         back_populates="collection",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="raise"
     )
 
     artists = relationship(
@@ -95,5 +96,5 @@ class Collection(Base):
         return description
 
     def __repr__(self):
-        mood_name = self.mood.name if self.mood else 'None'
+        mood_name = self.mood.name if is_loaded(self, 'mood') and self.mood else 'None'
         return f"<Collection(name={self.name}, owner_id={self.owner_id}, mood={mood_name})>"

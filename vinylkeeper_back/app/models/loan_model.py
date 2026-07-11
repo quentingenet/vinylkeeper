@@ -66,14 +66,11 @@ class Loan(Base):
         ),
     )
 
-    # Relationships
-    user = relationship("User", back_populates="loans", lazy="selectin")
+    # Relationships (one-directional: Album.loans/User.loans removed as dead,
+    # unread relations — see C4 of the lazy-loading migration)
+    user = relationship("User", lazy="selectin")
 
-    album = relationship(
-        "Album",
-        back_populates="loans",
-        lazy="selectin"
-    )
+    album = relationship("Album", lazy="selectin")
 
     @validates("comment")
     def validate_comment(self, key, comment):

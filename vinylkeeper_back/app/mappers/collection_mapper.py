@@ -2,6 +2,7 @@ from typing import Optional
 
 from app.core.enums import VinylStateEnum
 from app.core.logging import logger
+from app.core.orm_utils import is_loaded
 from app.schemas.collection_schema import CollectionAlbumResponse, CollectionArtistResponse
 from app.schemas.user_schema import UserMiniResponse
 
@@ -26,7 +27,7 @@ def album_to_collection_album_response(album, collection_album=None) -> Collecti
         acquisition_month_year = collection_album.acquisition_month_year
 
     external_source_dict = external_source_to_dict(
-        album.external_source if hasattr(album, "external_source") else None
+        album.external_source if is_loaded(album, "external_source") else None
     )
 
     created_at = (
@@ -60,7 +61,7 @@ def album_to_collection_album_response(album, collection_album=None) -> Collecti
 
 def artist_to_collection_artist_response(artist, collection_artist=None) -> CollectionArtistResponse:
     external_source_dict = external_source_to_dict(
-        artist.external_source if hasattr(artist, "external_source") else None
+        artist.external_source if is_loaded(artist, "external_source") else None
     )
 
     created_at = (

@@ -8,6 +8,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import relationship, validates
+from app.core.orm_utils import is_loaded
 from app.models.base import Base
 
 
@@ -34,7 +35,7 @@ class Album(Base):
     external_source_id = Column(Integer, ForeignKey(
         "external_sources.id"), nullable=False, index=True)
     external_source = relationship(
-        "ExternalSource", back_populates="albums", lazy="selectin")
+        "ExternalSource", back_populates="albums", lazy="raise")
 
     image_url = Column(String(1024), nullable=True,
                        comment="Cached album cover")
@@ -50,18 +51,14 @@ class Album(Base):
     loans_count = 0
     wishlist_count = 0
 
+    # raise: dead relation (0 read sites), the other end of the
+    # Collection <-> Album reload loop. AlbumRepository.delete() is unused,
+    # so the delete-orphan cascade never needs this loaded.
     album_collections = relationship(
         "CollectionAlbum",
         back_populates="album",
         cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-
-    loans = relationship(
-        "Loan",
-        back_populates="album",
-        lazy="selectin",
-        cascade="all, delete-orphan"
+        lazy="raise"
     )
 
     @validates('external_album_id')
@@ -72,4 +69,6 @@ class Album(Base):
         return value
 
     def __repr__(self):
-        return f"<Album(external_album_id={self.external_album_id!r}, source={self.external_source.name})>"
+        loaded = is_loaded(self, 'external_source') and self.external_source
+        source_name = self.external_source.name if loaded else 'None'
+        return f"<Album(external_album_id={self.external_album_id!r}, source={source_name})>"
