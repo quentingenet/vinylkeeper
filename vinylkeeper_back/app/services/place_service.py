@@ -19,7 +19,6 @@ from app.core.exceptions import (
     AppException,
     ResourceNotFoundError,
     ForbiddenError,
-    DuplicateFieldError,
     ServerError,
     ValidationError,
 )
@@ -127,8 +126,6 @@ class PlaceService:
 
             return response
 
-        except (DuplicateFieldError, ValidationError) as e:
-            raise e
         except AppException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:
@@ -144,10 +141,11 @@ class PlaceService:
         try:
             place = await self.repository.get_moderated_place_by_id(place_id)
 
-            likes_count = await self.repository.get_place_likes_count(place_id)
-            is_liked = False
-            if user:
-                is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
+            likes_info = await self.repository.get_places_likes_info_batch(
+                user.id if user else None, [place_id]
+            )
+            likes_count = likes_info["counts"].get(place_id, 0)
+            is_liked = likes_info["user_likes"].get(place_id, False)
 
             return self._create_public_place_response(place, likes_count, is_liked)
         except ResourceNotFoundError:

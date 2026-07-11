@@ -6,7 +6,6 @@ from app.schemas.user_schema import UserCreate
 from app.core.exceptions import (
     DuplicateEmailError,
     DuplicateUsernameError,
-    EmailNotFoundError,
     InvalidCredentialsError,
     InvalidResetTokenError,
     PasswordUpdateError,
@@ -67,7 +66,7 @@ class TestAuthenticate:
     async def test_unknown_email_raises(self):
         service, repo, _ = make_service(user=None)
         repo.get_user_by_email = AsyncMock(return_value=None)
-        with pytest.raises(EmailNotFoundError):
+        with pytest.raises(InvalidCredentialsError):
             await service.authenticate("ghost@example.com", "password")
 
     async def test_wrong_password_raises(self, regular_user):

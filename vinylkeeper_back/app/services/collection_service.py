@@ -200,14 +200,14 @@ class CollectionService:
                         collection.artists_count,
                     )
                     collection_responses.append(response)
+                except AppException:
+                    raise
                 except Exception as collection_error:
                     logger.error(
                         f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
                     continue
 
             return collection_responses, total
-        except ValidationError as e:
-            raise e
         except AppException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:
@@ -222,8 +222,8 @@ class CollectionService:
         self,
         page: int = 1,
         limit: int = 10,
-        exclude_user_id: int = None,
-        user_id: int = None,
+        exclude_user_id: int | None = None,
+        user_id: int | None = None,
         sort_by: str = "updated_at"
     ) -> Tuple[List[CollectionListItemResponse], int]:
         """Get public collections with pagination (optimized list view, lightweight response)."""
@@ -250,14 +250,14 @@ class CollectionService:
                         collection.artists_count,
                     )
                     collection_responses.append(response)
+                except AppException:
+                    raise
                 except Exception as collection_error:
                     logger.error(
                         f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
                     continue
 
             return collection_responses, total
-        except ValidationError as e:
-            raise e
         except AppException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:

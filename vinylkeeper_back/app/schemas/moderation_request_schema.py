@@ -116,3 +116,11 @@ class PaginatedModerationRequestResponse(BaseModel):
     page: int
     limit: int
     total_pages: int
+
+
+class ModerationStatsResponse(BaseModel):
+    """Schema for moderation statistics."""
+    total: int = Field(ge=0)
+    pending: int = Field(ge=0)
+    approved: int = Field(ge=0)
+    rejected: int = Field(ge=0)

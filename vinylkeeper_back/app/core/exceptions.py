@@ -127,20 +127,20 @@ class PasswordUpdateError(ServerError):
 
 
 class UserNotFoundError(AuthenticationError):
-    def __init__(self, identifier: str):
+    def __init__(self, identifier: str = ""):
         super().__init__(
             error_code=ErrorCode.USER_NOT_FOUND,
-            message=f"User not found: {identifier}",
-            details={"identifier": identifier}
+            message="User not found",
+            details={}
         )
 
 
 class EmailNotFoundError(AuthenticationError):
-    def __init__(self, email: str):
+    def __init__(self, email: str = ""):
         super().__init__(
             error_code=ErrorCode.EMAIL_NOT_FOUND,
-            message=f"Email not found: {email}",
-            details={"email": email}
+            message="Invalid email or password",
+            details={}
         )
 
 

@@ -14,7 +14,6 @@ from app.mails.client_mail import send_mail, MailSubject
 from app.core.exceptions import (
     InvalidCredentialsError,
     ResourceNotFoundError,
-    EmailNotFoundError,
     PasswordUpdateError,
     UserNotFoundError,
     DuplicateEmailError,
@@ -37,7 +36,7 @@ class UserService:
         """Authenticate a user with email and password"""
         user = await self.repository.get_user_by_email(email)
         if not user:
-            raise EmailNotFoundError(email)
+            raise InvalidCredentialsError()
 
         if not verify_password(user.password, password):
             raise InvalidCredentialsError()

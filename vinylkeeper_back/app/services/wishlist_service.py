@@ -35,7 +35,7 @@ class WishlistService:
         self.external_ref_repo = external_ref_repo
 
     async def _find_or_create_entity(
-        self, request: AddToWishlistRequest, external_source_id: int = None
+        self, request: AddToWishlistRequest, external_source_id: int | None = None
     ) -> AlbumResponse | ArtistResponse:
         """Find existing entity or create new one"""
         try:

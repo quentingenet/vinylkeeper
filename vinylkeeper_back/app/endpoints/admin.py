@@ -4,6 +4,7 @@ from app.schemas.moderation_request_schema import (
     ModerationRequestResponse,
     ModerationRequestListResponse,
     PaginatedModerationRequestResponse,
+    ModerationStatsResponse,
     MODERATION_DEFAULT_LIMIT,
     MODERATION_MAX_LIMIT,
 )
@@ -91,7 +92,7 @@ async def reject_moderation_request(
     return rejected_request
 
 
-@router.get("/moderation-stats", response_model=dict, status_code=status.HTTP_200_OK)
+@router.get("/moderation-stats", response_model=ModerationStatsResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def get_moderation_stats(
     user: User = Depends(require_admin),
