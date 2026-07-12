@@ -49,7 +49,7 @@ export const useCollections = (
         void queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
       }
     }
-  }, [currentUser?.user_uuid, queryClient, page]);
+  }, [currentUser?.user_uuid, queryClient, page, itemsPerPage]);
 
   const {
     data: collectionsData,

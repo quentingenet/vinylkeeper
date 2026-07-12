@@ -42,7 +42,6 @@ export const queryKeys = {
     forUser: (userUuid: string | undefined) => ["wishlist", userUuid] as const,
     forUserPage: (userUuid: string | undefined, page: number, itemsPerPage?: number, sortOrder?: string, search?: string) =>
       ["wishlist", userUuid, page, itemsPerPage, sortOrder, search] as const,
-    item: (id: number | null) => ["wishlistItem", id] as const,
   },
   userSettings: {
     all: () => ["userSettings"] as const,

@@ -1,10 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import { queryKeys } from "@utils/queryKeys";
-import type {
-  PaginatedWishlistResponse,
-  WishlistItemResponse,
-} from "@models/IExternalReference";
+import type { PaginatedWishlistResponse } from "@models/IExternalReference";
 import { type ApiError } from "@utils/apiError";
 import { useUserContext } from "@contexts/UserContext";
 
@@ -72,44 +69,5 @@ export const useWishlist = (
         queryKey: userUuid ? queryKeys.wishlist.forUser(userUuid) : queryKeys.wishlist.all(),
       });
     },
-  };
-};
-
-interface UseWishlistItemDetailReturn {
-  wishlistItem: WishlistItemResponse | undefined;
-  isLoading: boolean;
-  error: ApiError | null;
-  isError: boolean;
-}
-
-export const useWishlistItemDetail = (
-  wishlistId: number | null,
-  enabled: boolean = true
-): UseWishlistItemDetailReturn => {
-  const {
-    data: wishlistItem,
-    isLoading,
-    error,
-    isError,
-  } = useQuery<WishlistItemResponse, ApiError>({
-    queryKey: queryKeys.wishlist.item(wishlistId),
-    queryFn: () =>
-      wishlistId !== null
-        ? externalReferenceApiService.getWishlistItemDetail(wishlistId)
-        : Promise.reject(new Error("wishlistId required")),
-    enabled: enabled && wishlistId !== null,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    retry: 1,
-    retryDelay: 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-  });
-
-  return {
-    wishlistItem,
-    isLoading,
-    error: error || null,
-    isError,
   };
 };

@@ -2,7 +2,6 @@ import { logger } from "@utils/logger";
 import {
   AddToWishlistRequest,
   AddToCollectionRequest,
-  WishlistItemResponse,
   PaginatedWishlistResponse,
   CollectionItemResponse,
   AddToWishlistResponse,
@@ -92,19 +91,6 @@ export class ExternalReferenceService extends BaseApiService {
     }
   }
 
-  async getWishlistItemDetail(
-    wishlistId: number
-  ): Promise<WishlistItemResponse> {
-    try {
-      return await this.get<WishlistItemResponse>(
-        `${this.endpoint}/wishlist/${wishlistId}`
-      );
-    } catch (error) {
-      logger.error("Error fetching wishlist item detail:", error);
-      throw new Error("Failed to fetch wishlist item detail");
-    }
-  }
-
   async getCollectionItems(): Promise<CollectionItemResponse[]> {
     try {
       return await this.get<CollectionItemResponse[]>(
@@ -144,8 +130,6 @@ export const externalReferenceApiService = {
     search?: string
   ) =>
     externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userUuid, sortOrder, search),
-  getWishlistItemDetail: (wishlistId: number) =>
-    externalReferenceServiceInstance.getWishlistItemDetail(wishlistId),
   getCollectionItems: () =>
     externalReferenceServiceInstance.getCollectionItems(),
 };

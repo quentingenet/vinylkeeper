@@ -9,14 +9,17 @@ export interface AlbumMetadataParams {
   title: string;
 }
 
-// Direct fetch intentional: /request-proxy/music-metadata/* are public endpoints — no auth needed, BaseApiService excluded.
+// Direct fetch (not BaseApiService) so the query key/retry config here stays
+// independent from BaseApiService's own refresh-token flow. /request-proxy/*
+// now requires auth (login-gated Discogs search) — credentials must be sent explicitly.
 export const fetchAlbumMetadata = async (
   params: AlbumMetadataParams
 ): Promise<AlbumMetadata> => {
   const response = await fetch(
     `${import.meta.env.VITE_API_VK_URL}/request-proxy/music-metadata/album/${
       params.id
-    }`
+    }`,
+    { credentials: "include" }
   );
   if (!response.ok) {
     if (response.status === 404) {
@@ -46,7 +49,8 @@ export const fetchArtistMetadata = async (
     const response = await fetch(
       `${
         import.meta.env.VITE_API_VK_URL
-      }/request-proxy/music-metadata/artist/${artistId}`
+      }/request-proxy/music-metadata/artist/${artistId}`,
+      { credentials: "include" }
     );
 
     if (!response.ok) {

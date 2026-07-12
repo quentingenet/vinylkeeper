@@ -1,4 +1,3 @@
-import { logger } from "@utils/logger";
 import {
   Box,
   Typography,
@@ -33,6 +32,7 @@ import { useUserContext } from "@contexts/UserContext";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
+import { toPlaybackItem } from "@utils/toPlaybackItem";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -187,36 +187,6 @@ export default function Dashboard() {
       }
     }
   }, [currentUser]);
-
-  // Utility function to transform LatestAddition into PlaybackItem
-  const toPlaybackItem = (
-    addition: LatestAddition | undefined,
-    type: "album" | "artist"
-  ): PlaybackItem | null => {
-    if (!addition) return null;
-
-    const externalId = addition.external_id
-      ? addition.external_id
-      : addition.id.toString();
-
-    // Validate that external ID is numeric
-    if (!/^\d+$/.test(externalId)) {
-      logger.warn(
-        `Non-numeric external ID for ${type}:`,
-        externalId,
-        addition
-      );
-      return null;
-    }
-
-    return {
-      id: externalId,
-      title: addition.name,
-      artist: type === "album" ? "" : addition.name,
-      image_url: addition.image_url,
-      itemType: type,
-    };
-  };
 
   useEffect(() => {
     setPlaybackModalOpen(false);
