@@ -458,6 +458,28 @@ class TestGetPublicCollections:
         assert collections == []
         assert total == 42
 
+    async def test_dropped_item_decrements_total(self):
+        """Regression test: a collection that fails to map into a response
+        must not inflate total beyond what's actually rendered."""
+        service, repo, *_ = make_service()
+        good = make_collection(collection_id=1)
+        bad = make_collection(collection_id=2)
+        repo.get_public_collections = AsyncMock(return_value=([good, bad], 42))
+        repo.get_collections_likes_info_batch = AsyncMock(
+            return_value={"counts": {}, "user_likes": {}}
+        )
+
+        def fake_build(collection, *_args, **_kwargs):
+            if collection is bad:
+                raise ValueError("simulated mapping failure")
+            return MagicMock()
+
+        with patch.object(service, "_build_collection_list_item", side_effect=fake_build):
+            collections, total = await service.get_public_collections(page=1, limit=10)
+
+        assert len(collections) == 1
+        assert total == 41
+
 
 class TestGetUserCollectionsPagination:
     async def test_empty_page_preserves_total(self):
@@ -468,6 +490,26 @@ class TestGetUserCollectionsPagination:
 
         assert collections == []
         assert total == 17
+
+    async def test_dropped_item_decrements_total(self):
+        service, repo, *_ = make_service()
+        good = make_collection(collection_id=1)
+        bad = make_collection(collection_id=2)
+        repo.get_user_collections = AsyncMock(return_value=([good, bad], 17))
+        repo.get_collections_likes_info_batch = AsyncMock(
+            return_value={"counts": {}, "user_likes": {}}
+        )
+
+        def fake_build(collection, *_args, **_kwargs):
+            if collection is bad:
+                raise ValueError("simulated mapping failure")
+            return MagicMock()
+
+        with patch.object(service, "_build_collection_list_item", side_effect=fake_build):
+            collections, total = await service.get_user_collections(user_id=1, page=1, limit=10)
+
+        assert len(collections) == 1
+        assert total == 16
 
 
 # ---------------------------------------------------------------------------

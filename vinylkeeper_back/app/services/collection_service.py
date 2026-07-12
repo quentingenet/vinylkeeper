@@ -190,6 +190,7 @@ class CollectionService:
             user_likes = likes_info['user_likes']
 
             collection_responses = []
+            dropped = 0
             for collection in collections:
                 try:
                     response = self._build_collection_list_item(
@@ -206,9 +207,11 @@ class CollectionService:
                 except Exception as collection_error:
                     logger.error(
                         f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
-                    continue
+                    dropped += 1
 
-            return collection_responses, total
+            # Keep total consistent with what's actually returned: a dropped
+            # item must not inflate total/total_pages beyond the rendered page.
+            return collection_responses, max(0, total - dropped)
         except AppException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:
@@ -240,6 +243,7 @@ class CollectionService:
             user_likes = likes_info['user_likes']
 
             collection_responses = []
+            dropped = 0
             for collection in collections:
                 try:
                     response = self._build_collection_list_item(
@@ -256,9 +260,9 @@ class CollectionService:
                 except Exception as collection_error:
                     logger.error(
                         f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
-                    continue
+                    dropped += 1
 
-            return collection_responses, total
+            return collection_responses, max(0, total - dropped)
         except AppException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:

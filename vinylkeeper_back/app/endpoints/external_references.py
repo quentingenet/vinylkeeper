@@ -159,7 +159,21 @@ async def export_my_wishlist_ods(
 async def get_wishlist_item_detail(
     wishlist_id: int = Path(..., gt=0, title="Wishlist Item ID"),
     current_user: User = Depends(get_current_user),
-    service: WishlistService = Depends(get_wishlist_service)
+    service: WishlistService = Depends(get_wishlist_service),
+    collection_service: CollectionService = Depends(get_collection_service),
 ):
-    """Get detailed wishlist item by ID (public - any authenticated user can view)"""
+    """
+    Get detailed wishlist item by ID.
+    Visibility follows collection visibility, same rule as GET /wishlist:
+    - Owner can always view their own item
+    - Otherwise, viewable only if the owner has at least one public collection
+    """
+    owner_id = await service.get_wishlist_item_owner_id(wishlist_id)
+    if owner_id != current_user.id:
+        if not await collection_service.has_public_collections(owner_id):
+            raise ForbiddenError(
+                error_code=4003,
+                message="You don't have permission to view this wishlist item (owner has no public collections)",
+                details={"wishlist_id": wishlist_id}
+            )
     return await service.get_wishlist_item_detail(wishlist_id)

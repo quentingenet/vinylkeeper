@@ -195,7 +195,8 @@ class PlaceService:
             places = await self.repository.get_places_by_location(country, city)
             if not places:
                 return []
-            return await self._build_public_place_responses(places, user.id)
+            items, _dropped = await self._build_public_place_responses(places, user.id)
+            return items
         except AppException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:
@@ -216,13 +217,16 @@ class PlaceService:
                 self.repository.count_all_moderated_places(),
                 self.repository.get_all_moderated_places(limit, offset),
             )
-            items = await self._build_public_place_responses(places, user.id if user else None)
+            items, dropped = await self._build_public_place_responses(places, user.id if user else None)
+            # Keep total consistent with what's actually returned: a dropped
+            # item must not inflate total/total_pages beyond the rendered page.
+            adjusted_total = max(0, total - dropped)
             return PaginatedPlaceResponse(
                 items=items,
-                total=total,
+                total=adjusted_total,
                 page=page,
                 limit=limit,
-                total_pages=max(1, -(-total // limit)),
+                total_pages=max(1, -(-adjusted_total // limit)),
             )
         except AppException:
             raise
@@ -387,13 +391,16 @@ class PlaceService:
                 self.repository.count_moderated_places_by_search(search_term),
                 self.repository.search_moderated_places(search_term, limit, offset),
             )
-            items = await self._build_public_place_responses(places, user.id if user else None)
+            items, dropped = await self._build_public_place_responses(places, user.id if user else None)
+            # Keep total consistent with what's actually returned: a dropped
+            # item must not inflate total/total_pages beyond the rendered page.
+            adjusted_total = max(0, total - dropped)
             return PaginatedPlaceResponse(
                 items=items,
-                total=total,
+                total=adjusted_total,
                 page=page,
                 limit=limit,
-                total_pages=max(1, -(-total // limit)),
+                total_pages=max(1, -(-adjusted_total // limit)),
             )
         except AppException:
             raise
@@ -415,13 +422,16 @@ class PlaceService:
                 self.repository.count_moderated_places_by_type(place_type_id),
                 self.repository.get_moderated_places_by_type(place_type_id, limit, offset),
             )
-            items = await self._build_public_place_responses(places, user.id if user else None)
+            items, dropped = await self._build_public_place_responses(places, user.id if user else None)
+            # Keep total consistent with what's actually returned: a dropped
+            # item must not inflate total/total_pages beyond the rendered page.
+            adjusted_total = max(0, total - dropped)
             return PaginatedPlaceResponse(
                 items=items,
-                total=total,
+                total=adjusted_total,
                 page=page,
                 limit=limit,
-                total_pages=max(1, -(-total // limit)),
+                total_pages=max(1, -(-adjusted_total // limit)),
             )
         except AppException:
             raise
@@ -445,13 +455,16 @@ class PlaceService:
                 self.repository.count_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng),
                 self.repository.get_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng, limit, offset),
             )
-            items = await self._build_public_place_responses(places, user.id if user else None)
+            items, dropped = await self._build_public_place_responses(places, user.id if user else None)
+            # Keep total consistent with what's actually returned: a dropped
+            # item must not inflate total/total_pages beyond the rendered page.
+            adjusted_total = max(0, total - dropped)
             return PaginatedPlaceResponse(
                 items=items,
-                total=total,
+                total=adjusted_total,
                 page=page,
                 limit=limit,
-                total_pages=max(1, -(-total // limit)),
+                total_pages=max(1, -(-adjusted_total // limit)),
             )
         except AppException:
             raise
@@ -509,13 +522,16 @@ class PlaceService:
 
     async def _build_public_place_responses(
         self, places: List[Place], user_id: int | None
-    ) -> List[PublicPlaceResponse]:
-        """Build PublicPlaceResponse list with likes; shared by get_all_places and get_places_by_location."""
+    ) -> tuple[List[PublicPlaceResponse], int]:
+        """Build PublicPlaceResponse list with likes; shared by all place list
+        endpoints. Returns (items, dropped_count) so paginated callers can
+        keep total/total_pages consistent with what's actually rendered."""
         place_ids = [p.id for p in places]
         likes_info = await self.repository.get_places_likes_info_batch(user_id, place_ids)
         counts = likes_info["counts"]
         user_likes = likes_info["user_likes"]
         result = []
+        dropped = 0
         for place in places:
             try:
                 likes_count = counts.get(place.id, 0)
@@ -523,8 +539,8 @@ class PlaceService:
                 result.append(self._create_public_place_response(place, likes_count, is_liked))
             except Exception as e:
                 logger.error(f"Error building response for place {place.id}: {e}", exc_info=True)
-                continue
-        return result
+                dropped += 1
+        return result, dropped
 
     def _create_public_place_response(self, place: Place, likes_count: int, is_liked: bool) -> PublicPlaceResponse:
         """Create a PublicPlaceResponse from a Place model."""

@@ -304,8 +304,17 @@ class WishlistService:
                 details={}
             )
 
+    async def get_wishlist_item_owner_id(self, wishlist_id: int) -> int:
+        """Return the owner user_id of a wishlist item, for visibility checks."""
+        item = await self.wishlist_repo.get_by_id(wishlist_id)
+        if not item:
+            raise ResourceNotFoundError("Wishlist item", wishlist_id)
+        return item.user_id
+
     async def get_wishlist_item_detail(self, wishlist_id: int) -> WishlistItemResponse:
-        """Get detailed wishlist item by ID (public - any user can view any wishlist item)"""
+        """Get detailed wishlist item by ID. Caller is responsible for the
+        visibility check (see get_wishlist_item_owner_id) — this only fetches
+        and maps the data."""
         try:
             item = await self.wishlist_repo.get_by_id_with_relations(wishlist_id)
             if not item:

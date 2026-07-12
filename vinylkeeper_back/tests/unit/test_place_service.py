@@ -356,7 +356,7 @@ class TestGetAllPlaces:
         repo.get_all_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_all_places(user, page=1, limit=20)
 
         assert isinstance(result, PaginatedPlaceResponse)
@@ -371,7 +371,7 @@ class TestGetAllPlaces:
         repo.get_all_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             await service.get_all_places(user, page=3, limit=10)
 
         repo.get_all_moderated_places.assert_awaited_once_with(10, 20)
@@ -382,7 +382,7 @@ class TestGetAllPlaces:
         repo.get_all_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_all_places(user, page=1, limit=20)
 
         assert result.total_pages == 2
@@ -393,10 +393,26 @@ class TestGetAllPlaces:
         repo.get_all_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_all_places(user, page=1, limit=20)
 
         assert result.total == 0
+
+    async def test_dropped_item_decrements_total_and_total_pages(self):
+        """Regression test: a place that fails to map into a response must
+        not inflate total/total_pages beyond what's actually rendered."""
+        service, repo, *_ = make_service()
+        repo.count_all_moderated_places = AsyncMock(return_value=21)
+        repo.get_all_moderated_places = AsyncMock(return_value=[])
+        user = make_user()
+
+        with patch.object(
+            service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 1)
+        ):
+            result = await service.get_all_places(user, page=1, limit=20)
+
+        assert result.total == 20
+        assert result.total_pages == 1
         assert result.total_pages == 1
         assert result.items == []
 
@@ -408,7 +424,7 @@ class TestSearchPlaces:
         repo.search_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.search_places("vinyl", user, page=1, limit=20)
 
         assert isinstance(result, PaginatedPlaceResponse)
@@ -421,7 +437,7 @@ class TestSearchPlaces:
         repo.search_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             await service.search_places("vinyl", user, page=2, limit=10)
 
         repo.search_moderated_places.assert_awaited_once_with("vinyl", 10, 10)
@@ -432,7 +448,7 @@ class TestSearchPlaces:
         repo.search_moderated_places = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.search_places("vinyl", user, page=1, limit=10)
 
         assert result.total_pages == 2
@@ -445,7 +461,7 @@ class TestGetPlacesByType:
         repo.get_moderated_places_by_type = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_places_by_type(1, user, page=1, limit=20)
 
         assert isinstance(result, PaginatedPlaceResponse)
@@ -457,7 +473,7 @@ class TestGetPlacesByType:
         repo.get_moderated_places_by_type = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             await service.get_places_by_type(2, user, page=4, limit=5)
 
         repo.get_moderated_places_by_type.assert_awaited_once_with(2, 5, 15)
@@ -468,7 +484,7 @@ class TestGetPlacesByType:
         repo.get_moderated_places_by_type = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_places_by_type(1, user, page=1, limit=20)
 
         assert result.total_pages == 1
@@ -481,7 +497,7 @@ class TestGetPlacesInRegion:
         repo.get_moderated_places_in_region = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=1, limit=20)
 
         assert isinstance(result, PaginatedPlaceResponse)
@@ -494,7 +510,7 @@ class TestGetPlacesInRegion:
         repo.get_moderated_places_in_region = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=2, limit=20)
 
         repo.get_moderated_places_in_region.assert_awaited_once_with(40.0, 50.0, 0.0, 10.0, 20, 20)
@@ -505,7 +521,39 @@ class TestGetPlacesInRegion:
         repo.get_moderated_places_in_region = AsyncMock(return_value=[])
         user = make_user()
 
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=[]):
+        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
             result = await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=1, limit=20)
 
         assert result.total_pages == 3
+
+
+class TestBuildPublicPlaceResponses:
+    async def test_item_that_fails_to_map_is_dropped_and_counted(self):
+        service, repo, *_ = make_service()
+        repo.get_places_likes_info_batch = AsyncMock(return_value={"counts": {}, "user_likes": {}})
+        good_place = make_place(place_id=1)
+        bad_place = make_place(place_id=2)
+
+        def fake_create(place, likes_count, is_liked):
+            if place is bad_place:
+                raise ValueError("simulated mapping failure")
+            return MagicMock()
+
+        with patch.object(service, "_create_public_place_response", side_effect=fake_create):
+            items, dropped = await service._build_public_place_responses(
+                [good_place, bad_place], user_id=1
+            )
+
+        assert len(items) == 1
+        assert dropped == 1
+
+    async def test_no_failures_returns_zero_dropped(self):
+        service, repo, *_ = make_service()
+        repo.get_places_likes_info_batch = AsyncMock(return_value={"counts": {}, "user_likes": {}})
+        places = [make_place(place_id=1), make_place(place_id=2)]
+
+        with patch.object(service, "_create_public_place_response", return_value=MagicMock()):
+            items, dropped = await service._build_public_place_responses(places, user_id=1)
+
+        assert len(items) == 2
+        assert dropped == 0
