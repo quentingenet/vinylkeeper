@@ -27,7 +27,6 @@ class CollectionRepository(TransactionalMixin):
     async def create(self, collection: Collection) -> Collection:
         """Create a new collection without committing (transaction managed by service)."""
         try:
-            # Flush to get the ID
             await self._add_entity(collection, flush=True)
             await self._refresh_entity(collection)
             return collection
@@ -130,7 +129,6 @@ class CollectionRepository(TransactionalMixin):
     async def update(self, collection: Collection) -> Collection:
         """Update an existing collection without committing (transaction managed by service)."""
         try:
-            # Flush to ensure changes are persisted
             await self._add_entity(collection, flush=True)
             await self._refresh_entity(collection)
             return collection

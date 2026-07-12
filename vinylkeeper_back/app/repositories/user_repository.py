@@ -58,7 +58,7 @@ class UserRepository(TransactionalMixin):
     async def create_user(self, user: User) -> User:
         """Create a new user without committing (transaction managed by service)."""
         try:
-            await self._add_entity(user, flush=True)  # Flush to get the ID
+            await self._add_entity(user, flush=True)
             await self._refresh_entity(user)
             return user
         except SQLAlchemyError as e:
@@ -72,7 +72,7 @@ class UserRepository(TransactionalMixin):
     async def update_user(self, user: User) -> User:
         """Update a user without committing (transaction managed by service)."""
         try:
-            await self._add_entity(user, flush=True)  # Flush to ensure changes are persisted
+            await self._add_entity(user, flush=True)
             await self._refresh_entity(user)
             return user
         except SQLAlchemyError as e:
@@ -86,7 +86,7 @@ class UserRepository(TransactionalMixin):
     async def update_user_last_login(self, user: User) -> User:
         """Update user's number of connections and last login without committing (transaction managed by service)."""
         try:
-            await self._add_entity(user, flush=True)  # Flush to ensure changes are persisted
+            await self._add_entity(user, flush=True)
             await self._refresh_entity(user)
             return user
         except SQLAlchemyError as e:

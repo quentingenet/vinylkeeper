@@ -25,7 +25,6 @@ class CollectionAlbumRepository(TransactionalMixin):
     async def create(self, collection_album: CollectionAlbum) -> CollectionAlbum:
         """Create a new collection-album association without committing (transaction managed by service)."""
         try:
-            # Flush to get the ID
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
             # state_record_ref/state_cover_ref are lazy="raise" and unset on this
@@ -46,7 +45,6 @@ class CollectionAlbumRepository(TransactionalMixin):
     async def update(self, collection_album: CollectionAlbum) -> CollectionAlbum:
         """Update a collection-album association without committing (transaction managed by service)."""
         try:
-            # Flush to ensure changes are persisted
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
             await self.db.refresh(

@@ -135,7 +135,7 @@ class PlaceRepository(TransactionalMixin):
     async def create_place(self, place_data: dict) -> Place:
         """Create a new place without committing (transaction managed by service)."""
         place = Place(**place_data)
-        await self._add_entity(place, flush=True)  # Flush to get the ID
+        await self._add_entity(place, flush=True)
         await self._refresh_entity(place)
         return place
 
@@ -147,7 +147,6 @@ class PlaceRepository(TransactionalMixin):
             if hasattr(place, key):
                 setattr(place, key, value)
 
-        # Flush to ensure changes are persisted
         await self._add_entity(place, flush=True)
         await self._refresh_entity(place)
         return place

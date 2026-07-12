@@ -56,7 +56,7 @@ class ArtistRepository(TransactionalMixin):
     async def create(self, artist: Artist) -> Artist:
         """Create a new artist without committing (transaction managed by service)."""
         try:
-            await self._add_entity(artist, flush=True)  # Flush to get the ID
+            await self._add_entity(artist, flush=True)
             await self._refresh_entity(artist)
             # external_source is lazy="raise"; callers (wishlist_service,
             # external_reference_service) read it right after create().
@@ -73,7 +73,7 @@ class ArtistRepository(TransactionalMixin):
     async def update(self, artist: Artist) -> Artist:
         """Update an artist without committing (transaction managed by service)."""
         try:
-            await self._add_entity(artist, flush=True)  # Flush to ensure changes are persisted
+            await self._add_entity(artist, flush=True)
             await self._refresh_entity(artist)
             return artist
         except SQLAlchemyError as e:

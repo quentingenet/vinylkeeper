@@ -15,12 +15,10 @@ async def geocode_city(city: str, country: str) -> Optional[Tuple[float, float]]
         Tuple of (latitude, longitude) or None if geocoding fails
     """
     try:
-        # Clean and prepare the query
         city_clean = city.strip()
         country_clean = country.strip()
         query = f"{city_clean}, {country_clean}"
 
-        # Use Nominatim API for geocoding
         url = "https://nominatim.openstreetmap.org/search"
 
         params = {

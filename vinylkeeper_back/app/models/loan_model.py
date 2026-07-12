@@ -66,8 +66,10 @@ class Loan(Base):
         ),
     )
 
-    # Relationships (one-directional: Album.loans/User.loans removed as dead,
-    # unread relations — see C4 of the lazy-loading migration)
+    # Relationships. No back_populates: the reverse links Album.loans and
+    # User.loans were removed as dead, unread relations (Loan has no
+    # repository/service/endpoint — see backend memory on the lazy-loading
+    # migration). These two lines still exist and still work standalone.
     user = relationship("User", lazy="selectin")
 
     album = relationship("Album", lazy="selectin")

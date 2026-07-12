@@ -44,7 +44,6 @@ class WishlistRepository(TransactionalMixin):
                 image_url=image_url,
                 external_source_id=external_source_id
             )
-            # Flush to get the ID
             await self._add_entity(wishlist_item, flush=True)
             await self._refresh_entity(wishlist_item)
             return wishlist_item
@@ -59,7 +58,6 @@ class WishlistRepository(TransactionalMixin):
     async def create(self, wishlist: Wishlist) -> Wishlist:
         """Create a new wishlist item without committing (transaction managed by service)."""
         try:
-            # Flush to ensure changes are persisted
             await self._add_entity(wishlist, flush=True)
             await self._refresh_entity(wishlist)
             return wishlist
@@ -193,7 +191,6 @@ class WishlistRepository(TransactionalMixin):
     async def update(self, wishlist: Wishlist) -> Wishlist:
         """Update a wishlist item without committing (transaction managed by service)."""
         try:
-            # Flush to ensure changes are persisted
             await self._add_entity(wishlist, flush=True)
             await self._refresh_entity(wishlist)
             return wishlist

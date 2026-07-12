@@ -122,7 +122,7 @@ class ModerationRequestRepository(TransactionalMixin):
         """Create a new moderation request without committing (transaction managed by service)."""
         try:
             request = ModerationRequest(**request_data)
-            await self._add_entity(request, flush=True)  # Flush to get the ID
+            await self._add_entity(request, flush=True)
             await self._refresh_entity(request)
             return request
         except SQLAlchemyError as e:
@@ -142,7 +142,6 @@ class ModerationRequestRepository(TransactionalMixin):
                 if hasattr(request, key):
                     setattr(request, key, value)
 
-            # Flush to ensure changes are persisted
             await self._add_entity(request, flush=True)
             await self._refresh_entity(request)
             return request
