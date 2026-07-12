@@ -151,6 +151,7 @@ def verify_csrf(request: Request) -> None:
 
 async def get_current_user(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """Get the current user from the access token"""
@@ -160,6 +161,8 @@ async def get_current_user(
         raise UnauthorizedError("No access token provided")
     user_uuid = verify_token(token, expected_type=TokenType.ACCESS)
     verify_csrf(request)
+    if not request.cookies.get("csrf_token"):
+        set_csrf_cookie(response, generate_csrf_token(), REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     user = await user_repository.get_user_by_uuid(user_uuid)
     if not user:
         raise UnauthorizedError("User not found")

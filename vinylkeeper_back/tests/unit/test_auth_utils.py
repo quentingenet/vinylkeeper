@@ -24,8 +24,9 @@ from app.core.exceptions import RefreshTokenNotFoundError, InvalidResetTokenErro
 # Helpers
 # ---------------------------------------------------------------------------
 
-def make_request(cookies: dict) -> MagicMock:
+def make_request(cookies: dict, method: str = "GET") -> MagicMock:
     request = MagicMock()
+    request.method = method
     request.cookies.get = lambda key, default=None: cookies.get(key, default)
     return request
 
@@ -198,14 +199,14 @@ class TestGetCurrentUser:
         mock_repo.get_user_by_uuid = AsyncMock(return_value=regular_user)
 
         with patch("app.utils.auth_utils.auth.UserRepository", return_value=mock_repo):
-            result = await get_current_user(request, db=AsyncMock())
+            result = await get_current_user(request, response=MagicMock(), db=AsyncMock())
 
         assert result is regular_user
 
     async def test_missing_cookie_raises(self):
         request = make_request({})
         with pytest.raises(UnauthorizedError, match="No access token provided"):
-            await get_current_user(request, db=AsyncMock())
+            await get_current_user(request, response=MagicMock(), db=AsyncMock())
 
     async def test_user_not_in_db_raises(self, regular_user):
         token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
@@ -215,15 +216,15 @@ class TestGetCurrentUser:
 
         with patch("app.utils.auth_utils.auth.UserRepository", return_value=mock_repo):
             with pytest.raises(UnauthorizedError, match="User not found"):
-                await get_current_user(request, db=AsyncMock())
+                await get_current_user(request, response=MagicMock(), db=AsyncMock())
 
     async def test_invalid_token_raises(self):
         request = make_request({"access_token": "bad.token"})
         with pytest.raises(UnauthorizedError):
-            await get_current_user(request, db=AsyncMock())
+            await get_current_user(request, response=MagicMock(), db=AsyncMock())
 
     async def test_refresh_token_in_access_cookie_raises(self, regular_user):
         token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)
         request = make_request({"access_token": token})
         with pytest.raises(UnauthorizedError, match="Invalid token type"):
-            await get_current_user(request, db=AsyncMock())
+            await get_current_user(request, response=MagicMock(), db=AsyncMock())
