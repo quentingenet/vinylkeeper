@@ -16,7 +16,7 @@ export function useLikeButton({
   const [localLikesCount, setLocalLikesCount] = useState(initialLikesCount);
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
-  const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
     useCollectionLike(collectionId);
