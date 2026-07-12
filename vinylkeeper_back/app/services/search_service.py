@@ -331,7 +331,7 @@ class SearchService:
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                 message="Failed to fetch artist metadata",
-                details={"artist_id": artist_id, "error": str(e)}
+                details={"artist_id": artist_id}
             )
 
         # Get artist releases
@@ -459,7 +459,7 @@ class SearchService:
             raise ServerError(
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                 message="Failed to fetch album metadata",
-                details={"album_id": album_id, "error": str(e)}
+                details={"album_id": album_id}
             )
 
         # Parse tracks

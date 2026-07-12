@@ -5,8 +5,10 @@ Same safety model as test_real_db_relationships.py: real_session runs every
 test inside an outer transaction + SAVEPOINT that is rolled back at the end.
 """
 import pytest
+from unittest.mock import AsyncMock, patch
 
 from app.core.exceptions import DuplicateFieldError, ResourceNotFoundError
+from app.models.like_model import Like
 from app.repositories.like_repository import LikeRepository
 
 from tests.integration.conftest import make_real_test_user as make_test_user
@@ -46,6 +48,31 @@ class TestLikeCollection:
 
         result = await service.like_collection(user_id=owner.id, collection_id=collection.id)
         assert result["is_liked"] is True
+
+
+class TestLikeRaceCondition:
+    async def test_concurrent_like_insert_raises_duplicate_not_server_error(self, real_session):
+        """Regression test: simulates the TOCTOU race where two requests both
+        pass the "not liked yet" check before either commits. A Like row
+        already exists in the DB (as if the other request won the race);
+        LikeRepository.get is patched to return None so neither the
+        service's pre-check nor the repository's own internal check see it,
+        forcing a real unique-constraint violation on insert. Before the
+        fix, this surfaced as a generic ServerError (500) instead of
+        DuplicateFieldError, because the repository's blanket
+        `except SQLAlchemyError` swallowed IntegrityError."""
+        owner = await make_test_user(real_session)
+        liker = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=owner.id)
+
+        real_session.add(Like(user_id=liker.id, collection_id=collection.id))
+        await real_session.flush()
+
+        service = make_collection_service(real_session)
+
+        with patch.object(LikeRepository, "get", new_callable=AsyncMock, return_value=None):
+            with pytest.raises(DuplicateFieldError):
+                await service.like_collection(user_id=liker.id, collection_id=collection.id)
 
 
 class TestUnlikeCollection:

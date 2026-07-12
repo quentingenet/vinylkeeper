@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from typing import List
 from app.deps.deps import get_search_service
+from app.models.user_model import User
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
     DiscogsData,
@@ -8,6 +9,7 @@ from app.schemas.request_proxy.request_proxy_schema import (
     ArtistMetadata
 )
 from app.services.search_service import SearchService
+from app.utils.auth_utils.auth import get_current_user
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
@@ -17,10 +19,11 @@ router = APIRouter()
 @handle_app_exceptions
 async def search(
     search_query: SearchQuery,
-    service: SearchService = Depends(get_search_service)
+    service: SearchService = Depends(get_search_service),
+    current_user: User = Depends(get_current_user)
 ) -> List[DiscogsData]:
     """
-    Search music via the Discogs API.
+    Search music via the Discogs API. Requires authentication.
 
     Args:
         search_query: Search parameters containing query string and search type
@@ -41,10 +44,11 @@ async def search(
 @handle_app_exceptions
 async def get_artist_metadata(
     artist_id: str,
-    service: SearchService = Depends(get_search_service)
+    service: SearchService = Depends(get_search_service),
+    current_user: User = Depends(get_current_user)
 ) -> ArtistMetadata:
     """
-    Get detailed artist metadata from Discogs API.
+    Get detailed artist metadata from Discogs API. Requires authentication.
 
     Args:
         artist_id: Unique identifier for the artist in Discogs
@@ -64,10 +68,11 @@ async def get_artist_metadata(
 @handle_app_exceptions
 async def get_album_metadata(
     album_id: str,
-    service: SearchService = Depends(get_search_service)
+    service: SearchService = Depends(get_search_service),
+    current_user: User = Depends(get_current_user)
 ) -> AlbumMetadata:
     """
-    Get detailed album metadata from Discogs API.
+    Get detailed album metadata from Discogs API. Requires authentication.
 
     Args:
         album_id: Unique identifier for the album in Discogs

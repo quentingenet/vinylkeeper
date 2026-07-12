@@ -232,7 +232,7 @@ class CollectionService:
             collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id, sort_by)
 
             if not collections:
-                return [], 0
+                return [], total
 
             collection_ids = [collection.id for collection in collections]
             likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)

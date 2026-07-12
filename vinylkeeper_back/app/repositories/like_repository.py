@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.like_model import Like
 from app.core.exceptions import ServerError
 from app.core.logging import logger
@@ -47,6 +47,11 @@ class LikeRepository(TransactionalMixin):
             await self._add_entity(like, flush=True)
             await self._refresh_entity(like)
             return like
+        except IntegrityError:
+            # Concurrent insert hit uq_user_collection_like: let the caller
+            # (collection_service.like_collection) turn this into a
+            # DuplicateFieldError instead of masking it as a 500.
+            raise
         except SQLAlchemyError as e:
             logger.error(
                 f"Error creating like for user {user_id} and collection {collection_id}: {str(e)}")

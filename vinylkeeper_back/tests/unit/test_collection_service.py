@@ -440,6 +440,37 @@ class TestSearchCollectionItems:
 
 
 # ---------------------------------------------------------------------------
+# get_public_collections / get_user_collections
+#
+# Regression test: get_public_collections used to hardcode `return [], 0` on
+# an empty page instead of the real total, unlike its sibling
+# get_user_collections (`return [], total`). A page requested past the end
+# of a non-empty result set would falsely report total=0 to the frontend.
+# ---------------------------------------------------------------------------
+
+class TestGetPublicCollections:
+    async def test_empty_page_preserves_total(self):
+        service, repo, *_ = make_service()
+        repo.get_public_collections = AsyncMock(return_value=([], 42))
+
+        collections, total = await service.get_public_collections(page=99, limit=10)
+
+        assert collections == []
+        assert total == 42
+
+
+class TestGetUserCollectionsPagination:
+    async def test_empty_page_preserves_total(self):
+        service, repo, *_ = make_service()
+        repo.get_user_collections = AsyncMock(return_value=([], 17))
+
+        collections, total = await service.get_user_collections(user_id=1, page=99, limit=10)
+
+        assert collections == []
+        assert total == 17
+
+
+# ---------------------------------------------------------------------------
 # delete_collection
 # ---------------------------------------------------------------------------
 
