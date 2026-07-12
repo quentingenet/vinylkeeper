@@ -21,7 +21,8 @@ def configure_cors(app: FastAPI):
             "X-Requested-With",
             "Access-Control-Request-Method",
             "Access-Control-Request-Headers",
-            "Cookie"
+            "Cookie",
+            "X-CSRF-Token"
         ],
         expose_headers=[
             "Content-Type",
