@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCollectionLike } from "@hooks/useCollectionLike";
 
 interface UseLikeButtonOptions {
@@ -16,9 +16,14 @@ export function useLikeButton({
   const [localLikesCount, setLocalLikesCount] = useState(initialLikesCount);
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
+  const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const { like, unlike, isLiking, isUnliking, likeError, unlikeError } =
     useCollectionLike(collectionId);
+
+  useEffect(() => {
+    return () => clearTimeout(cooldownTimeoutRef.current);
+  }, []);
 
   // Sync state when a different collection is rendered in this slot
   useEffect(() => {
@@ -49,7 +54,7 @@ export function useLikeButton({
     if (isLiking || isUnliking || likeCooldown) return;
 
     setLikeCooldown(true);
-    setTimeout(() => setLikeCooldown(false), 1000);
+    cooldownTimeoutRef.current = setTimeout(() => setLikeCooldown(false), 1000);
 
     if (localIsLiked) {
       setLocalIsLiked(false);

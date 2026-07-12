@@ -1,4 +1,3 @@
-import asyncio
 from typing import List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -213,10 +212,10 @@ class PlaceService:
         """Get moderated places with pagination. User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
-            total, places = await asyncio.gather(
-                self.repository.count_all_moderated_places(),
-                self.repository.get_all_moderated_places(limit, offset),
-            )
+            # Sequential, not asyncio.gather: both calls share the same
+            # request-scoped AsyncSession, which is not safe for concurrent use.
+            total = await self.repository.count_all_moderated_places()
+            places = await self.repository.get_all_moderated_places(limit, offset)
             items, dropped = await self._build_public_place_responses(places, user.id if user else None)
             # Keep total consistent with what's actually returned: a dropped
             # item must not inflate total/total_pages beyond the rendered page.
@@ -387,10 +386,10 @@ class PlaceService:
         """Search places by name, city, or country (only moderated places). User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
-            total, places = await asyncio.gather(
-                self.repository.count_moderated_places_by_search(search_term),
-                self.repository.search_moderated_places(search_term, limit, offset),
-            )
+            # Sequential, not asyncio.gather: both calls share the same
+            # request-scoped AsyncSession, which is not safe for concurrent use.
+            total = await self.repository.count_moderated_places_by_search(search_term)
+            places = await self.repository.search_moderated_places(search_term, limit, offset)
             items, dropped = await self._build_public_place_responses(places, user.id if user else None)
             # Keep total consistent with what's actually returned: a dropped
             # item must not inflate total/total_pages beyond the rendered page.
@@ -418,10 +417,10 @@ class PlaceService:
         """Get places by type (only moderated places). User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
-            total, places = await asyncio.gather(
-                self.repository.count_moderated_places_by_type(place_type_id),
-                self.repository.get_moderated_places_by_type(place_type_id, limit, offset),
-            )
+            # Sequential, not asyncio.gather: both calls share the same
+            # request-scoped AsyncSession, which is not safe for concurrent use.
+            total = await self.repository.count_moderated_places_by_type(place_type_id)
+            places = await self.repository.get_moderated_places_by_type(place_type_id, limit, offset)
             items, dropped = await self._build_public_place_responses(places, user.id if user else None)
             # Keep total consistent with what's actually returned: a dropped
             # item must not inflate total/total_pages beyond the rendered page.
@@ -451,9 +450,11 @@ class PlaceService:
         """Get places within a geographic region (only moderated places). User resolved from token (uuid)."""
         try:
             offset = (page - 1) * limit
-            total, places = await asyncio.gather(
-                self.repository.count_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng),
-                self.repository.get_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng, limit, offset),
+            # Sequential, not asyncio.gather: both calls share the same
+            # request-scoped AsyncSession, which is not safe for concurrent use.
+            total = await self.repository.count_moderated_places_in_region(min_lat, max_lat, min_lng, max_lng)
+            places = await self.repository.get_moderated_places_in_region(
+                min_lat, max_lat, min_lng, max_lng, limit, offset
             )
             items, dropped = await self._build_public_place_responses(places, user.id if user else None)
             # Keep total consistent with what's actually returned: a dropped

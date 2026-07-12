@@ -150,14 +150,7 @@ class WishlistService:
             # Check if item already exists in wishlist
             existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
             if existing:
-                wishlist_response = self._build_wishlist_response(
-                    existing, request.entity_type.value, request.source)
-                return AddToWishlistResponse(
-                    item=wishlist_response,
-                    is_new=False,
-                    message=f"Already have {request.entity_type.value} '{request.title}' in wishlist",
-                    entity_type=request.entity_type.value
-                )
+                return self._already_in_wishlist_response(existing, request)
 
             # Get external source ID once (avoid duplicate queries)
             external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
@@ -165,15 +158,26 @@ class WishlistService:
             # Find or create entity (pass external_source_id to avoid duplicate query)
             await self._find_or_create_entity(request, external_source_id)
 
-            async with transaction_context(self.wishlist_repo.db):
-                result = await self.wishlist_repo.add_to_wishlist(
-                    user_id=user_id,
-                    external_id=external_id,
-                    entity_type=request.entity_type,
-                    title=request.title,
-                    image_url=request.image_url,
-                    external_source_id=external_source_id
+            try:
+                async with transaction_context(self.wishlist_repo.db):
+                    result = await self.wishlist_repo.add_to_wishlist(
+                        user_id=user_id,
+                        external_id=external_id,
+                        entity_type=request.entity_type,
+                        title=request.title,
+                        image_url=request.image_url,
+                        external_source_id=external_source_id
+                    )
+            except IntegrityError:
+                # Concurrent request inserted the same item between our check
+                # and our insert: treat it as already-existing (idempotent),
+                # matching the pre-check branch above, instead of a 500.
+                existing = await self.wishlist_repo.find_by_user_and_external_id(
+                    user_id, external_id, request.entity_type
                 )
+                if existing:
+                    return self._already_in_wishlist_response(existing, request)
+                raise
 
             wishlist_response = self._build_wishlist_response(
                 result, request.entity_type.value, request.source)
@@ -193,6 +197,16 @@ class WishlistService:
                 message="Failed to add to wishlist",
                 details={}
             )
+
+    def _already_in_wishlist_response(self, existing: Wishlist, request: AddToWishlistRequest) -> AddToWishlistResponse:
+        wishlist_response = self._build_wishlist_response(
+            existing, request.entity_type.value, request.source)
+        return AddToWishlistResponse(
+            item=wishlist_response,
+            is_new=False,
+            message=f"Already have {request.entity_type.value} '{request.title}' in wishlist",
+            entity_type=request.entity_type.value
+        )
 
     def _build_wishlist_response(self, wishlist_item: Wishlist, entity_type: str, source: str) -> WishlistItemResponse:
         """Build wishlist response with additional fields"""

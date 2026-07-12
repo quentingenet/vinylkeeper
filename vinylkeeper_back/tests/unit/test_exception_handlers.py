@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from httpx import AsyncClient, ASGITransport
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.handlers import register_exception_handlers
 from app.core.exceptions import (
@@ -49,6 +49,23 @@ def make_validation_app() -> FastAPI:
 
     @app.post("/test")
     async def trigger(body: _Body):
+        return body
+
+    return app
+
+
+class _PasswordBody(BaseModel):
+    new_password: str = Field(min_length=8)
+
+
+def make_validation_app_with_password() -> FastAPI:
+    """App whose POST /test requires new_password (min_length=8) — a short value
+    triggers RequestValidationError with 'input' carrying the raw candidate password."""
+    app = FastAPI()
+    register_exception_handlers(app)
+
+    @app.post("/test")
+    async def trigger(body: _PasswordBody):
         return body
 
     return app
@@ -238,6 +255,24 @@ class TestRequestValidationError:
     async def test_wrong_type_returns_422(self):
         resp = await call(make_validation_app(), method="POST", json={"value": "not-an-int"})
         assert resp.status_code == 422
+
+    async def test_password_input_redacted_from_response(self):
+        candidate = "abc"
+        resp = await call(
+            make_validation_app_with_password(), method="POST", json={"new_password": candidate}
+        )
+        body = resp.json()
+        assert resp.status_code == 422
+        assert candidate not in str(body)
+        error = body["details"]["errors"][0]
+        assert error["input"] == "[REDACTED]"
+
+    async def test_password_input_redacted_from_logs(self, caplog):
+        candidate = "s3cr3t-guess"
+        await call(
+            make_validation_app_with_password(), method="POST", json={"new_password": candidate}
+        )
+        assert candidate not in caplog.text
 
 
 # ---------------------------------------------------------------------------

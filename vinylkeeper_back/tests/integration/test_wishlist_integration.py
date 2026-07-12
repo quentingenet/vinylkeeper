@@ -7,6 +7,8 @@ SAVEPOINT that is rolled back at the end, so nothing is ever permanently
 written to this copy-of-production database.
 """
 import random
+from unittest.mock import patch
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -114,6 +116,48 @@ class TestAddToWishlist:
         assert first.is_new is True
         assert second.is_new is False
         assert first.item.id == second.item.id
+
+
+class TestConcurrentWishlistInsert:
+    async def test_concurrent_insert_returns_existing_not_server_error(self, real_session):
+        """Regression test: simulates the TOCTOU race where two requests both
+        pass the "not in wishlist yet" pre-check before either commits. The
+        item already exists (as if the other request won the race), but
+        WishlistRepository.find_by_user_and_external_id is patched to miss it
+        on its first call only, forcing a real unique-constraint violation
+        (uq_wishlist_user_entity_source) on insert. Before the fix, this
+        surfaced as a generic ServerError (500) because the repository's
+        blanket `except SQLAlchemyError` swallowed IntegrityError; now the
+        service catches it and returns the existing item idempotently,
+        matching the pre-check branch's own is_new=False behavior."""
+        user = await make_test_user(real_session)
+        service = make_wishlist_service(real_session)
+        external_id = fresh_numeric_external_id()
+        request = AddToWishlistRequest(
+            external_id=external_id,
+            entity_type=EntityTypeEnum.ALBUM,
+            title="Race Test Album",
+            image_url="https://example.com/cover.jpg",
+            source="discogs",
+        )
+
+        first = await service.add_to_wishlist(user_id=user.id, request=request)
+        assert first.is_new is True
+
+        real_find = WishlistRepository.find_by_user_and_external_id
+        calls = {"n": 0}
+
+        async def miss_once_then_real(self, *args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return None
+            return await real_find(self, *args, **kwargs)
+
+        with patch.object(WishlistRepository, "find_by_user_and_external_id", miss_once_then_real):
+            second = await service.add_to_wishlist(user_id=user.id, request=request)
+
+        assert second.is_new is False
+        assert second.item.id == first.item.id
 
 
 class TestRemoveFromWishlist:

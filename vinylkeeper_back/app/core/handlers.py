@@ -33,11 +33,15 @@ def register_exception_handlers(app):
 
         errors = []
         for error in exc.errors():
+            loc = error.get("loc", [])
+            # Never echo raw input for sensitive fields (passwords) back to the
+            # client or into log files — only the validation message is safe.
+            is_sensitive = any("password" in str(part).lower() for part in loc)
             error_dict = {
                 "type": str(error.get("type", "")),
-                "loc": error.get("loc", []),
+                "loc": loc,
                 "msg": str(error.get("msg", "")),
-                "input": str(error.get("input", ""))
+                "input": "[REDACTED]" if is_sensitive else str(error.get("input", ""))
             }
             if "ctx" in error:
                 error_dict["ctx"] = {k: str(v) for k, v in error["ctx"].items()}

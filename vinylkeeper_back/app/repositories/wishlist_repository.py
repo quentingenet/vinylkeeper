@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
 from app.core.enums import EntityTypeEnum
@@ -47,6 +47,11 @@ class WishlistRepository(TransactionalMixin):
             await self._add_entity(wishlist_item, flush=True)
             await self._refresh_entity(wishlist_item)
             return wishlist_item
+        except IntegrityError:
+            # Concurrent insert hit uq_wishlist_user_entity_source: let the
+            # caller (WishlistService.add_to_wishlist) treat this as an
+            # already-existing item instead of masking it as a 500.
+            raise
         except SQLAlchemyError as e:
             logger.error(f"Error adding to wishlist: {str(e)}", exc_info=True)
             raise ServerError(

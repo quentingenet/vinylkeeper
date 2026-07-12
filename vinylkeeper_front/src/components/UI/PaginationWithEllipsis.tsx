@@ -3,6 +3,7 @@ import { Box, Button, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { getVisiblePages } from "@utils/getVisiblePages";
 
 interface PaginationWithEllipsisProps {
   count: number;
@@ -24,57 +25,13 @@ export default function PaginationWithEllipsis({
   const { isMobile } = useDetectMobile();
   const maxVisiblePages = isMobile ? 3 : 4;
 
-  const getVisiblePages = () => {
-    if (count <= maxVisiblePages) {
-      return Array.from({ length: count }, (_, i) => i + 1);
-    }
-
-    if (isMobile) {
-      if (page <= 2) {
-        return [1, 2, 3, "...", count];
-      } else if (page >= count - 1) {
-        return [1, "...", count - 2, count - 1, count];
-      } else {
-        return [1, "...", page, "...", count];
-      }
-    } else {
-      const delta = Math.floor(maxVisiblePages / 2);
-      const range = [];
-      const rangeWithDots = [];
-
-      for (
-        let i = Math.max(2, page - delta);
-        i <= Math.min(count - 1, page + delta);
-        i++
-      ) {
-        range.push(i);
-      }
-
-      if (page - delta > 2) {
-        rangeWithDots.push(1, "...");
-      } else {
-        rangeWithDots.push(1);
-      }
-
-      rangeWithDots.push(...range);
-
-      if (page + delta < count - 1) {
-        rangeWithDots.push("...", count);
-      } else {
-        rangeWithDots.push(count);
-      }
-
-      return rangeWithDots;
-    }
-  };
-
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= count) {
       onChange(newPage);
     }
   };
 
-  const visiblePages = getVisiblePages();
+  const visiblePages = getVisiblePages(count, page, maxVisiblePages, isMobile);
 
   return (
     <Box

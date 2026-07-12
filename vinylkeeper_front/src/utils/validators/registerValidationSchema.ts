@@ -28,6 +28,9 @@ export const registerValidationSchema = yup.object({
     .required("You must enter your Email."),
   isAcceptedTerms: yup
     .boolean()
+    // .required() alone only rejects null/undefined — false is a "present"
+    // boolean value and would pass, so the checkbox wouldn't actually be enforced.
+    .oneOf([true], "You must accept terms to use Vinyl Keeper")
     .required("You must accept terms to use Vinyl Keeper"),
   password: yup
     .string()
