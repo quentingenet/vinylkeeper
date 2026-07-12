@@ -28,6 +28,7 @@ class ErrorCode:
     # Authorization errors (4000-4999)
     FORBIDDEN = 4030
     FORBIDDEN_OWNER = 4003
+    CSRF_TOKEN_INVALID = 4004
 
     # Server errors (5000-5999)
     SERVER_ERROR = 5000
@@ -237,4 +238,12 @@ class UnauthorizedError(AuthenticationError):
             error_code=ErrorCode.INVALID_TOKEN,
             message=message,
             details=details
+        )
+
+
+class CsrfValidationError(ForbiddenError):
+    def __init__(self):
+        super().__init__(
+            error_code=ErrorCode.CSRF_TOKEN_INVALID,
+            message="Invalid or missing CSRF token"
         )

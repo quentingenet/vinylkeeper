@@ -16,7 +16,13 @@ from app.schemas.user_schema import (
     TokenRefreshResponse,
 )
 from app.services.user_service import UserService
-from app.utils.auth_utils.auth import create_token, set_token_cookie
+from app.utils.auth_utils.auth import (
+    create_token,
+    set_token_cookie,
+    generate_csrf_token,
+    set_csrf_cookie,
+)
+from app.core.config_env import settings
 from app.deps.deps import get_user_service
 from app.core.logging import logger
 from app.utils.auth_utils.auth import TokenType, get_current_user
@@ -48,6 +54,7 @@ async def login(
     refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH)
     set_token_cookie(response, access_token, TokenType.ACCESS)
     set_token_cookie(response, refresh_token, TokenType.REFRESH)
+    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     logger.info(f"User logged in: {user.username}")
     return LoginResponse(isLoggedIn=True)
 
@@ -64,6 +71,7 @@ async def register(
     refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH)
     set_token_cookie(response, access_token, TokenType.ACCESS)
     set_token_cookie(response, refresh_token, TokenType.REFRESH)
+    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     logger.info(f"New user registered: {user.username}")
     await user_service.send_new_user_registered_email(user)
     return RegisterResponse(message="User registered successfully", isLoggedIn=True)
@@ -97,6 +105,7 @@ async def refresh_token(response: Response, request: Request) -> TokenRefreshRes
     new_refresh_token = create_token(user_uuid, TokenType.REFRESH)
     set_token_cookie(response, access_token, TokenType.ACCESS)
     set_token_cookie(response, new_refresh_token, TokenType.REFRESH)
+    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     return TokenRefreshResponse(message="Tokens refreshed", isLoggedIn=True)
 
 
@@ -104,6 +113,7 @@ async def refresh_token(response: Response, request: Request) -> TokenRefreshRes
 async def logout(response: Response) -> MessageResponse:
     set_token_cookie(response, "", TokenType.ACCESS, custom_max_age=0)
     set_token_cookie(response, "", TokenType.REFRESH, custom_max_age=0)
+    set_csrf_cookie(response, "", max_age=0)
     return MessageResponse(message="Logged out successfully")
 
 

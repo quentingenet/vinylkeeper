@@ -4,6 +4,11 @@ import { ApiError } from "./apiError";
 export type { ApiError };
 export type AppError = ApiError;
 
+const getCsrfToken = (): string | null => {
+  const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
 interface EnrichedHTTPError extends HTTPError {
   errorData?: ApiError;
 }
@@ -42,6 +47,14 @@ const requestService = async <T = unknown>({
     json: body,
     credentials: "include" as RequestCredentials,
     hooks: {
+      beforeRequest: [
+        (request: Request): void => {
+          const csrfToken = getCsrfToken();
+          if (csrfToken) {
+            request.headers.set("X-CSRF-Token", csrfToken);
+          }
+        },
+      ],
       beforeError: [
         async (error: HTTPError): Promise<HTTPError> => {
           const { response } = error;

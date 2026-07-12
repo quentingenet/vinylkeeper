@@ -1,4 +1,4 @@
-import { CapacitorHttp } from "@capacitor/core";
+import { CapacitorHttp, CapacitorCookies } from "@capacitor/core";
 import { API_VK_URL } from "./GlobalUtils";
 import { ApiError } from "./apiError";
 
@@ -29,6 +29,11 @@ class CapacitorHttpService {
       "Content-Type": "application/json",
       ...headers,
     };
+
+    const cookies = await CapacitorCookies.getCookies({ url: this.baseUrl });
+    if (cookies.csrf_token) {
+      defaultHeaders["X-CSRF-Token"] = cookies.csrf_token;
+    }
 
     try {
       const response = await CapacitorHttp.request({

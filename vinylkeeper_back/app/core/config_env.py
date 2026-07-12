@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     RESET_TOKEN_EXPIRE_MINUTES: int
     ALGORITHM: str
     COOKIE_DOMAIN: str
+    CSRF_ENFORCE: bool = False
 
     # Mail configuration
     EMAIL_ADMIN: str

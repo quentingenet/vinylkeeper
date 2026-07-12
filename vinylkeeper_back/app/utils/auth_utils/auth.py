@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
@@ -12,8 +13,15 @@ from app.core.config_env import settings
 from app.db.session import get_db
 from app.models.user_model import User
 from app.repositories.user_repository import UserRepository
-from app.core.exceptions import RefreshTokenNotFoundError, UnauthorizedError, InvalidResetTokenError
+from app.core.exceptions import (
+    RefreshTokenNotFoundError,
+    UnauthorizedError,
+    InvalidResetTokenError,
+    CsrfValidationError,
+)
 from app.core.logging import logger
+
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
 def load_keys() -> tuple[bytes, bytes]:
@@ -121,6 +129,26 @@ def verify_reset_token(token: str) -> str:
         raise InvalidResetTokenError()
 
 
+def verify_csrf(request: Request) -> None:
+    """Verify the double-submit CSRF token for state-changing requests"""
+    if request.method in SAFE_METHODS:
+        return
+
+    cookie_token = request.cookies.get("csrf_token")
+    header_token = request.headers.get("x-csrf-token")
+    valid = bool(cookie_token) and bool(header_token) and secrets.compare_digest(
+        cookie_token, header_token
+    )
+
+    if not valid:
+        if settings.CSRF_ENFORCE:
+            raise CsrfValidationError()
+        logger.warning(
+            "CSRF token missing or mismatched (dry-run)",
+            extra={"path": request.url.path, "method": request.method}
+        )
+
+
 async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
@@ -131,6 +159,7 @@ async def get_current_user(
     if not token:
         raise UnauthorizedError("No access token provided")
     user_uuid = verify_token(token, expected_type=TokenType.ACCESS)
+    verify_csrf(request)
     user = await user_repository.get_user_by_uuid(user_uuid)
     if not user:
         raise UnauthorizedError("User not found")
@@ -162,6 +191,33 @@ def set_token_cookie(
         value=token,
         max_age=max_age,
         httponly=True,
+        secure=use_secure_cookie,
+        samesite="none" if use_secure_cookie else "lax",
+        path="/",
+        domain=cookie_domain
+    )
+
+
+def generate_csrf_token() -> str:
+    """Generate an opaque random CSRF token"""
+    return secrets.token_urlsafe(32)
+
+
+def set_csrf_cookie(response: Response, token: str, max_age: int) -> None:
+    """Set the CSRF cookie, readable by JS for the double-submit pattern"""
+    app_env = settings.APP_ENV.lower()
+    use_secure_cookie = app_env not in {"development", "local", "test"}
+    cookie_domain = (
+            settings.COOKIE_DOMAIN
+            if use_secure_cookie and settings.COOKIE_DOMAIN
+            else None
+        )
+
+    response.set_cookie(
+        key="csrf_token",
+        value=token,
+        max_age=max_age,
+        httponly=False,
         secure=use_secure_cookie,
         samesite="none" if use_secure_cookie else "lax",
         path="/",
