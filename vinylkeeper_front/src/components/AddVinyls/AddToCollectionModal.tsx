@@ -106,7 +106,7 @@ const getAlertStyle = (
 
 const buttonStyle = {
   color: "#fffbf9",
-  "&:hover": { color: "#C9A726" },
+  "&:hover": { color: "primary.main" },
 };
 
 const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
@@ -145,7 +145,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
               alignItems="center"
               mb={2}
             >
-              <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
+              <Typography variant="h6" component="h2" sx={{ color: "primary.main" }}>
                 Select a collection
               </Typography>
               <IconButton onClick={onClose} size="small">
@@ -204,7 +204,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                         "& .MuiTooltip-tooltip": {
                           backgroundColor: isAddingToCollection
                             ? "#4caf50"
-                            : "#C9A726",
+                            : "primary.main",
                           color: isAddingToCollection ? "#fff" : "#000",
                           fontSize: "0.875rem",
                           fontWeight: isAddingToCollection ? "bold" : "normal",
@@ -224,7 +224,7 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                         <AddCircleOutlineIcon
                           fontSize="large"
                           sx={{
-                            color: "#C9A726",
+                            color: "primary.main",
                             animation: `${growItem} 1s ease infinite`,
                           }}
                         />
@@ -323,7 +323,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
               alignItems="center"
               mb={2}
             >
-              <Typography variant="h6" component="h2" sx={{ color: "#C9A726" }}>
+              <Typography variant="h6" component="h2" sx={{ color: "primary.main" }}>
                 Add to collection
               </Typography>
               <IconButton onClick={handleClose} size="small">
@@ -347,7 +347,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                 arrow
                 sx={{
                   "& .MuiTooltip-tooltip": {
-                    backgroundColor: isAddingToWishlist ? "#4caf50" : "#C9A726",
+                    backgroundColor: isAddingToWishlist ? "#4caf50" : "primary.main",
                     color: isAddingToWishlist ? "#fff" : "#000",
                     fontSize: "0.875rem",
                     fontWeight: isAddingToWishlist ? "bold" : "normal",
@@ -361,7 +361,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                     onClick={handleAddToWishlist}
                     disabled={isAddingToWishlist}
                     sx={{
-                      bgcolor: "#C9A726",
+                      bgcolor: "primary.main",
                       "&:hover": { bgcolor: "#b08c1f" },
                       "&:disabled": { bgcolor: "#666" },
                       width: "100%",
@@ -385,7 +385,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                 arrow
                 sx={{
                   "& .MuiTooltip-tooltip": {
-                    backgroundColor: collectionsLoading ? "#4caf50" : "#C9A726",
+                    backgroundColor: collectionsLoading ? "#4caf50" : "primary.main",
                     color: collectionsLoading ? "#fff" : "#000",
                     fontSize: "0.875rem",
                     fontWeight: collectionsLoading ? "bold" : "normal",
@@ -398,10 +398,10 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                     onClick={() => setShowCollectionSelection(true)}
                     disabled={collectionsLoading}
                     sx={{
-                      color: "#C9A726",
+                      color: "primary.main",
                       "&:hover": {
-                        borderColor: "#C9A726",
-                        bgcolor: "#C9A726",
+                        borderColor: "primary.main",
+                        bgcolor: "primary.main",
                         color: "#1F1F1F",
                       },
                       "&:disabled": {

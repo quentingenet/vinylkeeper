@@ -29,10 +29,10 @@ export default function TracklistAccordion({ tracklist }: TracklistAccordionProp
         "&:before": { display: "none" },
         "& .MuiAccordionSummary-root": {
           backgroundColor: "#1F1F1F",
-          color: "#C9A726",
+          color: "primary.main",
           fontWeight: "bold",
         },
-        "& .MuiAccordionSummary-expandIconWrapper": { color: "#C9A726" },
+        "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
         "& .MuiAccordionDetails-root": { backgroundColor: "#2a2a2a" },
       }}
     >

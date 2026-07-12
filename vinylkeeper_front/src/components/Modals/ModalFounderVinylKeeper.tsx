@@ -87,7 +87,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
             <Button
               variant="contained"
               sx={{
-                backgroundColor: "#C9A726",
+                backgroundColor: "primary.main",
                 color: "#1F1F1F",
                 fontWeight: "bold",
                 fontFamily: "Oswald-ExtraLight, sans-serif",

@@ -180,7 +180,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
               aria-label="add place"
               onClick={onAddPlace}
               sx={{
-                backgroundColor: "#C9A726",
+                backgroundColor: "primary.main",
                 "&:hover": { backgroundColor: "#B8961F" },
                 animation: `${growItem} 1.3s infinite`,
                 boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
@@ -228,7 +228,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
               <Typography
                 variant="h5"
                 component="h2"
-                sx={{ color: "#C9A726", fontWeight: "bold" }}
+                sx={{ color: "primary.main", fontWeight: "bold" }}
               >
                 {selectedLocation
                   ? `🏙️ ${[selectedLocation.city, selectedLocation.country].filter(Boolean).join(", ") || "Places"}`
@@ -236,7 +236,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                 {isLoadingPlaces && " (Loading...)"}
               </Typography>
               <IconButton onClick={handleCloseModal} size="small">
-                <Close sx={{ color: "#C9A726" }} />
+                <Close sx={{ color: "primary.main" }} />
               </IconButton>
             </Box>
 
@@ -247,7 +247,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                 alignItems="center"
                 minHeight="200px"
               >
-                <CircularProgress sx={{ color: "#C9A726" }} />
+                <CircularProgress sx={{ color: "primary.main" }} />
               </Box>
             ) : isPlacesError ? (
               <Typography sx={{ color: "#e4e4e4" }}>
@@ -276,7 +276,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                     }}
                   >
                     <AccordionSummary
-                      expandIcon={<ExpandMore sx={{ color: "#C9A726" }} />}
+                      expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
                       sx={{
                         "& .MuiAccordionSummary-content": {
                           margin: "12px 0",
@@ -286,7 +286,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                       <Typography
                         variant="h6"
                         sx={{
-                          color: "#C9A726",
+                          color: "primary.main",
                           fontWeight: "bold",
                           fontSize: "1.1rem",
                         }}
@@ -384,7 +384,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
             label={place.place_type.name}
             size="medium"
             sx={{
-              backgroundColor: "#C9A726",
+              backgroundColor: "primary.main",
               color: "#fffbf9",
               fontSize: "0.9rem",
               fontWeight: "bold",

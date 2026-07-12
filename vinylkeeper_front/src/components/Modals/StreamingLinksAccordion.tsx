@@ -63,10 +63,10 @@ export default function StreamingLinksAccordion({
         "&:before": { display: "none" },
         "& .MuiAccordionSummary-root": {
           backgroundColor: "#1F1F1F",
-          color: "#C9A726",
+          color: "primary.main",
           fontWeight: "bold",
         },
-        "& .MuiAccordionSummary-expandIconWrapper": { color: "#C9A726" },
+        "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
         "& .MuiAccordionDetails-root": { backgroundColor: "#2a2a2a" },
       }}
     >
@@ -85,8 +85,8 @@ export default function StreamingLinksAccordion({
               onClick={() => handleRedirect(platform.name)}
               sx={{
                 backgroundColor: "#1F1F1F",
-                color: "#C9A726",
-                "&:hover": { backgroundColor: "#C9A726", color: "#1F1F1F" },
+                color: "primary.main",
+                "&:hover": { backgroundColor: "primary.main", color: "#1F1F1F" },
                 py: 1.5,
               }}
               startIcon={<span>{platform.icon}</span>}

@@ -22,10 +22,10 @@ const accordionSx = {
   "&:before": { display: "none" },
   "& .MuiAccordionSummary-root": {
     backgroundColor: "#1F1F1F",
-    color: "#C9A726",
+    color: "primary.main",
     fontWeight: "bold",
   },
-  "& .MuiAccordionSummary-expandIconWrapper": { color: "#C9A726" },
+  "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
   "& .MuiAccordionDetails-root": { backgroundColor: "#2a2a2a" },
 };
 
@@ -74,8 +74,8 @@ export default function AlbumStateEditor({
               id="cover-state-label"
               sx={{
                 color: "#e4e4e4",
-                "&.Mui-focused": { color: "#C9A726" },
-                "&.MuiInputLabel-shrink": { color: "#C9A726" },
+                "&.Mui-focused": { color: "primary.main" },
+                "&.MuiInputLabel-shrink": { color: "primary.main" },
               }}
             >
               Cover state
@@ -88,7 +88,7 @@ export default function AlbumStateEditor({
               onChange={(e) => onCoverChange(e.target.value)}
               disabled={!isOwner}
               variant="outlined"
-              sx={{ color: "#fffbf9", "& .MuiSelect-icon": { color: "#C9A726" } }}
+              sx={{ color: "#fffbf9", "& .MuiSelect-icon": { color: "primary.main" } }}
             >
               {vinylStates.map((state) => (
                 <MenuItem key={state.id} value={state.id}>
@@ -103,8 +103,8 @@ export default function AlbumStateEditor({
               id="record-state-label"
               sx={{
                 color: "#e4e4e4",
-                "&.Mui-focused": { color: "#C9A726" },
-                "&.MuiInputLabel-shrink": { color: "#C9A726" },
+                "&.Mui-focused": { color: "primary.main" },
+                "&.MuiInputLabel-shrink": { color: "primary.main" },
               }}
             >
               Record state
@@ -117,7 +117,7 @@ export default function AlbumStateEditor({
               onChange={(e) => onDiscChange(e.target.value)}
               disabled={!isOwner}
               variant="outlined"
-              sx={{ color: "#fffbf9", "& .MuiSelect-icon": { color: "#C9A726" } }}
+              sx={{ color: "#fffbf9", "& .MuiSelect-icon": { color: "primary.main" } }}
             >
               {vinylStates.map((state) => (
                 <MenuItem key={state.id} value={state.id}>
@@ -147,9 +147,9 @@ export default function AlbumStateEditor({
                 sx: {
                   "& .MuiOutlinedInput-root": {
                     color: "#fffbf9",
-                    "& fieldset": { borderColor: "#C9A726" },
+                    "& fieldset": { borderColor: "primary.main" },
                     "&:hover fieldset": { borderColor: "#b38f1f" },
-                    "&.Mui-focused fieldset": { borderColor: "#C9A726" },
+                    "&.Mui-focused fieldset": { borderColor: "primary.main" },
                     "&.Mui-disabled": {
                       color: "#999",
                       "& fieldset": { borderColor: "#666" },
@@ -157,7 +157,7 @@ export default function AlbumStateEditor({
                   },
                   "& .MuiInputLabel-root": {
                     color: "#fffbf9",
-                    "&.Mui-focused": { color: "#C9A726" },
+                    "&.Mui-focused": { color: "primary.main" },
                     "&.Mui-disabled": { color: "#666" },
                   },
                   "& .MuiFormHelperText-root": { color: "#e4e4e4" },
@@ -169,12 +169,12 @@ export default function AlbumStateEditor({
                   "& .MuiPickersCalendarHeader-root": { color: "#fffbf9" },
                   "& .MuiPickersYear-yearButton": {
                     color: "#fffbf9",
-                    "&.Mui-selected": { backgroundColor: "#C9A726", color: "#000" },
+                    "&.Mui-selected": { backgroundColor: "primary.main", color: "#000" },
                     "&:hover": { backgroundColor: "rgba(201, 167, 38, 0.2)" },
                   },
                   "& .MuiPickersMonth-monthButton": {
                     color: "#fffbf9",
-                    "&.Mui-selected": { backgroundColor: "#C9A726", color: "#000" },
+                    "&.Mui-selected": { backgroundColor: "primary.main", color: "#000" },
                     "&:hover": { backgroundColor: "rgba(201, 167, 38, 0.2)" },
                   },
                 },
@@ -188,7 +188,7 @@ export default function AlbumStateEditor({
               onClick={onUpdate}
               disabled={isUpdating || !hasAtLeastOneField}
               sx={{
-                backgroundColor: "#C9A726",
+                backgroundColor: "primary.main",
                 color: "#1F1F1F",
                 fontWeight: "bold",
                 mt: 2,

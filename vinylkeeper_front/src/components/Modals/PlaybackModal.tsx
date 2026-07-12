@@ -180,7 +180,7 @@ export default function PlaybackModal({
               <Typography
                 variant="h5"
                 component="h2"
-                sx={{ color: "#C9A726", fontWeight: "bold" }}
+                sx={{ color: "primary.main", fontWeight: "bold" }}
               >
                 {item.itemType === "album" ? "Album details" : "Artist details"}
               </Typography>
@@ -229,7 +229,7 @@ export default function PlaybackModal({
                     <Typography
                       variant="h6"
                       fontWeight="bold"
-                      sx={{ color: "#C9A726", mb: 1 }}
+                      sx={{ color: "primary.main", mb: 1 }}
                     >
                       {item.title}
                     </Typography>
@@ -240,7 +240,7 @@ export default function PlaybackModal({
                   albumMetadata?.genres &&
                   albumMetadata.genres.length > 0 && (
                     <Box mb={3}>
-                      <Typography variant="subtitle1" sx={{ color: "#C9A726", mb: 1 }}>
+                      <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
                         Genres
                       </Typography>
                       <Box display="flex" flexWrap="wrap" gap={1}>
@@ -255,7 +255,7 @@ export default function PlaybackModal({
                             label={genre}
                             size="small"
                             sx={{
-                              backgroundColor: "#C9A726",
+                              backgroundColor: "primary.main",
                               color: "#fffbf9",
                               "&:hover": { backgroundColor: "#b38f1f" },
                             }}
@@ -294,7 +294,7 @@ export default function PlaybackModal({
 
                 {item.itemType === "artist" && artistMetadata?.biography && (
                   <Box mb={3}>
-                    <Typography variant="subtitle1" sx={{ color: "#C9A726", mb: 1 }}>
+                    <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
                       Biography
                     </Typography>
                     <Box sx={{ p: 2, maxHeight: 200, overflow: "auto" }}>
@@ -311,7 +311,7 @@ export default function PlaybackModal({
                   artistMetadata?.genres &&
                   artistMetadata.genres.length > 0 && (
                     <Box mb={3}>
-                      <Typography variant="subtitle1" sx={{ color: "#C9A726", mb: 1 }}>
+                      <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
                         Genres
                       </Typography>
                       <Box display="flex" flexWrap="wrap" gap={1}>
@@ -321,7 +321,7 @@ export default function PlaybackModal({
                             label={genre}
                             size="small"
                             sx={{
-                              backgroundColor: "#C9A726",
+                              backgroundColor: "primary.main",
                               color: "#fffbf9",
                               "&:hover": { backgroundColor: "#b38f1f" },
                             }}
@@ -364,7 +364,7 @@ export default function PlaybackModal({
           onClose={() => setShowSuccessToast(false)}
           severity="success"
           sx={{
-            backgroundColor: "#C9A726",
+            backgroundColor: "primary.main",
             color: "#1F1F1F",
             fontWeight: "bold",
             "& .MuiAlert-icon": { color: "#1F1F1F" },

@@ -123,7 +123,7 @@ export default function Collections() {
         <AddCircleOutlineIcon
           fontSize="large"
           sx={{
-            color: "#C9A726",
+            color: "primary.main",
             animation: `${growItem} 1s ease infinite`,
           }}
         />

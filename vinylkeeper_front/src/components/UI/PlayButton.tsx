@@ -35,7 +35,7 @@ export default function PlayButton({
         zIndex: 2,
         "&:hover": {
           animation: `${zoomIn} 0.3s ease-in-out`,
-          backgroundColor: "#C9A726",
+          backgroundColor: "primary.main",
         },
         transition: "background-color 0.2s ease-in-out",
       }}
@@ -43,7 +43,7 @@ export default function PlayButton({
       <MusicNoteIcon
         fontSize={size}
         sx={{
-          color: "#C9A726",
+          color: "primary.main",
           "&:hover": {
             color: "#1F1F1F",
           },

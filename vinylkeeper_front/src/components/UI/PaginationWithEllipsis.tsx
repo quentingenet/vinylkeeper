@@ -96,8 +96,8 @@ export default function PaginationWithEllipsis({
           minWidth: isMobile ? "32px" : "40px",
           width: isMobile ? "32px" : "40px",
           height: isMobile ? "32px" : "40px",
-          color: color === "primary" ? "#C9A726" : undefined,
-          borderColor: color === "primary" ? "#C9A726" : undefined,
+          color: color === "primary" ? "primary.main" : undefined,
+          borderColor: color === "primary" ? "primary.main" : undefined,
           "&:hover": {
             borderColor: color === "primary" ? "#B8961F" : undefined,
           },
@@ -140,15 +140,15 @@ export default function PaginationWithEllipsis({
                   pageNum === page
                     ? "white"
                     : color === "primary"
-                    ? "#C9A726"
+                    ? "primary.main"
                     : undefined,
                 backgroundColor:
                   pageNum === page && color === "primary"
-                    ? "#C9A726"
+                    ? "primary.main"
                     : pageNum === page
                     ? undefined
                     : "transparent",
-                borderColor: color === "primary" ? "#C9A726" : undefined,
+                borderColor: color === "primary" ? "primary.main" : undefined,
                 "&:hover": {
                   backgroundColor:
                     pageNum === page
@@ -175,8 +175,8 @@ export default function PaginationWithEllipsis({
           minWidth: isMobile ? "32px" : "40px",
           width: isMobile ? "32px" : "40px",
           height: isMobile ? "32px" : "40px",
-          color: color === "primary" ? "#C9A726" : undefined,
-          borderColor: color === "primary" ? "#C9A726" : undefined,
+          color: color === "primary" ? "primary.main" : undefined,
+          borderColor: color === "primary" ? "primary.main" : undefined,
           "&:hover": {
             borderColor: color === "primary" ? "#B8961F" : undefined,
           },

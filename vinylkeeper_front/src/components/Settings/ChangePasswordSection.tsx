@@ -85,7 +85,7 @@ export default function ChangePasswordSection() {
     <Card sx={{ mb: 4 }}>
       <CardContent>
         <Box display="flex" alignItems="center" mb={2}>
-          <Lock sx={{ color: "#C9A726", mr: 1 }} />
+          <Lock sx={{ color: "primary.main", mr: 1 }} />
           <Typography variant="h6">Change password</Typography>
         </Box>
         {passwordMessage && (
@@ -143,7 +143,7 @@ export default function ChangePasswordSection() {
               variant="contained"
               startIcon={<Lock />}
               disabled={!isValid || changePasswordMutation.isPending}
-              sx={{ bgcolor: "#C9A726", "&:hover": { bgcolor: "#B8961F" } }}
+              sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: "#B8961F" } }}
             >
               {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
             </Button>

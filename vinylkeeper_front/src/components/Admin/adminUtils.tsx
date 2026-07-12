@@ -24,8 +24,8 @@ export const formatDate = (dateString: string) =>
 
 export const tablePaginationSx = {
   color: "#fffbf9",
-  "& .MuiTablePagination-selectIcon": { color: "#C9A726" },
-  "& .MuiTablePagination-actions button": { color: "#C9A726" },
+  "& .MuiTablePagination-selectIcon": { color: "primary.main" },
+  "& .MuiTablePagination-actions button": { color: "primary.main" },
   "& .MuiTablePagination-actions button.Mui-disabled": { color: "#555" },
   "& .MuiSelect-select": { color: "#fffbf9" },
 };

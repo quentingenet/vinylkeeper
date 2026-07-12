@@ -18,8 +18,6 @@ import { useWishlist } from "@hooks/useWishlist";
 import {
   Typography,
   Box,
-  Tabs,
-  Tab,
   FormControl,
   InputLabel,
   Select,
@@ -38,6 +36,7 @@ import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { VinylStateEnum } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
 import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
+import CollectionTabs from "@components/Collections/CollectionTabs";
 import CollectionExportMenu from "@components/Collections/CollectionExportMenu";
 import CollectionItemGrid from "@components/Collections/CollectionItemGrid";
 import WishlistTabContent from "@components/Collections/WishlistTabContent";
@@ -591,25 +590,11 @@ export default function CollectionDetails() {
         </Box>
       </Box>
 
-      <Box sx={{ width: "100%", borderBottom: 1, borderColor: "divider" }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          aria-label="collection tabs"
-          variant="fullWidth"
-          sx={{
-            "& .MuiTab-root": {
-              color: "primary.main",
-              "&.Mui-selected": { color: "primary.main" },
-            },
-            "& .MuiTabs-indicator": { backgroundColor: "primary.main" },
-          }}
-        >
-          <Tab label="Albums" />
-          <Tab label="Artists" />
-          {isUserLoggedIn && <Tab label="Wishlist" />}
-        </Tabs>
-      </Box>
+      <CollectionTabs
+        value={tabValue}
+        onChange={handleTabChange}
+        isUserLoggedIn={isUserLoggedIn}
+      />
 
       {/* Contenu normal */}
       <Box sx={{ mt: 3 }}>

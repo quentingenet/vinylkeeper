@@ -97,7 +97,7 @@ export default function Explore() {
                 borderColor: "rgba(255, 255, 255, 0.5)",
               },
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#C9A726",
+                borderColor: "primary.main",
               },
               "& .MuiSvgIcon-root": {
                 color: "white",

@@ -89,8 +89,8 @@ const Admin: React.FC = () => {
           p: 3,
         }}
       >
-        <AdminPanelSettings sx={{ fontSize: 64, color: "#C9A726", mb: 2 }} />
-        <Typography variant="h4" sx={{ color: "#C9A726", mb: 2 }}>
+        <AdminPanelSettings sx={{ fontSize: 64, color: "primary.main", mb: 2 }} />
+        <Typography variant="h4" sx={{ color: "primary.main", mb: 2 }}>
           Administrator Access Required
         </Typography>
         <Typography variant="body1" sx={{ color: "#fffbf9", textAlign: "center" }}>
@@ -114,8 +114,8 @@ const Admin: React.FC = () => {
       </Snackbar>
 
       <Box sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "wrap" }}>
-        <AdminPanelSettings sx={{ fontSize: { xs: 24, sm: 28, md: 32 }, color: "#C9A726", mr: 2 }} />
-        <Typography variant="h4" sx={{ color: "#C9A726", fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}>
+        <AdminPanelSettings sx={{ fontSize: { xs: 24, sm: 28, md: 32 }, color: "primary.main", mr: 2 }} />
+        <Typography variant="h4" sx={{ color: "primary.main", fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}>
           Administration
         </Typography>
       </Box>
@@ -130,7 +130,7 @@ const Admin: React.FC = () => {
       )}
 
       {/* Pending Requests */}
-      <Typography variant="h5" sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+      <Typography variant="h5" sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
         Pending Requests ({pendingData?.total ?? 0})
       </Typography>
       {isLoadingPending ? (
@@ -144,7 +144,7 @@ const Admin: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {["Place", "City", "User", "Date", "Actions"].map((h) => (
-                    <TableCell key={h} sx={{ color: "#C9A726", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                    <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                       {h}
                     </TableCell>
                   ))}
@@ -158,7 +158,7 @@ const Admin: React.FC = () => {
                     <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
                     <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell>
-                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "#C9A726" }} size="small">
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small">
                         <Visibility />
                       </IconButton>
                     </TableCell>
@@ -183,7 +183,7 @@ const Admin: React.FC = () => {
       )}
 
       {/* All Requests */}
-      <Typography variant="h5" sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+      <Typography variant="h5" sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
         All Requests ({moderationData?.total ?? 0})
       </Typography>
       {isLoadingRequests ? (
@@ -197,7 +197,7 @@ const Admin: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {["Place", "City", "User", "Status", "Date", "Actions"].map((h) => (
-                    <TableCell key={h} sx={{ color: "#C9A726", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                    <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                       {h}
                     </TableCell>
                   ))}
@@ -212,7 +212,7 @@ const Admin: React.FC = () => {
                     <TableCell>{getStatusChip(request.status?.name ?? "unknown")}</TableCell>
                     <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell>
-                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "#C9A726" }} size="small">
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small">
                         <Visibility />
                       </IconButton>
                     </TableCell>

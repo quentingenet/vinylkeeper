@@ -46,7 +46,7 @@ export default function ModerationDetailDialog({
         },
       }}
     >
-      <DialogTitle sx={{ color: "#C9A726", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+      <DialogTitle sx={{ color: "primary.main", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
         Moderation Request Details
       </DialogTitle>
       <DialogContent>
@@ -54,7 +54,7 @@ export default function ModerationDetailDialog({
           <Box>
             <Typography
               variant="h6"
-              sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+              sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
             >
               {selectedRequest.place?.name}
             </Typography>
@@ -63,7 +63,7 @@ export default function ModerationDetailDialog({
               <Stack spacing={1} sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: "#C9A726", fontSize: { xs: "0.875rem", sm: "1rem" } }}
+                  sx={{ color: "primary.main", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
                   Place Information
                 </Typography>
@@ -84,7 +84,7 @@ export default function ModerationDetailDialog({
               <Stack spacing={1} sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: "#C9A726", fontSize: { xs: "0.875rem", sm: "1rem" } }}
+                  sx={{ color: "primary.main", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
                   Request Information
                 </Typography>
@@ -101,7 +101,7 @@ export default function ModerationDetailDialog({
               <Box sx={{ mt: 3, p: 2, bgcolor: "#2a2a2a", borderRadius: 1 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: "#C9A726", mb: 2, fontSize: { xs: "0.875rem", sm: "1rem" } }}
+                  sx={{ color: "primary.main", mb: 2, fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
                   Available Actions
                 </Typography>
@@ -143,7 +143,7 @@ export default function ModerationDetailDialog({
       <DialogActions>
         <Button
           onClick={onClose}
-          sx={{ color: "#C9A726", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+          sx={{ color: "primary.main", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
         >
           Close
         </Button>

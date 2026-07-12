@@ -13,7 +13,7 @@ interface Props {
 }
 
 const STAT_CARDS = [
-  { key: "total" as const, label: "Total", color: "#C9A726" },
+  { key: "total" as const, label: "Total", color: "primary.main" },
   { key: "pending" as const, label: "Pending", color: "#ff9800" },
   { key: "approved" as const, label: "Approved", color: "#4caf50" },
   { key: "rejected" as const, label: "Rejected", color: "#f44336" },

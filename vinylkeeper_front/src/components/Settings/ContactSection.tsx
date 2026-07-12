@@ -61,7 +61,7 @@ export default function ContactSection() {
       >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <ContactSupport sx={{ color: "#C9A726", mr: 1 }} />
+            <ContactSupport sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="h6">Contact support</Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" mb={2}>
@@ -74,7 +74,7 @@ export default function ContactSection() {
               variant="contained"
               startIcon={<ContactSupport />}
               onClick={() => setModalOpen(true)}
-              sx={{ bgcolor: "#C9A726", "&:hover": { bgcolor: "#B8961F" } }}
+              sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: "#B8961F" } }}
             >
               Contact support
             </Button>
@@ -85,7 +85,7 @@ export default function ContactSection() {
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center">
-            <ContactSupport sx={{ color: "#C9A726", mr: 1 }} />
+            <ContactSupport sx={{ color: "primary.main", mr: 1 }} />
             Contact support
           </Box>
         </DialogTitle>
@@ -137,7 +137,7 @@ export default function ContactSection() {
             onClick={() => formRef.current?.requestSubmit()}
             variant="contained"
             disabled={sendContactMessageMutation.isPending}
-            sx={{ bgcolor: "#C9A726", "&:hover": { bgcolor: "#B8961F" } }}
+            sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: "#B8961F" } }}
           >
             {sendContactMessageMutation.isPending ? "Sending..." : "Send message"}
           </Button>

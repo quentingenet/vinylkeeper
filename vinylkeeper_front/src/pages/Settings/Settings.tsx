@@ -63,7 +63,7 @@ export default function Settings() {
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <Person sx={{ color: "#C9A726", mr: 1 }} />
+            <Person sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="h6">Profile informations</Typography>
           </Box>
           <Grid container spacing={2}>
@@ -101,7 +101,7 @@ export default function Settings() {
                 />
                 <IconButton
                   onClick={() => setOpenTermsModal(true)}
-                  sx={{ color: "#C9A726", "&:hover": { bgcolor: "rgba(201,167,38,0.1)" } }}
+                  sx={{ color: "primary.main", "&:hover": { bgcolor: "rgba(201,167,38,0.1)" } }}
                   title="View Terms"
                 >
                   <Description />
