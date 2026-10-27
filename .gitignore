@@ -159,3 +159,6 @@ cache/
 *.jpeg
 *.jpg
 *.png
+
+# Frontend static assets
+!vinylkeeper_front/public/vk_preview/*

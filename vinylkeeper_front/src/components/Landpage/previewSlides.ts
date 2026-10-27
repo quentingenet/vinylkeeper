@@ -9,24 +9,24 @@ export const previewSlides: PreviewSlide[] = [
     title: "Dashboard",
     description:
       "Your collection at a glance: albums, artists and collections stats, your latest additions and what the community has added recently.",
-    image: "/vk_preview/preview_vk_1.png",
+    image: "/vk_preview/preview_vk_1.webp",
   },
   {
     title: "Add vinyls",
     description:
       "Search the Discogs catalogue by album or artist and add the records you own to your collections in a few clicks.",
-    image: "/vk_preview/preview_vk_2.png",
+    image: "/vk_preview/preview_vk_2.webp",
   },
   {
     title: "Collections",
     description:
       "Browse, search and sort your records, keep a wishlist, and make a collection public to share it with the community.",
-    image: "/vk_preview/preview_vk_3.png",
+    image: "/vk_preview/preview_vk_3.webp",
   },
   {
     title: "Places",
     description:
       "Discover record shops, flea markets and vinyl spots on a community map, and suggest your own favourite places.",
-    image: "/vk_preview/preview_vk_4.png",
+    image: "/vk_preview/preview_vk_4.webp",
   },
 ];
