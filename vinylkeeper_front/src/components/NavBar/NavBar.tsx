@@ -18,7 +18,6 @@ import {
   SpaceDashboardOutlined as SpaceDashboardOutlinedIcon,
   Album as AlbumIcon,
   AddBox as AddBoxIcon,
-  Search as SearchIcon,
   Settings as SettingsIcon,
   Place as PlaceIcon,
   AdminPanelSettings,
@@ -86,12 +85,6 @@ const NavBar: React.FC<NavBarProps> = ({
       text: "Collections",
       icon: <AlbumIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.COLLECTIONS,
-    },
-
-    {
-      text: "Explore",
-      icon: <SearchIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.EXPLORE,
     },
     {
       text: "Places",

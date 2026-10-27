@@ -129,6 +129,7 @@ export const useCollections = (
             user_uuid: currentUser.user_uuid,
           },
           image_preview: null,
+          preview_images: [],
         };
 
         queryClient.setQueryData<PaginatedCollectionListResponse>(

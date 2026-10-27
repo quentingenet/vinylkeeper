@@ -6,7 +6,11 @@ import {
 } from "@services/CollectionApiService";
 import { useCollections } from "@hooks/useCollections";
 import { useLikeButton } from "@hooks/useLikeButton";
-import vinylKeeperImg from "@assets/vinylKeeper.svg";
+import CoverMosaic from "@components/Collections/CoverMosaic";
+import {
+  COLLECTION_CARD_MARGIN,
+  COLLECTION_CARD_WIDTH,
+} from "@components/Collections/collectionGridLayout";
 import {
   Card,
   CardContent,
@@ -34,6 +38,9 @@ import { createPortal } from "react-dom";
 
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
 
+const formatCount = (count: number, noun: string) =>
+  `${count} ${noun}${count === 1 ? "" : "s"}`;
+
 interface CollectionItemProps {
   collection: CollectionResponse | CollectionListItemResponse;
   onSwitchArea: (isPublic: boolean) => void;
@@ -55,6 +62,13 @@ export default function CollectionItem({
   isOwner,
   showOwner,
 }: CollectionItemProps) {
+  // The full CollectionResponse has no list-view fields: derive them
+  const previewImages =
+    "preview_images" in collection ? collection.preview_images ?? [] : [];
+  const albumsCount =
+    "albums_count" in collection ? collection.albums_count : collection.albums.length;
+  const artistsCount =
+    "artists_count" in collection ? collection.artists_count : collection.artists.length;
   const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [showStatusToast, setShowStatusToast] = useState(false);
@@ -114,10 +128,10 @@ export default function CollectionItem({
           position: "relative",
           cursor: "pointer",
           "&:hover": { boxShadow: 6 },
-          width: 320,
+          width: COLLECTION_CARD_WIDTH,
           height: 380,
           p: 0,
-          m: 1,
+          m: COLLECTION_CARD_MARGIN,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -147,19 +161,28 @@ export default function CollectionItem({
 
         <Box
           onClick={() => onCollectionClick(collection)}
-          component="img"
-          src={vinylKeeperImg}
-          alt="vinyl disc"
-          sx={{
-            width: "100%",
-            height: 220,
-            objectFit: "cover",
-            borderTopLeftRadius: 4,
-            borderTopRightRadius: 4,
-            background: "#C9A726",
-            opacity: 0.8,
-          }}
-        />
+          sx={{ position: "relative", flexShrink: 0 }}
+        >
+          {/* key resets the broken-cover state when the covers change */}
+          <CoverMosaic key={previewImages.join("|")} images={previewImages} />
+          <Typography
+            variant="caption"
+            data-testid="collection-content-counts"
+            sx={{
+              position: "absolute",
+              left: 8,
+              bottom: 8,
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              color: "common.white",
+              background: "rgba(30,30,30,0.7)",
+              fontWeight: 600,
+            }}
+          >
+            {formatCount(albumsCount, "album")} · {formatCount(artistsCount, "artist")}
+          </Typography>
+        </Box>
 
         <CardContent
           sx={{ flexGrow: 1, display: "flex", flexDirection: "column", p: 2, minHeight: 0 }}

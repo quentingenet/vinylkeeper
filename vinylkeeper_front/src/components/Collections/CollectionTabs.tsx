@@ -1,4 +1,5 @@
 import { Box, Tabs, Tab } from "@mui/material";
+import { primaryTabsSx } from "@components/UI/tabsStyles";
 
 interface CollectionTabsProps {
   value: number;
@@ -18,13 +19,7 @@ export default function CollectionTabs({
         onChange={onChange}
         aria-label="collection tabs"
         variant="fullWidth"
-        sx={{
-          "& .MuiTab-root": {
-            color: "primary.main",
-            "&.Mui-selected": { color: "primary.main" },
-          },
-          "& .MuiTabs-indicator": { backgroundColor: "primary.main" },
-        }}
+        sx={primaryTabsSx}
       >
         <Tab label="Albums" />
         <Tab label="Artists" />

@@ -33,6 +33,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { toPlaybackItem } from "@utils/toPlaybackItem";
+import { COMMUNITY_COLLECTIONS_URL } from "@utils/GlobalUrls";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -502,7 +503,7 @@ export default function Dashboard() {
                   boxShadow: "4px 4px 8px rgba(0, 0, 0, 0.7)",
                 },
               }}
-              onClick={() => void navigate("/explore")}
+              onClick={() => void navigate(COMMUNITY_COLLECTIONS_URL)}
             >
               <CardContent
                 sx={{
@@ -689,7 +690,7 @@ export default function Dashboard() {
               >
                 <Box
                   component={Link}
-                  to="/explore"
+                  to={COMMUNITY_COLLECTIONS_URL}
                   sx={{
                     color: "primary.main",
                     textDecoration: "none",

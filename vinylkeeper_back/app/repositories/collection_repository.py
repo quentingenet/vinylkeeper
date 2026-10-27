@@ -444,6 +444,56 @@ class CollectionRepository(TransactionalMixin):
                 details={}
             )
 
+    async def get_preview_images_batch(
+        self, collection_ids: List[int], limit: int = 6
+    ) -> Dict[int, List[str]]:
+        """Get up to `limit` random album covers per collection, in one query.
+
+        The draw is seeded by the current date: stable within a day so list refetches
+        (likes, pagination, visibility toggles) don't reshuffle the mosaic, renewed daily.
+        Albums without image are skipped.
+        """
+        if not collection_ids:
+            return {}
+        try:
+            ranked = (
+                select(
+                    CollectionAlbum.collection_id.label("collection_id"),
+                    Album.image_url.label("image_url"),
+                    func.row_number().over(
+                        partition_by=CollectionAlbum.collection_id,
+                        order_by=func.md5(
+                            func.concat(CollectionAlbum.album_id, ":", func.current_date())
+                        ),
+                    ).label("position"),
+                )
+                .join(Album, Album.id == CollectionAlbum.album_id)
+                .where(
+                    CollectionAlbum.collection_id.in_(collection_ids),
+                    Album.image_url.isnot(None),
+                    Album.image_url != "",
+                )
+                .subquery()
+            )
+            query = (
+                select(ranked.c.collection_id, ranked.c.image_url)
+                .where(ranked.c.position <= limit)
+                .order_by(ranked.c.collection_id, ranked.c.position)
+            )
+            result = await self.db.execute(query)
+
+            preview_images: Dict[int, List[str]] = {}
+            for collection_id, image_url in result.all():
+                preview_images.setdefault(collection_id, []).append(image_url)
+            return preview_images
+        except SQLAlchemyError as e:
+            logger.error(f"Error retrieving collection preview images: {str(e)}", exc_info=True)
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to retrieve collection preview images",
+                details={}
+            )
+
     async def get_collections_likes_counts(self, collection_ids: List[int]) -> dict:
         """Get likes counts for multiple collections in one query."""
 

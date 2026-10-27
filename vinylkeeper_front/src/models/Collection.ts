@@ -102,6 +102,8 @@ export interface CollectionListItemResponse {
   albums_count: number;
   artists_count: number;
   image_preview?: string | null;
+  /** Random album covers (max 6, renewed daily), optional for older API versions */
+  preview_images?: string[];
 }
 
 export interface CollectionDetailResponse {

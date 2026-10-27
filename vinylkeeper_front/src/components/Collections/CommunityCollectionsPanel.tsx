@@ -14,7 +14,8 @@ import {
   type CollectionListItemResponse,
 } from "@services/CollectionApiService";
 import CollectionItem from "@components/Collections/CollectionItem";
-import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import CollectionGrid from "@components/Collections/CollectionGrid";
+import CollectionsPagination from "@components/Collections/CollectionsPagination";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -24,7 +25,7 @@ import { queryKeys } from "@utils/queryKeys";
 
 type SortOption = "updated_at" | "likes_count" | "created_at";
 
-export default function Explore() {
+export default function CommunityCollectionsPanel() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>("likes_count");
   const itemsPerPage = ITEMS_PER_PAGE;
@@ -113,16 +114,7 @@ export default function Explore() {
 
       <Box mb={4}>
         {publicCollections.length > 0 ? (
-          <Box
-            display={isMobile ? "flex" : "grid"}
-            flexDirection={isMobile ? "column" : "row"}
-            flexWrap={isMobile ? "nowrap" : "wrap"}
-            gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
-            justifyContent={isMobile ? "center" : "flex-start"}
-            alignItems={isMobile ? "center" : "flex-start"}
-            gap={4}
-            marginY={isMobile ? 1 : 3}
-          >
+          <CollectionGrid>
             {publicCollections.map((collection: CollectionListItemResponse) => (
               <CollectionItem
                 key={`${collection.id}-${page}-${sortBy}`}
@@ -138,7 +130,7 @@ export default function Explore() {
                 showOwner={true}
               />
             ))}
-          </Box>
+          </CollectionGrid>
         ) : (
           <Box width="100%" textAlign="center">
             <Typography variant="body1" color="text.secondary">
@@ -148,17 +140,11 @@ export default function Explore() {
         )}
       </Box>
 
-      {totalPages > 1 && (
-        <Box display="flex" justifyContent="center" mt={4} mb={2}>
-          <PaginationWithEllipsis
-            count={totalPages}
-            page={page}
-            onChange={(newPage) => setPage(newPage)}
-            color="primary"
-            size={isMobile ? "medium" : "large"}
-          />
-        </Box>
-      )}
+      <CollectionsPagination
+        totalPages={totalPages}
+        page={page}
+        onChange={setPage}
+      />
     </Box>
   );
 }

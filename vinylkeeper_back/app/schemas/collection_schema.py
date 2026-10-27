@@ -171,6 +171,9 @@ class CollectionListItemResponse(BaseSchema):
     updated_at: datetime
     image_preview: Optional[str] = Field(
         None, description="First album image URL if available")
+    preview_images: List[str] = Field(
+        default_factory=list,
+        description="Random album cover URLs (max 6, renewed daily), for the card mosaic")
 
 
 class CollectionDetailResponse(BaseSchema):

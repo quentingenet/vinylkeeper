@@ -17,7 +17,6 @@ import {
   SpaceDashboardOutlined as SpaceDashboardOutlinedIcon,
   Album as AlbumIcon,
   AddBox as AddBoxIcon,
-  Search as SearchIcon,
   SwapHoriz as SwapHorizIcon,
   Settings as SettingsIcon,
   AdminPanelSettings,
@@ -68,11 +67,6 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       text: "Add vinyls",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ADD_VINYLS,
-    },
-    {
-      text: "Explore",
-      icon: <SearchIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.EXPLORE,
     },
     {
       text: "Places",

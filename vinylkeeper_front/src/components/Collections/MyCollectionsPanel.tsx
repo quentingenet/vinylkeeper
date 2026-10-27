@@ -2,10 +2,10 @@ import { Box, Typography } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
-import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
+import CollectionGrid from "@components/Collections/CollectionGrid";
+import CollectionsPagination from "@components/Collections/CollectionsPagination";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import { useState, useCallback } from "react";
-import useDetectMobile from "@hooks/useDetectMobile";
 import {
   CollectionResponse,
   CollectionListItemResponse,
@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useDebounce } from "@hooks/useDebounce";
 
-export default function Collections() {
+export default function MyCollectionsPanel() {
   const [modalState, setModalState] = useState({
     isOpen: false,
     isUpdating: false,
@@ -38,7 +38,6 @@ export default function Collections() {
     [page]
   );
 
-  const { isMobile } = useDetectMobile();
   const {
     collections,
     totalPages,
@@ -137,15 +136,7 @@ export default function Collections() {
       </Box>
 
       {collections && collections.length > 0 ? (
-        <Box
-          display={isMobile ? "flex" : "grid"}
-          flexDirection={isMobile ? "column" : "row"}
-          flexWrap={isMobile ? "nowrap" : "wrap"}
-          gridTemplateColumns={isMobile ? "repeat(1, 1fr)" : "repeat(3, 1fr)"}
-          justifyContent={isMobile ? "center" : "flex-start"}
-          alignItems={isMobile ? "center" : "flex-start"}
-          gap={4}
-          marginY={isMobile ? 1 : 3}
+        <CollectionGrid
           sx={{
             cursor: "pointer",
             transition: "transform 0.2s ease-in-out",
@@ -169,7 +160,7 @@ export default function Collections() {
               showOwner={false}
             />
           ))}
-        </Box>
+        </CollectionGrid>
       ) : (
         <Box
           display="flex"
@@ -183,17 +174,11 @@ export default function Collections() {
         </Box>
       )}
 
-      {totalPages > 1 && (
-        <Box display="flex" justifyContent="center" mt={4} mb={2}>
-          <PaginationWithEllipsis
-            count={totalPages}
-            page={page}
-            onChange={handlePageChange}
-            color="primary"
-            size={isMobile ? "medium" : "large"}
-          />
-        </Box>
-      )}
+      <CollectionsPagination
+        totalPages={totalPages}
+        page={page}
+        onChange={handlePageChange}
+      />
     </Box>
   );
 }

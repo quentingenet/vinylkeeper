@@ -236,6 +236,7 @@ export default function CollectionDetails() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.search(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
     },
   });
 
@@ -253,6 +254,7 @@ export default function CollectionDetails() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.artists(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.search(collectionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
     },
   });
 

@@ -1,19 +1,18 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useUserContext } from "@contexts/UserContext";
 import Protected from "@routing/Protected";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { ErrorBoundary } from "@components/ErrorBoundary/ErrorBoundary";
-import { EGlobalUrls } from "@utils/GlobalUrls";
+import { EGlobalUrls, COMMUNITY_COLLECTIONS_URL } from "@utils/GlobalUrls";
 
 const Landpage = lazy(() => import("@pages/Landpage/Landpage"));
 const Dashboard = lazy(() => import("@pages/Dashboard/Dashboard"));
 const Layout = lazy(() => import("@components/Layout/Layout"));
 const ResetPassword = lazy(() => import("@pages/ResetPassword/ResetPassword"));
 const Settings = lazy(() => import("@pages/Settings/Settings"));
-const Collections = lazy(() => import("@pages/Collections/Collections"));
+const CollectionsPage = lazy(() => import("@pages/Collections/CollectionsPage"));
 const AddVinyls = lazy(() => import("@pages/AddVinyls/AddVinyls"));
-const Explore = lazy(() => import("@pages/Explore/Explore"));
 const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
 const Places = lazy(() => import("@pages/Places/Places"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
@@ -65,7 +64,7 @@ function App() {
               path={EGlobalUrls.COLLECTIONS}
               element={
                 <Protected>
-                  <Collections />
+                  <CollectionsPage />
                 </Protected>
               }
             />
@@ -85,13 +84,10 @@ function App() {
                 </Protected>
               }
             />
+            {/* Legacy URL: Explore was merged into the Community tab of Collections */}
             <Route
               path={EGlobalUrls.EXPLORE}
-              element={
-                <Protected>
-                  <Explore />
-                </Protected>
-              }
+              element={<Navigate to={COMMUNITY_COLLECTIONS_URL} replace />}
             />
             <Route
               path={EGlobalUrls.PLACES}

@@ -188,6 +188,7 @@ class CollectionService:
             likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
             likes_counts = likes_info['counts']
             user_likes = likes_info['user_likes']
+            preview_images = await self.repository.get_preview_images_batch(collection_ids)
 
             collection_responses = []
             dropped = 0
@@ -200,6 +201,7 @@ class CollectionService:
                         user_likes.get(collection.id, False),
                         collection.albums_count,
                         collection.artists_count,
+                        preview_images.get(collection.id, []),
                     )
                     collection_responses.append(response)
                 except AppException:
@@ -241,6 +243,7 @@ class CollectionService:
             likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
             likes_counts = likes_info['counts']
             user_likes = likes_info['user_likes']
+            preview_images = await self.repository.get_preview_images_batch(collection_ids)
 
             collection_responses = []
             dropped = 0
@@ -253,6 +256,7 @@ class CollectionService:
                         user_likes.get(collection.id, False),
                         collection.albums_count,
                         collection.artists_count,
+                        preview_images.get(collection.id, []),
                     )
                     collection_responses.append(response)
                 except AppException:
@@ -577,7 +581,8 @@ class CollectionService:
         )
 
     def _build_collection_list_item(
-        self, collection, user_id=None, likes_count=None, is_liked=None, albums_count=0, artists_count=0
+        self, collection, user_id=None, likes_count=None, is_liked=None, albums_count=0, artists_count=0,
+        preview_images=None
     ) -> CollectionListItemResponse:
         """Build lightweight collection list item response."""
         owner = None
@@ -588,6 +593,7 @@ class CollectionService:
             likes_count = 0
         if is_liked is None:
             is_liked = False
+        preview_images = list(preview_images or [])
 
         return CollectionListItemResponse(
             id=collection.id,
@@ -602,7 +608,9 @@ class CollectionService:
             artists_count=artists_count,
             created_at=collection.created_at,
             updated_at=collection.updated_at,
-            image_preview=None
+            # Kept for backward compatibility with installed mobile app versions
+            image_preview=preview_images[0] if preview_images else None,
+            preview_images=preview_images,
         )
 
     async def has_public_collections(self, user_id: int) -> bool:

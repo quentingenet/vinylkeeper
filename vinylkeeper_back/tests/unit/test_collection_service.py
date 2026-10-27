@@ -468,6 +468,7 @@ class TestGetPublicCollections:
         repo.get_collections_likes_info_batch = AsyncMock(
             return_value={"counts": {}, "user_likes": {}}
         )
+        repo.get_preview_images_batch = AsyncMock(return_value={})
 
         def fake_build(collection, *_args, **_kwargs):
             if collection is bad:
@@ -479,6 +480,58 @@ class TestGetPublicCollections:
 
         assert len(collections) == 1
         assert total == 41
+
+
+class TestCollectionListPreviewImages:
+    """Preview images feed the card mosaic; image_preview stays filled for
+    installed mobile app versions that still read it."""
+
+    def _setup(self, list_method: str):
+        service, repo, *_ = make_service()
+        col_with_covers = make_collection(collection_id=1)
+        col_without_covers = make_collection(collection_id=2)
+        for col in (col_with_covers, col_without_covers):
+            col.albums_count = 6
+            col.artists_count = 2
+        setattr(repo, list_method, AsyncMock(return_value=([col_with_covers, col_without_covers], 2)))
+        repo.get_collections_likes_info_batch = AsyncMock(
+            return_value={"counts": {}, "user_likes": {}}
+        )
+        covers = [f"https://i.discogs.com/cover-{i}.jpg" for i in range(6)]
+        repo.get_preview_images_batch = AsyncMock(return_value={1: covers})
+        return service, repo, covers
+
+    async def test_public_collections_expose_preview_images(self):
+        service, repo, covers = self._setup("get_public_collections")
+
+        with patch("app.services.collection_service.is_loaded", return_value=False):
+            collections, _ = await service.get_public_collections(page=1, limit=10)
+
+        repo.get_preview_images_batch.assert_awaited_once_with([1, 2])
+        assert collections[0].preview_images == covers
+        assert collections[0].image_preview == covers[0]
+        assert collections[1].preview_images == []
+        assert collections[1].image_preview is None
+
+    async def test_user_collections_expose_preview_images(self):
+        service, repo, covers = self._setup("get_user_collections")
+
+        with patch("app.services.collection_service.is_loaded", return_value=False):
+            collections, _ = await service.get_user_collections(user_id=1, page=1, limit=10)
+
+        repo.get_preview_images_batch.assert_awaited_once_with([1, 2])
+        assert collections[0].preview_images == covers
+        assert collections[0].image_preview == covers[0]
+        assert collections[1].preview_images == []
+
+    async def test_empty_page_does_not_query_preview_images(self):
+        service, repo, *_ = make_service()
+        repo.get_public_collections = AsyncMock(return_value=([], 5))
+        repo.get_preview_images_batch = AsyncMock(return_value={})
+
+        await service.get_public_collections(page=3, limit=10)
+
+        repo.get_preview_images_batch.assert_not_awaited()
 
 
 class TestGetUserCollectionsPagination:
@@ -499,6 +552,7 @@ class TestGetUserCollectionsPagination:
         repo.get_collections_likes_info_batch = AsyncMock(
             return_value={"counts": {}, "user_likes": {}}
         )
+        repo.get_preview_images_batch = AsyncMock(return_value={})
 
         def fake_build(collection, *_args, **_kwargs):
             if collection is bad:
