@@ -67,25 +67,23 @@
             color: #fffbf9;
             margin: 5rem 0;
         }
+
+        .textTypo.previewLink {
+            font-size: 1.2rem;
+            opacity: 0.7;
+            margin: 1.5rem 0 0;
+            cursor: pointer;
+
+            &:hover {
+                opacity: 1;
+            }
+        }
     }
 
     .buttonContainer {
         display: flex;
         flex-direction: row;
         justify-content: center;
-    }
-
-    .previewLink {
-        font-family: Oswald-Regular, sans-serif;
-        font-size: 1.15rem;
-        color: #fffbf9;
-        opacity: 0.9;
-        text-shadow: 0 0 10px #2e3440, 0 0 4px #000000;
-        cursor: pointer;
-
-        &:hover {
-            opacity: 1;
-        }
     }
 
     .actionContainer,
@@ -129,6 +127,10 @@
             .textTypo {
                 font-family: Oswald-Light;
                 font-size: 1rem;
+            }
+
+            .textTypo.previewLink {
+                font-size: 0.85rem;
             }
         }
     }

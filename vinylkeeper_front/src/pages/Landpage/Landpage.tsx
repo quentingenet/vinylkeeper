@@ -71,7 +71,7 @@ export default function Landpage() {
                 type="button"
                 underline="none"
                 onClick={() => setOpenPreview(true)}
-                className={styles.previewLink}
+                className={`${styles.textTypo} ${styles.previewLink}`}
                 sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
               >
                 Take a look inside&nbsp;?
