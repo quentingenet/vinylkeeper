@@ -22,6 +22,7 @@ import { ILoginForm } from "@models/ILoginForm";
 import { loginValidationSchema } from "@utils/validators/loginValidationSchema";
 import styles from "../../styles/pages/Landpage.module.scss";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import AuthSwitchLink from "@components/Auth/AuthSwitchLink";
 
 interface LoginProps {
   setRegister: (value: boolean) => void;
@@ -51,6 +52,12 @@ export default function Login({
     setRegister(false);
     setLogin(false);
     setOpenForgotPassword(false);
+  };
+
+  const switchToRegister = () => {
+    setOpenForgotPassword(false);
+    setLogin(false);
+    setRegister(true);
   };
 
   const {
@@ -192,6 +199,11 @@ export default function Login({
             >
               Forgot password?
             </Typography>
+            <AuthSwitchLink
+              prompt="No account yet?"
+              actionLabel="Sign up"
+              onClick={switchToRegister}
+            />
           </Grid>
           {openSnackBar && (
             <Snackbar

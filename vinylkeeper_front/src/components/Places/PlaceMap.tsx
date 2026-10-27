@@ -31,6 +31,7 @@ import {
   PlaceMapResponse,
 } from "@services/PlaceApiService";
 import "leaflet/dist/leaflet.css";
+import "./place-map.css";
 import "./vinyl-marker.css";
 import { queryKeys } from "@utils/queryKeys";
 

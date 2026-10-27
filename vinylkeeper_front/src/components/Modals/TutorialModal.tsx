@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   Box,
-  Modal,
   Typography,
   Button,
   Stepper,
@@ -10,7 +9,16 @@ import {
   LinearProgress,
   Fade,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
+import {
+  ImageContainer,
+  ModalContent,
+  ModalImage,
+  StyledModal,
+  TextContainer,
+  modalTitleSx,
+  slideTextSx,
+  slideTitleSx,
+} from "@components/Modals/carouselModalStyles";
 
 interface TutorialModalProps {
   open: boolean;
@@ -18,51 +26,6 @@ interface TutorialModalProps {
   disableAutoFocus?: boolean;
   disableEnforceFocus?: boolean;
 }
-
-const StyledModal = styled(Modal)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: theme.spacing(2),
-}));
-
-const ModalContent = styled(Box)(({ theme }) => ({
-  backgroundColor: "#2c2c2e",
-  borderRadius: "8px",
-  boxShadow: "0 0 20px rgba(201, 167, 38, 0.3)",
-  padding: theme.spacing(3),
-  maxWidth: "600px",
-  width: "100%",
-  maxHeight: "90vh",
-  overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-}));
-
-const ImageContainer = styled(Box)(({ theme }) => ({
-  width: "100%",
-  height: "300px",
-  borderRadius: "8px",
-  overflow: "hidden",
-  marginBottom: theme.spacing(2),
-  border: "1px solid #C9A726",
-  position: "relative",
-}));
-
-const TutorialImage = styled("img")({
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-  transition: "opacity 0.5s ease-in-out",
-});
-
-const TextContainer = styled(Box)(({ theme }) => ({
-  backgroundColor: "#3f3f41",
-  padding: theme.spacing(2),
-  borderRadius: "6px",
-  border: "1px solid #C9A726",
-  marginBottom: theme.spacing(2),
-}));
 
 const steps = [
   {
@@ -132,13 +95,7 @@ export default function TutorialModal({
         <Typography
           variant="h4"
           component="h2"
-          sx={{
-            color: "#C9A726",
-            textAlign: "center",
-            marginBottom: 2,
-            fontFamily: "Oswald, sans-serif",
-            textShadow: "2px 2px 4px rgba(0,0,0,0.7)",
-          }}
+          sx={modalTitleSx}
         >
           Welcome to VinylKeeper
         </Typography>
@@ -182,21 +139,21 @@ export default function TutorialModal({
         <ImageContainer>
           {activeStep === 2 ? (
             <Fade in={imageIndex === 0} timeout={500}>
-              <TutorialImage
+              <ModalImage
                 src={steps[2].images![imageIndex]}
                 alt={steps[2].title}
                 style={{ display: imageIndex === 0 ? "block" : "none" }}
               />
             </Fade>
           ) : (
-            <TutorialImage
+            <ModalImage
               src={steps[activeStep].image}
               alt={steps[activeStep].title}
             />
           )}
           {activeStep === 2 && (
             <Fade in={imageIndex === 1} timeout={500}>
-              <TutorialImage
+              <ModalImage
                 src={steps[2].images![imageIndex]}
                 alt={steps[2].title}
                 style={{
@@ -213,20 +170,13 @@ export default function TutorialModal({
         <TextContainer>
           <Typography
             variant="h6"
-            sx={{
-              color: "#C9A726",
-              marginBottom: 1,
-              fontFamily: "Oswald, sans-serif",
-            }}
+            sx={slideTitleSx}
           >
             {steps[activeStep].title}
           </Typography>
           <Typography
             variant="body1"
-            sx={{
-              color: "#fffbf9",
-              lineHeight: 1.6,
-            }}
+            sx={slideTextSx}
           >
             {steps[activeStep].content}
           </Typography>

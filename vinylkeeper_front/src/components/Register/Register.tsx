@@ -23,6 +23,7 @@ import { isApiError } from "@utils/apiError";
 import { registerValidationSchema } from "@utils/validators/registerValidationSchema";
 import styles from "../../styles/pages/Landpage.module.scss";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import AuthSwitchLink from "@components/Auth/AuthSwitchLink";
 
 interface RegisterProps {
   setRegister: (value: boolean) => void;
@@ -65,6 +66,11 @@ const Register = ({
     setOpen(false);
     setRegister(false);
     setLogin(false);
+  };
+
+  const switchToLogin = () => {
+    setRegister(false);
+    setLogin(true);
   };
 
   const submitRegister = async () => {
@@ -258,6 +264,11 @@ const Register = ({
                 </Button>
               )}
             </Grid>
+            <AuthSwitchLink
+              prompt="Already have an account?"
+              actionLabel="Log in"
+              onClick={switchToLogin}
+            />
           </form>
         </Grid>
       </Modal>

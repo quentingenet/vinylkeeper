@@ -4,8 +4,11 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import Login from "@components/Login/Login";
 import Register from "@components/Register/Register";
 import Footer from "@components/Footer/Footer";
-import { Button, Typography, Snackbar, Alert } from "@mui/material";
+import { Button, Link, Typography, Snackbar, Alert } from "@mui/material";
 import Background from "@components/Landpage/Background";
+import PreviewModal from "@components/Landpage/PreviewModal";
+import { growItem } from "@utils/Animations";
+import { previewSlides } from "@components/Landpage/previewSlides";
 
 export default function Landpage() {
   const { isMobile } = useDetectMobile();
@@ -16,6 +19,7 @@ export default function Landpage() {
   const [openForgotPassword, setOpenForgotPassword] = useState<boolean>(false);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
   const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);
+  const [openPreview, setOpenPreview] = useState<boolean>(false);
   const [errorSnackbar, setErrorSnackbar] = useState({
     open: false,
     message: "",
@@ -26,10 +30,10 @@ export default function Landpage() {
     setOpen(true);
   }, []);
 
-  const handleRegisterOpen = useCallback(() => {
-    setRegister(true);
-    setOpen(true);
-  }, []);
+  const handleEnterFromPreview = useCallback(() => {
+    setOpenPreview(false);
+    handleLoginOpen();
+  }, [handleLoginOpen]);
 
   const handleErrorSnackbarClose = () => {
     setErrorSnackbar({
@@ -60,9 +64,18 @@ export default function Landpage() {
               </p>
 
               <div className={styles.buttonContainer}>
-                <Button onClick={handleLoginOpen}>Login</Button>
-                <Button onClick={handleRegisterOpen}>Sign up</Button>
+                <Button onClick={handleLoginOpen}>Enter</Button>
               </div>
+              <Link
+                component="button"
+                type="button"
+                underline="none"
+                onClick={() => setOpenPreview(true)}
+                className={styles.previewLink}
+                sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
+              >
+                Take a look inside&nbsp;?
+              </Link>
             </>
           ) : (
             <div className={styles.actionContainer}>
@@ -91,6 +104,13 @@ export default function Landpage() {
           )}
         </div>
       </div>
+
+      <PreviewModal
+        open={openPreview}
+        slides={previewSlides}
+        onClose={() => setOpenPreview(false)}
+        onEnter={handleEnterFromPreview}
+      />
 
       <Footer
         setOpenTermsModal={setOpenTermsModal}

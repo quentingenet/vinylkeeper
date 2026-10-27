@@ -1,0 +1,4 @@
+/* Removes the 1px seams between tiles at fractional zoom levels (Leaflet issue #3575) */
+.leaflet-container img.leaflet-tile {
+  mix-blend-mode: plus-lighter;
+}
