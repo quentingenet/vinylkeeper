@@ -162,3 +162,4 @@ cache/
 
 # Frontend static assets
 !vinylkeeper_front/public/vk_preview/*
+!vinylkeeper_front/src/assets/*
