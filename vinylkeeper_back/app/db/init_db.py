@@ -1,4 +1,5 @@
 import asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from app.core.config_env import settings
 from app.models.base import Base
@@ -24,6 +25,8 @@ async def init_db():
     engine = create_async_engine(DATABASE_URL)
 
     async with engine.begin() as conn:
+        # The trigram search indexes need this extension
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.create_all)
 
     await engine.dispose()

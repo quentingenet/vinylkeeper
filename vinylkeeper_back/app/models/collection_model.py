@@ -7,7 +7,8 @@ from sqlalchemy import (
     Boolean,
     func,
     CheckConstraint,
-    UniqueConstraint
+    Index,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, validates
 
@@ -19,7 +20,7 @@ class Collection(Base):
     __tablename__ = "collections"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(255), index=True, nullable=False)
+    name = Column(String(255), nullable=False)
     description = Column(String(255), nullable=True)
     is_public = Column(Boolean, default=False, nullable=False)
 
@@ -27,7 +28,7 @@ class Collection(Base):
     mood = relationship("Mood", back_populates="collections", lazy="raise")
 
     owner_id = Column(Integer, ForeignKey(
-        "users.id", ondelete="CASCADE"), nullable=False, index=True)
+        "users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="collections", lazy="raise")
 
     collection_albums = relationship(
@@ -80,6 +81,8 @@ class Collection(Base):
             "name",
             name="uq_user_collection_name"
         ),
+        Index("ix_collections_is_public_created_at", "is_public", created_at.desc()),
+        Index("ix_collections_is_public_updated_at", "is_public", updated_at.desc()),
     )
 
     @validates('name')

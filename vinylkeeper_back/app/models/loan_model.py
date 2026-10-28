@@ -48,7 +48,7 @@ class Loan(Base):
 
     comment = Column(String(255), nullable=True)
 
-    borrower_name = Column(String(255), nullable=False, index=True)
+    borrower_name = Column(String(255), nullable=False)
 
     start_date = Column(
         DateTime(timezone=True),

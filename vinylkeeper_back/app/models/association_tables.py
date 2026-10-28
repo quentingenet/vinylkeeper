@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, ForeignKey, DateTime
+    Column, Integer, ForeignKey, DateTime, Index, text
 )
 from sqlalchemy.orm import relationship
 from app.models.base import Base
@@ -18,6 +18,12 @@ class CollectionArtist(Base):
                         nullable=True)
     updated_at = Column(DateTime(timezone=True),
                         nullable=True)
+
+    __table_args__ = (
+        Index("ix_collection_artist_artist_id", "artist_id"),
+        Index("ix_collection_artist_updated_at", "updated_at",
+              postgresql_where=text("updated_at IS NOT NULL")),
+    )
 
     collection = relationship(
         "Collection", back_populates="collection_artists", overlaps="collections")

@@ -30,6 +30,9 @@ class Album(Base):
         Index("ix_albums_genres", "genres", postgresql_using="gin"),
         Index("ix_albums_styles", "styles", postgresql_using="gin"),
         Index("ix_albums_external_master_id", "external_master_id"),
+        # Needs the pg_trgm extension (migration e1a2b3c4d5e6)
+        Index("ix_albums_title_trgm", "title", postgresql_using="gin",
+              postgresql_ops={"title": "gin_trgm_ops"}),
     )
 
     id = Column(Integer, primary_key=True)
@@ -37,7 +40,6 @@ class Album(Base):
     external_album_id = Column(
         String(255),
         nullable=False,
-        index=True,
         comment="External Album ID as string"
     )
 
@@ -45,7 +47,7 @@ class Album(Base):
                    comment="Cached title of the album")
 
     external_source_id = Column(Integer, ForeignKey(
-        "external_sources.id"), nullable=False, index=True)
+        "external_sources.id"), nullable=False)
     external_source = relationship(
         "ExternalSource", back_populates="albums", lazy="raise")
 

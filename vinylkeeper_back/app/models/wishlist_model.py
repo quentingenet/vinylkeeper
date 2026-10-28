@@ -4,6 +4,7 @@ from sqlalchemy import (
     String,
     DateTime,
     ForeignKey,
+    Index,
     UniqueConstraint,
     func,
 )
@@ -21,6 +22,7 @@ class Wishlist(Base):
             "external_source_id",
             name="uq_wishlist_user_entity_source"
         ),
+        Index("ix_wishlist_user_id_entity_type", "user_id", "entity_type_id"),
     )
 
     id = Column(Integer, primary_key=True)

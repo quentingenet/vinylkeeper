@@ -4,6 +4,7 @@ from sqlalchemy import (
     String,
     DateTime,
     ForeignKey,
+    Index,
     UniqueConstraint,
     func
 )
@@ -21,6 +22,9 @@ class Artist(Base):
             "external_source_id",
             name="uq_external_artist_id_source"
         ),
+        # Needs the pg_trgm extension (migration e1a2b3c4d5e6)
+        Index("ix_artists_title_trgm", "title", postgresql_using="gin",
+              postgresql_ops={"title": "gin_trgm_ops"}),
     )
 
     id = Column(Integer, primary_key=True)
@@ -28,7 +32,6 @@ class Artist(Base):
     external_artist_id = Column(
         String(255),
         nullable=False,
-        index=True,
         comment="External Artist ID as string"
     )
 
@@ -39,7 +42,6 @@ class Artist(Base):
         Integer,
         ForeignKey("external_sources.id"),
         nullable=False,
-        index=True,
         comment="Reference to external source (e.g. MusicBrainz)"
     )
     external_source = relationship(

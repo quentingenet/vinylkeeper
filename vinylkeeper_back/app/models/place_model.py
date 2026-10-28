@@ -7,11 +7,19 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     func,
-    CheckConstraint
+    CheckConstraint,
+    Index,
+    text,
 )
 from sqlalchemy.orm import relationship, validates
 
 from app.models.base import Base
+
+# Places shown on the map: the partial indexes below only cover these rows
+_MAP_VISIBLE = (
+    "is_valid = true AND is_moderated = true "
+    "AND latitude IS NOT NULL AND longitude IS NOT NULL"
+)
 
 
 class Place(Base):
@@ -58,6 +66,10 @@ class Place(Base):
         CheckConstraint("length(name) >= 1", name="check_place_name_length"),
         CheckConstraint("latitude >= -90 AND latitude <= 90", name="check_latitude_range"),
         CheckConstraint("longitude >= -180 AND longitude <= 180", name="check_longitude_range"),
+        Index("ix_places_coordinates_exact_search", "latitude", "longitude",
+              postgresql_where=text(_MAP_VISIBLE)),
+        Index("ix_places_map_valid_moderated_coords", "latitude", "longitude", "id", "city",
+              postgresql_where=text(_MAP_VISIBLE)),
     )
 
     @validates('name')

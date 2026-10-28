@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, false, func,
+    Boolean, Column, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, false, func, text,
 )
 from sqlalchemy.orm import relationship
 from app.models.base import Base
@@ -26,6 +26,12 @@ class CollectionAlbum(Base):
                         nullable=True)
     updated_at = Column(DateTime(timezone=True),
                         nullable=True)
+
+    __table_args__ = (
+        Index("ix_collection_album_album_id", "album_id"),
+        Index("ix_collection_album_updated_at", "updated_at",
+              postgresql_where=text("updated_at IS NOT NULL")),
+    )
 
     # raise: dead relation (0 read sites) and the main link in the
     # Collection -> collection_albums -> Album -> album_collections -> Collection
