@@ -1,6 +1,8 @@
 import re
 import string
 from typing import List, Set, Optional, Tuple, Dict, Any
+from urllib.parse import urlparse
+
 import httpx
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
@@ -15,82 +17,13 @@ from app.schemas.request_proxy.request_proxy_schema import (
 )
 
 
-class ImageFetcher:
-    """Helper class to handle image fetching logic for both artists and releases."""
-
-    def __init__(self, token: str, base_url: str, http_client: Optional[httpx.AsyncClient] = None):
-        self.token = token
-        self.base_url = base_url
-        self.headers = {"Authorization": f"Discogs token={self.token}"}
-        self.http_client = http_client
-
-    async def fetch_images(
-        self, entity_type: str, entity_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Generic method to fetch images for both artists and releases."""
-        if entity_type == "artist":
-            return await self._fetch_artist_images(entity_id, hit, client)
-        return await self._fetch_release_images(entity_id, hit, client)
-
-    async def _fetch_artist_images(
-        self, artist_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Fetch images for an artist."""
-        thumb = hit.get("thumb")
-        if not artist_id:
-            return None, thumb
-
-        try:
-            resp = await self._make_request(f"{self.base_url}/artists/{artist_id}", client)
-            images = resp.get("images", [])
-            if images:
-                primary = next((i for i in images if i.get(
-                    "type") == "primary"), images[0])
-                return primary.get("uri"), primary.get("uri150") or thumb
-        except Exception as e:
-            logger.warning(f"Failed to fetch artist images: {str(e)}")
-        return None, thumb
-
-    async def _fetch_release_images(
-        self, release_id: int, hit: Dict[str, Any], client: Optional[httpx.AsyncClient] = None
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Fetch images for a release."""
-        cover = hit.get("cover_image")
-        thumb = hit.get("thumb")
-        if not release_id:
-            return cover, thumb
-
-        try:
-            resp = await self._make_request(f"{self.base_url}/releases/{release_id}", client)
-            images = resp.get("images", [])
-            if images:
-                front = next(
-                    (i for i in images if i.get("type")
-                     in ("primary", "secondary")),
-                    images[0],
-                )
-                return front.get("uri"), front.get("uri150") or thumb
-        except Exception as e:
-            logger.warning(f"Failed to fetch release images: {str(e)}")
-        return cover, thumb
-
-    async def _make_request(self, url: str, client: Optional[httpx.AsyncClient] = None) -> Dict[str, Any]:
-        """Make HTTP request with proper error handling."""
-        client_to_use = client or self.http_client
-        if not client_to_use:
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="HTTP client not available"
-            )
-        response = await client_to_use.get(url, headers=self.headers)
-        response.raise_for_status()
-        return response.json()
+DISCOGS_IMAGE_HOST = "i.discogs.com"
 
 
 class SearchService:
     """
     Service that queries Discogs for artists or releases,
-    filters to vinyl formats only, deduplicates, and fetches images.
+    filters to vinyl formats only and deduplicates. Images come from the search hits.
     """
 
     VINYL_FORMAT_PATTERNS = [
@@ -105,7 +38,6 @@ class SearchService:
         self.base_url = settings.DISCOGS_API_URL
         self.search_url = f"{self.base_url}/database/search"
         self.http_client = http_client
-        self.image_fetcher = ImageFetcher(self.token, self.base_url, http_client)
 
     @staticmethod
     def normalize(text: Optional[str]) -> str:
@@ -114,6 +46,11 @@ class SearchService:
             return ""
         txt = text.lower().strip()
         return txt.translate(str.maketrans("", "", string.punctuation))
+
+    @staticmethod
+    def _hit_image(url: Optional[str]) -> Optional[str]:
+        """A real Discogs image, or None (search hits use a spacer.gif placeholder when there is none)."""
+        return url if url and urlparse(url).hostname == DISCOGS_IMAGE_HOST else None
 
     @staticmethod
     def resize_to_medium(url: str) -> str:
@@ -226,19 +163,11 @@ class SearchService:
                     seen_ids.add(item.get("id"))
                     seen_keys.add(key)
 
-                    try:
-                        img_uri, img_thumb = await self.image_fetcher.fetch_images(
-                            "artist" if discogs_data.type == "artist" else "release",
-                            int(discogs_data.id),
-                            item
-                        )
-                        discogs_data.picture = img_uri or img_thumb
-                        if img_uri:
-                            discogs_data.picture_medium = self.resize_to_medium(
-                                img_uri)
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to fetch images for {discogs_data.id}: {str(e)}")
+                    # Search hits already carry the primary image: no extra call per result
+                    image = self._hit_image(item.get("cover_image"))
+                    discogs_data.picture = image or self._hit_image(item.get("thumb")) or ""
+                    if image:
+                        discogs_data.picture_medium = self.resize_to_medium(image)
 
                     results.append(discogs_data)
                 except Exception as e:
