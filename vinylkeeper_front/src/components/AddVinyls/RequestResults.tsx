@@ -1,42 +1,32 @@
-import {
-  IAlbumRequestResults,
-  IArtistRequestResults,
-  IRequestResults,
-} from "@models/IRequestProxy";
+import { Box } from "@mui/material";
+import type { DiscogsData, IAlbumRequestResults } from "@models/IRequestProxy";
 import ResultArtist from "@components/AddVinyls/ResultArtist";
-import styles from "../../styles/pages/AddVinyls.module.scss";
+import CollectionsPagination from "@components/Collections/CollectionsPagination";
 import ResultAlbums from "./ResultAlbums";
 
 interface IRequestResultsProps {
-  results: IRequestResults[];
+  isArtist: boolean;
+  items: DiscogsData[];
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  isChangingPage?: boolean;
+  onPickPressing?: (album: IAlbumRequestResults) => void;
 }
 
-export default function RequestResults({ results }: IRequestResultsProps) {
-  if (results.length === 0) {
-    return <></>;
-  }
-
-  const artistResult = results.find(
-    (result: IRequestResults) => result.type === "artist"
-  );
-  const albumResult = results.find(
-    (result: IRequestResults) => result.type === "album"
-  );
-
+export default function RequestResults({
+  isArtist,
+  items,
+  page,
+  totalPages,
+  onPageChange,
+  isChangingPage = false,
+  onPickPressing,
+}: IRequestResultsProps) {
   return (
-    <div
-      className={styles.resultsContainer}
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        width: "100%",
-      }}
-    >
-      {artistResult ? (
-        <ResultArtist data={artistResult.data as IArtistRequestResults[]} />
-      ) : (
-        <ResultAlbums data={albumResult?.data as IAlbumRequestResults[]} />
-      )}
-    </div>
+    <Box sx={{ width: "100%", opacity: isChangingPage ? 0.6 : 1, transition: "opacity 0.2s" }}>
+      {isArtist ? <ResultArtist data={items} /> : <ResultAlbums data={items} onPickPressing={onPickPressing} />}
+      <CollectionsPagination totalPages={totalPages} page={page} onChange={onPageChange} />
+    </Box>
   );
 }

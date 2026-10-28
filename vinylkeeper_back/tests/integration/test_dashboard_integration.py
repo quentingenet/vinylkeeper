@@ -10,10 +10,17 @@ collections_counts, get_places_counts_batch, get_public_collections_count)
 run against a copy-of-production dataset with pre-existing rows, so they are
 asserted as deltas (before/after our own insert) rather than exact values.
 """
+import uuid
+from datetime import datetime, timedelta, timezone
+
+from app.models.album_model import Album
+from app.repositories.collection_repository import CollectionRepository
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.place_repository import PlaceRepository
 from app.models.reference_data.place_types import PlaceType
 from sqlalchemy import select
+from app.models.collection_album import CollectionAlbum
+from app.models.collection_model import Collection
 
 from tests.integration.conftest import make_real_test_user as make_test_user
 from tests.integration.test_real_db_relationships import (
@@ -146,3 +153,58 @@ class TestLatestAlbum:
 def _album_create(album_id: int, collection_id: int):
     from app.schemas.collection_album_schema import CollectionAlbumCreate
     return CollectionAlbumCreate(album_id=album_id, collection_id=collection_id)
+
+
+class TestRecentAlbumsOnePerWork:
+    @staticmethod
+    async def kind_of_blue_twice(session):
+        """Two pressings of one work and another record, added after anything in the database."""
+        user = await make_test_user(session)
+        collection = await make_test_collection(session, owner_id=user.id)
+        original, reissue, other = (await session.execute(select(Album).order_by(Album.id).limit(3))).scalars().all()
+        master = f"itest-{uuid.uuid4().hex[:8]}"
+        original.external_master_id = master
+        reissue.external_master_id = master
+        other.external_master_id = None
+        await CollectionRepository(session).add_albums(collection, [original.id, reissue.id, other.id])
+        future = datetime.now(timezone.utc) + timedelta(days=365)
+        rows = (await session.execute(select(CollectionAlbum).filter(
+            CollectionAlbum.collection_id == collection.id))).scalars().all()
+        for offset, row in enumerate(sorted(rows, key=lambda r: r.album_id)):
+            row.updated_at = future + timedelta(minutes=offset)
+        await session.flush()
+        return original, reissue, other
+
+    async def test_pressings_of_a_work_show_one_cover(self, real_session):
+        original, reissue, other = await self.kind_of_blue_twice(real_session)
+
+        recent = await DashboardRepository(real_session).get_recent_albums(limit=12)
+
+        top_ids = [album.id for album, _, _ in recent[:2]]
+        assert other.id in top_ids
+        assert len({original.id, reissue.id} & set(top_ids)) == 1
+        assert len({original.id, reissue.id} & {album.id for album, _, _ in recent}) == 1
+
+    async def test_the_work_of_the_latest_album_is_left_out(self, real_session):
+        original, reissue, other = await self.kind_of_blue_twice(real_session)
+
+        recent = await DashboardRepository(real_session).get_recent_albums(limit=12, exclude_ids=[original.id])
+
+        ids = {album.id for album, _, _ in recent}
+        assert not ids & {original.id, reissue.id}
+        assert other.id in ids
+
+
+class TestMyAlbumsCountsWorks:
+    async def test_sum_of_the_collection_counts(self, real_session):
+        """Pressings of a work count once in a collection; a record kept in two collections counts in both."""
+        original, reissue, other = await TestRecentAlbumsOnePerWork.kind_of_blue_twice(real_session)
+        user_id = (await real_session.execute(
+            select(Collection.owner_id).join(CollectionAlbum, CollectionAlbum.collection_id == Collection.id)
+            .filter(CollectionAlbum.album_id == other.id).order_by(Collection.id.desc()).limit(1))).scalar_one()
+        second = await make_test_collection(real_session, owner_id=user_id)
+        await CollectionRepository(real_session).add_albums(second, [other.id])
+
+        stats = await DashboardRepository(real_session).get_user_stats_batch(user_id)
+
+        assert stats["albums_total"] == 3

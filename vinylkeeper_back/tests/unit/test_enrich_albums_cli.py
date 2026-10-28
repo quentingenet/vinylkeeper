@@ -12,15 +12,17 @@ def patched_session():
 
 
 def test_parse_args_defaults_and_flags():
-    assert vars(cli.parse_args([])) == {"limit": None, "dry_run": False, "skip_masters": False}
-    args = cli.parse_args(["--limit", "20", "--dry-run", "--skip-masters"])
-    assert (args.limit, args.dry_run, args.skip_masters) == (20, True, True)
+    assert vars(cli.parse_args([])) == {
+        "limit": None, "dry_run": False, "skip_masters": False, "skip_editions": False}
+    args = cli.parse_args(["--limit", "20", "--dry-run", "--skip-masters", "--skip-editions"])
+    assert (args.limit, args.dry_run, args.skip_masters, args.skip_editions) == (20, True, True, True)
 
 
 async def test_dry_run_counts_without_calling_discogs(capsys):
     repository = AsyncMock()
     repository.list_pending_releases = AsyncMock(return_value=[(1, "a"), (2, "b")])
     repository.list_pending_masters = AsyncMock(return_value=["10"])
+    repository.list_pending_editions = AsyncMock(return_value=[(3, "c")])
 
     with patched_session(), \
             patch.object(cli, "AlbumEnrichmentRepository", return_value=repository), \
@@ -28,13 +30,14 @@ async def test_dry_run_counts_without_calling_discogs(capsys):
         await cli.run(cli.parse_args(["--dry-run"]))
 
     service_cls.assert_not_called()
-    assert "2 release(s), 1 master(s)" in capsys.readouterr().out
+    assert "2 release(s), 1 master(s), 1 pressing(s)" in capsys.readouterr().out
 
 
-async def test_run_fetches_releases_then_masters():
+async def test_run_fetches_releases_then_masters_then_pressings():
     service = MagicMock()
     service.enrich_pending_releases = AsyncMock()
     service.enrich_pending_masters = AsyncMock()
+    service.enrich_pending_editions = AsyncMock()
 
     with patched_session(), \
             patch.object(cli, "AlbumEnrichmentRepository"), \
@@ -43,12 +46,29 @@ async def test_run_fetches_releases_then_masters():
 
     assert service.enrich_pending_releases.await_args.args == (20,)
     assert service.enrich_pending_masters.await_args.args == (20,)
+    assert service.enrich_pending_editions.await_args.args == (20,)
+
+
+async def test_skip_editions():
+    service = MagicMock()
+    service.enrich_pending_releases = AsyncMock()
+    service.enrich_pending_masters = AsyncMock()
+    service.enrich_pending_editions = AsyncMock()
+
+    with patched_session(), \
+            patch.object(cli, "AlbumEnrichmentRepository"), \
+            patch.object(cli, "AlbumEnrichmentService", return_value=service):
+        await cli.run(cli.parse_args(["--skip-editions"]))
+
+    service.enrich_pending_masters.assert_awaited_once()
+    service.enrich_pending_editions.assert_not_called()
 
 
 async def test_skip_masters_fetches_releases_only():
     service = MagicMock()
     service.enrich_pending_releases = AsyncMock()
     service.enrich_pending_masters = AsyncMock()
+    service.enrich_pending_editions = AsyncMock()
 
     with patched_session(), \
             patch.object(cli, "AlbumEnrichmentRepository"), \
@@ -68,6 +88,7 @@ def fake_enrichment_service(enriched_ids: list[int]) -> MagicMock:
     service = MagicMock()
     service.enrich_pending_releases = AsyncMock(side_effect=enrich_pending_releases)
     service.enrich_pending_masters = AsyncMock()
+    service.enrich_pending_editions = AsyncMock()
     return service
 
 
@@ -104,6 +125,7 @@ async def test_dry_run_assigns_no_moods():
     repository = AsyncMock()
     repository.list_pending_releases = AsyncMock(return_value=[])
     repository.list_pending_masters = AsyncMock(return_value=[])
+    repository.list_pending_editions = AsyncMock(return_value=[])
 
     with patched_session(), \
             patch.object(cli, "AlbumEnrichmentRepository", return_value=repository), \

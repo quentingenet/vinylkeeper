@@ -20,6 +20,9 @@ import type {
   PaginatedArtistsResponse,
   PaginatedCollectionResponse,
   PaginatedCollectionListResponse,
+  PaginatedRecordsResponse,
+  CollectionRecordResponse,
+  CollectionAlbumCopyData,
 } from "@models/Collection";
 
 export type {
@@ -42,6 +45,9 @@ export type {
   PaginatedArtistsResponse,
   PaginatedCollectionResponse,
   PaginatedCollectionListResponse,
+  PaginatedRecordsResponse,
+  CollectionRecordResponse,
+  CollectionAlbumCopyData,
 };
 
 export class CollectionApiService extends BaseApiService {
@@ -167,6 +173,41 @@ export class CollectionApiService extends BaseApiService {
     return response;
   }
 
+  async getCollectionRecordsPaginated(
+    collectionId: number,
+    page: number = 1,
+    limit: number = 12,
+    sortOrder: "newest" | "oldest" = "newest"
+  ): Promise<PaginatedRecordsResponse> {
+    return this.get<PaginatedRecordsResponse>(
+      `/collections/${collectionId}/records?page=${page}&limit=${limit}&sort_order=${sortOrder}`
+    );
+  }
+
+  async addAlbumCopy(
+    collectionId: number,
+    albumId: number,
+    data: CollectionAlbumCopyData
+  ): Promise<CollectionAlbumResponse> {
+    return this.post<CollectionAlbumResponse>(`/collections/${collectionId}/albums/${albumId}/copies`, data);
+  }
+
+  async updateAlbumCopy(
+    collectionId: number,
+    albumId: number,
+    copyId: number,
+    data: CollectionAlbumCopyData
+  ): Promise<CollectionAlbumResponse> {
+    return this.patch<CollectionAlbumResponse>(
+      `/collections/${collectionId}/albums/${albumId}/copies/${copyId}`,
+      data
+    );
+  }
+
+  async deleteAlbumCopy(collectionId: number, albumId: number, copyId: number): Promise<CollectionAlbumResponse> {
+    return this.delete<CollectionAlbumResponse>(`/collections/${collectionId}/albums/${albumId}/copies/${copyId}`);
+  }
+
   async getCollectionArtistsPaginated(
     collectionId: number,
     page: number = 1,
@@ -190,18 +231,10 @@ export class CollectionApiService extends BaseApiService {
     );
   }
 
-  async updateAlbumMetadata(
-    collectionId: number,
-    albumId: number,
-    data: {
-      state_record?: string | null;
-      state_cover?: string | null;
-      acquisition_month_year?: string | null;
-    }
-  ): Promise<CollectionAlbumResponse> {
-    return this.patch<CollectionAlbumResponse>(
-      `/collections/${collectionId}/albums/${albumId}/metadata`,
-      data
+  async confirmAlbumPressing(collectionId: number, albumId: number): Promise<CollectionAlbumResponse> {
+    return this.post<CollectionAlbumResponse>(
+      `/collections/${collectionId}/albums/${albumId}/pressing/confirm`,
+      {}
     );
   }
 
@@ -297,20 +330,20 @@ export const collectionApiService = {
       query,
       searchType
     ),
-  updateAlbumMetadata: (
+  getCollectionRecordsPaginated: (
     collectionId: number,
-    albumId: number,
-    data: {
-      state_record?: string | null;
-      state_cover?: string | null;
-      acquisition_month_year?: string | null;
-    }
-  ): Promise<CollectionAlbumResponse> =>
-    collectionApiServiceInstance.updateAlbumMetadata(
-      collectionId,
-      albumId,
-      data
-    ),
+    page?: number,
+    limit?: number,
+    sortOrder?: "newest" | "oldest"
+  ) => collectionApiServiceInstance.getCollectionRecordsPaginated(collectionId, page, limit, sortOrder),
+  addAlbumCopy: (collectionId: number, albumId: number, data: CollectionAlbumCopyData) =>
+    collectionApiServiceInstance.addAlbumCopy(collectionId, albumId, data),
+  updateAlbumCopy: (collectionId: number, albumId: number, copyId: number, data: CollectionAlbumCopyData) =>
+    collectionApiServiceInstance.updateAlbumCopy(collectionId, albumId, copyId, data),
+  deleteAlbumCopy: (collectionId: number, albumId: number, copyId: number) =>
+    collectionApiServiceInstance.deleteAlbumCopy(collectionId, albumId, copyId),
+  confirmAlbumPressing: (collectionId: number, albumId: number): Promise<CollectionAlbumResponse> =>
+    collectionApiServiceInstance.confirmAlbumPressing(collectionId, albumId),
   exportCollectionFile: (collectionId: number, pathSuffix: string) =>
     collectionApiServiceInstance.exportCollectionFile(collectionId, pathSuffix),
   exportMyWishlistFile: (format: "csv" | "ods") =>

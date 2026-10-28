@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 import re
 
@@ -5,6 +6,31 @@ from pydantic import Field, model_validator, field_validator
 
 from app.schemas import BaseSchema
 from app.core.enums import VinylStateEnum
+
+
+def validate_month_year(v):
+    """Validate acquisition_month_year format"""
+    if v is None:
+        return v
+    if not isinstance(v, str):
+        raise ValueError("acquisition_month_year must be a string")
+
+    # Check format YYYY-MM
+    if not re.match(r'^\d{4}-\d{2}$', v):
+        raise ValueError("acquisition_month_year must be in format YYYY-MM (e.g., '2024-06')")
+
+    # Validate year and month
+    year, month = v.split('-')
+    year_int = int(year)
+    month_int = int(month)
+
+    if year_int < 1900 or year_int > 2100:
+        raise ValueError("Year must be between 1900 and 2100")
+
+    if month_int < 1 or month_int > 12:
+        raise ValueError("Month must be between 01 and 12")
+
+    return v
 
 
 class CollectionAlbumCreate(BaseSchema):
@@ -23,28 +49,7 @@ class CollectionAlbumCreate(BaseSchema):
     @field_validator("acquisition_month_year")
     @classmethod
     def validate_acquisition_month_year(cls, v):
-        """Validate acquisition_month_year format"""
-        if v is None:
-            return v
-        if not isinstance(v, str):
-            raise ValueError("acquisition_month_year must be a string")
-
-        # Check format YYYY-MM
-        if not re.match(r'^\d{4}-\d{2}$', v):
-            raise ValueError("acquisition_month_year must be in format YYYY-MM (e.g., '2024-06')")
-
-        # Validate year and month
-        year, month = v.split('-')
-        year_int = int(year)
-        month_int = int(month)
-
-        if year_int < 1900 or year_int > 2100:
-            raise ValueError("Year must be between 1900 and 2100")
-
-        if month_int < 1 or month_int > 12:
-            raise ValueError("Month must be between 01 and 12")
-
-        return v
+        return validate_month_year(v)
 
 
 class CollectionAlbumUpdate(BaseSchema):
@@ -61,28 +66,7 @@ class CollectionAlbumUpdate(BaseSchema):
     @field_validator("acquisition_month_year")
     @classmethod
     def validate_acquisition_month_year(cls, v):
-        """Validate acquisition_month_year format"""
-        if v is None:
-            return v
-        if not isinstance(v, str):
-            raise ValueError("acquisition_month_year must be a string")
-
-        # Check format YYYY-MM
-        if not re.match(r'^\d{4}-\d{2}$', v):
-            raise ValueError("acquisition_month_year must be in format YYYY-MM (e.g., '2024-06')")
-
-        # Validate year and month
-        year, month = v.split('-')
-        year_int = int(year)
-        month_int = int(month)
-
-        if year_int < 1900 or year_int > 2100:
-            raise ValueError("Year must be between 1900 and 2100")
-
-        if month_int < 1 or month_int > 12:
-            raise ValueError("Month must be between 01 and 12")
-
-        return v
+        return validate_month_year(v)
 
     @model_validator(mode="after")
     def at_least_one_field_provided(self) -> 'CollectionAlbumUpdate':
@@ -99,3 +83,27 @@ class CollectionAlbumMetadataResponse(BaseSchema):
     state_record: Optional[VinylStateEnum] = None
     state_cover: Optional[VinylStateEnum] = None
     acquisition_month_year: Optional[str] = None
+
+
+class CollectionAlbumCopyData(BaseSchema):
+    """Condition of one copy, to add a copy or update it (only the fields sent are changed)."""
+    state_record: Optional[VinylStateEnum] = Field(None, description="State of the vinyl record")
+    state_cover: Optional[VinylStateEnum] = Field(None, description="State of the album cover")
+    acquisition_month_year: Optional[str] = Field(
+        None,
+        pattern=r'^\d{4}-(0[1-9]|1[0-2])$',
+        description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')")
+
+    @field_validator("acquisition_month_year")
+    @classmethod
+    def validate_acquisition_month_year(cls, v):
+        return validate_month_year(v)
+
+
+class CollectionAlbumCopyResponse(BaseSchema):
+    """One copy of an album in a collection."""
+    id: int = Field(..., gt=0)
+    state_record: Optional[VinylStateEnum] = None
+    state_cover: Optional[VinylStateEnum] = None
+    acquisition_month_year: Optional[str] = None
+    created_at: datetime

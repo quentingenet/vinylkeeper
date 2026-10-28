@@ -18,10 +18,11 @@ from app.core.orm_utils import is_loaded
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.association_tables import CollectionArtist
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.collection_model import Collection
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.collection_repository import CollectionRepository
+from app.utils.vinyl_state_mapping import VinylStateMapping
 
 
 @dataclass(frozen=True)
@@ -59,12 +60,12 @@ class ExportService:
 
             filename = self._build_filename(collection, suffix="albums.csv")
             headers = self._album_csv_headers()
-            rows_count = len(albums_with_metadata)
+            rows_count = sum(max(1, len(collection_album.copies)) for _, collection_album in albums_with_metadata)
 
             def row_iter() -> Iterable[list[str]]:
                 yield headers
                 for album, collection_album in albums_with_metadata:
-                    yield self._album_to_csv_row(album, collection_album, collection)
+                    yield from self._album_to_csv_rows(album, collection_album, collection)
 
             response = self._stream_csv(filename=filename, rows=row_iter())
             logger.info(
@@ -136,8 +137,9 @@ class ExportService:
             )
             headers = self._album_csv_headers()
             rows = [
-                self._album_to_csv_row(album, collection_album, collection)
+                row
                 for album, collection_album in albums_with_metadata
+                for row in self._album_to_csv_rows(album, collection_album, collection)
             ]
             export_file = self._build_ods_file(
                 filename=self._build_filename(collection, suffix="albums.ods"),
@@ -315,6 +317,16 @@ class ExportService:
             "added_at",
             "updated_at",
             "image_url",
+            # Added with copies and pressings: new columns go last so existing sheets keep working
+            "copy_number",
+            "copies_count",
+            "release_year",
+            "country",
+            "label",
+            "catno",
+            "formats",
+            "pressing_confirmed",
+            "external_master_id",
         ]
 
     def _artist_csv_headers(self) -> list[str]:
@@ -330,8 +342,19 @@ class ExportService:
             "image_url",
         ]
 
-    def _album_to_csv_row(
+    def _album_to_csv_rows(
         self, album: Album, collection_album: CollectionAlbum, collection: Collection
+    ) -> list[list[str]]:
+        """One row per copy: the condition belongs to each copy."""
+        copies = list(collection_album.copies) or [None]
+        return [
+            self._album_to_csv_row(album, collection_album, collection, copy, number, len(collection_album.copies))
+            for number, copy in enumerate(copies, 1)
+        ]
+
+    def _album_to_csv_row(
+        self, album: Album, collection_album: CollectionAlbum, collection: Collection,
+        copy: Optional[CollectionAlbumCopy] = None, copy_number: int = 1, copies_count: int = 1,
     ) -> list[str]:
         artist_name, album_title = self._split_album_title(album.title)
         return [
@@ -343,12 +366,21 @@ class ExportService:
             artist_name,
             album_title,
             album.title or "",
-            self._vinyl_state_name(collection_album.state_record_ref),
-            self._vinyl_state_name(collection_album.state_cover_ref),
-            collection_album.acquisition_month_year or "",
+            self._vinyl_state_name(copy.state_record if copy else None),
+            self._vinyl_state_name(copy.state_cover if copy else None),
+            (copy.acquisition_month_year if copy else None) or "",
             self._format_dt(collection_album.created_at),
             self._format_dt(collection_album.updated_at),
             album.image_url or "",
+            str(copy_number),
+            str(copies_count),
+            str(album.release_year) if album.release_year else "",
+            album.country or "",
+            album.label or "",
+            album.catno or "",
+            ", ".join(album.formats or []),
+            "yes" if collection_album.pressing_confirmed else "no",
+            album.external_master_id or "",
         ]
 
     def _artist_to_csv_row(
@@ -369,11 +401,8 @@ class ExportService:
             artist.image_url or "",
         ]
 
-    def _vinyl_state_name(self, vinyl_state: Optional[object]) -> str:
-        if vinyl_state is None:
-            return ""
-        name = getattr(vinyl_state, "name", None)
-        return str(name) if name else ""
+    def _vinyl_state_name(self, state_id: Optional[int]) -> str:
+        return (VinylStateMapping.get_name_from_id(state_id) if state_id else None) or ""
 
     def _format_dt(self, value: Optional[datetime]) -> str:
         if value is None:

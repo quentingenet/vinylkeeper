@@ -59,10 +59,8 @@ class DashboardService:
                 )
 
             latest_artist = None
-            latest_artist_id = None
             if latest_artist_result:
                 artist, username, updated_at = latest_artist_result
-                latest_artist_id = artist.id
                 display_username = "You" if username == user.username else username
                 latest_artist = LatestAddition(
                     id=artist.id,
@@ -74,11 +72,8 @@ class DashboardService:
                     external_id=artist.external_artist_id
                 )
 
-            exclude_ids = []
-            if latest_album_id:
-                exclude_ids.append(latest_album_id)
-            if latest_artist_id:
-                exclude_ids.append(latest_artist_id)
+            # Album ids only: the latest artist used to be added here too, hiding the album with its id
+            exclude_ids = [latest_album_id] if latest_album_id else []
 
             recent_albums_result = await self.dashboard_repository.get_recent_albums(
                 limit=12,

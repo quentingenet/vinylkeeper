@@ -19,6 +19,7 @@ import {
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
   IAlbumRequestResults,
   IArtistRequestResults,
@@ -30,12 +31,16 @@ import { truncateText } from "@utils/GlobalUtils";
 import { growItem } from "@utils/Animations";
 import { useAddToCollection, type AlbumStateData } from "@hooks/useAddToCollection";
 import AlbumStateForm from "@components/AddVinyls/AlbumStateForm";
+import EditionChips from "@components/AddVinyls/EditionChips";
+import type { DuplicatePrompt } from "@components/AddVinyls/duplicateLabels";
 
 interface AddToCollectionModalProps {
   open: boolean;
   onClose: () => void;
   item: IAlbumRequestResults | IArtistRequestResults | null;
   itemType: "album" | "artist";
+  // Opens the album or artist detail modal instead of this one
+  onViewDetails?: () => void;
 }
 
 interface CollectionSelectionModalProps {
@@ -57,6 +62,10 @@ interface CollectionSelectionModalProps {
   ) => void;
   isDatePickerOpen?: boolean;
   setIsDatePickerOpen?: (open: boolean) => void;
+  ownedHint?: (collectionId: number) => string | null;
+  pendingDuplicate?: DuplicatePrompt | null;
+  onConfirmDuplicate?: () => void;
+  onCancelDuplicate?: () => void;
 }
 
 const modalStyle = (isMobile: boolean) => ({
@@ -125,6 +134,10 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
     onAlbumStateChange,
     isDatePickerOpen,
     setIsDatePickerOpen,
+    ownedHint,
+    pendingDuplicate,
+    onConfirmDuplicate,
+    onCancelDuplicate,
   }) => {
     const { isMobile } = useDetectMobile();
 
@@ -166,6 +179,30 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                 : (item as IArtistRequestResults).title}
               &rdquo; to a collection:
             </Typography>
+
+            {itemType === "album" && (
+              <Box mb={2}>
+                <EditionChips album={item as IAlbumRequestResults} />
+              </Box>
+            )}
+
+            {pendingDuplicate && (
+              <Alert
+                severity="warning"
+                sx={{ ...getAlertStyle("warning"), textOverflow: "clip" }}
+              >
+                {pendingDuplicate.message}
+                <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+                  <Button size="small" variant="contained" onClick={onConfirmDuplicate}
+                    disabled={isAddingToCollection}>
+                    {pendingDuplicate.confirmLabel}
+                  </Button>
+                  <Button size="small" onClick={onCancelDuplicate} sx={buttonStyle}>
+                    Cancel
+                  </Button>
+                </Box>
+              </Alert>
+            )}
 
             {itemType === "album" && albumStateData && onAlbumStateChange && (
               <AlbumStateForm
@@ -243,9 +280,10 @@ const CollectionSelectionModal = memo<CollectionSelectionModalProps>(
                             <ListItemText
                               primary={truncateText(collection.name, 25)}
                               secondary={
-                                collection.description
+                                ownedHint?.(collection.id) ??
+                                (collection.description
                                   ? truncateText(collection.description, 30)
-                                  : "No description"
+                                  : "No description")
                               }
                               sx={{
                                 "& .MuiListItemText-primary": {
@@ -285,6 +323,7 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
   onClose,
   item,
   itemType,
+  onViewDetails,
 }) => {
   const { isMobile } = useDetectMobile();
   const {
@@ -303,6 +342,10 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     handleAddToWishlist,
     handleAddToCollection,
     handleClose,
+    ownedHint,
+    pendingDuplicate,
+    confirmDuplicate,
+    cancelDuplicate,
   } = useAddToCollection(item, itemType, open, onClose);
 
   if (!item) return null;
@@ -419,6 +462,20 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                   </Button>
                 </span>
               </Tooltip>
+
+              {onViewDetails && (
+                <Button
+                  variant="text"
+                  startIcon={<InfoOutlinedIcon />}
+                  onClick={() => {
+                    handleClose();
+                    onViewDetails();
+                  }}
+                  sx={{ ...buttonStyle, width: "100%" }}
+                >
+                  {itemType === "album" ? "View album details" : "View artist details"}
+                </Button>
+              )}
             </Box>
           </Box>
         </Fade>
@@ -442,6 +499,10 @@ const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
         onAlbumStateChange={handleAlbumStateChange}
         isDatePickerOpen={isDatePickerOpen}
         setIsDatePickerOpen={setIsDatePickerOpen}
+        ownedHint={ownedHint}
+        pendingDuplicate={pendingDuplicate}
+        onConfirmDuplicate={confirmDuplicate}
+        onCancelDuplicate={cancelDuplicate}
       />
     </>
   );

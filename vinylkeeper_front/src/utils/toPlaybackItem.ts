@@ -44,5 +44,7 @@ export function spinningNowAlbumToPlaybackItem(album: SpinningNowAlbum): Playbac
     artist: album.artist_name ?? album.title?.split(" - ")[0] ?? "",
     image_url: album.image_url ?? undefined,
     itemType: "album",
+    // Picked from the user's own shelves: the modal lists the pressings they own
+    owned: { masterId: album.external_master_id ?? null },
   };
 }

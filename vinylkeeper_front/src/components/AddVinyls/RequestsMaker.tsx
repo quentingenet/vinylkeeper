@@ -1,10 +1,4 @@
-import { logger } from "@utils/logger";
 import useDetectMobile from "@hooks/useDetectMobile";
-import {
-  IRequestResults,
-  IRequestToSend,
-  DiscogsData,
-} from "@models/IRequestProxy";
 import {
   Box,
   Switch,
@@ -13,17 +7,17 @@ import {
   InputAdornment,
   Alert,
 } from "@mui/material";
-import { searchApiService } from "@services/SearchApiService";
-import { useState, useCallback, useMemo, memo } from "react";
+import { useState, useCallback, memo } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { growItem } from "@utils/Animations";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@utils/queryKeys";
 import VinylSpinner from "@components/UI/VinylSpinner";
 
 interface IRequestsMakerProps {
-  requestResults: IRequestResults[];
-  setRequestResults: (results: IRequestResults[]) => void;
+  initialQuery?: string;
+  hasResults: boolean;
+  isSearching: boolean;
+  error?: string;
+  onSearch: (query: string, isArtist: boolean) => void;
 }
 
 const SearchTypeSwitch = memo(
@@ -64,8 +58,8 @@ const SearchInput = memo(
     setSearchTerm,
     isArtist,
     isMobile,
-    mutation,
-    requestResults,
+    isSearching,
+    hasResults,
     onSearch,
     error,
   }: {
@@ -73,8 +67,8 @@ const SearchInput = memo(
     setSearchTerm: (e: React.ChangeEvent<HTMLInputElement>) => void;
     isArtist: boolean;
     isMobile: boolean;
-    mutation: { isPending: boolean };
-    requestResults: IRequestResults[];
+    isSearching: boolean;
+    hasResults: boolean;
     onSearch: () => void;
     error?: string;
   }) => (
@@ -97,25 +91,25 @@ const SearchInput = memo(
         onKeyDown={(e) => e.key === "Enter" && onSearch()}
         error={!!error}
         helperText={error}
-        disabled={mutation.isPending}
+        disabled={isSearching}
         slotProps={{
           input: {
             endAdornment: (
               <InputAdornment
                 position="end"
                 sx={{
-                  cursor: mutation.isPending ? "not-allowed" : "pointer",
+                  cursor: isSearching ? "not-allowed" : "pointer",
                   color: "white",
                   animation:
                     searchTerm !== "" &&
-                    requestResults.length === 0 &&
-                    !mutation.isPending
+                    !hasResults &&
+                    !isSearching
                       ? `${growItem} 1s ease infinite`
                       : "none",
                 }}
                 onClick={onSearch}
               >
-                {mutation.isPending ? (
+                {isSearching ? (
                   <VinylSpinner size={24} />
                 ) : (
                   <SearchIcon fontSize="large" />
@@ -137,47 +131,16 @@ const SearchInput = memo(
 SearchInput.displayName = "SearchInput";
 
 export default function RequestsMaker({
-  requestResults,
-  setRequestResults,
+  initialQuery = "",
+  hasResults,
+  isSearching,
+  error,
+  onSearch,
 }: IRequestsMakerProps) {
-  const [isArtist, setIsArtist] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  // Most people look for a record, not an artist
+  const [isArtist, setIsArtist] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>(initialQuery);
   const { isMobile } = useDetectMobile();
-  const queryClient = useQueryClient();
-
-  const requestToSend = useMemo(
-    () => ({
-      query: searchTerm,
-      is_artist: isArtist,
-    }),
-    [searchTerm, isArtist]
-  );
-
-  const mutation = useMutation<DiscogsData[], Error, IRequestToSend>({
-    mutationFn: searchApiService.searchMusic,
-    onSuccess: (response) => {
-      setError("");
-      const transformedData = response.map((item: DiscogsData) => ({
-        ...item,
-        title: item.title || item.name || "",
-      }));
-
-      setRequestResults([
-        {
-          type: isArtist ? "artist" : "album",
-          data: transformedData,
-        },
-      ]);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.search.results() });
-    },
-    onError: (error) => {
-      logger.error("Error fetching data:", error);
-      setError(
-        error.message || "An error occurred while searching. Please try again."
-      );
-    },
-  });
 
   const handleSearchTermChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,9 +176,9 @@ export default function RequestsMaker({
         setSearchTerm={handleSearchTermChange}
         isArtist={isArtist}
         isMobile={isMobile}
-        mutation={mutation}
-        requestResults={requestResults}
-        onSearch={() => mutation.mutate(requestToSend)}
+        isSearching={isSearching}
+        hasResults={hasResults}
+        onSearch={() => onSearch(searchTerm, isArtist)}
         error={error}
       />
     </Box>

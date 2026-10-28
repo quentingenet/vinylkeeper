@@ -14,6 +14,8 @@ interface CollectionItemGridProps {
   itemType: "album" | "artist";
   onPlay: (item: CollectionItem) => void;
   onDelete?: (item: CollectionItem) => void;
+  // Without it every item can be deleted when onDelete is given
+  canDelete?: (item: CollectionItem) => boolean;
   imageSize: { w: number; h: number; q: number };
   totalPages?: number;
   page?: number;
@@ -26,6 +28,7 @@ export default function CollectionItemGrid({
   itemType,
   onPlay,
   onDelete,
+  canDelete,
   imageSize,
   totalPages,
   page,
@@ -41,7 +44,7 @@ export default function CollectionItemGrid({
             item={item}
             itemType={itemType}
             onPlay={() => onPlay(item)}
-            onDelete={onDelete ? () => onDelete(item) : undefined}
+            onDelete={onDelete && (canDelete?.(item) ?? true) ? () => onDelete(item) : undefined}
             imageSize={imageSize}
           />
         ))}

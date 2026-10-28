@@ -170,3 +170,23 @@ class TestCollections:
         result = await service(real_session).pick(user.id, [], [], [], [stranger_collection.id], limit=50)
 
         assert (result.total, result.items) == (0, [])
+
+
+class TestPressingsOfOneWork:
+    async def test_several_pressings_are_one_record(self, real_session):
+        user = await make_real_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        master = f"itest-{uuid.uuid4().hex[:8]}"
+        original = await add_album(real_session, [collection.id], ["calm"], genres=["Jazz"],
+                                   original_year=1959, release_year=1959, external_master_id=master)
+        await add_album(real_session, [collection.id], ["calm"], genres=["Jazz"],
+                        original_year=1959, release_year=2010, external_master_id=master)
+
+        options = await service(real_session).get_options(user.id)
+        result = await service(real_session).pick(user.id, ["calm"], [], [], [], limit=50)
+
+        assert options.total_albums == 1
+        assert [(m.name, m.albums_count) for m in options.moods] == [("calm", 1)]
+        assert [c.albums_count for c in options.collections] == [1]
+        assert [item.id for item in result.items] == [original.id]
+        assert result.items[0].external_master_id == master

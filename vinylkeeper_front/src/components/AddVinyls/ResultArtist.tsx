@@ -202,6 +202,7 @@ export default function ResultArtist({
         onClose={handleCloseModal}
         item={selectedArtist}
         itemType="artist"
+        onViewDetails={() => selectedArtist && handlePlayClick(selectedArtist)}
       />
 
       <PlaybackModal

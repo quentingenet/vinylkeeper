@@ -15,10 +15,16 @@ import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { useState, useCallback, memo } from "react";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import EditionChips from "./EditionChips";
+
+// Cover, two lines of title and two rows of edition chips
+const CARD_HEIGHT = 390;
 
 interface IResultAlbumsProps {
   data: IAlbumRequestResults[];
   isLoading?: boolean;
+  // Replace mode: a click picks the pressing instead of opening the add modal
+  onPickPressing?: (album: IAlbumRequestResults) => void;
 }
 
 const AlbumCard = memo(
@@ -35,7 +41,7 @@ const AlbumCard = memo(
       className={styles.resultCard}
       sx={{
         width: 250,
-        height: 350,
+        height: CARD_HEIGHT,
         borderRadius: "8px",
         cursor: "pointer",
         position: "relative",
@@ -65,9 +71,13 @@ const AlbumCard = memo(
         sx={{
           padding: "8px",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          gap: 1,
           minHeight: "80px",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <Typography
@@ -88,6 +98,7 @@ const AlbumCard = memo(
         >
           {album.title || "Unknown Album"}
         </Typography>
+        <EditionChips album={album} maxRows={2} />
       </CardContent>
       <PlayButton
         onClick={(e) => {
@@ -104,6 +115,7 @@ AlbumCard.displayName = "AlbumCard";
 export default function ResultAlbums({
   data,
   isLoading = false,
+  onPickPressing,
 }: IResultAlbumsProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedAlbum, setSelectedAlbum] =
@@ -112,10 +124,17 @@ export default function ResultAlbums({
   const [selectedPlaybackItem, setSelectedPlaybackItem] =
     useState<PlaybackItem | null>(null);
 
-  const handleAlbumClick = useCallback((album: IAlbumRequestResults) => {
-    setSelectedAlbum(album);
-    setModalOpen(true);
-  }, []);
+  const handleAlbumClick = useCallback(
+    (album: IAlbumRequestResults) => {
+      if (onPickPressing) {
+        onPickPressing(album);
+        return;
+      }
+      setSelectedAlbum(album);
+      setModalOpen(true);
+    },
+    [onPickPressing]
+  );
 
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
@@ -154,7 +173,7 @@ export default function ResultAlbums({
               className={styles.resultCard}
               sx={{
                 width: 250,
-                height: 350,
+                height: CARD_HEIGHT,
                 borderRadius: "8px",
               }}
             >
@@ -207,6 +226,7 @@ export default function ResultAlbums({
         onClose={handleCloseModal}
         item={selectedAlbum}
         itemType="album"
+        onViewDetails={() => selectedAlbum && handlePlayClick(selectedAlbum)}
       />
 
       <PlaybackModal

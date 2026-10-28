@@ -44,6 +44,7 @@ class CollectionRef(BaseSchema):
 class SpinningNowAlbum(BaseSchema):
     id: int
     external_album_id: str
+    external_master_id: Optional[str] = Field(None, description="The work: to find every pressing the user owns")
     title: Optional[str] = None
     artist_name: Optional[str] = None
     image_url: Optional[str] = None

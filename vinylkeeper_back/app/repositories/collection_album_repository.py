@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.album_model import Album
+from app.repositories.work_queries import work_key
 from app.utils.vinyl_state_mapping import VinylStateMapping
 from app.core.exceptions import (
     ResourceNotFoundError,
@@ -27,11 +28,8 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
-            # state_record_ref/state_cover_ref are lazy="raise" and unset on this
-            # freshly-flushed instance; the mapper reads them right after this call.
-            await self.db.refresh(
-                collection_album, attribute_names=["state_record_ref", "state_cover_ref"]
-            )
+            # copies is lazy="raise": loaded here because the mapper reads it right after this call
+            await self.db.refresh(collection_album, attribute_names=["copies"])
             return collection_album
         except SQLAlchemyError as e:
             logger.error(
@@ -47,9 +45,7 @@ class CollectionAlbumRepository(TransactionalMixin):
         try:
             await self._add_entity(collection_album, flush=True)
             await self._refresh_entity(collection_album)
-            await self.db.refresh(
-                collection_album, attribute_names=["state_record_ref", "state_cover_ref"]
-            )
+            await self.db.refresh(collection_album, attribute_names=["copies"])
             return collection_album
         except SQLAlchemyError as e:
             logger.error(
@@ -124,6 +120,68 @@ class CollectionAlbumRepository(TransactionalMixin):
                 details={}
             )
 
+    @staticmethod
+    def _state_id(field: str, state) -> Optional[int]:
+        if state is None:
+            return None
+        name = state.value if hasattr(state, "value") else str(state)
+        state_id = VinylStateMapping.get_id_from_name(name)
+        if not state_id:
+            logger.warning(f"Invalid {field} value: {name}")
+        return state_id
+
+    @classmethod
+    def apply_copy_data(cls, copy: CollectionAlbumCopy, data: dict) -> None:
+        """Set the fields present in data (state names or enums), leave the others untouched."""
+        for field in ("state_record", "state_cover"):
+            if field in data:
+                setattr(copy, field, cls._state_id(field, data[field]))
+        if "acquisition_month_year" in data:
+            copy.acquisition_month_year = data["acquisition_month_year"]
+        copy.updated_at = datetime.now(timezone.utc)
+
+    async def find_with_copies(self, collection_id: int, album_id: int) -> Optional[CollectionAlbum]:
+        query = (
+            select(CollectionAlbum)
+            .options(selectinload(CollectionAlbum.copies))
+            .filter(CollectionAlbum.collection_id == collection_id, CollectionAlbum.album_id == album_id)
+            # Copies may have changed in this session (added, deleted): always reload them
+            .execution_options(populate_existing=True)
+        )
+        return (await self.db.execute(query)).scalar_one_or_none()
+
+    async def add_copy(self, collection_album: CollectionAlbum, data: dict) -> CollectionAlbum:
+        now = datetime.now(timezone.utc)
+        copy = CollectionAlbumCopy(collection_id=collection_album.collection_id,
+                                   album_id=collection_album.album_id, created_at=now)
+        self.apply_copy_data(copy, data)
+        collection_album.updated_at = now
+        await self._add_entity(copy, flush=True)
+        return await self._reload_copies(collection_album)
+
+    async def update_copy(self, collection_album: CollectionAlbum, copy: CollectionAlbumCopy,
+                          data: dict) -> CollectionAlbum:
+        self.apply_copy_data(copy, data)
+        collection_album.updated_at = copy.updated_at
+        await self.db.flush()
+        return await self._reload_copies(collection_album)
+
+    async def delete_copy(self, collection_album: CollectionAlbum, copy: CollectionAlbumCopy) -> CollectionAlbum:
+        collection_album.updated_at = datetime.now(timezone.utc)
+        await self._delete_entity(copy)
+        await self.db.flush()
+        return await self._reload_copies(collection_album)
+
+    async def _reload_copies(self, collection_album: CollectionAlbum) -> CollectionAlbum:
+        await self.db.refresh(collection_album, attribute_names=["copies"])
+        return collection_album
+
+    async def confirm_pressing(self, collection_album: CollectionAlbum) -> CollectionAlbum:
+        collection_album.pressing_confirmed = True
+        collection_album.updated_at = datetime.now(timezone.utc)
+        await self.db.flush()
+        return collection_album
+
     async def get_vinyl_state_id(self, state_name: str) -> int | None:
         """Get vinyl state ID by name using mapping"""
         return VinylStateMapping.get_id_from_name(state_name)
@@ -152,8 +210,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .options(
                     selectinload(Album.external_source),
-                    selectinload(CollectionAlbum.state_record_ref),
-                    selectinload(CollectionAlbum.state_cover_ref)
+                    selectinload(CollectionAlbum.copies)
                 )
                 .filter(CollectionAlbum.collection_id == collection_id)
                 .order_by(order_clause)
@@ -179,6 +236,53 @@ class CollectionAlbumRepository(TransactionalMixin):
             raise ServerError(
                 error_code=5000,
                 message="Failed to get collection albums paginated",
+                details={}
+            )
+
+    async def get_collection_records_paginated(
+        self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
+    ) -> tuple[list[tuple[str, list[tuple]]], int]:
+        """
+        One page of works (all pressings of a Discogs master are one record), as
+        (work key, [(Album, CollectionAlbum) first added first]), and the number of works.
+        Newest: works by their last added pressing; oldest: by their first one.
+        """
+        try:
+            work = work_key().label("work")
+            groups = (
+                select(work, func.min(CollectionAlbum.created_at).label("first_added"),
+                       func.max(CollectionAlbum.created_at).label("last_added"))
+                .select_from(CollectionAlbum)
+                .join(Album, Album.id == CollectionAlbum.album_id)
+                .where(CollectionAlbum.collection_id == collection_id)
+                .group_by(work)
+                .subquery()
+            )
+            order = (groups.c.first_added.asc().nullslast() if sort_order == "oldest"
+                     else groups.c.last_added.desc().nullslast())
+            page_keys = list((await self.db.execute(
+                select(groups.c.work).order_by(order, groups.c.work).offset((page - 1) * limit).limit(limit)
+            )).scalars().all())
+            total = (await self.db.execute(select(func.count()).select_from(groups))).scalar() or 0
+            if not page_keys:
+                return [], total
+
+            rows = (await self.db.execute(
+                select(Album, CollectionAlbum, work_key())
+                .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
+                .options(selectinload(Album.external_source), selectinload(CollectionAlbum.copies))
+                .where(CollectionAlbum.collection_id == collection_id, work_key().in_(page_keys))
+                .order_by(CollectionAlbum.created_at.asc().nullsfirst(), Album.id)
+            )).all()
+            pressings: dict[str, list[tuple]] = {key: [] for key in page_keys}
+            for album, collection_album, key in rows:
+                pressings[key].append((album, collection_album))
+            return [(key, pressings[key]) for key in page_keys], total
+        except SQLAlchemyError as e:
+            logger.error(f"Error getting collection records paginated: {str(e)}")
+            raise ServerError(
+                error_code=5000,
+                message="Failed to get collection records",
                 details={}
             )
 
@@ -222,34 +326,16 @@ class CollectionAlbumRepository(TransactionalMixin):
                     value=f"collection_{collection_id}_album_{album_id}"
                 )
 
-            # Convert state names to IDs using VinylStateMapping
-            state_record_id = None
-            state_cover_id = None
-
-            if metadata.get('state_record'):
-                state_record_id = VinylStateMapping.get_id_from_name(
-                    metadata['state_record'])
-                if not state_record_id:
-                    logger.warning(
-                        f"Invalid state_record value: {metadata['state_record']}")
-
-            if metadata.get('state_cover'):
-                state_cover_id = VinylStateMapping.get_id_from_name(
-                    metadata['state_cover'])
-                if not state_cover_id:
-                    logger.warning(
-                        f"Invalid state_cover value: {metadata['state_cover']}")
-
-            # Create new association with explicit timestamps
+            # Create new association with explicit timestamps, and its first copy
             now = datetime.now(timezone.utc)
+            first_copy = CollectionAlbumCopy(created_at=now, updated_at=now)
+            self.apply_copy_data(first_copy, metadata)
             collection_album = CollectionAlbum(
                 collection_id=collection_id,
                 album_id=album_id,
-                state_record=state_record_id,
-                state_cover=state_cover_id,
-                acquisition_month_year=metadata.get('acquisition_month_year'),
                 created_at=now,
-                updated_at=now
+                updated_at=now,
+                copies=[first_copy],
             )
 
             # Update album's updated_at when adding to collection
@@ -272,35 +358,12 @@ class CollectionAlbumRepository(TransactionalMixin):
     async def update_album_metadata(self, collection_id: int, album_id: int, metadata: dict) -> CollectionAlbum:
         """Update album metadata in a collection"""
         try:
-            collection_album = await self.find_by_collection_and_album(collection_id, album_id)
+            collection_album = await self.find_with_copies(collection_id, album_id)
             if not collection_album:
                 raise ResourceNotFoundError("Album", album_id)
 
-            # Update metadata fields with conversion for states
-            if 'state_record' in metadata:
-                if metadata['state_record'] is None:
-                    collection_album.state_record = None
-                else:
-                    state_record_id = VinylStateMapping.get_id_from_name(
-                        metadata['state_record'])
-                    if not state_record_id:
-                        logger.warning(
-                            f"Invalid state_record value: {metadata['state_record']}")
-                    collection_album.state_record = state_record_id
-
-            if 'state_cover' in metadata:
-                if metadata['state_cover'] is None:
-                    collection_album.state_cover = None
-                else:
-                    state_cover_id = VinylStateMapping.get_id_from_name(
-                        metadata['state_cover'])
-                    if not state_cover_id:
-                        logger.warning(
-                            f"Invalid state_cover value: {metadata['state_cover']}")
-                    collection_album.state_cover = state_cover_id
-
-            if 'acquisition_month_year' in metadata:
-                collection_album.acquisition_month_year = metadata['acquisition_month_year']
+            # Clients unaware of copies edit the first one
+            self.apply_copy_data(collection_album.first_copy(), metadata)
 
             # Update only updated_at when modifying metadata
             # Never modify created_at - it represents the initial addition date
@@ -348,8 +411,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                 .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                 .options(
                     selectinload(Album.external_source),
-                    selectinload(CollectionAlbum.state_record_ref),
-                    selectinload(CollectionAlbum.state_cover_ref)
+                    selectinload(CollectionAlbum.copies)
                 )
                 .filter(CollectionAlbum.collection_id == collection_id)
             )
@@ -372,8 +434,7 @@ class CollectionAlbumRepository(TransactionalMixin):
             query = (
                 select(CollectionAlbum)
                 .options(
-                    selectinload(CollectionAlbum.state_record_ref),
-                    selectinload(CollectionAlbum.state_cover_ref)
+                    selectinload(CollectionAlbum.copies)
                 )
                 .filter(
                     CollectionAlbum.collection_id == collection_id,

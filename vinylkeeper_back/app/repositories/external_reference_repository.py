@@ -1,7 +1,8 @@
 from typing import Optional, Dict
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import delete, func, insert, or_, select, update
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.wishlist_model import Wishlist
 from app.models.album_model import Album
@@ -13,6 +14,7 @@ from app.schemas.album_schema import AlbumCreate
 from app.schemas.artist_schema import ArtistCreate
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import (
+    ResourceNotFoundError,
     ValidationError,
     ServerError,
 )
@@ -22,7 +24,7 @@ from app.repositories.wishlist_repository import WishlistRepository
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.album_repository import AlbumRepository
 from app.repositories.artist_repository import ArtistRepository
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.association_tables import CollectionArtist
 from app.utils.vinyl_state_mapping import VinylStateMapping
 
@@ -220,12 +222,13 @@ class ExternalReferenceRepository(TransactionalMixin):
         return await self.collection_repo.get_by_id(collection_id, load_relations=load_relations)
 
     async def add_album_to_collection(
-        self, collection: Collection, album: Album, album_data: Optional[dict] = None, is_new_entity: bool = False
+        self, collection: Collection, album: Album, album_data: Optional[dict] = None, is_new_entity: bool = False,
+        pressing_confirmed: bool = False, add_copy: bool = False,
     ) -> tuple[CollectionAlbum, bool]:
         """Add an album to a collection with optional album state data"""
         try:
             # Check if album is already in collection
-            query = select(CollectionAlbum).filter(
+            query = select(CollectionAlbum).options(selectinload(CollectionAlbum.copies)).filter(
                 CollectionAlbum.collection_id == collection.id,
                 CollectionAlbum.album_id == album.id
             )
@@ -233,14 +236,17 @@ class ExternalReferenceRepository(TransactionalMixin):
             existing = result.scalar_one_or_none()
 
             if existing:
-                # Update metadata if provided
-                if album_data:
-                    if album_data.get('state_record_id') is not None:
-                        existing.state_record = album_data['state_record_id']
-                    if album_data.get('state_cover_id') is not None:
-                        existing.state_cover = album_data['state_cover_id']
-                    if album_data.get('acquisition_month_year') is not None:
-                        existing.acquisition_month_year = album_data['acquisition_month_year']
+                if add_copy:
+                    now = datetime.now(timezone.utc)
+                    copy = CollectionAlbumCopy(created_at=now, updated_at=now)
+                    self._apply_album_data(copy, album_data or {})
+                    existing.copies.append(copy)
+                # Update metadata if provided, on the first copy (clients unaware of copies)
+                elif album_data:
+                    self._apply_album_data(existing.first_copy(), album_data)
+                # Picked again with its pressing details in sight; never unconfirmed by an old client
+                if pressing_confirmed:
+                    existing.pressing_confirmed = True
 
                 # Update only CollectionAlbum.updated_at when adding existing album
                 # Never modify created_at - it represents the initial addition date
@@ -252,23 +258,19 @@ class ExternalReferenceRepository(TransactionalMixin):
 
                 return existing, False
 
-            # Create new collection album association with explicit timestamps
+            # Create new collection album association with explicit timestamps, and its first copy
             now = datetime.now(timezone.utc)
+            first_copy = CollectionAlbumCopy(created_at=now, updated_at=now)
+            if album_data:
+                self._apply_album_data(first_copy, album_data)
             collection_album = CollectionAlbum(
                 collection_id=collection.id,
                 album_id=album.id,
                 created_at=now,
-                updated_at=now
+                updated_at=now,
+                copies=[first_copy],
+                pressing_confirmed=pressing_confirmed,
             )
-
-            # Add album state data if provided
-            if album_data:
-                if album_data.get('state_record_id') is not None:
-                    collection_album.state_record = album_data['state_record_id']
-                if album_data.get('state_cover_id') is not None:
-                    collection_album.state_cover = album_data['state_cover_id']
-                if album_data.get('acquisition_month_year') is not None:
-                    collection_album.acquisition_month_year = album_data['acquisition_month_year']
 
             await self._add_entity(collection_album, flush=True)
 
@@ -283,6 +285,97 @@ class ExternalReferenceRepository(TransactionalMixin):
                 message="Failed to add album to collection",
                 details={}
             )
+
+    @staticmethod
+    def _apply_album_data(copy: CollectionAlbumCopy, album_data: dict) -> None:
+        """State ids already resolved by the service; fields left out or None are not changed."""
+        if album_data.get('state_record_id') is not None:
+            copy.state_record = album_data['state_record_id']
+        if album_data.get('state_cover_id') is not None:
+            copy.state_cover = album_data['state_cover_id']
+        if album_data.get('acquisition_month_year') is not None:
+            copy.acquisition_month_year = album_data['acquisition_month_year']
+        copy.updated_at = datetime.now(timezone.utc)
+
+    async def find_owned_pressings(
+        self, user_id: int, external_source_id: int, external_album_id: str, external_master_id: Optional[str]
+    ) -> list[tuple[CollectionAlbum, Album, str, int]]:
+        """
+        Rows of the user's collections holding this release or another pressing of its master,
+        as (collection row, album, collection name, number of copies).
+        """
+        copies_count = (
+            select(func.count(CollectionAlbumCopy.id))
+            .where(CollectionAlbumCopy.collection_id == CollectionAlbum.collection_id,
+                   CollectionAlbumCopy.album_id == CollectionAlbum.album_id)
+            .scalar_subquery()
+        )
+        same_work = Album.external_album_id == external_album_id
+        if external_master_id:
+            same_work = or_(same_work, Album.external_master_id == external_master_id)
+        query = (
+            select(CollectionAlbum, Album, Collection.name, copies_count)
+            .join(Album, Album.id == CollectionAlbum.album_id)
+            .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .filter(Collection.owner_id == user_id, Album.external_source_id == external_source_id, same_work)
+            .order_by(Collection.name, CollectionAlbum.created_at)
+        )
+        return [(row[0], row[1], row[2], row[3]) for row in (await self.db.execute(query)).all()]
+
+    async def replace_album_in_collection(
+        self, collection_id: int, old_album_id: int, new_album_id: int
+    ) -> tuple[Album, CollectionAlbum]:
+        """
+        Point an album of the collection to another release (the actual pressing), keeping
+        its copies, their condition and the date it was added. If that release is already
+        in the collection, the copies are gathered under it. Returns the new album and its
+        collection row, with copies loaded.
+        """
+        in_collection = CollectionAlbum.collection_id == collection_id
+        old = (await self.db.execute(
+            select(CollectionAlbum).filter(in_collection, CollectionAlbum.album_id == old_album_id)
+        )).scalar_one_or_none()
+        if old is None:
+            raise ResourceNotFoundError("Album", old_album_id)
+
+        now = datetime.now(timezone.utc)
+        if new_album_id == old_album_id:
+            await self.db.execute(
+                update(CollectionAlbum).where(in_collection, CollectionAlbum.album_id == old_album_id)
+                .values(pressing_confirmed=True, updated_at=now))
+        else:
+            target = (await self.db.execute(
+                select(CollectionAlbum).filter(in_collection, CollectionAlbum.album_id == new_album_id)
+            )).scalar_one_or_none()
+            if target is None:
+                await self.db.execute(insert(CollectionAlbum).values(
+                    collection_id=collection_id, album_id=new_album_id, created_at=old.created_at,
+                    updated_at=now, pressing_confirmed=True))
+            else:
+                added_at = [d for d in (old.created_at, target.created_at) if d is not None]
+                await self.db.execute(
+                    update(CollectionAlbum).where(in_collection, CollectionAlbum.album_id == new_album_id)
+                    .values(created_at=min(added_at) if added_at else None, updated_at=now,
+                            pressing_confirmed=True))
+            # Copies first: they reference the collection row through a foreign key
+            await self.db.execute(
+                update(CollectionAlbumCopy)
+                .where(CollectionAlbumCopy.collection_id == collection_id,
+                       CollectionAlbumCopy.album_id == old_album_id)
+                .values(album_id=new_album_id))
+            await self.db.execute(
+                delete(CollectionAlbum).where(in_collection, CollectionAlbum.album_id == old_album_id))
+
+        # Rows loaded before these statements (the collection and its albums) are stale now
+        self.db.expunge_all()
+        album = (await self.db.execute(
+            select(Album).options(selectinload(Album.external_source)).filter(Album.id == new_album_id)
+        )).scalar_one()
+        collection_album = (await self.db.execute(
+            select(CollectionAlbum).options(selectinload(CollectionAlbum.copies))
+            .filter(in_collection, CollectionAlbum.album_id == new_album_id)
+        )).scalar_one()
+        return album, collection_album
 
     async def find_artist_in_collection(self, collection_id: int, artist_id: int) -> Optional[dict]:
         """Find if an artist is already in a collection"""

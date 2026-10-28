@@ -54,7 +54,29 @@ class TestParseRelease:
             "styles": ["Hard Rock"],
             "original_year": None,
             "enrichment_status": "pending_master",
+            # No label, country or format in this trimmed payload: an empty format list
+            # still marks the pressing details as fetched
+            "country": None,
+            "label": None,
+            "catno": None,
+            "formats": [],
         }
+
+    def test_pressing_details(self):
+        values = parse_release({
+            **HIGHWAY_TO_HELL, "country": "UK",
+            "labels": [{"name": "Atlantic (2)", "catno": "K 50628"}],
+            "formats": [{"name": "Vinyl", "descriptions": ["LP", "Album"]}],
+        })
+
+        assert (values["country"], values["label"], values["catno"], values["formats"]) == (
+            "UK", "Atlantic", "K 50628", ["LP", "Album"])
+
+    def test_pressing_details_fit_the_columns(self):
+        values = parse_release({**HIGHWAY_TO_HELL, "country": "x" * 300,
+                                "labels": [{"name": "y" * 600, "catno": "z" * 300}]})
+
+        assert (len(values["country"]), len(values["label"]), len(values["catno"])) == (100, 512, 255)
 
     def test_release_without_master_is_complete_and_uses_its_own_year(self):
         values = parse_release({**HIGHWAY_TO_HELL, "master_id": None})
@@ -210,6 +232,35 @@ class TestAlbumEnrichmentService:
 
         assert report.masters_done == 2
         assert report.master_rows_updated == 4
+
+    async def test_pending_editions_save_pressing_details_only(self):
+        release = {**HIGHWAY_TO_HELL, "country": "UK", "labels": [{"name": "Atlantic", "catno": "K 50628"}]}
+        service, repository, _ = make_service(client_get=AsyncMock(return_value=release))
+        repository.list_pending_editions = AsyncMock(return_value=[(7, "380980")])
+
+        report = await service.enrich_pending_editions()
+
+        repository.save_edition.assert_awaited_once_with(
+            7, {"country": "UK", "label": "Atlantic", "catno": "K 50628", "formats": []})
+        assert report.editions_done == 1
+
+    async def test_pending_edition_gone_from_discogs_is_closed(self):
+        service, repository, _ = make_service(client_get=AsyncMock(return_value=None))
+        repository.list_pending_editions = AsyncMock(return_value=[(7, "380980")])
+
+        await service.enrich_pending_editions()
+
+        repository.save_edition.assert_awaited_once_with(7, {"formats": []})
+
+    async def test_pending_editions_continue_after_a_failure(self):
+        client_get = AsyncMock(side_effect=[DiscogsUnavailableError("429"), HIGHWAY_TO_HELL])
+        service, repository, _ = make_service(client_get=client_get)
+        repository.list_pending_editions = AsyncMock(return_value=[(7, "1"), (8, "2")])
+
+        report = await service.enrich_pending_editions()
+
+        assert report.failed == ["edition:1"]
+        assert repository.save_edition.await_args.args[0] == 8
 
 
 class TestBackgroundEnrichment:

@@ -6,7 +6,10 @@ import {
   CollectionItemResponse,
   AddToWishlistResponse,
   AddToCollectionResponse,
+  OwnedPressing,
+  ReplacePressingRequest,
 } from "@models/IExternalReference";
+import type { CollectionAlbumResponse } from "@models/Collection";
 import { BaseApiService } from "./BaseApiService";
 
 export class ExternalReferenceService extends BaseApiService {
@@ -38,6 +41,33 @@ export class ExternalReferenceService extends BaseApiService {
     } catch (error) {
       logger.error("Error adding to collection:", error);
       throw new Error("Failed to add item to collection");
+    }
+  }
+
+  async findOwnedPressings(externalId: string, masterId?: string | null): Promise<OwnedPressing[]> {
+    const params = new URLSearchParams({ external_id: externalId });
+    if (masterId) params.set("master_id", masterId);
+    try {
+      return await this.get<OwnedPressing[]>(`${this.endpoint}/collection/owned?${params.toString()}`);
+    } catch (error) {
+      logger.error("Error fetching owned pressings:", error);
+      throw new Error("Failed to check your collections");
+    }
+  }
+
+  async replacePressing(
+    collectionId: number,
+    albumId: number,
+    data: ReplacePressingRequest
+  ): Promise<CollectionAlbumResponse> {
+    try {
+      return await this.post<CollectionAlbumResponse>(
+        `${this.endpoint}/collection/${collectionId}/albums/${albumId}/replace`,
+        data
+      );
+    } catch (error) {
+      logger.error("Error replacing pressing:", error);
+      throw new Error("Failed to replace the pressing");
     }
   }
 
@@ -110,6 +140,10 @@ export const externalReferenceApiService = {
     externalReferenceServiceInstance.addToWishlist(data),
   addToCollection: (collectionId: number, data: AddToCollectionRequest) =>
     externalReferenceServiceInstance.addToCollection(collectionId, data),
+  findOwnedPressings: (externalId: string, masterId?: string | null) =>
+    externalReferenceServiceInstance.findOwnedPressings(externalId, masterId),
+  replacePressing: (collectionId: number, albumId: number, data: ReplacePressingRequest) =>
+    externalReferenceServiceInstance.replacePressing(collectionId, albumId, data),
   removeFromWishlist: (wishlistId: number) =>
     externalReferenceServiceInstance.removeFromWishlist(wishlistId),
   removeFromCollection: (

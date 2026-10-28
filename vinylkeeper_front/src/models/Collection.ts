@@ -32,6 +32,14 @@ export interface AlbumInCollection {
   acquisition_month_year?: string | null;
 }
 
+export interface CollectionAlbumCopy {
+  id: number;
+  state_record?: VinylStateEnum | null;
+  state_cover?: VinylStateEnum | null;
+  acquisition_month_year?: string | null;
+  created_at: string;
+}
+
 export interface CollectionAlbumResponse extends AlbumBase, AlbumInCollection {
   id: number;
   created_at: string;
@@ -39,6 +47,17 @@ export interface CollectionAlbumResponse extends AlbumBase, AlbumInCollection {
   collections_count: number;
   loans_count: number;
   wishlist_count: number;
+  copies?: CollectionAlbumCopy[];
+  copies_count?: number;
+  // Groups the pressings of one work (Discogs master)
+  external_master_id?: string | null;
+  // Pressing of the release, stated as the owner's only once confirmed
+  pressing_confirmed?: boolean;
+  release_year?: number | null;
+  country?: string | null;
+  label?: string | null;
+  catno?: string | null;
+  formats?: string[];
 }
 
 export interface CollectionArtistResponse extends ArtistBase {
@@ -135,6 +154,27 @@ export interface CollectionSearchResponse {
 }
 
 export type PaginatedAlbumsResponse = PaginatedResponse<CollectionAlbumResponse>;
+
+// One work of a collection: all its pressings (first added first) and their copies
+export interface CollectionRecordResponse {
+  work_key: string;
+  title?: string | null;
+  image_url?: string | null;
+  pressings: CollectionAlbumResponse[];
+  pressings_count: number;
+  copies_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PaginatedRecordsResponse = PaginatedResponse<CollectionRecordResponse>;
+
+// Condition of one copy, to add a copy or update it (only the fields sent change)
+export interface CollectionAlbumCopyData {
+  state_record?: VinylStateEnum | null;
+  state_cover?: VinylStateEnum | null;
+  acquisition_month_year?: string | null;
+}
 export type PaginatedArtistsResponse = PaginatedResponse<CollectionArtistResponse>;
 export type PaginatedCollectionResponse = PaginatedResponse<CollectionResponse>;
 export type PaginatedCollectionListResponse = PaginatedResponse<CollectionListItemResponse>;

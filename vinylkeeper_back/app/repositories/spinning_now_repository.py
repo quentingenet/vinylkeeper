@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Executable, Subquery
@@ -13,6 +13,7 @@ from app.models.album_mood_model import AlbumMood
 from app.models.collection_album import CollectionAlbum
 from app.models.collection_model import Collection
 from app.models.reference_data.moods import Mood
+from app.repositories.work_queries import work_key
 
 
 @dataclass(frozen=True)
@@ -49,12 +50,17 @@ class SpinningNowRepository:
 
     @staticmethod
     def _user_albums(user_id: int, collection_ids: Sequence[int] = ()) -> Subquery:
-        """Distinct albums of the user, optionally limited to some of their collections."""
+        """
+        One album per work of the user (several pressings of a record are one record to play),
+        optionally limited to some of their collections. The first pressing stands for the work.
+        """
         query = (
             select(CollectionAlbum.album_id)
             .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .join(Album, Album.id == CollectionAlbum.album_id)
             .where(Collection.owner_id == user_id)
-            .distinct()
+            .distinct(work_key())
+            .order_by(work_key(), CollectionAlbum.album_id)
         )
         if collection_ids:
             query = query.where(Collection.id.in_(collection_ids))
@@ -103,10 +109,11 @@ class SpinningNowRepository:
         return await self._rows(query, "list genre options")
 
     async def collection_options(self, user_id: int) -> list[Any]:
-        """(id, name, albums_count) of the user's collections that hold albums."""
+        """(id, name, number of works) of the user's collections that hold albums."""
         query = (
-            select(Collection.id, Collection.name, func.count(CollectionAlbum.album_id).label("albums_count"))
+            select(Collection.id, Collection.name, func.count(distinct(work_key())).label("albums_count"))
             .join(CollectionAlbum, CollectionAlbum.collection_id == Collection.id)
+            .join(Album, Album.id == CollectionAlbum.album_id)
             .where(Collection.owner_id == user_id)
             .group_by(Collection.id, Collection.name)
             .order_by(Collection.name)

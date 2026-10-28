@@ -12,8 +12,11 @@ from app.schemas.external_reference_schema import (
     AddToCollectionRequest,
     WishlistItemResponse,
     AddToWishlistResponse,
-    AddToCollectionResponse
+    AddToCollectionResponse,
+    OwnedPressingResponse,
+    ReplacePressingRequest,
 )
+from app.schemas.collection_schema import CollectionAlbumResponse
 from app.schemas.wishlist_schema import (
     PaginatedWishlistResponse
 )
@@ -37,7 +40,8 @@ router = APIRouter()
 
 
 def schedule_album_enrichment(
-    background_tasks: BackgroundTasks, request: AddToWishlistRequest | AddToCollectionRequest
+    background_tasks: BackgroundTasks,
+    request: AddToWishlistRequest | AddToCollectionRequest | ReplacePressingRequest,
 ) -> None:
     """Fetch Discogs metadata for an added album once the response is sent."""
     if (request.entity_type == EntityTypeEnum.ALBUM
@@ -85,6 +89,37 @@ async def add_to_collection(
         current_user.id, collection_id, request)
     schedule_album_enrichment(background_tasks, request)
     return collection_item
+
+
+@router.get("/collection/owned", response_model=list[OwnedPressingResponse])
+@handle_app_exceptions
+async def find_owned_pressings(
+    external_id: str = Query(..., min_length=1, max_length=255, description="Release searched for"),
+    master_id: Optional[str] = Query(None, max_length=255, description="Its master, to find other pressings"),
+    current_user: User = Depends(get_current_user),
+    service: ExternalReferenceService = Depends(get_external_reference_service)
+):
+    """The pressings of this release or of its work already in the user's collections."""
+    return await service.find_owned_pressings(current_user.id, external_id, master_id)
+
+
+@router.post("/collection/{collection_id}/albums/{album_id}/replace", response_model=CollectionAlbumResponse)
+@handle_app_exceptions
+async def replace_pressing(
+    request: ReplacePressingRequest,
+    collection_id: int,
+    album_id: int,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    service: ExternalReferenceService = Depends(get_external_reference_service)
+):
+    """
+    Replace an album of the collection by the release actually on the owner's shelf.
+    Its copies, their condition and the date it was added are kept.
+    """
+    album = await service.replace_pressing(current_user.id, collection_id, album_id, request)
+    schedule_album_enrichment(background_tasks, request)
+    return album
 
 
 @router.delete("/collection/{collection_id}/remove", status_code=http_status.HTTP_204_NO_CONTENT)

@@ -56,6 +56,7 @@ class SpinningNowService:
                 SpinningNowAlbum(
                     id=album.id,
                     external_album_id=album.external_album_id,
+                    external_master_id=album.external_master_id,
                     title=album.title,
                     artist_name=album.artist_name,
                     image_url=album.image_url,

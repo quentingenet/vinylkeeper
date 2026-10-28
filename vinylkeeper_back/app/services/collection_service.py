@@ -6,6 +6,7 @@ from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.wishlist_repository import WishlistRepository
 from app.models.collection_model import Collection
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.core.orm_utils import is_loaded
 from app.mappers import collection_mapper
 from app.schemas.collection_schema import (
@@ -15,11 +16,13 @@ from app.schemas.collection_schema import (
     CollectionListItemResponse,
     CollectionDetailResponse,
     CollectionAlbumResponse,
+    PaginatedRecordsResponse,
     PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
     CollectionSearchResponse
 )
 from app.schemas.collection_album_schema import (
+    CollectionAlbumCopyData,
     CollectionAlbumCreate,
     CollectionAlbumUpdate
 )
@@ -52,8 +55,10 @@ class CollectionService:
         self.collection_album_repository = collection_album_repository
         self.wishlist_repository = wishlist_repository
 
-    async def _get_owned_collection(self, user_id: int, collection_id: int) -> Collection:
-        collection = await self.repository.get_by_id(collection_id)
+    async def _get_owned_collection(
+        self, user_id: int, collection_id: int, load_relations: bool = True
+    ) -> Collection:
+        collection = await self.repository.get_by_id(collection_id, load_relations=load_relations)
         if not collection:
             raise ResourceNotFoundError("Collection", collection_id)
         if collection.owner_id != user_id:
@@ -158,6 +163,70 @@ class CollectionService:
 
         album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_id)
         return collection_mapper.album_to_collection_album_response(album, updated_metadata)
+
+    async def _get_owned_album_copies(self, user_id: int, collection_id: int, album_id: int) -> CollectionAlbum:
+        await self._get_owned_collection(user_id, collection_id, load_relations=False)
+        collection_album = await self.collection_album_repository.find_with_copies(collection_id, album_id)
+        if not collection_album:
+            raise ResourceNotFoundError("Album", album_id)
+        return collection_album
+
+    @staticmethod
+    def _find_copy(collection_album: CollectionAlbum, copy_id: int) -> CollectionAlbumCopy:
+        copy = next((c for c in collection_album.copies if c.id == copy_id), None)
+        if copy is None:
+            raise ResourceNotFoundError("Copy", copy_id)
+        return copy
+
+    async def _album_copies_response(
+        self, collection_id: int, album_id: int, collection_album: CollectionAlbum
+    ) -> CollectionAlbumResponse:
+        album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_id)
+        return collection_mapper.album_to_collection_album_response(album, collection_album)
+
+    async def add_album_copy(
+        self, user_id: int, collection_id: int, album_id: int, data: CollectionAlbumCopyData
+    ) -> CollectionAlbumResponse:
+        """Add another copy of an album already in the collection"""
+        async with transaction_context(self.collection_album_repository.db):
+            collection_album = await self._get_owned_album_copies(user_id, collection_id, album_id)
+            collection_album = await self.collection_album_repository.add_copy(
+                collection_album, data.model_dump(exclude_unset=True))
+        return await self._album_copies_response(collection_id, album_id, collection_album)
+
+    async def update_album_copy(
+        self, user_id: int, collection_id: int, album_id: int, copy_id: int, data: CollectionAlbumCopyData
+    ) -> CollectionAlbumResponse:
+        """Update the condition of one copy (only the fields sent)"""
+        async with transaction_context(self.collection_album_repository.db):
+            collection_album = await self._get_owned_album_copies(user_id, collection_id, album_id)
+            copy = self._find_copy(collection_album, copy_id)
+            collection_album = await self.collection_album_repository.update_copy(
+                collection_album, copy, data.model_dump(exclude_unset=True))
+        return await self._album_copies_response(collection_id, album_id, collection_album)
+
+    async def delete_album_copy(
+        self, user_id: int, collection_id: int, album_id: int, copy_id: int
+    ) -> CollectionAlbumResponse:
+        """Delete one copy; the last one stays (removing the album is a separate action)"""
+        async with transaction_context(self.collection_album_repository.db):
+            collection_album = await self._get_owned_album_copies(user_id, collection_id, album_id)
+            copy = self._find_copy(collection_album, copy_id)
+            if len(collection_album.copies) == 1:
+                raise ValidationError(
+                    error_code=ErrorCode.INVALID_RESOURCE_STATE,
+                    message="An album keeps at least one copy: remove the album from the collection instead",
+                    details={"album_id": album_id, "copy_id": copy_id},
+                )
+            collection_album = await self.collection_album_repository.delete_copy(collection_album, copy)
+        return await self._album_copies_response(collection_id, album_id, collection_album)
+
+    async def confirm_album_pressing(self, user_id: int, collection_id: int, album_id: int) -> CollectionAlbumResponse:
+        """The owner states that the release in the collection is the pressing on their shelf"""
+        async with transaction_context(self.collection_album_repository.db):
+            collection_album = await self._get_owned_album_copies(user_id, collection_id, album_id)
+            collection_album = await self.collection_album_repository.confirm_pressing(collection_album)
+        return await self._album_copies_response(collection_id, album_id, collection_album)
 
     async def remove_album_from_collection(self, user_id: int, collection_id: int, album_id: int) -> bool:
         """Remove an album from a collection"""
@@ -428,6 +497,38 @@ class CollectionService:
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection albums",
+                details={}
+            )
+
+    async def get_collection_records_paginated(
+        self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
+    ) -> PaginatedRecordsResponse:
+        """Get a page of works of a collection, each with all its pressings and their copies"""
+        try:
+            collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
+            if not collection:
+                raise ResourceNotFoundError("Collection", collection_id)
+            self._assert_collection_accessible(collection, user_id)
+
+            works, total = await self.collection_album_repository.get_collection_records_paginated(
+                collection_id, page, limit, sort_order
+            )
+            return PaginatedRecordsResponse(
+                items=[collection_mapper.pressings_to_record_response(key, pressings) for key, pressings in works],
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=(total + limit - 1) // limit,
+            )
+        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
+            raise e
+        except AppException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting collection records paginated: {str(e)}", exc_info=True)
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get collection records",
                 details={}
             )
 

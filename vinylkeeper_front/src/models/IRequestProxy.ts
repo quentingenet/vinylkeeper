@@ -1,6 +1,13 @@
 export interface SearchQuery {
   query: string;
   is_artist: boolean;
+  page?: number;
+}
+
+export interface SearchResultsPage {
+  items: DiscogsData[];
+  page: number;
+  total_pages: number;
 }
 
 export interface ExternalData {
@@ -48,6 +55,13 @@ export interface DiscogsData {
   explicit_lyrics?: boolean;
   artist?: Artist;
   type?: string;
+  // Edition of a release (albums only)
+  year?: string | null;
+  country?: string | null;
+  label?: string | null;
+  catno?: string | null;
+  formats?: string[];
+  master_id?: string | null;
 }
 
 export interface Track {
@@ -66,6 +80,10 @@ export interface AlbumMetadata {
   styles: string[];
   tracklist: Track[];
   source: string;
+  country?: string | null;
+  label?: string | null;
+  catno?: string | null;
+  formats?: string[];
 }
 
 export interface ArtistMetadata {
@@ -87,10 +105,6 @@ export interface ArtistMetadata {
 export type IRequestToSend = SearchQuery;
 export type IArtistRequestResults = DiscogsData;
 export type IAlbumRequestResults = DiscogsData;
-export interface IRequestResults {
-  type: string;
-  data: IArtistRequestResults[] | IAlbumRequestResults[];
-}
 
 export interface IRequestProxy {
   id: string;

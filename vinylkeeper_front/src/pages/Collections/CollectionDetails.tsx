@@ -1,10 +1,10 @@
 import { logger } from "@utils/logger";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   collectionApiService,
   type CollectionDetailResponse,
-  type PaginatedAlbumsResponse,
+  type PaginatedRecordsResponse,
   type PaginatedArtistsResponse,
   type CollectionAlbumResponse,
   type CollectionArtistResponse,
@@ -33,7 +33,7 @@ import { useUserContext } from "@contexts/UserContext";
 import { useDebounce } from "@hooks/useDebounce";
 import SearchIcon from "@mui/icons-material/Search";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
-import { VinylStateEnum } from "@utils/GlobalUtils";
+import { groupIntoRecords, toRecordCard, type RecordCard } from "@utils/collectionRecords";
 import { queryKeys } from "@utils/queryKeys";
 import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
 import CollectionTabs from "@components/Collections/CollectionTabs";
@@ -58,10 +58,9 @@ interface PlayableItem {
   name?: string;
   artist_name?: string;
   image_url?: string;
-  state_record?: VinylStateEnum | null;
-  state_cover?: VinylStateEnum | null;
-  acquisition_month_year?: string | null;
   id?: number;
+  // Collection albums: the work it stands for, with all its pressings
+  record?: RecordCard["record"];
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -94,10 +93,6 @@ export default function CollectionDetails() {
   const { isMobile } = useDetectMobile();
   const { currentUser, isUserLoggedIn } = useUserContext();
   const queryClient = useQueryClient();
-  const location = useLocation();
-
-  // Check if we came from Explore page
-  const isFromExplore = (location.state as { from?: string } | null)?.from === "explore";
 
   // Tab state
   const [tabValue, setTabValue] = useState(0);
@@ -142,15 +137,15 @@ export default function CollectionDetails() {
     enabled: !!collectionId,
   });
 
-  // Albums paginated query
+  // Works paginated query: the pressings of one record are a single card
   const {
     data: albumsData,
     isLoading: isLoadingAlbums,
     error: albumsError,
-  } = useQuery<PaginatedAlbumsResponse>({
-    queryKey: queryKeys.collections.albumsPage(collectionId, albumsPage, sortOrder),
+  } = useQuery<PaginatedRecordsResponse>({
+    queryKey: queryKeys.collections.recordsPage(collectionId, albumsPage, sortOrder),
     queryFn: () =>
-      collectionApiService.getCollectionAlbumsPaginated(
+      collectionApiService.getCollectionRecordsPaginated(
         collectionId,
         albumsPage,
         limit,
@@ -158,6 +153,7 @@ export default function CollectionDetails() {
       ),
     enabled: !!collectionId && tabValue === TAB.ALBUMS,
   });
+  const recordCards = useMemo(() => albumsData?.items.map(toRecordCard) ?? [], [albumsData]);
 
   // Artists paginated query
   const {
@@ -206,6 +202,12 @@ export default function CollectionDetails() {
       tabValue !== TAB.WISHLIST,
   });
 
+  // Search results are grouped into works too, like the collection grid
+  const searchRecordCards = useMemo(
+    () => groupIntoRecords(searchResults?.albums ?? []).map(toRecordCard),
+    [searchResults]
+  );
+
   // Convert WishlistItemListResponse to WishlistItemResponse for compatibility
   const wishlistItemsAsResponse: WishlistItemResponse[] = useMemo(() => {
     return ownerWishlistItems.map((item) => ({
@@ -225,14 +227,8 @@ export default function CollectionDetails() {
   const removeAlbumMutation = useMutation({
     mutationFn: (albumId: number) =>
       collectionApiService.removeAlbumFromCollection(collectionId, albumId),
-    onSuccess: (_data, albumId) => {
-      queryClient.setQueryData<PaginatedAlbumsResponse>(
-        queryKeys.collections.albumsPage(collectionId, albumsPage, sortOrder),
-        (old) =>
-          old
-            ? { ...old, items: old.items.filter((item) => item.id !== albumId), total: Math.max(0, old.total - 1) }
-            : old
-      );
+    onSuccess: () => {
+      // The removed album may be one pressing of a work: the page is reloaded rather than patched
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(collectionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections.search(collectionId) });
@@ -359,14 +355,7 @@ export default function CollectionDetails() {
       image_url: item.image_url || "",
       itemType: type,
       internalId: type === "album" ? item.id?.toString() : undefined,
-      albumData:
-        type === "album"
-          ? {
-              state_record: item.state_record ?? undefined,
-              state_cover: item.state_cover ?? undefined,
-              acquisition_month_year: item.acquisition_month_year ?? undefined,
-            }
-          : undefined,
+      pressings: type === "album" ? item.record?.pressings : undefined,
     };
 
     setSelectedPlaybackItem(playbackItem);
@@ -382,6 +371,12 @@ export default function CollectionDetails() {
     setItemToDelete({ id: album.id, type: "album", title: album.title });
     setDeleteAlbumModalOpen(true);
   };
+
+  const deleteFromCard = (item: CollectionAlbumResponse | CollectionArtistResponse) =>
+    handleDeleteAlbum(item as RecordCard);
+  // A card standing for several pressings has no delete: they are removed one by one from its modal
+  const isSinglePressing = (item: CollectionAlbumResponse | CollectionArtistResponse) =>
+    ((item as RecordCard).record?.pressings_count ?? 1) === 1;
 
   const handleDeleteArtist = (artist: CollectionArtistResponse) => {
     setItemToDelete({ id: artist.id, type: "artist", title: artist.title });
@@ -553,8 +548,7 @@ export default function CollectionDetails() {
             }}
           >
             {((tabValue === TAB.ALBUMS &&
-            albumsData?.items &&
-            albumsData.items.length > 0) ||
+            recordCards.length > 0) ||
             (tabValue === TAB.ARTISTS &&
               artistsData?.items &&
               artistsData.items.length > 0) ||
@@ -611,13 +605,14 @@ export default function CollectionDetails() {
             ) : (
               <>
                 <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                  Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({searchResults.albums.length} albums)
+                  Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({searchRecordCards.length} albums)
                 </Typography>
                 <CollectionItemGrid
-                  items={searchResults.albums}
+                  items={searchRecordCards}
                   itemType="album"
-                  onPlay={(item) => handlePlayClick(item as CollectionAlbumResponse, "album")}
-                  onDelete={isOwner ? (item) => handleDeleteAlbum(item as CollectionAlbumResponse) : undefined}
+                  onPlay={(item) => handlePlayClick(item as RecordCard, "album")}
+                  onDelete={isOwner ? deleteFromCard : undefined}
+                  canDelete={isSinglePressing}
                   imageSize={{ w: 300, h: 300, q: 75 }}
                 />
               </>
@@ -632,10 +627,11 @@ export default function CollectionDetails() {
             <EmptyState message="No albums in this collection yet." />
           ) : (
             <CollectionItemGrid
-              items={albumsData?.items ?? []}
+              items={recordCards}
               itemType="album"
-              onPlay={(item) => handlePlayClick(item as CollectionAlbumResponse, "album")}
-              onDelete={isOwner ? (item) => handleDeleteAlbum(item as CollectionAlbumResponse) : undefined}
+              onPlay={(item) => handlePlayClick(item as RecordCard, "album")}
+              onDelete={isOwner ? deleteFromCard : undefined}
+              canDelete={isSinglePressing}
               imageSize={{ w: 500, h: 500, q: 85 }}
               totalPages={albumsData?.total_pages}
               page={albumsPage}
@@ -712,7 +708,10 @@ export default function CollectionDetails() {
         item={selectedPlaybackItem}
         context={tabValue === TAB.WISHLIST ? "wishlist" : "collection"}
         isOwner={isOwner}
-        isExplorePage={isFromExplore}
+        onRemovePressing={(pressing) => {
+          handleClosePlaybackModal();
+          handleDeleteAlbum(pressing);
+        }}
       />
 
       <ConfirmDeleteDialog

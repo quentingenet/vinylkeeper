@@ -12,7 +12,7 @@ from app.services.spinning_now_service import MAX_FILTER_VALUES, MAX_LIMIT, Spin
 def album(album_id: int, **values) -> SimpleNamespace:
     defaults = dict(id=album_id, external_album_id=str(1000 + album_id), title="AC/DC - Highway To Hell",
                     artist_name="AC/DC", image_url="https://i.discogs.com/x.jpg", original_year=1979,
-                    release_year=2003, genres=["Rock"], styles=["Hard Rock"])
+                    release_year=2003, genres=["Rock"], styles=["Hard Rock"], external_master_id="8522")
     return SimpleNamespace(**{**defaults, **values})
 
 

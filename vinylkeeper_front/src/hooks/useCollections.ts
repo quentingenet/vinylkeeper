@@ -5,8 +5,9 @@ import {
   type CollectionListItemResponse,
   type PaginatedCollectionListResponse,
   type CollectionCreate,
+  type CollectionAlbumCopyData,
 } from "@services/CollectionApiService";
-import { ITEMS_PER_PAGE, VinylStateEnum } from "@utils/GlobalUtils";
+import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
 import { type ApiError } from "@utils/apiError";
 import { useUserContext } from "@contexts/UserContext";
@@ -258,29 +259,43 @@ export const useCollections = (
   };
 };
 
-export function useUpdateAlbumStates() {
+/** Add, update and delete copies of an album; each call answers the album with all its copies. */
+export function useAlbumCopies(collectionId: number) {
+  const queryClient = useQueryClient();
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(collectionId) }),
+    ]);
+
+  const addCopy = useMutation({
+    mutationFn: ({ albumId, data }: { albumId: number; data: CollectionAlbumCopyData }) =>
+      collectionApiService.addAlbumCopy(collectionId, albumId, data),
+    onSuccess: refresh,
+    onError: (error) => logger.error("Error adding a copy:", error),
+  });
+  const updateCopy = useMutation({
+    mutationFn: ({ albumId, copyId, data }: { albumId: number; copyId: number; data: CollectionAlbumCopyData }) =>
+      collectionApiService.updateAlbumCopy(collectionId, albumId, copyId, data),
+    onSuccess: refresh,
+    onError: (error) => logger.error("Error updating a copy:", error),
+  });
+  const deleteCopy = useMutation({
+    mutationFn: ({ albumId, copyId }: { albumId: number; copyId: number }) =>
+      collectionApiService.deleteAlbumCopy(collectionId, albumId, copyId),
+    onSuccess: refresh,
+    onError: (error) => logger.error("Error deleting a copy:", error),
+  });
+
+  return { addCopy, updateCopy, deleteCopy };
+}
+
+export function useConfirmAlbumPressing() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      collectionId,
-      albumId,
-      data,
-    }: {
-      collectionId: number;
-      albumId: number;
-      data: {
-        state_record?: VinylStateEnum | null;
-        state_cover?: VinylStateEnum | null;
-        acquisition_month_year?: string | null;
-      };
-    }) => {
-      return collectionApiService.updateAlbumMetadata(
-        collectionId,
-        albumId,
-        data
-      );
-    },
+    mutationFn: ({ collectionId, albumId }: { collectionId: number; albumId: number }) =>
+      collectionApiService.confirmAlbumPressing(collectionId, albumId),
     onSuccess: async (_data, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(variables.collectionId) }),
@@ -288,7 +303,7 @@ export function useUpdateAlbumStates() {
       ]);
     },
     onError: (error) => {
-      logger.error("Error updating album states:", error);
+      logger.error("Error confirming album pressing:", error);
     },
   });
 }

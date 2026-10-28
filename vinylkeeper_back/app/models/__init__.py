@@ -2,7 +2,7 @@ from .user_model import User
 from .artist_model import Artist
 from .album_model import Album
 from .collection_model import Collection
-from .collection_album import CollectionAlbum
+from .collection_album import CollectionAlbum, CollectionAlbumCopy
 from .loan_model import Loan
 from .wishlist_model import Wishlist
 from .place_model import Place
@@ -28,6 +28,7 @@ __all__ = [
     "Album",
     "Collection",
     "CollectionAlbum",
+    "CollectionAlbumCopy",
     "CollectionArtist",
     "Loan",
     "Wishlist",

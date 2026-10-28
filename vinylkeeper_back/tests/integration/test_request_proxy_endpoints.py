@@ -5,6 +5,7 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.deps.deps import get_search_service
+from app.schemas.request_proxy.request_proxy_schema import SearchResultsPage
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +47,25 @@ class TestSearchMusicRequiresAuth:
         )
         assert response.status_code == 200
         mock_search_service.search_music.assert_awaited_once()
+
+
+class TestSearchMusicPage:
+    async def test_anonymous_request_returns_401(self, raw_client):
+        response = await raw_client.post("/api/request-proxy/search-music/page", json={"query": "Brel"})
+        assert response.status_code == 401
+
+    async def test_returns_the_page_and_number_of_pages(self, auth_client):
+        client, _mock_service, _mock_user = auth_client
+        mock_search_service = AsyncMock()
+        mock_search_service.search_music_page = AsyncMock(
+            return_value=SearchResultsPage(items=[], page=2, total_pages=5))
+        app.dependency_overrides[get_search_service] = lambda: mock_search_service
+
+        response = await client.post("/api/request-proxy/search-music/page", json={"query": "Brel", "page": 2})
+
+        assert response.status_code == 200
+        assert response.json() == {"items": [], "page": 2, "total_pages": 5}
+        assert mock_search_service.search_music_page.await_args.args[0].page == 2
 
 
 class TestArtistMetadataRequiresAuth:

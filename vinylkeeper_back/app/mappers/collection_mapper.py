@@ -3,8 +3,12 @@ from typing import Optional
 from app.core.enums import VinylStateEnum
 from app.core.logging import logger
 from app.core.orm_utils import is_loaded
-from app.schemas.collection_schema import CollectionAlbumResponse, CollectionArtistResponse
+from app.schemas.collection_album_schema import CollectionAlbumCopyResponse
+from app.schemas.collection_schema import (
+    CollectionAlbumResponse, CollectionArtistResponse, CollectionRecordResponse,
+)
 from app.schemas.user_schema import UserMiniResponse
+from app.utils.vinyl_state_mapping import VinylStateMapping
 
 
 def external_source_to_dict(external_source) -> Optional[dict]:
@@ -14,17 +18,26 @@ def external_source_to_dict(external_source) -> Optional[dict]:
     return {"id": external_source.id, "name": external_source.name}
 
 
-def album_to_collection_album_response(album, collection_album=None) -> CollectionAlbumResponse:
-    state_record = None
-    state_cover = None
-    acquisition_month_year = None
+def vinyl_state(state_id: Optional[int]) -> Optional[VinylStateEnum]:
+    name = VinylStateMapping.get_name_from_id(state_id) if state_id else None
+    return VinylStateEnum(name) if name else None
 
-    if collection_album:
-        if collection_album.state_record_ref:
-            state_record = VinylStateEnum(collection_album.state_record_ref.name)
-        if collection_album.state_cover_ref:
-            state_cover = VinylStateEnum(collection_album.state_cover_ref.name)
-        acquisition_month_year = collection_album.acquisition_month_year
+
+def copy_to_response(copy) -> CollectionAlbumCopyResponse:
+    return CollectionAlbumCopyResponse(
+        id=copy.id,
+        state_record=vinyl_state(copy.state_record),
+        state_cover=vinyl_state(copy.state_cover),
+        acquisition_month_year=copy.acquisition_month_year,
+        created_at=copy.created_at,
+    )
+
+
+def album_to_collection_album_response(album, collection_album=None) -> CollectionAlbumResponse:
+    # Not guarded by is_loaded on purpose: a query that forgets to load copies must fail
+    # loudly (lazy="raise") rather than answer an album with no condition.
+    copies = [copy_to_response(copy) for copy in collection_album.copies] if collection_album else []
+    first = copies[0] if copies else None
 
     external_source_dict = external_source_to_dict(
         album.external_source if is_loaded(album, "external_source") else None
@@ -48,14 +61,39 @@ def album_to_collection_album_response(album, collection_album=None) -> Collecti
         external_source=external_source_dict,
         title=album.title,
         image_url=album.image_url,
-        state_record=state_record,
-        state_cover=state_cover,
-        acquisition_month_year=acquisition_month_year,
+        state_record=first.state_record if first else None,
+        state_cover=first.state_cover if first else None,
+        acquisition_month_year=first.acquisition_month_year if first else None,
         created_at=created_at,
         updated_at=updated_at,
         collections_count=album.collections_count,
         loans_count=album.loans_count,
         wishlist_count=album.wishlist_count,
+        copies=copies,
+        copies_count=len(copies),
+        external_master_id=album.external_master_id,
+        pressing_confirmed=bool(collection_album.pressing_confirmed) if collection_album else False,
+        release_year=album.release_year,
+        country=album.country,
+        label=album.label,
+        catno=album.catno,
+        formats=album.formats or [],
+    )
+
+
+def pressings_to_record_response(work_key: str, pressings: list) -> CollectionRecordResponse:
+    """pressings: (album, collection_album) of one work, first added first."""
+    responses = [album_to_collection_album_response(album, collection_album) for album, collection_album in pressings]
+    first = responses[0]
+    return CollectionRecordResponse(
+        work_key=work_key,
+        title=first.title,
+        image_url=first.image_url,
+        pressings=responses,
+        pressings_count=len(responses),
+        copies_count=sum(p.copies_count for p in responses),
+        created_at=min(p.created_at for p in responses),
+        updated_at=max(p.created_at for p in responses),
     )
 
 

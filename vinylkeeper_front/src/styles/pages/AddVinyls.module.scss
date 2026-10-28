@@ -4,8 +4,12 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 24px;
+    justify-items: center;
+    // 4 cards of 250px and their gaps; auto margins center the grid on the page
     width: 100%;
-    margin: 25px 200px;
+    max-width: 1072px;
+    margin: 25px auto;
+    box-sizing: border-box;
 
     @media (max-width: 1200px) {
         grid-template-columns: repeat(3, 1fr);

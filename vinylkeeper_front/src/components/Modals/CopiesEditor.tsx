@@ -1,0 +1,235 @@
+import { useState } from "react";
+import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Select, Typography } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { format, parse } from "date-fns";
+import type { CollectionAlbumCopy, CollectionAlbumCopyData, CollectionAlbumResponse } from "@models/Collection";
+import { useAlbumCopies } from "@hooks/useCollections";
+import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+
+const stateName = (state?: VinylStateEnum | null) => vinylStates.find((s) => s.id === state)?.name ?? "";
+
+const selectLabelSx = {
+  color: "#e4e4e4",
+  "&.Mui-focused": { color: "primary.main" },
+  "&.MuiInputLabel-shrink": { color: "primary.main" },
+};
+
+const datePickerSlotProps = {
+  textField: {
+    fullWidth: true,
+    size: "small" as const,
+    sx: {
+      "& .MuiOutlinedInput-root": {
+        color: "#fffbf9",
+        "& fieldset": { borderColor: "primary.main" },
+        "&:hover fieldset": { borderColor: "#b38f1f" },
+        "&.Mui-focused fieldset": { borderColor: "primary.main" },
+      },
+      "& .MuiInputLabel-root": { color: "#fffbf9", "&.Mui-focused": { color: "primary.main" } },
+    },
+  },
+  popper: {
+    sx: {
+      "& .MuiPaper-root": { backgroundColor: "#3f3f41", color: "#fffbf9" },
+      "& .MuiPickersCalendarHeader-root": { color: "#fffbf9" },
+      "& .MuiPickersYear-yearButton, & .MuiPickersMonth-monthButton": {
+        color: "#fffbf9",
+        "&.Mui-selected": { backgroundColor: "primary.main", color: "#000" },
+        "&:hover": { backgroundColor: "rgba(201, 167, 38, 0.2)" },
+      },
+    },
+  },
+};
+
+interface StateSelectProps {
+  id: string;
+  label: string;
+  value: VinylStateEnum | null;
+  onChange: (value: VinylStateEnum | null) => void;
+}
+
+function StateSelect({ id, label, value, onChange }: StateSelectProps) {
+  return (
+    <FormControl fullWidth size="small">
+      <InputLabel id={`${id}-label`} sx={selectLabelSx}>
+        {label}
+      </InputLabel>
+      <Select
+        labelId={`${id}-label`}
+        id={id}
+        value={value ?? ""}
+        label={label}
+        onChange={(e) => onChange((e.target.value as VinylStateEnum) || null)}
+        sx={{ color: "#fffbf9", "& .MuiSelect-icon": { color: "primary.main" } }}
+      >
+        {vinylStates.map((state) => (
+          <MenuItem key={state.id} value={state.id}>
+            {state.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+interface CopyRowProps {
+  copy: CollectionAlbumCopy;
+  number: number;
+  canEdit: boolean;
+  canDelete: boolean;
+  isBusy: boolean;
+  onSave: (data: CollectionAlbumCopyData) => void;
+  onDelete: () => void;
+}
+
+function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }: CopyRowProps) {
+  const [record, setRecord] = useState<VinylStateEnum | null>(copy.state_record ?? null);
+  const [cover, setCover] = useState<VinylStateEnum | null>(copy.state_cover ?? null);
+  const [acquired, setAcquired] = useState<string>(copy.acquisition_month_year ?? "");
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const isDirty =
+    record !== (copy.state_record ?? null) ||
+    cover !== (copy.state_cover ?? null) ||
+    acquired !== (copy.acquisition_month_year ?? "");
+
+  if (!canEdit) {
+    const details = [
+      copy.state_record && `Record: ${stateName(copy.state_record)}`,
+      copy.state_cover && `Cover: ${stateName(copy.state_cover)}`,
+      copy.acquisition_month_year && `Acquired: ${copy.acquisition_month_year}`,
+    ].filter((detail): detail is string => Boolean(detail));
+    return (
+      <Box display="flex" flexWrap="wrap" alignItems="center" gap={0.5}>
+        <Typography variant="body2" sx={{ color: "text.primary", mr: 0.5 }}>
+          Copy {number}
+        </Typography>
+        {details.length > 0 ? (
+          details.map((detail) => <Chip key={detail} label={detail} size="small" variant="outlined" />)
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No condition given
+          </Typography>
+        )}
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#2a2a2a" }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+        <Typography variant="body2" sx={{ color: "text.primary", fontWeight: "bold" }}>
+          Copy {number}
+        </Typography>
+        {canDelete && !isConfirmingDelete && (
+          <IconButton
+            size="small"
+            aria-label={`Delete copy ${number}`}
+            onClick={() => setIsConfirmingDelete(true)}
+            disabled={isBusy}
+          >
+            <DeleteIcon fontSize="small" sx={{ color: "#e4e4e4" }} />
+          </IconButton>
+        )}
+      </Box>
+      {isConfirmingDelete ? (
+        <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
+          <Typography variant="body2" sx={{ color: "text.primary" }}>
+            Delete this copy?
+          </Typography>
+          <Button size="small" variant="contained" color="error" onClick={onDelete} disabled={isBusy}>
+            Delete
+          </Button>
+          <Button size="small" onClick={() => setIsConfirmingDelete(false)} disabled={isBusy}>
+            Keep it
+          </Button>
+        </Box>
+      ) : (
+        <Box display="flex" flexDirection="column" gap={1.5}>
+          <StateSelect id={`record-${copy.id}`} label="Record state" value={record} onChange={setRecord} />
+          <StateSelect id={`cover-${copy.id}`} label="Cover state" value={cover} onChange={setCover} />
+          <DatePicker
+            label="Acquisition month"
+            value={acquired ? parse(acquired, "yyyy-MM", new Date()) : null}
+            onChange={(date) => setAcquired(date ? format(date, "yyyy-MM") : "")}
+            views={["month", "year"]}
+            slotProps={datePickerSlotProps}
+          />
+          {isDirty && (
+            <Button
+              variant="contained"
+              size="small"
+              disabled={isBusy}
+              onClick={() =>
+                onSave({ state_record: record, state_cover: cover, acquisition_month_year: acquired || null })
+              }
+            >
+              Save copy {number}
+            </Button>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+interface CopiesEditorProps {
+  collectionId: number;
+  pressing: CollectionAlbumResponse;
+  canEdit: boolean;
+  onPressingChange: (pressing: CollectionAlbumResponse) => void;
+}
+
+export default function CopiesEditor({ collectionId, pressing, canEdit, onPressingChange }: CopiesEditorProps) {
+  const { addCopy, updateCopy, deleteCopy } = useAlbumCopies(collectionId);
+  const copies = pressing.copies ?? [];
+  const isBusy = addCopy.isPending || updateCopy.isPending || deleteCopy.isPending;
+  const hasError = addCopy.isError || updateCopy.isError || deleteCopy.isError;
+
+  // Every call answers the album with all its copies: the modal shows it right away
+  const apply = (request: Promise<CollectionAlbumResponse>) => {
+    request.then(onPressingChange).catch(() => undefined);
+  };
+
+  if (!canEdit && copies.length === 0) return null;
+
+  return (
+    <Box mb={2}>
+      <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
+        {copies.length > 1 ? `Copies (${copies.length})` : "Copy"}
+      </Typography>
+      <Box display="flex" flexDirection="column" gap={1.5}>
+        {copies.map((copy, index) => (
+          <CopyRow
+            // Remount when saved: the row starts again from what the API answered
+            key={`${copy.id}-${copy.state_record}-${copy.state_cover}-${copy.acquisition_month_year}`}
+            copy={copy}
+            number={index + 1}
+            canEdit={canEdit}
+            canDelete={copies.length > 1}
+            isBusy={isBusy}
+            onSave={(data) => apply(updateCopy.mutateAsync({ albumId: pressing.id, copyId: copy.id, data }))}
+            onDelete={() => apply(deleteCopy.mutateAsync({ albumId: pressing.id, copyId: copy.id }))}
+          />
+        ))}
+      </Box>
+      {canEdit && (
+        <Button
+          size="small"
+          startIcon={<AddIcon />}
+          sx={{ mt: 1 }}
+          disabled={isBusy}
+          onClick={() => apply(addCopy.mutateAsync({ albumId: pressing.id, data: {} }))}
+        >
+          Add a copy
+        </Button>
+      )}
+      {hasError && (
+        <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          Could not save the copies. Please try again.
+        </Typography>
+      )}
+    </Box>
+  );
+}

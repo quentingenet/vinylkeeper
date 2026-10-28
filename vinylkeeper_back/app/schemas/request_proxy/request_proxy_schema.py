@@ -2,6 +2,9 @@ from typing import List, Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field, ConfigDict
 
+# Results past this page are never what people look for, and Discogs caps deep pagination
+SEARCH_MAX_PAGES = 50
+
 
 class SearchQuery(BaseModel):
     """Schema for search query."""
@@ -13,6 +16,7 @@ class SearchQuery(BaseModel):
         False,
         description="Whether to search for artists instead of albums"
     )
+    page: int = Field(default=1, ge=1, le=SEARCH_MAX_PAGES, description="Page of results, from 1")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -183,8 +187,22 @@ class DiscogsData(BaseModel):
         None,
         description="Type of the item"
     )
+    # Edition of a release, straight from the search hit
+    year: Optional[str] = Field(default=None, description="Year of this pressing")
+    country: Optional[str] = Field(default=None, description="Country of this pressing")
+    label: Optional[str] = Field(default=None, description="First label of this pressing")
+    catno: Optional[str] = Field(default=None, description="Catalogue number")
+    formats: List[str] = Field(default_factory=list, description="Format descriptions, without 'Vinyl'")
+    master_id: Optional[str] = Field(default=None, description="Discogs master ID, when the release has one")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SearchResultsPage(BaseModel):
+    """One page of search results."""
+    items: List[DiscogsData]
+    page: int
+    total_pages: int
 
 
 class Track(BaseModel):
@@ -243,6 +261,11 @@ class AlbumMetadata(BaseModel):
         ...,
         description="Source of the data (e.g., 'DISCOGS')"
     )
+    # Edition of the release, same fields as in search results
+    country: Optional[str] = Field(default=None, description="Country of this pressing")
+    label: Optional[str] = Field(default=None, description="First label of this pressing")
+    catno: Optional[str] = Field(default=None, description="Catalogue number")
+    formats: List[str] = Field(default_factory=list, description="Format descriptions, without 'Vinyl'")
 
     model_config = ConfigDict(from_attributes=True)
 

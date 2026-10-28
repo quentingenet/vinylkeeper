@@ -60,6 +60,12 @@ class Album(Base):
     artist_name = Column(String(512), nullable=True, comment="Artist names of the release")
     genres: Column = Column(ARRAY(Text), nullable=True)
     styles: Column = Column(ARRAY(Text), nullable=True)
+    # Pressing details of this release
+    country = Column(String(100), nullable=True, comment="Country of this pressing")
+    label = Column(String(512), nullable=True, comment="First label of this pressing")
+    catno = Column(String(255), nullable=True, comment="Catalogue number")
+    formats: Column = Column(ARRAY(Text), nullable=True,
+                             comment="Format descriptions (LP, Reissue, Mono...); NULL = not fetched yet")
     enriched_at = Column(DateTime(timezone=True), nullable=True,
                          comment="When the release metadata was fetched; NULL = not enriched yet")
     enrichment_status = Column(String(20), nullable=True,

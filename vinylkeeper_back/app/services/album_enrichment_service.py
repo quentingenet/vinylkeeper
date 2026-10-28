@@ -5,7 +5,6 @@ Discogs is an ingestion source only: metadata is fetched once per album and
 stored, so features built on it never call Discogs at request time.
 """
 import asyncio
-import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -18,13 +17,12 @@ from app.db.session import AsyncSessionLocal
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
 from app.repositories.mood_assignment_repository import MoodAssignmentRepository
 from app.services.mood_assignment_service import MoodAssignmentService
+from app.utils.discogs_release import DISAMBIGUATION_SUFFIX, parse_release_edition
 
 DISCOGS_MIN_INTERVAL_SECONDS = 1.05  # authenticated limit is 60 requests/minute
 RATE_LIMIT_BACKOFF_SECONDS = (5, 10, 20, 40, 60)
 LOW_REMAINING_THRESHOLD = 2
 LOW_REMAINING_PAUSE_SECONDS = 10
-
-_DISAMBIGUATION_SUFFIX = re.compile(r"\s*\(\d+\)$")
 
 
 class DiscogsUnavailableError(Exception):
@@ -96,7 +94,7 @@ def _clean_tags(values: Any) -> list[str]:
 
 def _clean_artist_name(name: str) -> str:
     """'Wings (2)' -> 'Wings', 'Hirt*' -> 'Hirt' (Discogs disambiguation markers)."""
-    return _DISAMBIGUATION_SUFFIX.sub("", name.strip()).rstrip("*").strip()
+    return DISAMBIGUATION_SUFFIX.sub("", name.strip()).rstrip("*").strip()
 
 
 def parse_release(data: dict[str, Any]) -> dict[str, Any]:
@@ -114,6 +112,7 @@ def parse_release(data: dict[str, Any]) -> dict[str, Any]:
         # Without a master, the pressing year is the best original year available.
         "original_year": None if external_master_id else _year_or_none(data.get("year")),
         "enrichment_status": "pending_master" if external_master_id else "ok",
+        **parse_release_edition(data),
     }
 
 
@@ -129,6 +128,7 @@ class EnrichmentReport:
     enriched_album_ids: list[int] = field(default_factory=list)
     masters_done: int = 0
     master_rows_updated: int = 0
+    editions_done: int = 0
 
 
 class AlbumEnrichmentService:
@@ -191,6 +191,29 @@ class AlbumEnrichmentService:
             if index % commit_every == 0:
                 await self.repository.db.commit()
                 logger.info(f"Album enrichment: {index}/{len(masters)} masters processed")
+        await self.repository.db.commit()
+        return report
+
+    async def enrich_pending_editions(
+        self, limit: Optional[int] = None, commit_every: int = 25, report: Optional[EnrichmentReport] = None
+    ) -> EnrichmentReport:
+        """One-off catch-up of pressing details for albums enriched before they were stored."""
+        report = report or EnrichmentReport()
+        pending = await self.repository.list_pending_editions(limit)
+        logger.info(f"Album enrichment: {len(pending)} pressing(s) to fetch")
+        for index, (album_id, external_album_id) in enumerate(pending, 1):
+            try:
+                data = await self.client.get(f"/releases/{external_album_id}")
+                # Gone from Discogs: an empty format list closes the album, it is not fetched again
+                edition = parse_release_edition(data) if data else {"formats": []}
+                await self.repository.save_edition(album_id, edition)
+                report.editions_done += 1
+            except DiscogsUnavailableError as e:
+                logger.warning(f"Album enrichment: pressing of {external_album_id} skipped: {e}")
+                report.failed.append(f"edition:{external_album_id}")
+            if index % commit_every == 0:
+                await self.repository.db.commit()
+                logger.info(f"Album enrichment: {index}/{len(pending)} pressings processed")
         await self.repository.db.commit()
         return report
 

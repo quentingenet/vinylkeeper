@@ -7,17 +7,22 @@ import httpx
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
+from app.utils.discogs_release import parse_release_edition
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
     SearchQuery,
     DiscogsData,
     Artist,
     ArtistMetadata,
+    SEARCH_MAX_PAGES,
+    SearchResultsPage,
     Track,
 )
 
 
 DISCOGS_IMAGE_HOST = "i.discogs.com"
+# 4 columns x 3 rows on desktop
+SEARCH_PAGE_SIZE = 12
 
 
 class SearchService:
@@ -57,19 +62,25 @@ class SearchService:
         """Rewrite Discogs thumbnail URL dimensions to 300×300."""
         return re.sub(r"/h:\d+/w:\d+/", "/h:300/w:300/", url)
 
-    async def _search_discogs(self, query: str, entity: str, client: Optional[httpx.AsyncClient] = None) -> List[dict]:
-        """Perform Discogs database search for artist or release."""
+    async def _search_discogs(
+        self, query: str, entity: str, page: int = 1, client: Optional[httpx.AsyncClient] = None
+    ) -> Dict[str, Any]:
+        """Perform Discogs database search for artist or release: the raw results and pagination."""
         client_to_use = client or self.http_client
         if not client_to_use:
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="HTTP client not available"
             )
-        params = {
+        params: Dict[str, Any] = {
             "q": query,
             "type": entity,
-            "per_page": 15,
+            "per_page": SEARCH_PAGE_SIZE,
+            "page": page,
         }
+        if entity == "release":
+            # Filtered by Discogs so that every page is full of vinyls
+            params["format"] = "Vinyl"
         try:
             response = await client_to_use.get(
                 self.search_url,
@@ -77,7 +88,7 @@ class SearchService:
                 headers={"Authorization": f"Discogs token={self.token}"},
             )
             response.raise_for_status()
-            return response.json().get("results", [])
+            return response.json()
         except httpx.HTTPError as e:
             logger.error(f"Discogs API error: {str(e)}")
             raise ServerError(
@@ -100,20 +111,51 @@ class SearchService:
         if is_artist:
             return DiscogsData(id=str(hit.get("id")), name=title, type="artist")
 
-        discogs = DiscogsData(id=str(hit.get("id")), title=title, type="album")
+        labels = hit.get("label") or []
+        master_id = hit.get("master_id")
+        discogs = DiscogsData(
+            id=str(hit.get("id")),
+            title=title,
+            type="album",
+            year=str(hit["year"]) if hit.get("year") else None,
+            country=hit.get("country") or None,
+            label=labels[0] if labels else None,
+            catno=hit.get("catno") or None,
+            # Every result is vinyl: "Vinyl" itself tells nothing about the edition
+            formats=list(dict.fromkeys(f for f in hit.get("format") or [] if f != "Vinyl")),
+            # Discogs sends 0 for releases without a master
+            master_id=str(master_id) if master_id else None,
+        )
         if artist_name:
             discogs.artist = Artist(id="", name=artist_name, type="artist")
         return discogs
 
+    @classmethod
+    def _release_key(cls, hit: Dict[str, Any]) -> Tuple[str, ...]:
+        """Same album and same visible edition: different pressings stay apart."""
+        labels = hit.get("label") or []
+        return (
+            cls.normalize(hit.get("title")),
+            cls.normalize(hit.get("artist")),
+            str(hit.get("year") or ""),
+            cls.normalize(hit.get("country")),
+            cls.normalize(labels[0] if labels else ""),
+            cls.normalize(hit.get("catno")),
+        )
+
     async def search_music(self, search_query: SearchQuery) -> List[DiscogsData]:
+        """Results of one page only: kept for clients that do not paginate."""
+        return (await self.search_music_page(search_query)).items
+
+    async def search_music_page(self, search_query: SearchQuery) -> SearchResultsPage:
         """
-        Search music via Discogs API.
+        Search music via Discogs API, one page at a time.
 
         Args:
             search_query: Search parameters containing query string and search type
 
         Returns:
-            List[DiscogsData]: List of search results matching the query
+            SearchResultsPage: results of the requested page and the number of pages
 
         Raises:
             ValidationError: If search parameters are invalid
@@ -138,25 +180,22 @@ class SearchService:
 
         try:
             # Make HTTP request using shared client
-            response_data = await self._search_discogs(q, entity)
-            if not response_data:
-                return []
+            response = await self._search_discogs(q, entity, search_query.page)
+            response_data = response.get("results") or []
+            total_pages = min(response.get("pagination", {}).get("pages") or 1, SEARCH_MAX_PAGES)
 
             results = []
             seen_ids: Set[int] = set()
-            seen_keys: Set[Tuple[str, str]] = set()
+            seen_keys: Set[Tuple[str, ...]] = set()
 
-            for item in response_data[:10]:  # Limit to 10 results
+            for item in response_data[:SEARCH_PAGE_SIZE]:
                 try:
                     discogs_data = self._create_discogs_data(
                         item, entity == "artist")
                     if not search_query.is_artist and not self._is_vinyl_format(item.get("format")):
                         continue
 
-                    title = item.get("title") or ""
-                    artist_name = item.get("artist") or ""
-                    key = (self.normalize(title),
-                           self.normalize(artist_name))
+                    key = self._release_key(item)
                     if not search_query.is_artist and key in seen_keys:
                         continue
 
@@ -175,7 +214,7 @@ class SearchService:
                         f"Failed to parse search result: {str(e)}")
                     continue
 
-            return results
+            return SearchResultsPage(items=results, page=search_query.page, total_pages=total_pages)
 
         except ValidationError:
             raise
@@ -434,7 +473,8 @@ class SearchService:
             styles=data.get("styles", []),
             tracklist=tracks,
             source="discogs",
-            artists=artists
+            artists=artists,
+            **parse_release_edition(data),
         )
 
         return album_metadata

@@ -6,12 +6,11 @@ import pytest
 from app.services.export_service import ExportService
 from app.core.exceptions import ForbiddenError, ResourceNotFoundError
 from app.models.collection_model import Collection
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.association_tables import CollectionArtist
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.reference_data.external_sources import ExternalSource
-from app.models.reference_data.vinyl_state import VinylState
 
 
 def make_service():
@@ -113,10 +112,9 @@ class TestVinylStateName:
         service, *_ = make_service()
         assert service._vinyl_state_name(None) == ""
 
-    def test_real_vinyl_state_returns_name(self):
+    def test_state_id_returns_name(self):
         service, *_ = make_service()
-        state = VinylState(id=1, name="mint", description=None)
-        assert service._vinyl_state_name(state) == "mint"
+        assert service._vinyl_state_name(1) == "mint"
 
 
 class TestFormatDt:
@@ -142,14 +140,15 @@ class TestAlbumToCsvRow:
         )
         album.external_source = source
         collection_album = CollectionAlbum(
-            collection_id=1, album_id=10, acquisition_month_year="2024-06",
-            created_at=now, updated_at=now,
+            collection_id=1, album_id=10, created_at=now, updated_at=now,
+            copies=[CollectionAlbumCopy(id=1, state_record=1, acquisition_month_year="2024-06")],
         )
         collection = make_collection(collection_id=1)
 
-        row = service._album_to_csv_row(album, collection_album, collection)
+        [row] = service._album_to_csv_rows(album, collection_album, collection)
 
         assert len(row) == len(service._album_csv_headers())
+        assert row[8:11] == ["mint", "", "2024-06"]
         assert row[4] == "discogs"
         assert row[5] == "Daft Punk"
         assert row[6] == "Discovery"

@@ -21,7 +21,31 @@ export interface AddToCollectionRequest {
   image_url: string;
   source: "discogs" | "musicbrainz";
   album_data?: AlbumStateData;
+  // The pressing details were shown when this release was picked
+  pressing_confirmed?: boolean;
+  // Already in the collection: add another copy instead of updating the first one
+  add_copy?: boolean;
 }
+
+// A pressing of the searched work already in one of the user's collections
+export interface OwnedPressing {
+  collection_id: number;
+  collection_name: string;
+  album_id: number;
+  external_album_id: string;
+  title?: string | null;
+  same_release: boolean;
+  pressing_confirmed: boolean;
+  copies_count: number;
+  release_year?: number | null;
+  country?: string | null;
+  label?: string | null;
+  catno?: string | null;
+  formats: string[];
+}
+
+// The release on the owner's shelf, replacing the one picked by mistake
+export type ReplacePressingRequest = Omit<AddToCollectionRequest, "album_data" | "pressing_confirmed" | "add_copy">;
 
 export interface WishlistItemResponse {
   id: number;

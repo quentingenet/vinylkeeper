@@ -1,7 +1,7 @@
 # app/models/reference_data/vinyl_state.py
 
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import validates
 from app.models.base import Base
 
 
@@ -11,19 +11,6 @@ class VinylState(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False, index=True)
     description = Column(String(255), nullable=True)
-
-    record_collections = relationship(
-        "CollectionAlbum",
-        foreign_keys="CollectionAlbum.state_record",
-        back_populates="state_record_ref",
-        lazy="selectin"
-    )
-    cover_collections = relationship(
-        "CollectionAlbum",
-        foreign_keys="CollectionAlbum.state_cover",
-        back_populates="state_cover_ref",
-        lazy="selectin"
-    )
 
     def __repr__(self):
         return f"<VinylStatus(name={self.name})>"

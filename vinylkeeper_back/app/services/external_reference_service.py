@@ -1,9 +1,11 @@
-from typing import Union
+from typing import Optional, Union
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
+    OwnedPressingResponse,
+    ReplacePressingRequest,
     AddToWishlistRequest,
     AddToCollectionRequest,
     WishlistItemResponse,
@@ -12,6 +14,8 @@ from app.schemas.external_reference_schema import (
     AddToCollectionResponse
 )
 from app.schemas.album_schema import AlbumCreate
+from app.schemas.collection_schema import CollectionAlbumResponse
+from app.mappers import collection_mapper
 from app.schemas.artist_schema import ArtistCreate
 from app.core.exceptions import (
     AppException,
@@ -210,6 +214,43 @@ class ExternalReferenceService:
                 details={}
             )
 
+    async def find_owned_pressings(
+        self, user_id: int, external_id: str, master_id: Optional[str], source: str = "discogs"
+    ) -> list[OwnedPressingResponse]:
+        """What the user already owns of this release or its work, collection by collection"""
+        external_source_id = await self.repository.get_external_source_id(source)
+        rows = await self.repository.find_owned_pressings(user_id, external_source_id, external_id, master_id)
+        return [
+            OwnedPressingResponse(
+                collection_id=collection_album.collection_id,
+                collection_name=collection_name,
+                album_id=album.id,
+                external_album_id=album.external_album_id,
+                title=album.title,
+                same_release=album.external_album_id == external_id,
+                pressing_confirmed=collection_album.pressing_confirmed,
+                copies_count=copies_count,
+                release_year=album.release_year,
+                country=album.country,
+                label=album.label,
+                catno=album.catno,
+                formats=album.formats or [],
+            )
+            for collection_album, album, collection_name, copies_count in rows
+        ]
+
+    async def replace_pressing(
+        self, user_id: int, collection_id: int, album_id: int, request: ReplacePressingRequest
+    ) -> CollectionAlbumResponse:
+        """Swap an album of the collection for the release actually owned; copies and dates are kept"""
+        await self._verify_collection_access(collection_id, user_id)
+        external_source_id = await self.repository.get_external_source_id(request.source)
+        async with transaction_context(self.repository.db):
+            new_album, _ = await self._find_or_create_entity(request, external_source_id)
+            album, collection_album = await self.repository.replace_album_in_collection(
+                collection_id, album_id, new_album.id)
+        return collection_mapper.album_to_collection_album_response(album, collection_album)
+
     async def add_to_collection(
         self, user_id: int, collection_id: int, request: AddToCollectionRequest
     ) -> AddToCollectionResponse:
@@ -229,6 +270,7 @@ class ExternalReferenceService:
 
             collection_item = None
             is_new = False
+            copy_added = False
 
             async with transaction_context(self.repository.db):
                 # Find or create entity within the same transaction as the association write.
@@ -262,8 +304,10 @@ class ExternalReferenceService:
                             )
 
                     collection_item, is_new = await self.repository.add_album_to_collection(
-                        collection, album, processed_album_data, is_new_entity
+                        collection, album, processed_album_data, is_new_entity,
+                        pressing_confirmed=request.pressing_confirmed, add_copy=request.add_copy,
                     )
+                    copy_added = request.add_copy and not is_new
                 else:
                     artist = entity
 
@@ -304,6 +348,9 @@ class ExternalReferenceService:
 
             verb = 'Added' if is_new else 'Already have'
             message = f"{verb} {request.entity_type.value} '{request.title}' in collection '{collection.name}'"
+            if copy_added:
+                is_new = True
+                message = f"Added another copy of '{request.title}' in collection '{collection.name}'"
 
             final_response = AddToCollectionResponse(
                 item=item_response,

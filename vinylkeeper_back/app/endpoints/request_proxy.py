@@ -6,6 +6,7 @@ from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
     DiscogsData,
     SearchQuery,
+    SearchResultsPage,
     ArtistMetadata
 )
 from app.services.search_service import SearchService
@@ -38,6 +39,17 @@ async def search(
     """
     results = await service.search_music(search_query)
     return results
+
+
+@router.post("/search-music/page", response_model=SearchResultsPage, status_code=200)
+@handle_app_exceptions
+async def search_page(
+    search_query: SearchQuery,
+    service: SearchService = Depends(get_search_service),
+    current_user: User = Depends(get_current_user)
+) -> SearchResultsPage:
+    """One page of Discogs search results, with the number of pages. Requires authentication."""
+    return await service.search_music_page(search_query)
 
 
 @router.get("/music-metadata/artist/{artist_id}", response_model=ArtistMetadata, status_code=200)

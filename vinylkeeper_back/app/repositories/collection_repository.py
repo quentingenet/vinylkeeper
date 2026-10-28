@@ -5,7 +5,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.artist_model import Artist
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
+from app.repositories.work_queries import works_count_in_collection
 from app.models.association_tables import CollectionArtist
 from app.models.like_model import Like
 from app.core.exceptions import (
@@ -64,9 +65,7 @@ class CollectionRepository(TransactionalMixin):
                     selectinload(Collection.collection_albums).selectinload(
                         CollectionAlbum.album).selectinload(Album.external_source),
                     selectinload(Collection.collection_albums).selectinload(
-                        CollectionAlbum.state_record_ref),
-                    selectinload(Collection.collection_albums).selectinload(
-                        CollectionAlbum.state_cover_ref),
+                        CollectionAlbum.copies),
                     selectinload(Collection.collection_artists).selectinload(
                         CollectionArtist.artist).selectinload(Artist.external_source),
                     selectinload(Collection.mood),
@@ -199,7 +198,8 @@ class CollectionRepository(TransactionalMixin):
                         collection_id=collection.id,
                         album_id=album_id,
                         created_at=now,
-                        updated_at=now
+                        updated_at=now,
+                        copies=[CollectionAlbumCopy(created_at=now, updated_at=now)],
                     )
                     for album_id in valid_album_ids
                 ]
@@ -373,11 +373,8 @@ class CollectionRepository(TransactionalMixin):
             total = count_result.scalar()
 
             # Add subqueries for counting albums and artists (optimized for list view)
-            albums_count_subq = (
-                select(func.count(CollectionAlbum.album_id))
-                .where(CollectionAlbum.collection_id == Collection.id)
-                .scalar_subquery()
-            )
+            # Works, not pressings: what the collection grid shows
+            albums_count_subq = works_count_in_collection(Collection.id)
 
             artists_count_subq = (
                 select(func.count(CollectionArtist.artist_id))
@@ -521,9 +518,8 @@ class CollectionRepository(TransactionalMixin):
         """
         try:
             # Albums count (CollectionAlbum uses composite primary key, so count album_id)
-            albums_count_query = select(func.count(CollectionAlbum.album_id)).filter(
-                CollectionAlbum.collection_id == collection_id
-            )
+            # Works, not pressings: what the collection grid shows
+            albums_count_query = select(works_count_in_collection(collection_id))
             albums_result = await self.db.execute(albums_count_query)
             albums_count = albums_result.scalar() or 0
 
@@ -609,11 +605,8 @@ class CollectionRepository(TransactionalMixin):
             total = count_result.scalar()
 
             # Add subqueries for counting albums and artists (optimized for list view)
-            albums_count_subq = (
-                select(func.count(CollectionAlbum.album_id))
-                .where(CollectionAlbum.collection_id == Collection.id)
-                .scalar_subquery()
-            )
+            # Works, not pressings: what the collection grid shows
+            albums_count_subq = works_count_in_collection(Collection.id)
 
             artists_count_subq = (
                 select(func.count(CollectionArtist.artist_id))
@@ -761,8 +754,7 @@ class CollectionRepository(TransactionalMixin):
                     .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
                     .options(
                         selectinload(Album.external_source),
-                        selectinload(CollectionAlbum.state_record_ref),
-                        selectinload(CollectionAlbum.state_cover_ref),
+                        selectinload(CollectionAlbum.copies),
                     )
                     .filter(
                         CollectionAlbum.collection_id == collection_id,

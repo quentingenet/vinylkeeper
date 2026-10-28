@@ -5,12 +5,14 @@ from unittest.mock import AsyncMock, MagicMock
 from app.main import app
 from app.deps.deps import get_collection_service
 from app.utils.auth_utils.auth import get_current_user
-from app.schemas.collection_schema import CollectionSearchResponse
+from app.schemas.collection_album_schema import CollectionAlbumCopyResponse
+from app.schemas.collection_schema import CollectionAlbumResponse, CollectionSearchResponse
 from app.core.exceptions import (
     DuplicateCollectionNameError,
     ForbiddenError,
     ResourceNotFoundError,
     DuplicateFieldError,
+    ValidationError,
 )
 
 
@@ -329,5 +331,81 @@ class TestSearchCollectionItems:
         service.search_collection_items = AsyncMock(side_effect=ForbiddenError())
 
         resp = await client.get("/api/collections/1/search?q=rock&search_type=both")
+
+        assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Copies of an album
+# ---------------------------------------------------------------------------
+
+def _album_with_copies() -> CollectionAlbumResponse:
+    now = datetime.now(timezone.utc)
+    return CollectionAlbumResponse(
+        id=10, external_album_id="123", external_source_id=1, title="Brel - Brel",
+        created_at=now, updated_at=now, state_record="mint",
+        copies=[CollectionAlbumCopyResponse(id=1, state_record="mint", created_at=now),
+                CollectionAlbumCopyResponse(id=2, state_cover="good", created_at=now)],
+        copies_count=2,
+    )
+
+
+class TestAlbumCopies:
+    async def test_add_copy_returns_201_with_all_copies(self, coll_client):
+        client, service, user = coll_client
+        service.add_album_copy = AsyncMock(return_value=_album_with_copies())
+
+        resp = await client.post("/api/collections/1/albums/10/copies", json={"state_cover": "good"})
+
+        assert resp.status_code == 201
+        assert resp.json()["copies_count"] == 2
+        args = service.add_album_copy.await_args.args
+        assert args[:3] == (user.id, 1, 10)
+        assert args[3].model_dump(exclude_unset=True) == {"state_cover": "good"}
+
+    async def test_update_copy_sends_only_the_fields_given(self, coll_client):
+        client, service, _ = coll_client
+        service.update_album_copy = AsyncMock(return_value=_album_with_copies())
+
+        resp = await client.patch("/api/collections/1/albums/10/copies/2", json={"state_record": None})
+
+        assert resp.status_code == 200
+        assert service.update_album_copy.await_args.args[3] == 2
+        assert service.update_album_copy.await_args.args[4].model_dump(exclude_unset=True) == {"state_record": None}
+
+    async def test_invalid_acquisition_date_returns_422(self, coll_client):
+        client, *_ = coll_client
+        resp = await client.post("/api/collections/1/albums/10/copies", json={"acquisition_month_year": "2024-13"})
+        assert resp.status_code == 422
+
+    async def test_deleting_the_last_copy_returns_400(self, coll_client):
+        client, service, _ = coll_client
+        service.delete_album_copy = AsyncMock(
+            side_effect=ValidationError(error_code=2002, message="An album keeps at least one copy"))
+
+        resp = await client.delete("/api/collections/1/albums/10/copies/1")
+
+        assert resp.status_code == 400
+
+    async def test_anonymous_request_returns_401(self, client):
+        resp = await client.post("/api/collections/1/albums/10/copies", json={})
+        assert resp.status_code == 401
+
+
+class TestConfirmPressing:
+    async def test_confirm_returns_the_album(self, coll_client):
+        client, service, user = coll_client
+        service.confirm_album_pressing = AsyncMock(return_value=_album_with_copies())
+
+        resp = await client.post("/api/collections/1/albums/10/pressing/confirm")
+
+        assert resp.status_code == 200
+        service.confirm_album_pressing.assert_awaited_once_with(user.id, 1, 10)
+
+    async def test_non_owner_gets_403(self, coll_client):
+        client, service, _ = coll_client
+        service.confirm_album_pressing = AsyncMock(side_effect=ForbiddenError())
+
+        resp = await client.post("/api/collections/1/albums/10/pressing/confirm")
 
         assert resp.status_code == 403

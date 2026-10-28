@@ -5,6 +5,7 @@ import {
   AlbumMetadata,
   ArtistMetadata,
   DiscogsData,
+  SearchResultsPage,
 } from "@models/IRequestProxy";
 
 export class SearchApiService extends BaseApiService {
@@ -12,6 +13,18 @@ export class SearchApiService extends BaseApiService {
     try {
       return await this.post<DiscogsData[]>(
         "/request-proxy/search-music",
+        requestToSend
+      );
+    } catch (error) {
+      logger.error("Search failed:", error);
+      throw new Error("Failed to search music");
+    }
+  }
+
+  async searchMusicPage(requestToSend: IRequestToSend): Promise<SearchResultsPage> {
+    try {
+      return await this.post<SearchResultsPage>(
+        "/request-proxy/search-music/page",
         requestToSend
       );
     } catch (error) {
@@ -71,6 +84,8 @@ const searchApiServiceInstance = new SearchApiService();
 export const searchApiService = {
   searchMusic: (requestToSend: IRequestToSend) =>
     searchApiServiceInstance.searchMusic(requestToSend),
+  searchMusicPage: (requestToSend: IRequestToSend) =>
+    searchApiServiceInstance.searchMusicPage(requestToSend),
   getArtistMetadata: (artistId: string) =>
     searchApiServiceInstance.getArtistMetadata(artistId),
   getAlbumMetadata: (albumId: string) =>

@@ -117,3 +117,17 @@ describe("MediaCard", () => {
     });
   });
 });
+
+describe("MediaCard copies badge", () => {
+  it("shows how many copies the record has", () => {
+    render(<MediaCard item={{ title: "Miles Davis - Kind Of Blue", copies_count: 3 }} itemType="album" onPlay={vi.fn()} />);
+
+    expect(screen.getByLabelText("3 copies")).toHaveTextContent("×3");
+  });
+
+  it("shows nothing for a single copy", () => {
+    render(<MediaCard item={{ title: "Miles Davis - Kind Of Blue", copies_count: 1 }} itemType="album" onPlay={vi.fn()} />);
+
+    expect(screen.queryByText(/×/)).not.toBeInTheDocument();
+  });
+});

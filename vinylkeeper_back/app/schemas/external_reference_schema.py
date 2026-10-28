@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
@@ -78,6 +78,43 @@ class AddToCollectionRequest(ExternalReferenceBase):
         None,
         description="Optional album state data when adding to collection"
     )
+    pressing_confirmed: bool = Field(
+        False,
+        description="The pressing details were shown when this release was picked "
+                    "(clients older than pressings in search results do not send it)"
+    )
+    add_copy: bool = Field(
+        False,
+        description="When this release is already in the collection, add another copy with album_data "
+                    "instead of updating the first copy (what clients unaware of copies get)"
+    )
+
+
+class OwnedPressingResponse(BaseSchema):
+    """A pressing of the searched work already in one of the user's collections."""
+    collection_id: int
+    collection_name: str
+    album_id: int
+    external_album_id: str
+    title: Optional[str] = None
+    same_release: bool = Field(..., description="The very release searched for, not another pressing")
+    pressing_confirmed: bool
+    copies_count: int
+    release_year: Optional[int] = None
+    country: Optional[str] = None
+    label: Optional[str] = None
+    catno: Optional[str] = None
+    formats: list[str] = Field(default_factory=list)
+
+
+class ReplacePressingRequest(ExternalReferenceBase):
+    """The release on the owner's shelf, to replace the one picked by mistake."""
+
+    @model_validator(mode="after")
+    def album_only(self) -> "ReplacePressingRequest":
+        if self.entity_type != EntityTypeEnum.ALBUM:
+            raise ValueError("Only an album has a pressing")
+        return self
 
 
 class ExternalReferenceResponse(BaseSchema):

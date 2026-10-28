@@ -13,6 +13,11 @@ import {
 import { VinylStateEnum } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
 import { useUserContext } from "@contexts/UserContext";
+import {
+  duplicatePrompt,
+  ownedHint,
+  type DuplicatePrompt,
+} from "@components/AddVinyls/duplicateLabels";
 
 export interface AlbumStateData {
   state_cover?: VinylStateEnum | null;
@@ -56,6 +61,17 @@ export function useAddToCollection(
   });
 
   const collections = collectionsData?.items ?? [];
+
+  // What the user already owns of this release or its work, to warn before a duplicate
+  const isAlbum = itemType === "album" && !!item;
+  const albumItem = isAlbum ? (item as IAlbumRequestResults) : null;
+  const { data: ownedPressings = [] } = useQuery({
+    queryKey: queryKeys.ownedPressings(albumItem?.id ?? ""),
+    queryFn: () => externalReferenceApiService.findOwnedPressings(albumItem!.id, albumItem!.master_id),
+    enabled: open && albumItem !== null,
+    staleTime: 60 * 1000,
+  });
+  const [pendingDuplicate, setPendingDuplicate] = useState<DuplicatePrompt | null>(null);
 
   const handleMutationSuccess = (
     queryKey: string,
@@ -141,6 +157,9 @@ export function useAddToCollection(
             : queryKeys.collections.artists(variables.collectionId),
         }),
       ]);
+      if (isAlbum) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.ownedPressings(variables.item.external_id) });
+      }
       handleMutationSuccess("collections", response.message, response.is_new);
     },
     onError: handleMutationError,
@@ -160,8 +179,17 @@ export function useAddToCollection(
     });
   };
 
-  const handleAddToCollection = async (collectionId: number) => {
+  const handleAddToCollection = async (collectionId: number, confirmed?: DuplicatePrompt) => {
     if (addToCollectionMutation.isPending) return;
+
+    if (!confirmed) {
+      const prompt = isAlbum ? duplicatePrompt(ownedPressings, collectionId) : null;
+      if (prompt) {
+        setPendingDuplicate(prompt);
+        return;
+      }
+    }
+    setPendingDuplicate(null);
 
     setSuccessMessage("Adding to collection...");
     try {
@@ -173,6 +201,9 @@ export function useAddToCollection(
           title: item?.title || "",
           image_url: item?.picture || "",
           source: "discogs",
+          // Search results show each pressing: the user picked this exact release
+          pressing_confirmed: itemType === "album",
+          add_copy: confirmed?.addCopy ?? false,
           album_data: {
             state_record: albumStateData.state_record || undefined,
             state_cover: albumStateData.state_cover || undefined,
@@ -190,6 +221,7 @@ export function useAddToCollection(
 
   const handleClose = useCallback(() => {
     setShowCollectionSelection(false);
+    setPendingDuplicate(null);
     setSuccessMessage("");
     setIsDatePickerOpen(false);
     setAlbumStateData({
@@ -216,5 +248,11 @@ export function useAddToCollection(
     handleAddToWishlist,
     handleAddToCollection,
     handleClose,
+    ownedHint: (collectionId: number) => ownedHint(ownedPressings, collectionId),
+    pendingDuplicate,
+    confirmDuplicate: () => {
+      if (pendingDuplicate) void handleAddToCollection(pendingDuplicate.collectionId, pendingDuplicate);
+    },
+    cancelDuplicate: () => setPendingDuplicate(null),
   };
 }

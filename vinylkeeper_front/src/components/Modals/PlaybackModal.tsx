@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   Modal,
   Box,
@@ -7,8 +6,6 @@ import {
   Fade,
   Backdrop,
   IconButton,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -16,15 +13,16 @@ import {
   useArtistMetadata,
 } from "@services/MusicMetadataService";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { useUpdateAlbumStates } from "@hooks/useCollections";
-import { useParams } from "react-router-dom";
-import { format } from "date-fns";
+import { useNavigate, useParams } from "react-router-dom";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { VinylStateEnum } from "@utils/GlobalUtils";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
-import AlbumStateEditor from "@components/Modals/AlbumStateEditor";
 import StreamingLinksAccordion from "@components/Modals/StreamingLinksAccordion";
 import TracklistAccordion from "@components/Modals/TracklistAccordion";
+import PressingSection from "@components/Modals/PressingSection";
+import CollectionPressings from "@components/Modals/CollectionPressings";
+import OwnedPressingsSection from "@components/Modals/OwnedPressingsSection";
+import type { CollectionAlbumResponse } from "@models/Collection";
+import { buildFindPressingUrl } from "@utils/findPressing";
 
 export interface PlaybackItem {
   id: string;
@@ -33,11 +31,10 @@ export interface PlaybackItem {
   image_url?: string;
   itemType: "album" | "artist";
   internalId?: string;
-  albumData?: {
-    state_record?: VinylStateEnum;
-    state_cover?: VinylStateEnum;
-    acquisition_month_year?: string;
-  };
+  // In a collection: every pressing of the work held there, first added first, with its copies
+  pressings?: CollectionAlbumResponse[];
+  // A record of the user's own collections (Spinning now): list the pressings they own of the work
+  owned?: { masterId: string | null };
 }
 
 interface PlaybackModalProps {
@@ -46,7 +43,7 @@ interface PlaybackModalProps {
   item: PlaybackItem | null;
   context?: "wishlist" | "collection";
   isOwner?: boolean;
-  isExplorePage?: boolean;
+  onRemovePressing?: (pressing: CollectionAlbumResponse) => void;
 }
 
 export default function PlaybackModal({
@@ -55,44 +52,11 @@ export default function PlaybackModal({
   item,
   context,
   isOwner,
-  isExplorePage,
+  onRemovePressing,
 }: PlaybackModalProps) {
   const { isMobile } = useDetectMobile();
   const { id: collectionId } = useParams<{ id: string }>();
-  const updateAlbumStatesMutation = useUpdateAlbumStates();
-
-  const [coverState, setCoverState] = useState<VinylStateEnum | null>(null);
-  const [discState, setDiscState] = useState<VinylStateEnum | null>(null);
-  const [purchaseDate, setPurchaseDate] = useState<string>("");
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
-  const resetAlbumStates = () => {
-    setCoverState(null);
-    setDiscState(null);
-    setPurchaseDate("");
-    setIsUpdating(false);
-    setIsDatePickerOpen(false);
-  };
-
-  useEffect(() => {
-    if (item?.itemType === "album" && item.albumData) {
-      setCoverState(item.albumData.state_cover || null);
-      setDiscState(item.albumData.state_record || null);
-      setPurchaseDate(item.albumData.acquisition_month_year || "");
-    } else if (item?.itemType === "artist") {
-      resetAlbumStates();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item?.id, item?.itemType]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      resetAlbumStates();
-      setShowSuccessToast(false);
-    }
-  }, [isOpen]);
+  const navigate = useNavigate();
 
   const {
     data: albumMetadata,
@@ -116,31 +80,13 @@ export default function PlaybackModal({
 
   const isLoading = item?.itemType === "album" ? isAlbumLoading : isArtistLoading;
   const error = item?.itemType === "album" ? albumError : artistError;
-  const hasAtLeastOneField =
-    discState !== null || coverState !== null || purchaseDate !== "";
 
-  const handleUpdateAlbumStates = async () => {
-    if (!item || item.itemType !== "album" || !collectionId || !item.internalId || !hasAtLeastOneField) {
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      await updateAlbumStatesMutation.mutateAsync({
-        collectionId: parseInt(collectionId),
-        albumId: parseInt(item.internalId),
-        data: {
-          state_record: discState,
-          state_cover: coverState,
-          acquisition_month_year: purchaseDate || null,
-        },
-      });
-      setShowSuccessToast(true);
-    } catch {
-      // Error handling is done by the mutation
-    } finally {
-      setIsUpdating(false);
-    }
+  const handleFindPressing = (pressing: CollectionAlbumResponse) => {
+    if (!collectionId) return;
+    onClose();
+    void navigate(
+      buildFindPressingUrl({ collectionId: parseInt(collectionId), albumId: pressing.id, title: pressing.title })
+    );
   };
 
   const modalStyle = {
@@ -236,6 +182,23 @@ export default function PlaybackModal({
                   </Box>
                 </Box>
 
+                {item.itemType === "album" && context === "collection" && collectionId && item.pressings?.length ? (
+                  <CollectionPressings
+                    // Fresh local state for every work opened
+                    key={item.pressings.map((p) => p.id).join("-")}
+                    collectionId={parseInt(collectionId)}
+                    pressings={item.pressings}
+                    canEdit={isOwner === true}
+                    liveEdition={albumMetadata ?? undefined}
+                    onFindPressing={handleFindPressing}
+                    onRemovePressing={onRemovePressing}
+                  />
+                ) : item.itemType === "album" && item.owned ? (
+                  <OwnedPressingsSection externalId={item.id} masterId={item.owned.masterId} />
+                ) : item.itemType === "album" && albumMetadata ? (
+                  <PressingSection edition={albumMetadata} />
+                ) : null}
+
                 {item.itemType === "album" &&
                   albumMetadata?.genres &&
                   albumMetadata.genres.length > 0 && (
@@ -263,29 +226,6 @@ export default function PlaybackModal({
                         ))}
                       </Box>
                     </Box>
-                  )}
-
-                {item.itemType === "album" &&
-                  context === "collection" &&
-                  (!isExplorePage || coverState || discState || purchaseDate) && (
-                    <AlbumStateEditor
-                      coverState={coverState}
-                      discState={discState}
-                      purchaseDate={purchaseDate}
-                      isOwner={isOwner === true}
-                      isUpdating={isUpdating}
-                      hasAtLeastOneField={hasAtLeastOneField}
-                      isDatePickerOpen={isDatePickerOpen}
-                      onCoverChange={(v) => setCoverState((v as VinylStateEnum) || null)}
-                      onDiscChange={(v) => setDiscState((v as VinylStateEnum) || null)}
-                      onDateChange={(newValue) => {
-                        setPurchaseDate(newValue ? format(newValue, "yyyy-MM") : "");
-                        setIsDatePickerOpen(false);
-                      }}
-                      onDatePickerOpen={() => setIsDatePickerOpen(true)}
-                      onDatePickerClose={() => setIsDatePickerOpen(false)}
-                      onUpdate={() => { void handleUpdateAlbumStates(); }}
-                    />
                   )}
 
                 {item.itemType === "album" && albumMetadata?.tracklist && (
@@ -354,25 +294,6 @@ export default function PlaybackModal({
         </Fade>
       </Modal>
 
-      <Snackbar
-        open={showSuccessToast}
-        autoHideDuration={3000}
-        onClose={() => setShowSuccessToast(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setShowSuccessToast(false)}
-          severity="success"
-          sx={{
-            backgroundColor: "primary.main",
-            color: "#1F1F1F",
-            fontWeight: "bold",
-            "& .MuiAlert-icon": { color: "#1F1F1F" },
-          }}
-        >
-          Album states updated successfully!
-        </Alert>
-      </Snackbar>
     </>
   );
 }

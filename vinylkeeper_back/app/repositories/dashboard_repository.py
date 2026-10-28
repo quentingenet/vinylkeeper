@@ -1,7 +1,8 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, case
+from sqlalchemy import case, distinct, func, select, tuple_
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import aliased
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.user_model import User
@@ -9,6 +10,7 @@ from app.models.collection_model import Collection
 from app.models.collection_album import CollectionAlbum
 from app.models.place_model import Place
 from app.models.association_tables import CollectionArtist
+from app.repositories.work_queries import work_key
 from app.core.exceptions import ServerError
 from app.core.logging import logger
 
@@ -42,13 +44,19 @@ class DashboardRepository:
             )
 
     async def get_recent_albums(self, limit: int = 5, exclude_ids: Optional[List[int]] = None):
-        """Get recent albums added to any collection (for mosaic display), deduplicated per album via DISTINCT ON."""
+        """
+        Recent albums added to any collection (for mosaic display), one per work: the pressings
+        of a record show a single cover. Works of exclude_ids (album ids) are left out entirely.
+        """
         try:
             inner_where = [CollectionAlbum.updated_at.isnot(None)]
             if exclude_ids:
-                inner_where.append(Album.id.notin_(exclude_ids))
+                excluded = aliased(Album)
+                inner_where.append(work_key().notin_(
+                    select(work_key(excluded)).where(excluded.id.in_(exclude_ids))
+                ))
 
-            # DISTINCT ON (album_id) keeps only the most recent collection_album row per album
+            # DISTINCT ON (work) keeps only the most recent collection_album row per work
             inner = (
                 select(
                     Album.id.label("album_id"),
@@ -59,8 +67,8 @@ class DashboardRepository:
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
                 .where(*inner_where)
-                .distinct(Album.id)
-                .order_by(Album.id, CollectionAlbum.updated_at.desc())
+                .distinct(work_key())
+                .order_by(work_key(), CollectionAlbum.updated_at.desc())
             ).subquery()
 
             query = (
@@ -108,9 +116,13 @@ class DashboardRepository:
         """Get all user stats (albums, artists, collections) in optimized queries using subqueries"""
         try:
             # Use scalar subqueries to combine multiple counts in a single query
+            # Sum of what each collection shows: works per collection (the pressings of a record
+            # count once in a collection, a record kept in two collections counts in both)
             albums_count_subq = (
-                select(func.count(CollectionAlbum.album_id).label('count'))
+                select(func.count(distinct(tuple_(CollectionAlbum.collection_id, work_key()))).label('count'))
+                .select_from(CollectionAlbum)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
+                .join(Album, Album.id == CollectionAlbum.album_id)
                 .filter(Collection.owner_id == user_id)
                 .scalar_subquery()
             )

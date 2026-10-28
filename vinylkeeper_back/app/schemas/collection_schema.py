@@ -10,16 +10,31 @@ from app.schemas.album_schema import AlbumBase
 
 
 from app.schemas.album_schema import AlbumInCollection
+from app.schemas.collection_album_schema import CollectionAlbumCopyResponse
 
 
 class CollectionAlbumResponse(AlbumBase, AlbumInCollection):
-    """Schema for album data in collection responses."""
+    """
+    Schema for album data in collection responses. state_record, state_cover and
+    acquisition_month_year are those of the first copy, for clients unaware of copies.
+    """
     id: int = Field(gt=0)
     created_at: datetime
     updated_at: datetime
     collections_count: int = Field(default=0)
     loans_count: int = Field(default=0)
     wishlist_count: int = Field(default=0)
+    copies: List[CollectionAlbumCopyResponse] = Field(default_factory=list)
+    copies_count: int = Field(default=0)
+    # Groups the pressings of one work (Discogs master)
+    external_master_id: Optional[str] = None
+    # Pressing of the release; only stated as the owner's when pressing_confirmed
+    pressing_confirmed: bool = Field(default=False)
+    release_year: Optional[int] = None
+    country: Optional[str] = None
+    label: Optional[str] = None
+    catno: Optional[str] = None
+    formats: List[str] = Field(default_factory=list)
 
 
 class CollectionArtistResponse(BaseSchema):
@@ -197,6 +212,27 @@ class PaginatedAlbumsResponse(BaseSchema):
     """Schema for paginated albums response."""
     items: List[CollectionAlbumResponse] = Field(default_factory=list)
     total: int = Field(ge=0, description="Total number of albums")
+    page: int = Field(gt=0, description="Current page number")
+    limit: int = Field(gt=0, description="Number of items per page")
+    total_pages: int = Field(ge=0, description="Total number of pages")
+
+
+class CollectionRecordResponse(BaseSchema):
+    """One work of a collection: all the pressings of it, and their copies."""
+    work_key: str = Field(..., description="Discogs master id, or 'release:<album id>' without a master")
+    title: Optional[str] = None
+    image_url: Optional[str] = None
+    pressings: List[CollectionAlbumResponse] = Field(default_factory=list, description="First added first")
+    pressings_count: int = Field(ge=1)
+    copies_count: int = Field(ge=0)
+    created_at: datetime = Field(..., description="When the first pressing was added")
+    updated_at: datetime = Field(..., description="When the last pressing was added")
+
+
+class PaginatedRecordsResponse(BaseSchema):
+    """Schema for a paginated list of works."""
+    items: List[CollectionRecordResponse] = Field(default_factory=list)
+    total: int = Field(ge=0, description="Total number of works")
     page: int = Field(gt=0, description="Current page number")
     limit: int = Field(gt=0, description="Number of items per page")
     total_pages: int = Field(ge=0, description="Total number of pages")

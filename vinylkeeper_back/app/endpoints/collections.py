@@ -11,6 +11,7 @@ from app.schemas.collection_schema import (
     MessageResponse,
     PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
+    PaginatedRecordsResponse,
     CollectionSearchResponse,
 )
 from app.schemas.like_schema import LikeStatusResponse
@@ -19,7 +20,7 @@ from app.deps.deps import get_collection_service, get_export_service
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.export_service import ExportService
-from app.schemas.collection_album_schema import CollectionAlbumUpdate
+from app.schemas.collection_album_schema import CollectionAlbumCopyData, CollectionAlbumUpdate
 from app.utils.endpoint_utils import handle_app_exceptions
 from app.core.exceptions import ValidationError
 from app.core.logging import logger
@@ -170,6 +171,20 @@ async def get_collection_albums_paginated(
     return await service.get_collection_albums_paginated(collection_id, user.id, page, limit, sort_order)
 
 
+@router.get("/{collection_id}/records", status_code=status.HTTP_200_OK, response_model=PaginatedRecordsResponse)
+@handle_app_exceptions
+async def get_collection_records_paginated(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    page: int = Query(1, gt=0, description="Page number"),
+    limit: int = Query(12, gt=0, le=50, description="Number of works per page"),
+    sort_order: str = Query("newest", description="Sort order: 'newest' or 'oldest'"),
+    user=Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service),
+):
+    """Works of a collection: the pressings of one Discogs master are a single record."""
+    return await service.get_collection_records_paginated(collection_id, user.id, page, limit, sort_order)
+
+
 @router.get("/{collection_id}/artists", status_code=status.HTTP_200_OK, response_model=PaginatedArtistsResponse)
 @handle_app_exceptions
 async def get_collection_artists_paginated(
@@ -253,6 +268,59 @@ async def update_album_metadata(
         current_user.id, collection_id, album_id, data
     )
     return updated_metadata
+
+
+@router.post("/{collection_id}/albums/{album_id}/copies", status_code=status.HTTP_201_CREATED,
+             response_model=CollectionAlbumResponse)
+@handle_app_exceptions
+async def add_album_copy(
+    collection_id: int,
+    album_id: int,
+    data: CollectionAlbumCopyData,
+    current_user: User = Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service)
+) -> CollectionAlbumResponse:
+    """Add another copy of an album already in the collection. Returns the album with all its copies."""
+    return await service.add_album_copy(current_user.id, collection_id, album_id, data)
+
+
+@router.patch("/{collection_id}/albums/{album_id}/copies/{copy_id}", response_model=CollectionAlbumResponse)
+@handle_app_exceptions
+async def update_album_copy(
+    collection_id: int,
+    album_id: int,
+    copy_id: int,
+    data: CollectionAlbumCopyData,
+    current_user: User = Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service)
+) -> CollectionAlbumResponse:
+    """Update the condition of one copy: only the fields sent are changed."""
+    return await service.update_album_copy(current_user.id, collection_id, album_id, copy_id, data)
+
+
+@router.delete("/{collection_id}/albums/{album_id}/copies/{copy_id}", response_model=CollectionAlbumResponse)
+@handle_app_exceptions
+async def delete_album_copy(
+    collection_id: int,
+    album_id: int,
+    copy_id: int,
+    current_user: User = Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service)
+) -> CollectionAlbumResponse:
+    """Delete one copy. The last copy cannot be deleted: remove the album from the collection instead."""
+    return await service.delete_album_copy(current_user.id, collection_id, album_id, copy_id)
+
+
+@router.post("/{collection_id}/albums/{album_id}/pressing/confirm", response_model=CollectionAlbumResponse)
+@handle_app_exceptions
+async def confirm_album_pressing(
+    collection_id: int,
+    album_id: int,
+    current_user: User = Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service)
+) -> CollectionAlbumResponse:
+    """The owner states that this release is the pressing on their shelf."""
+    return await service.confirm_album_pressing(current_user.id, collection_id, album_id)
 
 
 @router.get("/{collection_id}/search", response_model=CollectionSearchResponse, status_code=status.HTTP_200_OK)

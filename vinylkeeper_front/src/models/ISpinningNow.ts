@@ -44,6 +44,8 @@ export interface CollectionRef {
 export interface SpinningNowAlbum {
   id: number;
   external_album_id: string;
+  /** The work: to find every pressing the user owns */
+  external_master_id?: string | null;
   title: string | null;
   artist_name: string | null;
   image_url: string | null;

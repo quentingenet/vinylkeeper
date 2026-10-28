@@ -17,6 +17,8 @@ interface MediaCardItem {
   title?: string;
   image_url?: string;
   entity_type?: string;
+  // Copies of the record in the collection, shown as "×3" on the cover above one
+  copies_count?: number;
 }
 
 interface MediaCardProps {
@@ -111,6 +113,27 @@ export default function MediaCard({
           </IconButton>
         )}
       </Box>
+
+      {(item.copies_count ?? 1) > 1 && (
+        <Box
+          aria-label={`${item.copies_count} copies`}
+          sx={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            zIndex: 2,
+            px: 1,
+            py: 0.25,
+            borderRadius: "12px",
+            backgroundColor: "primary.main",
+            color: "#1F1F1F",
+            fontWeight: "bold",
+            fontSize: "0.9rem",
+          }}
+        >
+          ×{item.copies_count}
+        </Box>
+      )}
 
       {item.image_url ? (
         <CardMedia
