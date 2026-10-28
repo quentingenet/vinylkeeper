@@ -57,7 +57,8 @@ async def send_mail(to: str, subject: MailSubject, **kwargs):
 
         # Execute SMTP operations in thread pool to avoid blocking event loop
         await asyncio.to_thread(_send_mail_sync, to, msg)
-        logger.info(f"{subject.value} - mail sent with success to {to}")
+        # Recipient left out: no email addresses in the logs
+        logger.info(f"{subject.value} - mail sent with success")
     except Exception as e:
         logger.error(f"{subject.value} - Error sending mail: {e}")
         return False

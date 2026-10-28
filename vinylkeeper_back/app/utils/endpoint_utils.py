@@ -28,7 +28,8 @@ def _handle_unexpected_error(func_name: str, kwargs: dict, e: Exception) -> None
 
     logger.error(
         f"Unexpected error in {func_name}{user_context}{entity_context} "
-        f"- File: {file_info} - Error: {str(e)}"
+        f"- File: {file_info} - Error: {str(e)}",
+        exc_info=e,
     )
     raise ServerError(
         error_code=5000,

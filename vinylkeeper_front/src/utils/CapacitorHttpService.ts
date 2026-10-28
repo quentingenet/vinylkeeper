@@ -12,6 +12,8 @@ interface CapacitorHttpOptions {
 
 class CapacitorHttpService {
   private readonly baseUrl: string = API_VK_URL;
+  // Requests that get a 401 at the same time share a single refresh call
+  private refreshInFlight: Promise<void> | null = null;
 
   async request<T = unknown>({
     method,
@@ -85,14 +87,19 @@ class CapacitorHttpService {
     }
   }
 
-  private async refreshToken(): Promise<void> {
-    await CapacitorHttp.request({
+  private refreshToken(): Promise<void> {
+    this.refreshInFlight ??= CapacitorHttp.request({
       method: "POST",
       url: `${this.baseUrl}/users/refresh-token`,
       headers: {
         "Content-Type": "application/json",
       },
-    });
+    })
+      .then(() => undefined)
+      .finally(() => {
+        this.refreshInFlight = null;
+      });
+    return this.refreshInFlight;
   }
 
   private handleError(error: {

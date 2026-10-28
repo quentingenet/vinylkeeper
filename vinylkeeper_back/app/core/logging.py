@@ -1,17 +1,14 @@
 import logging
 import os
 from logging.config import dictConfig
-from app.core.config_env import settings
 
-# Determine log level based on environment
-if settings.APP_ENV == "production":
-    default_level = "INFO"     # INFO level in production (already optimized)
-    app_level = "INFO"         # INFO level in production (already optimized)
-    uvicorn_level = "ERROR"
-else:
-    default_level = "INFO"
-    app_level = "INFO"
-    uvicorn_level = "ERROR"
+# Same levels in every environment
+default_level = "INFO"
+app_level = "INFO"
+uvicorn_level = "ERROR"
+
+# The UTC offset comes from the clock (TZ=Europe/Paris), so it is right in summer and winter
+LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S %z"
 
 # Logging configuration
 log_config = {
@@ -19,10 +16,12 @@ log_config = {
     "disable_existing_loggers": False,
     "formatters": {
         "default": {
-            "format": "%(asctime)s CEST - %(levelname)s -  %(filename)s:%(lineno)d - %(message)s",
+            "format": "%(asctime)s - %(levelname)s -  %(filename)s:%(lineno)d - %(message)s",
+            "datefmt": LOG_DATE_FORMAT,
         },
         "detailed": {
-            "format": "%(asctime)s CEST - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
+            "format": "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
+            "datefmt": LOG_DATE_FORMAT,
         },
     },
     "handlers": {

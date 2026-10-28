@@ -9,6 +9,19 @@ const getCsrfToken = (): string | null => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
+// Requests that get a 401 at the same time share a single refresh call
+let refreshInFlight: Promise<void> | null = null;
+
+const refreshSession = (apiTarget: string): Promise<void> => {
+  refreshInFlight ??= ky
+    .post(`${apiTarget}/users/refresh-token`, { credentials: "include" })
+    .then(() => undefined)
+    .finally(() => {
+      refreshInFlight = null;
+    });
+  return refreshInFlight;
+};
+
 interface EnrichedHTTPError extends HTTPError {
   errorData?: ApiError;
 }
@@ -102,9 +115,7 @@ const requestService = async <T = unknown>({
       !skipRefresh
     ) {
       try {
-        await ky.post(`${apiTarget}/users/refresh-token`, {
-          credentials: "include",
-        });
+        await refreshSession(apiTarget);
 
         return await requestService<T>({
           apiTarget,

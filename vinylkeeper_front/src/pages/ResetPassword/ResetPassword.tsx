@@ -5,6 +5,7 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import Footer from "@components/Footer/Footer";
 import { Typography } from "@mui/material";
 import videoBackground from "../../assets/landpageBackground.mp4";
+import videoPoster from "../../assets/landpageBackgroundPoster.webp";
 import ResetPasswordForm from "@components/ResetPassword/ResetPasswordForm";
 
 export default function ResetPassword() {
@@ -22,6 +23,8 @@ export default function ResetPassword() {
             autoPlay
             muted
             loop
+            playsInline
+            poster={videoPoster}
             className={styles.videoBackgroundVinylKeeper}
           >
             <source src={videoBackground} type="video/mp4" />
