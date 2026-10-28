@@ -62,7 +62,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
+          memory: 3G
           cpus: "2.5"
     logging:
       driver: "json-file"
