@@ -9,6 +9,7 @@
  * @property {string} EXPLORE - Legacy Explore URL "/explore", redirects to the Community tab of Collections
  * @property {string} WISHLIST - Wishlist page URL "/wishlist"
  * @property {string} PLACES - Places page URL "/places"
+ * @property {string} SPINNING_NOW - Spinning now page URL "/spinning-now"
  * @property {string} SETTINGS - Settings page URL "/settings"
  * @property {string} RESET_PASSWORD - Reset password page URL "/reset-password"
  * @property {string} NO_MATCH - 404 page URL "*"
@@ -22,6 +23,7 @@ export enum EGlobalUrls {
   EXPLORE = "/explore",
   WISHLIST = "/wishlist",
   PLACES = "/places",
+  SPINNING_NOW = "/spinning-now",
   SETTINGS = "/settings",
   ADMIN = "/admin",
   RESET_PASSWORD = "/reset-password",

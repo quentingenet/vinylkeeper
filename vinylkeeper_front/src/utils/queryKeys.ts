@@ -1,3 +1,5 @@
+import type { SpinningNowFilters } from "@models/ISpinningNow";
+
 export const queryKeys = {
   collections: {
     all: () => ["collections"] as const,
@@ -32,6 +34,12 @@ export const queryKeys = {
   },
   dashboard: {
     stats: () => ["dashboard-stats"] as const,
+  },
+  spinningNow: {
+    all: () => ["spinning-now"] as const,
+    options: () => ["spinning-now", "options"] as const,
+    pick: (filters: SpinningNowFilters) =>
+      ["spinning-now", "pick", filters] as const,
   },
   metadata: {
     album: (id: string | undefined) => ["albumMetadata", id] as const,

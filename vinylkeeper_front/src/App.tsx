@@ -15,6 +15,7 @@ const CollectionsPage = lazy(() => import("@pages/Collections/CollectionsPage"))
 const AddVinyls = lazy(() => import("@pages/AddVinyls/AddVinyls"));
 const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
 const Places = lazy(() => import("@pages/Places/Places"));
+const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
 
 function App() {
@@ -88,6 +89,14 @@ function App() {
             <Route
               path={EGlobalUrls.EXPLORE}
               element={<Navigate to={COMMUNITY_COLLECTIONS_URL} replace />}
+            />
+            <Route
+              path={EGlobalUrls.SPINNING_NOW}
+              element={
+                <Protected>
+                  <SpinningNow />
+                </Protected>
+              }
             />
             <Route
               path={EGlobalUrls.PLACES}

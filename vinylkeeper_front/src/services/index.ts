@@ -22,6 +22,7 @@ export { UserApiService, userApiService } from "./UserApiService";
 export { musicStreamingService } from "./MusicStreamingService";
 export { placeApiService } from "./PlaceApiService";
 export { adminApiService } from "./AdminApiService";
+export { SpinningNowApiService, spinningNowApiService } from "./SpinningNowApiService";
 
 // Base Service
 export { BaseApiService } from "./BaseApiService";

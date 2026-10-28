@@ -1,6 +1,7 @@
 import { logger } from "@utils/logger";
 import type { LatestAddition } from "@models/IDashboardStats";
 import type { PlaybackItem } from "@components/Modals/PlaybackModal";
+import type { SpinningNowAlbum } from "@models/ISpinningNow";
 
 export function toPlaybackItem(
   addition: LatestAddition | undefined,
@@ -33,5 +34,15 @@ export function toPlaybackItem(
     artist,
     image_url: addition.image_url,
     itemType: type,
+  };
+}
+
+export function spinningNowAlbumToPlaybackItem(album: SpinningNowAlbum): PlaybackItem {
+  return {
+    id: album.external_album_id,
+    title: album.title ?? "",
+    artist: album.artist_name ?? album.title?.split(" - ")[0] ?? "",
+    image_url: album.image_url ?? undefined,
+    itemType: "album",
   };
 }

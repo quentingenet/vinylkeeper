@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from app.core.security import configure_cors
 from app.core.handlers import register_exception_handlers
 from app.endpoints import users, collections, request_proxy, dashboard, places, admin
-from app.endpoints import external_references, images
+from app.endpoints import external_references, images, spinning_now
 from app.core.lifespan import lifespan
 
 os.environ["TZ"] = "Europe/Paris"
@@ -27,6 +27,7 @@ app.include_router(dashboard.router, prefix="/api/dashboard")
 app.include_router(places.router, prefix="/api/places")
 app.include_router(admin.router, prefix="/api/vk-admin")
 app.include_router(images.router, prefix="/api/images")
+app.include_router(spinning_now.router, prefix="/api/spinning-now")
 
 
 @app.get("/")

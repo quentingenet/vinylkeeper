@@ -16,6 +16,7 @@ import {
   PowerSettingsNew as PowerSettingsNewIcon,
   SpaceDashboardOutlined as SpaceDashboardOutlinedIcon,
   Album as AlbumIcon,
+  GraphicEq as GraphicEqIcon,
   AddBox as AddBoxIcon,
   SwapHoriz as SwapHorizIcon,
   Settings as SettingsIcon,
@@ -62,6 +63,11 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       text: "Collections",
       icon: <AlbumIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.COLLECTIONS,
+    },
+    {
+      text: "Spinning now",
+      icon: <GraphicEqIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.SPINNING_NOW,
     },
     {
       text: "Add vinyls",

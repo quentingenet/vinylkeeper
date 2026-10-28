@@ -78,3 +78,26 @@ describe("Layout navigation after merging Explore into Collections", () => {
     });
   });
 });
+
+describe("Layout navigation for Spinning now", () => {
+  it("highlights Spinning now on its page (desktop)", () => {
+    mobileState.isMobile = false;
+    const { container } = renderLayoutAt("/spinning-now");
+
+    expect(getMenuButton(container, "Spinning now")).toHaveClass("Mui-selected");
+    expect(getMenuButton(container, "Collections")).not.toHaveClass("Mui-selected");
+  });
+
+  it("shows 'Spinning now' in the mobile header and drawer", async () => {
+    mobileState.isMobile = true;
+    const user = userEvent.setup();
+    renderLayoutAt("/spinning-now");
+
+    const header = screen.getByRole("banner");
+    expect(within(header).getByText("Spinning now")).toBeInTheDocument();
+
+    await user.click(within(header).getByRole("button"));
+    const drawer = screen.getByRole("presentation");
+    expect(getMenuButton(drawer, "Spinning now")).toHaveClass("Mui-selected");
+  });
+});

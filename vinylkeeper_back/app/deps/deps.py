@@ -16,6 +16,7 @@ from app.repositories.collection_album_repository import CollectionAlbumReposito
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.place_repository import PlaceRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
+from app.repositories.spinning_now_repository import SpinningNowRepository
 
 # Services
 from app.services.user_service import UserService
@@ -28,6 +29,7 @@ from app.services.place_service import PlaceService
 from app.services.moderation_service import ModerationService
 from app.services.export_service import ExportService
 from app.services.wishlist_export_service import WishlistExportService
+from app.services.spinning_now_service import SpinningNowService
 
 # Database
 from app.db.session import get_db
@@ -80,6 +82,10 @@ def get_external_reference_repository(
 
 def get_dashboard_repository(db: AsyncSession = Depends(get_db)) -> DashboardRepository:
     return DashboardRepository(db)
+
+
+def get_spinning_now_repository(db: AsyncSession = Depends(get_db)) -> SpinningNowRepository:
+    return SpinningNowRepository(db)
 
 
 def get_place_repository(db: AsyncSession = Depends(get_db)) -> PlaceRepository:
@@ -169,3 +175,9 @@ def get_wishlist_export_service(
     wishlist_repository: WishlistRepository = Depends(get_wishlist_repository),
 ) -> WishlistExportService:
     return WishlistExportService(wishlist_repository)
+
+
+def get_spinning_now_service(
+    repository: SpinningNowRepository = Depends(get_spinning_now_repository),
+) -> SpinningNowService:
+    return SpinningNowService(repository)

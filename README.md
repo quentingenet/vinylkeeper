@@ -1,4 +1,3 @@
-
 # Vinyl Keeper
 
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
@@ -6,125 +5,152 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![Debian](https://img.shields.io/badge/Debian-D70A53?style=for-the-badge&logo=debian&logoColor=white)
-![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Capacitor](https://img.shields.io/badge/Capacitor-119EFF?style=for-the-badge&logo=Capacitor&logoColor=white)
+![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)
 
-**VinylKeeper** is a free and open-source application released under the Copyleft license.
-<br>This is your go-to solution to effortlessly manage your vinyl collection, while fully respecting your privacy and data ownership.
-<br><br> [VinylKeeper.org](https://vinylkeeper.org/)
+**VinylKeeper** is a free and open source app to manage your vinyl collection, share it with a community of collectors, and decide what to put on the turntable tonight.
+
+It is **live in production** at **[vinylkeeper.org](https://vinylkeeper.org/)**, on the web and as an Android app.
 
 <p align="center">
   <a href="https://vinylkeeper.org/">
-    <img src="https://github.com/quentingenet/vinylkeeper/blob/main/vinylkeeper_preview.webp" alt="VinylKeeper preview">
+    <img src="vinylkeeper_preview.webp" alt="VinylKeeper preview">
   </a>
 </p>
 
+## Features
 
-##  Features and Upcoming / In Progress
+**🎧 Spinning now**
+Pick a mood, an era, a genre or a collection, and get records from your own shelves. "Surprise me" draws one at random and opens it in Deezer, Spotify or YouTube Music.
 
-📊 **Dashboard**  
-Get a quick overview of your collection with insightful stats: genres, decades, top artists, and more.
+**📀 Collections**
+Organize your records into collections, keep a wishlist, track the condition of each record and cover, and export everything to CSV or ODS.
 
-🌍 **Interactive map**  
-Discover & share vinyl places around the world with the community.
+**👥 Community**
+Make a collection public, browse and like other collectors' collections.
 
-📀 **Collections**  
-Browse and manage your vinyl records, organized to your preferences.
+**➕ Add vinyls**
+Search the Discogs catalogue by album or artist and add a record in a few clicks. Genres, styles, years and moods are filled in automatically in the background.
 
-➕ **Add Vinyls**  
-Add new vinyls manually or search via Discogs integration.
+**🌍 Places**
+A community map of record shops, flea markets and vinyl spots. New places go through moderation.
 
-🔍 **Explore**  
-Discover artists and albums using a powerful search connected to the Discogs API.
-💖 **Wishlist**  
-Keep track of the vinyls you’d love to add to your collection someday.
+**📊 Dashboard**
+Your collection at a glance and what the community added recently.
 
-⚙️ **Settings**  
-Customize your profile, preferences, and account options.
+**📱 Web and mobile**
+Responsive web app and Android app built with Capacitor.
 
-👥 **Community**  
-See other users' collections, follow vinyl lovers, share discoveries...
+<p align="center">
+  <img src="vinylkeeper_front/public/vk_preview/preview_vk_1.webp" alt="Dashboard" width="49%">
+  <img src="vinylkeeper_front/public/vk_preview/preview_vk_3.webp" alt="Collections" width="49%">
+</p>
 
-🔐 **Secure Authentication**  
-JWT-based login, with refresh token handling via secure HTTPOnly cookies.
+## Technical highlights
 
-📱 **Responsive & PWA-ready**  
-Fully responsive UI, optimized for desktop and mobile, with Capacitor support for Progressive Web App deployment.
+### Data enrichment and moods, with no LLM at runtime
 
-🛠️ **Modern Architecture**  
-React + TypeScript frontend (Vite), FastAPI backend (Python), PostgreSQL database.
+Records are enriched once from Discogs (genres, styles, pressing year, original year from the master release), then stored. Features never call Discogs at request time.
 
-## Technologies
+Moods (calm, groovy, laid back, dark...) come from **400+ versioned rules** mapping Discogs styles and genres to moods, kept in [`tag_mood_rules.py`](vinylkeeper_back/app/data/tag_mood_rules.py) and reviewed like code.
 
-**VinylKeeper** is developed using:
-- **[Python](https://www.python.org/)** with **[FastAPI](https://fastapi.tiangolo.com/)** for the main API.
-- **[React](https://reactjs.org)** and **[TypeScript](https://www.typescriptlang.org/)** with **[Vite.js](https://vitejs.dev/)** for the frontend
-- **[PostgreSQL](https://www.postgresql.org/)** for the database
+**Why no LLM at runtime?** The structured data was already there. Rules are deterministic, explainable and free, and the "Spinning now" queries are indexed SQL running in **under 4 ms** for the largest collection (measured with `EXPLAIN ANALYZE` on production data). No per-user AI cost, no latency, no user data sent to a third party. An LLM remains an optional offline enrichment step, and user or LLM moods would always take precedence over rules (`user` > `llm` > `rule`).
 
+Other details:
+- **Reissues are dated correctly**: a 2019 pressing of *Kind of Blue* is filed under the 1950s, thanks to the master release year.
+- **Resilient to Discogs rate limits**: requests are throttled to the 60/min limit with backoff, the backfill is resumable, and a nightly job catches up anything that failed.
 
-## How to run the project? (API Python & FastAPI)
+### Security
+- JWT (RS256) in **HttpOnly cookies**, with refresh tokens and **CSRF double-submit** protection
+- Argon2 password hashing
+- Image proxy with a domain allowlist and size limits (SSRF protection), with on-disk caching
+
+### Architecture
+
+```mermaid
+flowchart LR
+    Web["React + TypeScript<br/>(web)"] --> API
+    App["Android app<br/>(Capacitor)"] --> API
+    API["FastAPI<br/>endpoints, services, repositories"] --> DB[("PostgreSQL")]
+    API -- "search, enrichment" --> Discogs["Discogs API"]
+    Cron["Nightly job"] -- "enrich_albums" --> API
+```
+
+- **Backend**: layered architecture (endpoints, services, repositories) with dependency injection through FastAPI `Depends`, async SQLAlchemy 2 with explicit loading (`lazy="raise"`), Alembic migrations.
+- **Frontend**: React 19, TypeScript in strict mode, TanStack Query, MUI, custom hooks for data logic.
+- **Quality**: 500+ backend tests (unit, endpoint and real-database integration tests run inside rolled-back transactions) and 180+ frontend tests (Vitest, Testing Library), flake8 and ESLint.
+- **Deployment**: Docker Compose on a Linux VPS, migrations applied on container start.
+
+## Getting started
 
 ### Prerequisites
+- [Python](https://www.python.org/) 3.12 and [Poetry](https://python-poetry.org/)
+- [Node.js](https://nodejs.org/) and npm
+- [PostgreSQL](https://www.postgresql.org/) 17, for example with [Docker](https://docs.docker.com/)
+- A free [Discogs API token](https://www.discogs.com/settings/developers)
 
-Ensure the following are installed on your machine:
-
-- [Node.js](https://nodejs.org/)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- [Vite.js](https://vitejs.dev/)
-- [Python](https://www.python.org/)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Poetry](https://python-poetry.org/)
-- [Docker and Docker compose](https://docs.docker.com/)
-
-### Clone the repository
+### Backend
 
 ```bash
 git clone https://github.com/quentingenet/vinylkeeper.git
-```
-**⚠️ Don't forget to create your own `.env.development` file using the provided `.env.template.contributors` as a reference.**
-
-### Backend Setup
-Navigate to the backend folder, install dependencies, and run migrations:
-
-```bash
 cd vinylkeeper/vinylkeeper_back
 poetry install
-# Run database migrations
-poetry run alembic upgrade head
-# Start the server
-poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-The backend server runs at **http://localhost:8000**
-- API documentation: **http://localhost:8000/docs**
-- Alternative docs: **http://localhost:8000/redoc**
 
-### Frontend Setup
-In a separate terminal, navigate to the frontend folder, install dependencies, and start the server:
+1. Create `app/.env.development` from [`app/.env.template.contributors`](vinylkeeper_back/app/.env.template.contributors) (database, SMTP, Discogs token...).
+2. Generate the RSA key pair used to sign JWTs:
+   ```bash
+   mkdir -p app/keys
+   openssl genrsa -out app/keys/private_key.pem 2048
+   openssl rsa -in app/keys/private_key.pem -pubout -out app/keys/public_key.pem
+   ```
+3. Create the database schema and start the API:
+   ```bash
+   poetry run alembic upgrade head
+   poetry run uvicorn app.main:app --reload --port 8000
+   ```
+
+The API runs at **http://localhost:8000**, with interactive docs at **/docs**.
+
+Optional, to fill in Discogs metadata and moods for existing records:
+```bash
+poetry run python -m app.cli.sync_mood_rules       # load the mood rules
+poetry run python -m app.cli.enrich_albums         # fetch Discogs metadata, then assign moods
+```
+
+### Frontend
 
 ```bash
 cd vinylkeeper/vinylkeeper_front
 npm install
 npm run dev
 ```
-Visit **http://localhost:5173** in your browser to access the VinylKeeper application.
 
-## How to contribute?
+Open **http://localhost:5173**. The API URL is set in [`.env.development`](vinylkeeper_front/.env.development).
 
-We welcome contributions to improve Vinyl Keeper! To contribute:
+### Tests
 
-1. Fork this repository.
-2. Create a feature branch **from main** (`git checkout -b feat/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add some amazing feature'`).
-4. Push to the branch (`git push origin feat/amazing-feature`).
-5. Open a Pull Request.
+```bash
+cd vinylkeeper_back && poetry run pytest      # real-database tests expect a local PostgreSQL copy
+cd vinylkeeper_front && npm run test
+```
 
-The project promotes the four essential freedoms:
-1. Freedom to use the software.
-2. Freedom to modify the software.
-3. Freedom to share the software.
-4. Freedom to share your modifications.
+## Contributing
 
-## Author and contributors
+Contributions are welcome:
 
-- Quentin GENET
-- If you love vinyl, music, and web development, and are motivated to contribute seriously we'd love to hear from you! 😄🚀
+1. Fork the repository.
+2. Create a feature branch from `main` (`git checkout -b feat/amazing-feature`).
+3. Run the tests and linters (`poetry run pytest`, `poetry run flake8 app tests`, `npm run test`, `npm run lint`).
+4. Open a Pull Request.
+
+## License
+
+VinylKeeper is released under the [GNU GPL v3](LICENSE). You are free to use, study, share and modify it, as long as modified versions stay free under the same license.
+
+## Author
+
+**Quentin Genet**, full stack developer (React, TypeScript, FastAPI, PostgreSQL).
+
+If you love vinyl, music and web development, contributions and feedback are very welcome.
