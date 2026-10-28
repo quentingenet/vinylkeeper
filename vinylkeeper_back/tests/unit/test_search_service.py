@@ -93,7 +93,7 @@ class TestSearchMusic:
     async def test_release_picture_and_medium_size(self):
         service, _ = discogs([release_hit(1, "Miles Davis - Kind Of Blue")])
 
-        [result] = await service.search_music(SearchQuery(query="kind of blue", is_artist=False))
+        [result] = (await service.search_music_page(SearchQuery(query="kind of blue", is_artist=False))).items
 
         assert result.picture == COVER
         assert result.picture_medium == SearchService.resize_to_medium(COVER)
@@ -103,7 +103,7 @@ class TestSearchMusic:
     async def test_artist_picture(self):
         service, _ = discogs([artist_hit(10, "John Coltrane")])
 
-        [result] = await service.search_music(SearchQuery(query="coltrane", is_artist=True))
+        [result] = (await service.search_music_page(SearchQuery(query="coltrane", is_artist=True))).items
 
         assert (result.name, result.type, result.picture) == ("John Coltrane", "artist", COVER)
 
@@ -111,7 +111,7 @@ class TestSearchMusic:
         """Discogs returns a spacer.gif placeholder in search hits for artists without image."""
         service, _ = discogs([artist_hit(11, "Sita Coltrane", cover=SPACER, thumb="")])
 
-        [result] = await service.search_music(SearchQuery(query="sita coltrane", is_artist=True))
+        [result] = (await service.search_music_page(SearchQuery(query="sita coltrane", is_artist=True))).items
 
         assert result.picture == ""
         assert result.picture_medium is None
@@ -119,21 +119,21 @@ class TestSearchMusic:
     async def test_non_vinyl_releases_are_filtered_out(self):
         service, _ = discogs([release_hit(1, "A - CD only", formats=("CD", "Album")), release_hit(2, "B - LP")])
 
-        results = await service.search_music(SearchQuery(query="test", is_artist=False))
+        results = (await service.search_music_page(SearchQuery(query="test", is_artist=False))).items
 
         assert [r.id for r in results] == ["2"]
 
     async def test_duplicate_releases_are_deduplicated(self):
         service, _ = discogs([release_hit(1, "Brel - Brel"), release_hit(2, "Brel - Brel")])
 
-        results = await service.search_music(SearchQuery(query="brel", is_artist=False))
+        results = (await service.search_music_page(SearchQuery(query="brel", is_artist=False))).items
 
         assert [r.id for r in results] == ["1"]
 
     async def test_at_most_one_page_of_results(self):
         service, _ = discogs([artist_hit(i, f"Artist {i}") for i in range(1, 16)])
 
-        results = await service.search_music(SearchQuery(query="artist", is_artist=True))
+        results = (await service.search_music_page(SearchQuery(query="artist", is_artist=True))).items
 
         assert len(results) == SEARCH_PAGE_SIZE
 
@@ -141,14 +141,14 @@ class TestSearchMusic:
         service, _ = discogs([], search_status=503)
 
         with pytest.raises(ServerError):
-            await service.search_music(SearchQuery(query="kind of blue", is_artist=False))
+            (await service.search_music_page(SearchQuery(query="kind of blue", is_artist=False))).items
 
     @pytest.mark.parametrize("query", ["a", "x" * 101])
     async def test_query_length_is_validated(self, query):
         service, requests = discogs([])
 
         with pytest.raises(ValidationError):
-            await service.search_music(SearchQuery(query=query, is_artist=False))
+            (await service.search_music_page(SearchQuery(query=query, is_artist=False))).items
         assert requests == []
 
 
@@ -157,7 +157,7 @@ class TestSearchMusicPerformance:
         """Images used to cost one extra Discogs call per result (up to 11 calls per search)."""
         service, requests = discogs([artist_hit(i, f"Artist {i}") for i in range(1, 16)])
 
-        results = await service.search_music(SearchQuery(query="artist", is_artist=True))
+        results = (await service.search_music_page(SearchQuery(query="artist", is_artist=True))).items
 
         assert len(results) == SEARCH_PAGE_SIZE
         assert requests == ["/database/search"]
@@ -166,7 +166,7 @@ class TestSearchMusicPerformance:
         """The old code returned the spacer.gif URL for releases, which was then stored as image_url."""
         service, _ = discogs([release_hit(1, "Unknown - Private Press", cover=SPACER, thumb="")])
 
-        [result] = await service.search_music(SearchQuery(query="private press", is_artist=False))
+        [result] = (await service.search_music_page(SearchQuery(query="private press", is_artist=False))).items
 
         assert result.picture == ""
         assert result.picture_medium is None
@@ -174,7 +174,7 @@ class TestSearchMusicPerformance:
     async def test_thumb_is_used_when_only_the_thumbnail_exists(self):
         service, _ = discogs([artist_hit(1, "Someone", cover=SPACER, thumb=THUMB)])
 
-        [result] = await service.search_music(SearchQuery(query="someone", is_artist=True))
+        [result] = (await service.search_music_page(SearchQuery(query="someone", is_artist=True))).items
 
         assert result.picture == THUMB
         assert result.picture_medium is None
@@ -187,7 +187,7 @@ class TestSearchMusicEditions:
                           master_id=5460)
         service, _ = discogs([hit])
 
-        [result] = await service.search_music(SearchQuery(query="kind of blue", is_artist=False))
+        [result] = (await service.search_music_page(SearchQuery(query="kind of blue", is_artist=False))).items
 
         assert (result.year, result.country, result.label, result.catno) == ("2019", "Europe", "Columbia", "CL 1355")
         assert result.formats == ["LP", "Album", "Reissue"]
@@ -196,7 +196,7 @@ class TestSearchMusicEditions:
     async def test_missing_edition_fields_are_empty(self):
         service, _ = discogs([release_hit(1, "A - B", master_id=0, label=[], catno="", country="")])
 
-        [result] = await service.search_music(SearchQuery(query="test", is_artist=False))
+        [result] = (await service.search_music_page(SearchQuery(query="test", is_artist=False))).items
 
         assert (result.year, result.country, result.label, result.catno, result.master_id) == (None,) * 5
 
@@ -206,7 +206,7 @@ class TestSearchMusicEditions:
             release_hit(2, "Brel - Brel", year="2016", country="Europe", catno="4781234"),
         ])
 
-        results = await service.search_music(SearchQuery(query="brel", is_artist=False))
+        results = (await service.search_music_page(SearchQuery(query="brel", is_artist=False))).items
 
         assert [r.id for r in results] == ["1", "2"]
 
@@ -214,7 +214,7 @@ class TestSearchMusicEditions:
         edition = {"year": "1977", "country": "France", "label": ["Barclay"], "catno": "9101 155"}
         service, _ = discogs([release_hit(1, "Brel - Brel", **edition), release_hit(2, "Brel - Brel", **edition)])
 
-        results = await service.search_music(SearchQuery(query="brel", is_artist=False))
+        results = (await service.search_music_page(SearchQuery(query="brel", is_artist=False))).items
 
         assert [r.id for r in results] == ["1"]
 

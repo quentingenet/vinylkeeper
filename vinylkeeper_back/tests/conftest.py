@@ -117,8 +117,6 @@ def make_user_repo(user: MagicMock = None) -> AsyncMock:
     repo.get_user_by_email = AsyncMock(return_value=user)
     repo.is_email_taken = AsyncMock(return_value=False)
     repo.is_username_taken = AsyncMock(return_value=False)
-    repo.get_all_users = AsyncMock(return_value=[])
-    repo.count_users = AsyncMock(return_value=0)
     repo.delete_user = AsyncMock(return_value=True)
     return repo
 

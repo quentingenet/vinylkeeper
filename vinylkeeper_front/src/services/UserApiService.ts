@@ -4,12 +4,6 @@ import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
 import { isApiError } from "@utils/apiError";
 
-export interface UserMini {
-  id: number;
-  username: string;
-  user_uuid: string;
-}
-
 export interface UserResponse {
   username: string;
   user_uuid: string;

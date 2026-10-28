@@ -158,46 +158,6 @@ class PlaceRepository(TransactionalMixin):
         await self._add_entity(place)
         return True
 
-    async def get_places_by_user(self, user_id: int) -> List[Place]:
-        """Get all places submitted by a specific user."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(Place.submitted_by_id == user_id, Place.is_valid.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def get_moderated_places_by_user(self, user_id: int) -> List[Place]:
-        """Get all moderated places submitted by a specific user."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(Place.submitted_by_id == user_id,
-                 Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def count_places_by_user(self, user_id: int) -> int:
-        """Count all places submitted by a specific user."""
-        query = select(func.count(Place.id)).filter(
-            and_(Place.submitted_by_id == user_id, Place.is_valid.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalar()
-
-    async def count_moderated_places_by_user(self, user_id: int) -> int:
-        """Count all moderated places submitted by a specific user."""
-        query = select(func.count(Place.id)).filter(
-            and_(Place.submitted_by_id == user_id,
-                 Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalar()
-
     async def count_moderated_places_by_type(self, place_type_id: int) -> int:
         """Count all moderated places of a specific type."""
         query = select(func.count(Place.id)).filter(
@@ -378,14 +338,6 @@ class PlaceRepository(TransactionalMixin):
         result = await self.db.execute(query)
         like = result.scalar_one_or_none()
         return like is not None
-
-    async def get_liked_places_by_user(self, user_id: int) -> List[Place]:
-        """Get all places liked by a specific user."""
-        query = select(Place).join(PlaceLike).filter(
-            and_(PlaceLike.user_id == user_id, Place.is_valid.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalars().all()
 
     async def get_moderation_status_by_name(self, status_name: str):
         """Get moderation status by name."""

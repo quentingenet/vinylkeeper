@@ -14,6 +14,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse } from "date-fns";
 import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
 import { type AlbumStateData } from "@hooks/useAddToCollection";
+import { colors } from "@styles/colors";
 
 interface AlbumStateFormProps {
   albumStateData: AlbumStateData;
@@ -42,18 +43,18 @@ export default function AlbumStateForm({
   return (
     <Accordion
       sx={{
-        backgroundColor: "#3f3f41",
-        color: "#fffbf9",
+        backgroundColor: colors.surface,
+        color: colors.textLight,
         mb: 2,
         "&:before": { display: "none" },
         "& .MuiAccordionSummary-root": {
-          backgroundColor: "#1F1F1F",
+          backgroundColor: colors.deep,
           color: "primary.main",
           fontWeight: "bold",
         },
         "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
         "& .MuiAccordionDetails-root": {
-          backgroundColor: "#2a2a2a",
+          backgroundColor: colors.panel,
           padding: "16px",
         },
       }}
@@ -70,7 +71,7 @@ export default function AlbumStateForm({
               <InputLabel
                 id="cover-state-label"
                 sx={{
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   "&.Mui-focused": { color: "primary.main" },
                   "&.MuiInputLabel-shrink": { color: "primary.main" },
                 }}
@@ -90,7 +91,7 @@ export default function AlbumStateForm({
                 }
                 variant="outlined"
                 sx={{
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   "& .MuiSelect-icon": { color: "primary.main" },
                 }}
               >
@@ -106,7 +107,7 @@ export default function AlbumStateForm({
               <InputLabel
                 id="record-state-label"
                 sx={{
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   "&.Mui-focused": { color: "primary.main" },
                   "&.MuiInputLabel-shrink": { color: "primary.main" },
                 }}
@@ -126,7 +127,7 @@ export default function AlbumStateForm({
                 }
                 variant="outlined"
                 sx={{
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   "& .MuiSelect-icon": { color: "primary.main" },
                 }}
               >
@@ -158,40 +159,40 @@ export default function AlbumStateForm({
                 helperText: "Select acquisition month and year",
                 onClick: () => setIsDatePickerOpen(true),
                 sx: {
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   "& .MuiOutlinedInput-root": {
-                    color: "#fffbf9",
+                    color: colors.textLight,
                     "& fieldset": { borderColor: "primary.main" },
-                    "&:hover fieldset": { borderColor: "#b38f1f" },
+                    "&:hover fieldset": { borderColor: colors.goldHover },
                     "&.Mui-focused fieldset": { borderColor: "primary.main" },
                     "&.Mui-disabled": {
-                      color: "#999",
-                      "& fieldset": { borderColor: "#666" },
+                      color: colors.grey400,
+                      "& fieldset": { borderColor: colors.grey600 },
                     },
                   },
                   "& .MuiInputLabel-root": {
-                    color: "#fffbf9",
+                    color: colors.textLight,
                     "&.Mui-focused": { color: "primary.main" },
-                    "&.Mui-disabled": { color: "#666" },
+                    "&.Mui-disabled": { color: colors.grey600 },
                   },
-                  "& .MuiFormHelperText-root": { color: "#e4e4e4" },
+                  "& .MuiFormHelperText-root": { color: colors.textMuted },
                 },
               },
               popper: {
                 sx: {
                   "& .MuiPaper-root": {
-                    backgroundColor: "#3f3f41",
-                    color: "#fffbf9",
+                    backgroundColor: colors.surface,
+                    color: colors.textLight,
                   },
-                  "& .MuiPickersCalendarHeader-root": { color: "#fffbf9" },
+                  "& .MuiPickersCalendarHeader-root": { color: colors.textLight },
                   "& .MuiPickersYear-yearButton": {
-                    color: "#fffbf9",
-                    "&.Mui-selected": { backgroundColor: "primary.main", color: "#000" },
+                    color: colors.textLight,
+                    "&.Mui-selected": { backgroundColor: "primary.main", color: colors.black },
                     "&:hover": { backgroundColor: "rgba(201, 167, 38, 0.2)" },
                   },
                   "& .MuiPickersMonth-monthButton": {
-                    color: "#fffbf9",
-                    "&.Mui-selected": { backgroundColor: "primary.main", color: "#000" },
+                    color: colors.textLight,
+                    "&.Mui-selected": { backgroundColor: "primary.main", color: colors.black },
                     "&:hover": { backgroundColor: "rgba(201, 167, 38, 0.2)" },
                   },
                 },

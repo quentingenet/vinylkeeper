@@ -4,6 +4,7 @@ from typing import Any, Iterable, Sequence
 from sqlalchemy import distinct, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Executable, Subquery
 
 from app.core.exceptions import ServerError
@@ -159,15 +160,23 @@ class SpinningNowRepository:
         return moods
 
     async def collections_by_album(self, user_id: int, album_ids: Iterable[int]) -> dict[int, list[tuple[int, str]]]:
-        """The user's own collections holding each album (never another user's)."""
+        """
+        The user's own collections holding each album or another pressing of its work
+        (an album stands for its work here), never another user's.
+        """
         ids = list(album_ids)
         if not ids:
             return {}
+        picked = aliased(Album)
         query = (
-            select(CollectionAlbum.album_id, Collection.id, Collection.name)
+            select(picked.id, Collection.id, Collection.name)
+            .select_from(picked)
+            .join(Album, work_key(Album) == work_key(picked))
+            .join(CollectionAlbum, CollectionAlbum.album_id == Album.id)
             .join(Collection, Collection.id == CollectionAlbum.collection_id)
-            .where(Collection.owner_id == user_id, CollectionAlbum.album_id.in_(ids))
-            .order_by(CollectionAlbum.album_id, Collection.name)
+            .where(Collection.owner_id == user_id, picked.id.in_(ids))
+            .distinct()
+            .order_by(picked.id, Collection.name, Collection.id)
         )
         collections: dict[int, list[tuple[int, str]]] = {}
         for album_id, collection_id, name in await self._rows(query, "load album collections"):

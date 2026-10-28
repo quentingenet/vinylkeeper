@@ -55,16 +55,6 @@ class ModerationRequestCreate(ModerationRequestBase):
     pass
 
 
-class ModerationRequestUpdate(BaseModel):
-    """Schema for updating a moderation request."""
-    status_id: int = Field(
-        gt=0,
-        description="New status ID for the moderation request"
-    )
-
-    model_config = ConfigDict(extra="forbid")
-
-
 class ModerationRequestInDB(ModerationRequestBase):
     """Schema for moderation request data as stored in database."""
     id: int = Field(

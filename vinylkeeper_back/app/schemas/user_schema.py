@@ -144,62 +144,10 @@ class UserUpdate(BaseSchema):
         return v
 
 
-class UserInDB(UserBase):
-    """Schema for user data as stored in database."""
-    id: int = Field(
-        gt=0,
-        description="Unique identifier for the user"
-    )
-    user_uuid: UUID = Field(
-        description="Unique UUID for the user"
-    )
-    is_accepted_terms: bool = Field(
-        description="Whether the user has accepted the terms"
-    )
-    is_active: bool = Field(
-        description="Whether the user account is active"
-    )
-    is_superuser: bool = Field(
-        description="Whether the user is a superuser"
-    )
-    last_login: Optional[datetime] = Field(
-        None,
-        description="When the user last logged in"
-    )
-    created_at: datetime = Field(
-        description="When the user was created"
-    )
-    number_of_connections: int = Field(
-        ge=0,
-        description="Number of times the user has connected"
-    )
-    role_id: int = Field(
-        gt=0,
-        description="ID of the user's role"
-    )
-
-
 class RoleResponse(BaseModel):
     """Schema for role data in responses."""
     id: int = Field(gt=0, description="Role ID")
     name: str = Field(description="Role name")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class UserResponse(UserInDB):
-    """Schema for user data in API responses."""
-    role: RoleResponse = Field(
-        description="Role data"
-    )
-    collections_count: int = Field(
-        default=0,
-        description="Number of collections owned by the user"
-    )
-    loans_count: int = Field(
-        default=0,
-        description="Number of loans made by the user"
-    )
 
     model_config = ConfigDict(from_attributes=True)
 

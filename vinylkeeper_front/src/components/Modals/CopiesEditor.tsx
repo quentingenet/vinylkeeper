@@ -7,11 +7,12 @@ import { format, parse } from "date-fns";
 import type { CollectionAlbumCopy, CollectionAlbumCopyData, CollectionAlbumResponse } from "@models/Collection";
 import { useAlbumCopies } from "@hooks/useCollections";
 import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+import { colors } from "@styles/colors";
 
 const stateName = (state?: VinylStateEnum | null) => vinylStates.find((s) => s.id === state)?.name ?? "";
 
 const selectLabelSx = {
-  color: "#e4e4e4",
+  color: colors.textMuted,
   "&.Mui-focused": { color: "primary.main" },
   "&.MuiInputLabel-shrink": { color: "primary.main" },
 };
@@ -22,21 +23,21 @@ const datePickerSlotProps = {
     size: "small" as const,
     sx: {
       "& .MuiOutlinedInput-root": {
-        color: "#fffbf9",
+        color: colors.textLight,
         "& fieldset": { borderColor: "primary.main" },
-        "&:hover fieldset": { borderColor: "#b38f1f" },
+        "&:hover fieldset": { borderColor: colors.goldHover },
         "&.Mui-focused fieldset": { borderColor: "primary.main" },
       },
-      "& .MuiInputLabel-root": { color: "#fffbf9", "&.Mui-focused": { color: "primary.main" } },
+      "& .MuiInputLabel-root": { color: colors.textLight, "&.Mui-focused": { color: "primary.main" } },
     },
   },
   popper: {
     sx: {
-      "& .MuiPaper-root": { backgroundColor: "#3f3f41", color: "#fffbf9" },
-      "& .MuiPickersCalendarHeader-root": { color: "#fffbf9" },
+      "& .MuiPaper-root": { backgroundColor: colors.surface, color: colors.textLight },
+      "& .MuiPickersCalendarHeader-root": { color: colors.textLight },
       "& .MuiPickersYear-yearButton, & .MuiPickersMonth-monthButton": {
-        color: "#fffbf9",
-        "&.Mui-selected": { backgroundColor: "primary.main", color: "#000" },
+        color: colors.textLight,
+        "&.Mui-selected": { backgroundColor: "primary.main", color: colors.black },
         "&:hover": { backgroundColor: "rgba(201, 167, 38, 0.2)" },
       },
     },
@@ -62,7 +63,7 @@ function StateSelect({ id, label, value, onChange }: StateSelectProps) {
         value={value ?? ""}
         label={label}
         onChange={(e) => onChange((e.target.value as VinylStateEnum) || null)}
-        sx={{ color: "#fffbf9", "& .MuiSelect-icon": { color: "primary.main" } }}
+        sx={{ color: colors.textLight, "& .MuiSelect-icon": { color: "primary.main" } }}
       >
         {vinylStates.map((state) => (
           <MenuItem key={state.id} value={state.id}>
@@ -117,7 +118,7 @@ function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }:
   }
 
   return (
-    <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#2a2a2a" }}>
+    <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: colors.panel }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="body2" sx={{ color: "text.primary", fontWeight: "bold" }}>
           Copy {number}
@@ -129,7 +130,7 @@ function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }:
             onClick={() => setIsConfirmingDelete(true)}
             disabled={isBusy}
           >
-            <DeleteIcon fontSize="small" sx={{ color: "#e4e4e4" }} />
+            <DeleteIcon fontSize="small" sx={{ color: colors.textMuted }} />
           </IconButton>
         )}
       </Box>

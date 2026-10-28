@@ -35,13 +35,3 @@ export function triggerBrowserDownload(blob: Blob, filename: string): void {
   }
 }
 
-export function triggerBrowserDownloadFromUrl(url: string): void {
-  const a = document.createElement("a");
-  a.href = url;
-  a.rel = "noopener";
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-

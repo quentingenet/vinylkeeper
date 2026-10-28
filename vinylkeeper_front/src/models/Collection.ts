@@ -26,12 +26,6 @@ export interface ArtistBase {
   };
 }
 
-export interface AlbumInCollection {
-  state_record?: VinylStateEnum | null;
-  state_cover?: VinylStateEnum | null;
-  acquisition_month_year?: string | null;
-}
-
 export interface CollectionAlbumCopy {
   id: number;
   state_record?: VinylStateEnum | null;
@@ -40,7 +34,7 @@ export interface CollectionAlbumCopy {
   created_at: string;
 }
 
-export interface CollectionAlbumResponse extends AlbumBase, AlbumInCollection {
+export interface CollectionAlbumResponse extends AlbumBase {
   id: number;
   created_at: string;
   updated_at: string;
@@ -120,7 +114,6 @@ export interface CollectionListItemResponse {
   is_liked_by_user: boolean;
   albums_count: number;
   artists_count: number;
-  image_preview?: string | null;
   /** Random album covers (max 6, renewed daily), optional for older API versions */
   preview_images?: string[];
 }
@@ -153,7 +146,6 @@ export interface CollectionSearchResponse {
   search_type: string;
 }
 
-export type PaginatedAlbumsResponse = PaginatedResponse<CollectionAlbumResponse>;
 
 // One work of a collection: all its pressings (first added first) and their copies
 export interface CollectionRecordResponse {

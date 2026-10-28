@@ -4,6 +4,7 @@ import type { SxProps, Theme } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { getVisiblePages } from "@utils/getVisiblePages";
+import { colors } from "@styles/colors";
 
 interface PaginationWithEllipsisProps {
   count: number;
@@ -56,7 +57,7 @@ export default function PaginationWithEllipsis({
           color: color === "primary" ? "primary.main" : undefined,
           borderColor: color === "primary" ? "primary.main" : undefined,
           "&:hover": {
-            borderColor: color === "primary" ? "#B8961F" : undefined,
+            borderColor: color === "primary" ? colors.goldDark : undefined,
           },
           "&:disabled": {
             borderColor: "rgba(255, 255, 255, 0.12)",
@@ -110,10 +111,10 @@ export default function PaginationWithEllipsis({
                   backgroundColor:
                     pageNum === page
                       ? color === "primary"
-                        ? "#B8961F"
+                        ? colors.goldDark
                         : undefined
                       : "rgba(201, 167, 38, 0.08)",
-                  borderColor: color === "primary" ? "#B8961F" : undefined,
+                  borderColor: color === "primary" ? colors.goldDark : undefined,
                 },
               }}
             >
@@ -135,7 +136,7 @@ export default function PaginationWithEllipsis({
           color: color === "primary" ? "primary.main" : undefined,
           borderColor: color === "primary" ? "primary.main" : undefined,
           "&:hover": {
-            borderColor: color === "primary" ? "#B8961F" : undefined,
+            borderColor: color === "primary" ? colors.goldDark : undefined,
           },
           "&:disabled": {
             borderColor: "rgba(255, 255, 255, 0.12)",

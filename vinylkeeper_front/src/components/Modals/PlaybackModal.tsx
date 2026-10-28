@@ -23,6 +23,7 @@ import PressingSection from "@components/Modals/PressingSection";
 import CollectionPressings from "@components/Modals/CollectionPressings";
 import OwnedPressingsSection from "@components/Modals/OwnedPressingsSection";
 import type { CollectionAlbumResponse } from "@models/Collection";
+import { colors } from "@styles/colors";
 
 export interface PlaybackItem {
   id: string;
@@ -97,7 +98,7 @@ export default function PlaybackModal({
     transform: "translate(-50%, -50%)",
     width: isMobile ? "75%" : "500px",
     maxHeight: "80vh",
-    bgcolor: "#3f3f41",
+    bgcolor: colors.surface,
     borderRadius: 2,
     boxShadow: 24,
     p: 3,
@@ -132,7 +133,7 @@ export default function PlaybackModal({
                 {item.itemType === "album" ? "Album details" : "Artist details"}
               </Typography>
               <IconButton onClick={onClose} size="small">
-                <CloseIcon sx={{ color: "#fffbf9" }} />
+                <CloseIcon sx={{ color: colors.textLight }} />
               </IconButton>
             </Box>
 
@@ -142,7 +143,7 @@ export default function PlaybackModal({
               </Box>
             ) : error ? (
               <Box display="flex" justifyContent="center" my={4}>
-                <Typography sx={{ color: "#e4e4e4" }}>
+                <Typography sx={{ color: colors.textMuted }}>
                   {error instanceof Error ? error.message : "An error occurred"}
                 </Typography>
               </Box>
@@ -220,8 +221,8 @@ export default function PlaybackModal({
                             size="small"
                             sx={{
                               backgroundColor: "primary.main",
-                              color: "#fffbf9",
-                              "&:hover": { backgroundColor: "#b38f1f" },
+                              color: colors.textLight,
+                              "&:hover": { backgroundColor: colors.goldHover },
                             }}
                           />
                         ))}
@@ -240,7 +241,7 @@ export default function PlaybackModal({
                     </Typography>
                     <Box sx={{ p: 2, maxHeight: 200, overflow: "auto" }}>
                       <Typography
-                        sx={{ color: "#fffbf9", whiteSpace: "pre-line", lineHeight: 1.6 }}
+                        sx={{ color: colors.textLight, whiteSpace: "pre-line", lineHeight: 1.6 }}
                       >
                         {artistMetadata.biography}
                       </Typography>
@@ -263,8 +264,8 @@ export default function PlaybackModal({
                             size="small"
                             sx={{
                               backgroundColor: "primary.main",
-                              color: "#fffbf9",
-                              "&:hover": { backgroundColor: "#b38f1f" },
+                              color: colors.textLight,
+                              "&:hover": { backgroundColor: colors.goldHover },
                             }}
                           />
                         ))}
@@ -282,7 +283,7 @@ export default function PlaybackModal({
                 (!artistMetadata?.biography && item.itemType === "artist") ? (
                   <Typography
                     variant="body2"
-                    sx={{ color: "#e4e4e4", mt: 2, textAlign: "center" }}
+                    sx={{ color: colors.textMuted, mt: 2, textAlign: "center" }}
                   >
                     {item.itemType === "album"
                       ? "Tracklist not available"

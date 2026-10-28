@@ -3,6 +3,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useReplacePressing } from "@hooks/useReplacePressing";
 import type { IAlbumRequestResults } from "@models/IRequestProxy";
 import type { ReplaceTarget } from "@utils/findPressing";
+import { colors } from "@styles/colors";
 
 interface ReplacePressingPanelProps {
   pressing: IAlbumRequestResults;
@@ -20,7 +21,7 @@ export default function ReplacePressingPanel({ pressing, target, onDetails, onRe
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, backgroundColor: "#2a2a2a", borderRadius: 1 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, backgroundColor: colors.panel, borderRadius: 1 }}>
       <Typography variant="body2" sx={{ color: "text.primary" }}>
         {target.title ? `It will replace the pressing of “${target.title}” in your collection.` : null} Your copies,
         their condition and the date you added it are kept.

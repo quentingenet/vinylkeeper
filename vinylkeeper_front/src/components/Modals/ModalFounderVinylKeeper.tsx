@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, Box, Typography, Button, Fade, Stack } from "@mui/material";
 import useDetectMobile from "@hooks/useDetectMobile";
 import founderImg from "@assets/quentin_genet_vinyl_keeper.webp";
+import { colors } from "@styles/colors";
 
 interface ModalFounderVinylKeeperProps {
   openFounderModal: boolean;
@@ -31,8 +32,8 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            bgcolor: "#2c2c2e",
-            color: "#e4e4e4",
+            bgcolor: colors.paper,
+            color: colors.textMuted,
             borderRadius: 2,
             boxShadow: 24,
             p: isMobile ? 2 : 4,
@@ -88,7 +89,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
               variant="contained"
               sx={{
                 backgroundColor: "primary.main",
-                color: "#1F1F1F",
+                color: colors.deep,
                 fontWeight: "bold",
                 fontFamily: "Oswald-ExtraLight, sans-serif",
               }}

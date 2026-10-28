@@ -15,6 +15,7 @@ import {
 import { ContactSupport } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
 import { userApiService } from "@services/UserApiService";
+import { colors } from "@styles/colors";
 
 export default function ContactSection() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function ContactSection() {
               variant="contained"
               startIcon={<ContactSupport />}
               onClick={() => setModalOpen(true)}
-              sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: "#B8961F" } }}
+              sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
             >
               Contact support
             </Button>
@@ -137,7 +138,7 @@ export default function ContactSection() {
             onClick={() => formRef.current?.requestSubmit()}
             variant="contained"
             disabled={sendContactMessageMutation.isPending}
-            sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: "#B8961F" } }}
+            sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
           >
             {sendContactMessageMutation.isPending ? "Sending..." : "Send message"}
           </Button>

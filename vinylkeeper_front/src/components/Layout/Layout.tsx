@@ -8,6 +8,7 @@ import { Typography } from "@mui/material";
 import { usePageTitle } from "@hooks/usePageTitle";
 import AddRecordProvider from "@components/AddRecord/AddRecordProvider";
 import AddRecordFab from "@components/AddRecord/AddRecordFab";
+import { colors } from "@styles/colors";
 
 /**
  * Layout component that provides the main structure for the application
@@ -92,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         >
           {!isMobile && (
-            <Typography variant="h1" component="h1" color="#C9A726">
+            <Typography variant="h1" component="h1" color={colors.gold}>
               {currentTitle}
             </Typography>
           )}

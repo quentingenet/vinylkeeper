@@ -32,6 +32,7 @@ import {
   PaginatedCollectionListResponse,
 } from "@services/CollectionApiService";
 import { isApiError } from "@utils/apiError";
+import { colors } from "@styles/colors";
 
 interface IModalCollectionProps {
   openModal: boolean;
@@ -235,7 +236,7 @@ export default function ModalCollection({
                   id="transition-modal-title"
                   variant="h3"
                   component="h2"
-                  color={"#C9A726"}
+                  color={colors.gold}
                   sx={{ textAlign: "center", width: isMobile ? "75%" : "50%" }}
                   marginBottom={1}
                 >

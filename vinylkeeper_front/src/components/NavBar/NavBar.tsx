@@ -28,6 +28,7 @@ import { useAddRecord } from "@contexts/AddRecordContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 import { growItem } from "@utils/Animations";
+import { colors } from "@styles/colors";
 
 /**
  * NavBar component props interface
@@ -72,7 +73,7 @@ const NavBar: React.FC<NavBarProps> = ({
     void navigate(linkTo);
   };
 
-  const colorYellow = "#C9A726";
+  const colorYellow = colors.gold;
   const sizeIcons = "large";
 
   // Check if user has admin permissions
@@ -155,7 +156,7 @@ const NavBar: React.FC<NavBarProps> = ({
           fontFamily="RockSalt"
           color={colorYellow}
           sx={{
-            textShadow: "2px 2px 4px #000000",
+            textShadow: `2px 2px 4px ${colors.black}`,
             overflow: "hidden",
             whiteSpace: "nowrap",
             opacity: open ? 1 : 0,
@@ -207,7 +208,7 @@ const NavBar: React.FC<NavBarProps> = ({
               <ListItemText
                 primary={text}
                 sx={{
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   opacity: open ? 1 : 0,
                   transition: "opacity 0.3s ease-in-out",
                   whiteSpace: "nowrap",
@@ -241,7 +242,7 @@ const NavBar: React.FC<NavBarProps> = ({
           <ListItemText
             primary="Logout"
             sx={{
-              color: "#fffbf9",
+              color: colors.textLight,
               opacity: open ? 1 : 0,
               transition: "opacity 0.3s ease",
               whiteSpace: "nowrap",

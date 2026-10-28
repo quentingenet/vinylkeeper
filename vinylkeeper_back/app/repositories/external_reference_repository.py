@@ -24,9 +24,9 @@ from app.repositories.wishlist_repository import WishlistRepository
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.album_repository import AlbumRepository
 from app.repositories.artist_repository import ArtistRepository
+from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.association_tables import CollectionArtist
-from app.utils.vinyl_state_mapping import VinylStateMapping
 
 
 class ExternalReferenceRepository(TransactionalMixin):
@@ -38,13 +38,15 @@ class ExternalReferenceRepository(TransactionalMixin):
         wishlist_repo: WishlistRepository,
         collection_repo: CollectionRepository,
         album_repo: AlbumRepository,
-        artist_repo: ArtistRepository
+        artist_repo: ArtistRepository,
+        collection_album_repo: Optional[CollectionAlbumRepository] = None,
     ):
         self.db = db
         self.wishlist_repo = wishlist_repo
         self.collection_repo = collection_repo
         self.album_repo = album_repo
         self.artist_repo = artist_repo
+        self.collection_album_repo = collection_album_repo or CollectionAlbumRepository(db)
         # Cache for entity types and external sources
         self._entity_type_cache: Dict[str, int] = {}
         self._external_source_cache: Dict[str, int] = {}
@@ -225,77 +227,10 @@ class ExternalReferenceRepository(TransactionalMixin):
         self, collection: Collection, album: Album, album_data: Optional[dict] = None, is_new_entity: bool = False,
         pressing_confirmed: bool = False, add_copy: bool = False,
     ) -> tuple[CollectionAlbum, bool]:
-        """Add an album to a collection with optional album state data"""
-        try:
-            # Check if album is already in collection
-            query = select(CollectionAlbum).options(selectinload(CollectionAlbum.copies)).filter(
-                CollectionAlbum.collection_id == collection.id,
-                CollectionAlbum.album_id == album.id
-            )
-            result = await self.db.execute(query)
-            existing = result.scalar_one_or_none()
-
-            if existing:
-                if add_copy:
-                    now = datetime.now(timezone.utc)
-                    copy = CollectionAlbumCopy(created_at=now, updated_at=now)
-                    self._apply_album_data(copy, album_data or {})
-                    existing.copies.append(copy)
-                # Update metadata if provided, on the first copy (clients unaware of copies)
-                elif album_data:
-                    self._apply_album_data(existing.first_copy(), album_data)
-                # Picked again with its pressing details in sight; never unconfirmed by an old client
-                if pressing_confirmed:
-                    existing.pressing_confirmed = True
-
-                # Update only CollectionAlbum.updated_at when adding existing album
-                # Never modify created_at - it represents the initial addition date
-                existing.updated_at = datetime.now(timezone.utc)
-                # Preserve created_at if it's None (for old records)
-                if existing.created_at is None:
-                    existing.created_at = existing.updated_at
-                await self._flush_if_needed()
-
-                return existing, False
-
-            # Create new collection album association with explicit timestamps, and its first copy
-            now = datetime.now(timezone.utc)
-            first_copy = CollectionAlbumCopy(created_at=now, updated_at=now)
-            if album_data:
-                self._apply_album_data(first_copy, album_data)
-            collection_album = CollectionAlbum(
-                collection_id=collection.id,
-                album_id=album.id,
-                created_at=now,
-                updated_at=now,
-                copies=[first_copy],
-                pressing_confirmed=pressing_confirmed,
-            )
-
-            await self._add_entity(collection_album, flush=True)
-
-            return collection_album, True
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error adding album {album.id} to collection {collection.id}: {str(e)}",
-                exc_info=True
-            )
-            raise ServerError(
-                error_code=5000,
-                message="Failed to add album to collection",
-                details={}
-            )
-
-    @staticmethod
-    def _apply_album_data(copy: CollectionAlbumCopy, album_data: dict) -> None:
-        """State ids already resolved by the service; fields left out or None are not changed."""
-        if album_data.get('state_record_id') is not None:
-            copy.state_record = album_data['state_record_id']
-        if album_data.get('state_cover_id') is not None:
-            copy.state_cover = album_data['state_cover_id']
-        if album_data.get('acquisition_month_year') is not None:
-            copy.acquisition_month_year = album_data['acquisition_month_year']
-        copy.updated_at = datetime.now(timezone.utc)
+        """Add an album picked in a search; the rules live in CollectionAlbumRepository.add_or_update."""
+        return await self.collection_album_repo.add_or_update(
+            collection.id, album.id, album_data or {}, pressing_confirmed=pressing_confirmed, add_copy=add_copy,
+        )
 
     async def find_owned_pressings(
         self, user_id: int, external_source_id: int, external_album_id: str, external_master_id: Optional[str]
@@ -494,6 +429,3 @@ class ExternalReferenceRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_vinyl_state_id(self, state_name: str) -> int | None:
-        """Get the vinyl state ID using mapping"""
-        return VinylStateMapping.get_id_from_name(state_name)

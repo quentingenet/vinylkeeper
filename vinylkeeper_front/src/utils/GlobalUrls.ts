@@ -5,7 +5,7 @@
  * @property {string} ROOT - Home page URL "/"
  * @property {string} DASHBOARD - Dashboard page URL "/dashboard"
  * @property {string} COLLECTIONS - Collections page URL "/collections"
- * @property {string} ADD_VINYLS - Add vinyls page URL "/add-vinyls"
+ * @property {string} ADD_VINYLS - "/add-vinyls": opens the add record dialog over the dashboard (older links)
  * @property {string} EXPLORE - Legacy Explore URL "/explore", redirects to the Community tab of Collections
  * @property {string} WISHLIST - Wishlist page URL "/wishlist"
  * @property {string} PLACES - Places page URL "/places"

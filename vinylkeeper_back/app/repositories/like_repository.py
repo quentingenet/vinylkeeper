@@ -28,10 +28,6 @@ class LikeRepository(TransactionalMixin):
                 details={}
             )
 
-    async def find_by_user_and_collection(self, user_id: int, collection_id: int) -> Optional[Like]:
-        """Find like by user and collection."""
-        return await self.get(user_id, collection_id)
-
     async def create_like(self, user_id: int, collection_id: int) -> Like:
         """Add a like for the user and collection without committing (transaction managed by service)."""
         try:
@@ -93,21 +89,6 @@ class LikeRepository(TransactionalMixin):
             raise ServerError(
                 error_code=5000,
                 message="Failed to count likes",
-                details={}
-            )
-
-    async def count_user_likes(self, user_id: int) -> int:
-        """Return the total number of likes by a user."""
-        try:
-            query = select(func.count()).select_from(
-                Like).filter_by(user_id=user_id)
-            result = await self.db.execute(query)
-            return result.scalar()
-        except SQLAlchemyError as e:
-            logger.error(f"Error counting likes for user {user_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to count user likes",
                 details={}
             )
 

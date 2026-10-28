@@ -42,12 +42,6 @@ class ArtistCreate(ArtistBase):
     pass
 
 
-class ArtistUpdate(BaseSchema):
-    """Schema for updating an artist."""
-    title: Optional[str] = None
-    image_url: Optional[str] = None
-
-
 class ArtistInDB(ArtistBase):
     """Schema for artist data as stored in database."""
     id: int = Field(gt=0)
@@ -58,8 +52,3 @@ class ArtistInDB(ArtistBase):
 class ArtistResponse(ArtistInDB):
     """Schema for artist data in API responses."""
     collections_count: int = Field(default=0)
-
-
-class ArtistDetailResponse(ArtistResponse):
-    """Schema for detailed artist data in API responses."""
-    pass

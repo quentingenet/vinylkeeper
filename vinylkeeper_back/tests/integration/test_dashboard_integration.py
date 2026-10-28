@@ -24,9 +24,9 @@ from app.models.collection_model import Collection
 
 from tests.integration.conftest import make_real_test_user as make_test_user
 from tests.integration.test_real_db_relationships import (
-    make_collection_service,
     make_test_collection,
     pick_existing_album_id,
+    put_album_in_collection,
 )
 
 
@@ -48,12 +48,7 @@ class TestUserStatsBatch:
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
         album_id = await pick_existing_album_id(real_session)
-        service = make_collection_service(real_session)
-        await service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=_album_create(album_id, collection.id),
-        )
+        await put_album_in_collection(real_session, collection.id, album_id)
 
         repo = DashboardRepository(real_session)
         stats = await repo.get_user_stats_batch(user.id)
@@ -71,12 +66,7 @@ class TestGlobalCollectionsCounts:
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
         album_id = await pick_existing_album_id(real_session)
-        service = make_collection_service(real_session)
-        await service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=_album_create(album_id, collection.id),
-        )
+        await put_album_in_collection(real_session, collection.id, album_id)
 
         after = await repo.get_global_collections_counts()
         assert after["albums_total"] == before["albums_total"] + 1
@@ -90,12 +80,7 @@ class TestPublicCollectionsCount:
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
         album_id = await pick_existing_album_id(real_session)
-        service = make_collection_service(real_session)
-        await service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=_album_create(album_id, collection.id),
-        )
+        await put_album_in_collection(real_session, collection.id, album_id)
 
         after = await repo.get_public_collections_count()
         assert after == before + 1
@@ -134,12 +119,7 @@ class TestLatestAlbum:
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
         album_id = await pick_existing_album_id(real_session)
-        service = make_collection_service(real_session)
-        await service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=_album_create(album_id, collection.id),
-        )
+        await put_album_in_collection(real_session, collection.id, album_id)
 
         repo = DashboardRepository(real_session)
         result = await repo.get_latest_album()
@@ -148,11 +128,6 @@ class TestLatestAlbum:
         album, username, updated_at = result
         assert album.id == album_id
         assert username == user.username
-
-
-def _album_create(album_id: int, collection_id: int):
-    from app.schemas.collection_album_schema import CollectionAlbumCreate
-    return CollectionAlbumCreate(album_id=album_id, collection_id=collection_id)
 
 
 class TestRecentAlbumsOnePerWork:

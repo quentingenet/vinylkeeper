@@ -1,7 +1,8 @@
 import { Box, Modal } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import { colors } from "@styles/colors";
 
-export const modalAccentColor = "#C9A726";
+export const modalAccentColor = colors.gold;
 
 export const StyledModal = styled(Modal)(({ theme }) => ({
   display: "flex",
@@ -11,7 +12,7 @@ export const StyledModal = styled(Modal)(({ theme }) => ({
 }));
 
 export const ModalContent = styled(Box)(({ theme }) => ({
-  backgroundColor: "#2c2c2e",
+  backgroundColor: colors.paper,
   borderRadius: "8px",
   boxShadow: "0 0 20px rgba(201, 167, 38, 0.3)",
   padding: theme.spacing(3),
@@ -41,7 +42,7 @@ export const ModalImage = styled("img")({
 });
 
 export const TextContainer = styled(Box)(({ theme }) => ({
-  backgroundColor: "#3f3f41",
+  backgroundColor: colors.surface,
   padding: theme.spacing(2),
   borderRadius: "6px",
   border: `1px solid ${modalAccentColor}`,
@@ -63,6 +64,6 @@ export const slideTitleSx = {
 } as const;
 
 export const slideTextSx = {
-  color: "#fffbf9",
+  color: colors.textLight,
   lineHeight: 1.6,
 } as const;

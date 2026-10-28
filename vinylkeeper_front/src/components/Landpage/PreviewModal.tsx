@@ -14,6 +14,7 @@ import {
 } from "@components/Modals/carouselModalStyles";
 import type { PreviewSlide } from "@components/Landpage/previewSlides";
 import { growItem } from "@utils/Animations";
+import { colors } from "@styles/colors";
 
 interface PreviewModalProps {
   open: boolean;
@@ -69,7 +70,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter }: Preview
         <IconButton
           aria-label="Close preview"
           onClick={handleClose}
-          sx={{ position: "absolute", top: 8, right: 8, color: "#fffbf9" }}
+          sx={{ position: "absolute", top: 8, right: 8, color: colors.textLight }}
         >
           <Close />
         </IconButton>

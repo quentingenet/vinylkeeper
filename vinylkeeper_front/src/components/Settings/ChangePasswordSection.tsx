@@ -21,6 +21,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { passwordChangeValidationSchema } from "@utils/validators/passwordChangeValidationSchema";
 import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
 import { userApiService } from "@services/UserApiService";
+import { colors } from "@styles/colors";
 
 interface PasswordFormData {
   currentPassword: string;
@@ -143,7 +144,7 @@ export default function ChangePasswordSection() {
               variant="contained"
               startIcon={<Lock />}
               disabled={!isValid || changePasswordMutation.isPending}
-              sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: "#B8961F" } }}
+              sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
             >
               {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
             </Button>

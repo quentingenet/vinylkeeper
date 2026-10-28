@@ -9,7 +9,6 @@ from app.schemas.collection_schema import (
     CollectionAlbumResponse,
     CollectionCreateResponse,
     MessageResponse,
-    PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
     PaginatedRecordsResponse,
     CollectionSearchResponse,
@@ -20,7 +19,7 @@ from app.deps.deps import get_collection_service, get_export_service
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.export_service import ExportService
-from app.schemas.collection_album_schema import CollectionAlbumCopyData, CollectionAlbumUpdate
+from app.schemas.collection_album_schema import CollectionAlbumCopyData
 from app.utils.endpoint_utils import handle_app_exceptions
 from app.core.exceptions import ValidationError
 from app.core.logging import logger
@@ -157,20 +156,6 @@ async def get_collection_details(
     return details
 
 
-@router.get("/{collection_id}/albums", status_code=status.HTTP_200_OK, response_model=PaginatedAlbumsResponse)
-@handle_app_exceptions
-async def get_collection_albums_paginated(
-    collection_id: int = Path(..., gt=0, title="Collection ID"),
-    page: int = Query(1, gt=0, description="Page number"),
-    limit: int = Query(
-        12, gt=0, le=50, description="Number of items per page"),
-    sort_order: str = Query("newest", description="Sort order: 'newest' or 'oldest'"),
-    user=Depends(get_current_user),
-    service: CollectionService = Depends(get_collection_service),
-):
-    return await service.get_collection_albums_paginated(collection_id, user.id, page, limit, sort_order)
-
-
 @router.get("/{collection_id}/records", status_code=status.HTTP_200_OK, response_model=PaginatedRecordsResponse)
 @handle_app_exceptions
 async def get_collection_records_paginated(
@@ -253,21 +238,6 @@ async def unlike_collection(
         liked=False,
         likes_count=result["likes_count"]
     )
-
-
-@router.patch("/{collection_id}/albums/{album_id}/metadata", response_model=CollectionAlbumResponse)
-@handle_app_exceptions
-async def update_album_metadata(
-    collection_id: int,
-    album_id: int,
-    data: CollectionAlbumUpdate,
-    current_user: User = Depends(get_current_user),
-    service: CollectionService = Depends(get_collection_service)
-) -> CollectionAlbumResponse:
-    updated_metadata = await service.update_album_metadata(
-        current_user.id, collection_id, album_id, data
-    )
-    return updated_metadata
 
 
 @router.post("/{collection_id}/albums/{album_id}/copies", status_code=status.HTTP_201_CREATED,

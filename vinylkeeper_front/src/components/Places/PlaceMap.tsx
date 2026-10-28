@@ -34,6 +34,7 @@ import "leaflet/dist/leaflet.css";
 import "./place-map.css";
 import "./vinyl-marker.css";
 import { queryKeys } from "@utils/queryKeys";
+import { colors } from "@styles/colors";
 
 const vinylIcon = divIcon({
   html: `<div class="vinyl-marker"><img src="/images/vinylKeeper.svg" alt="vinyl spot" /></div>`,
@@ -119,7 +120,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
     width: { xs: "85dvw", sm: "70dvw", md: "50dvw", lg: "30dvw" },
     maxWidth: { xs: "95dvw", sm: "85dvw", md: "70dvw", lg: "50dvw" },
     maxHeight: { xs: "85dvh", sm: "80dvh", md: "70dvh", lg: "80dvh" },
-    bgcolor: "#3f3f41",
+    bgcolor: colors.surface,
     borderRadius: 2,
     boxShadow: 24,
     p: 3,
@@ -182,7 +183,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
               onClick={onAddPlace}
               sx={{
                 backgroundColor: "primary.main",
-                "&:hover": { backgroundColor: "#B8961F" },
+                "&:hover": { backgroundColor: colors.goldDark },
                 animation: `${growItem} 1.3s infinite`,
                 boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
               }}
@@ -193,7 +194,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
               variant="caption"
               onClick={onAddPlace}
               sx={{
-                color: "#fff",
+                color: colors.white,
                 backgroundColor: "rgba(0,0,0,0.6)",
                 borderRadius: 1,
                 px: 1.5,
@@ -251,7 +252,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                 <CircularProgress sx={{ color: "primary.main" }} />
               </Box>
             ) : isPlacesError ? (
-              <Typography sx={{ color: "#e4e4e4" }}>
+              <Typography sx={{ color: colors.textMuted }}>
                 Error loading places. Check your connection.
               </Typography>
             ) : placesList.length > 0 ? (
@@ -269,8 +270,8 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                   <Accordion
                     key={place.id}
                     sx={{
-                      backgroundColor: "#2d2d2f",
-                      color: "#fffbf9",
+                      backgroundColor: colors.raisedAlt,
+                      color: colors.textLight,
                       "&:before": {
                         display: "none",
                       },
@@ -302,7 +303,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                 ))}
               </Box>
             ) : (
-              <Typography sx={{ color: "#fffbf9" }}>
+              <Typography sx={{ color: colors.textLight }}>
                 No places found at this location.
               </Typography>
             )}
@@ -349,7 +350,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
         <Typography
           variant="body1"
           sx={{
-            color: "#e4e4e4",
+            color: colors.textMuted,
             fontSize: "1rem",
           }}
         >
@@ -362,7 +363,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
         <Typography
           variant="body1"
           sx={{
-            color: "#fffbf9",
+            color: colors.textLight,
             fontSize: "1rem",
             lineHeight: 1.5,
           }}
@@ -386,12 +387,12 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
             size="medium"
             sx={{
               backgroundColor: "primary.main",
-              color: "#fffbf9",
+              color: colors.textLight,
               fontSize: "0.9rem",
               fontWeight: "bold",
               padding: "8px 12px",
               "&:hover": {
-                backgroundColor: "#b38f1f",
+                backgroundColor: colors.goldHover,
               },
             }}
           />
@@ -401,11 +402,11 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
           onClick={handleLikeClick}
           disabled={isLiking || isUnliking || likeCooldown}
           sx={{
-            color: place.is_liked ? "#FFD700" : "#e4e4e4",
+            color: place.is_liked ? colors.likeGold : colors.textMuted,
             transition: "transform 0.15s, color 0.15s",
             "&:hover": {
               transform: "scale(1.1)",
-              color: "#FFD700",
+              color: colors.likeGold,
             },
             "&:active": {
               transform: "scale(0.95)",
@@ -418,7 +419,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
           <Typography
             variant="body1"
             sx={{
-              color: "#fffbf9",
+              color: colors.textLight,
               fontWeight: 600,
               fontSize: "1rem",
               transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",

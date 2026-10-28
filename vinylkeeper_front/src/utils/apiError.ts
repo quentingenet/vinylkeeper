@@ -15,8 +15,3 @@ export function isApiError(error: unknown): error is ApiError {
   );
 }
 
-export function toApiError(error: unknown): ApiError {
-  if (isApiError(error)) return error;
-  if (error instanceof Error) return { code: 9999, message: error.message, details: {} };
-  return { code: 9999, message: "Unknown error occurred", details: {} };
-}

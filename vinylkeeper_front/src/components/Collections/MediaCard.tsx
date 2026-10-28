@@ -12,6 +12,7 @@ import { Album } from "@mui/icons-material";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { truncateText } from "@utils/GlobalUtils";
 import styles from "../../styles/pages/Collection.module.scss";
+import { colors } from "@styles/colors";
 
 interface MediaCardItem {
   title?: string;
@@ -126,7 +127,7 @@ export default function MediaCard({
             py: 0.25,
             borderRadius: "12px",
             backgroundColor: "primary.main",
-            color: "#1F1F1F",
+            color: colors.deep,
             fontWeight: "bold",
             fontSize: "0.9rem",
           }}

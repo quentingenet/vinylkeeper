@@ -211,6 +211,26 @@ describe("Adding a result", () => {
     await waitFor(() => expect(api.addToCollection.mock.calls[0][1]).toMatchObject({ add_copy: true }));
   });
 
+  it("shows what the API says when the record was already there, as a warning", async () => {
+    api.addToCollection.mockResolvedValue({ is_new: false, message: "Already have album 'Kind Of Blue'" });
+    const user = await openFirstResult();
+
+    await user.click(screen.getByRole("button", { name: "Add to collection" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Already have album 'Kind Of Blue'");
+    expect(alert.className).toMatch(/Warning/);
+  });
+
+  it("says when adding failed", async () => {
+    api.addToCollection.mockRejectedValue(new Error("Failed to add item to collection"));
+    const user = await openFirstResult();
+
+    await user.click(screen.getByRole("button", { name: "Add to collection" }));
+
+    expect(await screen.findByText("Could not add the record. Please try again.")).toBeInTheDocument();
+  });
+
   it("opens the details of a result", async () => {
     const user = await openFirstResult();
 

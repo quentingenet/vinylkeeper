@@ -160,6 +160,13 @@ export default function CollectionDetails() {
   });
   const recordCards = useMemo(() => albumsData?.items.map(toRecordCard) ?? [], [albumsData]);
 
+  // Removing the last record of a page leaves it empty: show the previous one instead
+  useEffect(() => {
+    if (albumsData && albumsData.items.length === 0 && albumsPage > 1) {
+      setAlbumsPage((page) => page - 1);
+    }
+  }, [albumsData, albumsPage]);
+
   // Artists paginated query
   const {
     data: artistsData,

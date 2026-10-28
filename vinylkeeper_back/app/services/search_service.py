@@ -143,10 +143,6 @@ class SearchService:
             cls.normalize(hit.get("catno")),
         )
 
-    async def search_music(self, search_query: SearchQuery) -> List[DiscogsData]:
-        """Results of one page only: kept for clients that do not paginate."""
-        return (await self.search_music_page(search_query)).items
-
     async def search_music_page(self, search_query: SearchQuery) -> SearchResultsPage:
         """
         Search music via Discogs API, one page at a time.

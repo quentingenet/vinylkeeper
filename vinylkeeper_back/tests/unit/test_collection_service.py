@@ -96,6 +96,24 @@ class TestGetOwnedCollection:
         result = await service.delete_collection(user_id=1, collection_id=1)
         assert result is True
 
+    async def test_writes_check_the_owner_without_loading_every_album(self):
+        """Loading all albums and copies of a large collection on each write made writes slow."""
+        service, repo, *_ = make_service()
+        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=1))
+
+        await service.remove_album_from_collection(user_id=1, collection_id=1, album_id=5)
+
+        assert repo.get_by_id.await_args.kwargs["load_relations"] is False
+
+    async def test_delete_loads_relations_for_the_cascade(self):
+        service, repo, *_ = make_service()
+        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=1))
+        repo.delete = AsyncMock()
+
+        await service.delete_collection(user_id=1, collection_id=1)
+
+        assert repo.get_by_id.await_args.kwargs["load_relations"] is True
+
 
 # ---------------------------------------------------------------------------
 # _assert_collection_accessible
@@ -483,8 +501,7 @@ class TestGetPublicCollections:
 
 
 class TestCollectionListPreviewImages:
-    """Preview images feed the card mosaic; image_preview stays filled for
-    installed mobile app versions that still read it."""
+    """Preview images feed the card mosaic."""
 
     def _setup(self, list_method: str):
         service, repo, *_ = make_service()
@@ -509,9 +526,7 @@ class TestCollectionListPreviewImages:
 
         repo.get_preview_images_batch.assert_awaited_once_with([1, 2])
         assert collections[0].preview_images == covers
-        assert collections[0].image_preview == covers[0]
         assert collections[1].preview_images == []
-        assert collections[1].image_preview is None
 
     async def test_user_collections_expose_preview_images(self):
         service, repo, covers = self._setup("get_user_collections")
@@ -521,7 +536,6 @@ class TestCollectionListPreviewImages:
 
         repo.get_preview_images_batch.assert_awaited_once_with([1, 2])
         assert collections[0].preview_images == covers
-        assert collections[0].image_preview == covers[0]
         assert collections[1].preview_images == []
 
     async def test_empty_page_does_not_query_preview_images(self):

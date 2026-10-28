@@ -84,11 +84,6 @@ export interface CollectionItemResponse {
   created_at: string;
 }
 
-export interface AddExternalResponse {
-  success: boolean;
-  message: string;
-}
-
 export interface AddToWishlistResponse {
   item: WishlistItemResponse;
   is_new: boolean;

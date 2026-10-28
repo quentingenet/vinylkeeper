@@ -27,26 +27,12 @@ async def raw_client():
     app.dependency_overrides.clear()
 
 
-class TestSearchMusicRequiresAuth:
-    async def test_anonymous_request_returns_401(self, raw_client):
-        response = await raw_client.post(
-            "/api/request-proxy/search-music",
-            json={"query": "Daft Punk", "is_artist": True},
-        )
-        assert response.status_code == 401
-
-    async def test_authenticated_request_succeeds(self, auth_client):
-        client, _mock_service, _mock_user = auth_client
-        mock_search_service = AsyncMock()
-        mock_search_service.search_music = AsyncMock(return_value=[])
-        app.dependency_overrides[get_search_service] = lambda: mock_search_service
-
-        response = await client.post(
-            "/api/request-proxy/search-music",
-            json={"query": "Daft Punk", "is_artist": True},
-        )
-        assert response.status_code == 200
-        mock_search_service.search_music.assert_awaited_once()
+class TestUnpaginatedSearchIsGone:
+    async def test_old_route_no_longer_exists(self, auth_client):
+        """Only the deployed Android build used it; the app searches page by page."""
+        client, *_ = auth_client
+        response = await client.post("/api/request-proxy/search-music", json={"query": "Daft Punk"})
+        assert response.status_code in (404, 405)
 
 
 class TestSearchMusicPage:

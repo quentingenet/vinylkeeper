@@ -1,22 +1,4 @@
-from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-
-
-class PlaceLikeBase(BaseModel):
-    place_id: int = Field(gt=0)
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class PlaceLikeCreate(PlaceLikeBase):
-    """Schema for creating a like on a place."""
-
-
-class PlaceLikeResponse(PlaceLikeBase):
-    """Schema for returning a like."""
-    id: int = Field(gt=0)
-    user_id: int = Field(gt=0)
-    created_at: datetime
 
 
 class PlaceLikeStatusResponse(BaseModel):

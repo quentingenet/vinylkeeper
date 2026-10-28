@@ -1,4 +1,5 @@
 import { Box, Card, CardContent, Typography, CircularProgress } from "@mui/material";
+import { colors } from "@styles/colors";
 
 interface ModerationStats {
   total?: number;
@@ -14,9 +15,9 @@ interface Props {
 
 const STAT_CARDS = [
   { key: "total" as const, label: "Total", color: "primary.main" },
-  { key: "pending" as const, label: "Pending", color: "#ff9800" },
-  { key: "approved" as const, label: "Approved", color: "#4caf50" },
-  { key: "rejected" as const, label: "Rejected", color: "#f44336" },
+  { key: "pending" as const, label: "Pending", color: colors.warning },
+  { key: "approved" as const, label: "Approved", color: colors.success },
+  { key: "rejected" as const, label: "Rejected", color: colors.error },
 ];
 
 export default function ModerationStatsCards({ stats, isLoading }: Props) {
@@ -38,8 +39,8 @@ export default function ModerationStatsCards({ stats, isLoading }: Props) {
           <Card
             key={label}
             sx={{
-              bgcolor: "#3f3f41",
-              color: "#fffbf9",
+              bgcolor: colors.surface,
+              color: colors.textLight,
               width: { xs: "40%", sm: "100%" },
               display: "flex",
               flexDirection: "column",

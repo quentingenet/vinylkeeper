@@ -3,6 +3,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { logger } from "@utils/logger";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { musicStreamingService } from "@services/MusicStreamingService";
+import { colors } from "@styles/colors";
 
 interface StreamingLinksAccordionProps {
   itemTitle: string;
@@ -57,17 +58,17 @@ export default function StreamingLinksAccordion({
   return (
     <Accordion
       sx={{
-        backgroundColor: "#3f3f41",
-        color: "#fffbf9",
+        backgroundColor: colors.surface,
+        color: colors.textLight,
         mb: 2,
         "&:before": { display: "none" },
         "& .MuiAccordionSummary-root": {
-          backgroundColor: "#1F1F1F",
+          backgroundColor: colors.deep,
           color: "primary.main",
           fontWeight: "bold",
         },
         "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
-        "& .MuiAccordionDetails-root": { backgroundColor: "#2a2a2a" },
+        "& .MuiAccordionDetails-root": { backgroundColor: colors.panel },
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -84,9 +85,9 @@ export default function StreamingLinksAccordion({
               fullWidth
               onClick={() => handleRedirect(platform.name)}
               sx={{
-                backgroundColor: "#1F1F1F",
+                backgroundColor: colors.deep,
                 color: "primary.main",
-                "&:hover": { backgroundColor: "primary.main", color: "#1F1F1F" },
+                "&:hover": { backgroundColor: "primary.main", color: colors.deep },
                 py: 1.5,
               }}
               startIcon={<span>{platform.icon}</span>}

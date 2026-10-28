@@ -3,7 +3,6 @@ from pydantic import Field, field_validator
 from datetime import datetime
 
 from app.schemas import BaseSchema
-from app.core.enums import VinylStateEnum
 
 
 class AlbumBase(BaseSchema):
@@ -38,30 +37,8 @@ class AlbumBase(BaseSchema):
         return v
 
 
-class AlbumInCollection(BaseSchema):
-    """Schema for album data in a collection context."""
-    state_record: Optional[VinylStateEnum] = Field(
-        None,
-        description="State of the vinyl record (mint, near_mint, very_good_plus, etc.)"
-    )
-    state_cover: Optional[VinylStateEnum] = Field(
-        None,
-        description="State of the album cover (mint, near_mint, very_good_plus, etc.)"
-    )
-    acquisition_month_year: Optional[str] = Field(
-        None,
-        pattern=r"^\d{4}-(0[1-9]|1[0-2])$",
-        description="Acquisition month and year in format YYYY-MM (e.g., '2024-06')"
-    )
-
-
 class AlbumCreate(AlbumBase):
     """Schema for creating a new album."""
-    pass
-
-
-class AlbumUpdate(AlbumInCollection):
-    """Schema for updating an album in a collection."""
     pass
 
 
@@ -76,8 +53,3 @@ class AlbumResponse(AlbumInDB):
     """Schema for album data in API responses."""
     collections_count: int = Field(default=0)
     loans_count: int = Field(default=0)
-
-
-class AlbumDetailResponse(AlbumResponse):
-    """Schema for detailed album data in API responses."""
-    pass

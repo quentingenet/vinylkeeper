@@ -125,7 +125,7 @@ class TestGetPreviewImagesBatch:
 
 
 class TestCollectionListsPreviewImages:
-    async def test_user_collections_expose_preview_images_and_legacy_field(self, real_session):
+    async def test_user_collections_expose_preview_images(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_collection(real_session, user.id)
         for i in range(6):
@@ -135,7 +135,6 @@ class TestCollectionListsPreviewImages:
 
         item = next(i for i in items if i.id == collection.id)
         assert sorted(item.preview_images) == sorted(cover_url(f"mine-{i}") for i in range(6))
-        assert item.image_preview == item.preview_images[0]
 
     async def test_public_list_never_exposes_private_collection_covers(self, real_session):
         owner = await make_test_user(real_session)

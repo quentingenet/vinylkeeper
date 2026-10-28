@@ -1,4 +1,5 @@
 import { Box, Modal, Typography, Button, Link } from "@mui/material";
+import { colors } from "@styles/colors";
 
 interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: (value: boolean) => void;
@@ -26,8 +27,8 @@ export default function ModalTermsVinylKeeper(
       xl: "30%",
     },
     maxHeight: "50%",
-    bgcolor: "#f9f9f9",
-    border: "2px solid #000",
+    bgcolor: colors.offWhite,
+    border: `2px solid ${colors.black}`,
     boxShadow: 24,
     opacity: 0.8,
     p: 2,

@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.user_model import User
 from app.models.moderation_request_model import ModerationRequest
-from typing import Optional, List
+from typing import Optional
 from app.core.exceptions import ServerError
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
@@ -163,31 +163,5 @@ class UserRepository(TransactionalMixin):
             raise ServerError(
                 error_code=5000,
                 message="Failed to check if username is taken",
-                details={}
-            )
-
-    async def get_all_users(self, skip: int = 0, limit: int = 50) -> List[User]:
-        """Get all users with pagination"""
-        try:
-            result = await self.db.execute(select(User).offset(skip).limit(limit))
-            return result.scalars().all()
-        except SQLAlchemyError as e:
-            logger.error(f"Error retrieving users (skip: {skip}, limit: {limit}): {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get all users",
-                details={}
-            )
-
-    async def count_users(self) -> int:
-        """Count total number of users"""
-        try:
-            result = await self.db.execute(select(func.count(User.id)))
-            return result.scalar() or 0
-        except SQLAlchemyError as e:
-            logger.error(f"Error counting users: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to count users",
                 details={}
             )

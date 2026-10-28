@@ -7,22 +7,6 @@ from app.schemas import BaseSchema
 from app.core.enums import EntityTypeEnum, VinylStateEnum
 
 
-class EntityTypeResponse(BaseSchema):
-    """Schema for entity type data in responses."""
-    id: int = Field(gt=0, description="Entity type ID")
-    name: str = Field(description="Entity type name")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ExternalSourceResponse(BaseSchema):
-    """Schema for external source data in responses."""
-    id: int = Field(gt=0, description="External source ID")
-    name: str = Field(description="External source name")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class AlbumStateData(BaseSchema):
     """Schema for album state data when adding to collection."""
     state_cover: Optional[VinylStateEnum] = Field(
@@ -80,13 +64,12 @@ class AddToCollectionRequest(ExternalReferenceBase):
     )
     pressing_confirmed: bool = Field(
         False,
-        description="The pressing details were shown when this release was picked "
-                    "(clients older than pressings in search results do not send it)"
+        description="The pressing details were shown when this release was picked"
     )
     add_copy: bool = Field(
         False,
         description="When this release is already in the collection, add another copy with album_data "
-                    "instead of updating the first copy (what clients unaware of copies get)"
+                    "instead of updating the first copy"
     )
 
 
@@ -115,34 +98,6 @@ class ReplacePressingRequest(ExternalReferenceBase):
         if self.entity_type != EntityTypeEnum.ALBUM:
             raise ValueError("Only an album has a pressing")
         return self
-
-
-class ExternalReferenceResponse(BaseSchema):
-    """Response model for external reference operations."""
-    success: bool = Field(..., description="Whether the operation was successful")
-    message: str = Field(..., description="Response message")
-    data: Optional[dict] = Field(
-        None,
-        description="Additional data if available"
-    )
-
-
-class SearchResult(BaseSchema):
-    """Schema for search result items."""
-    external_id: str = Field(..., description="External ID of the item")
-    title: str = Field(..., description="Title of the album or artist")
-    image_url: str = Field(..., description="URL of the image")
-    entity_type: str = Field(..., description="Type of entity (ALBUM or ARTIST)")
-    source: str = Field(..., description="Source of the data")
-
-
-class SearchResponse(BaseSchema):
-    """Schema for search response."""
-    results: list[SearchResult] = Field(..., description="List of search results")
-    total: int = Field(..., description="Total number of results")
-    page: int = Field(..., description="Current page number")
-    limit: int = Field(..., description="Number of items per page")
-    total_pages: int = Field(..., description="Total number of pages")
 
 
 class WishlistItemResponse(BaseSchema):
@@ -190,9 +145,3 @@ class AddToCollectionResponse(BaseSchema):
     collection_name: str = Field(..., description="Name of the collection")
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class AddExternalResponse(BaseSchema):
-    """Response model for adding external reference."""
-    success: bool = Field(..., description="Whether the operation was successful")
-    message: str = Field(..., description="Response message")

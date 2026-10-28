@@ -15,8 +15,7 @@ class CollectionAlbum(Base):
     album_id = Column(Integer, ForeignKey(
         "albums.id", ondelete="CASCADE"), primary_key=True)
 
-    # state_record, state_cover and acquisition_month_year still exist in the table but are
-    # frozen since the copies migration: the condition lives on each copy now.
+    # The condition of the record lives on each copy (CollectionAlbumCopy)
 
     # Until pressings were shown in search results, people picked the first release offered:
     # the release of those albums may not be their actual pressing
@@ -35,11 +34,24 @@ class CollectionAlbum(Base):
         "Collection", back_populates="collection_albums", lazy="raise")
     album = relationship(
         "Album", back_populates="album_collections", lazy="raise")
-    # Oldest first: the first copy is the one clients unaware of copies read and write.
+    # Oldest first: adding an owned release again without add_copy updates the first copy.
     # passive_deletes: the database cascade removes copies, no load needed on delete.
     copies = relationship(
         "CollectionAlbumCopy", back_populates="collection_album", order_by="CollectionAlbumCopy.id",
         cascade="all, delete-orphan", passive_deletes=True, lazy="raise")
+
+    @classmethod
+    def new(cls, collection_id: int, album_id: int, pressing_confirmed: bool = False) -> "CollectionAlbum":
+        """The only way to put an album in a collection: always with its first copy."""
+        now = datetime.now(timezone.utc)
+        return cls(
+            collection_id=collection_id,
+            album_id=album_id,
+            created_at=now,
+            updated_at=now,
+            pressing_confirmed=pressing_confirmed,
+            copies=[CollectionAlbumCopy(created_at=now, updated_at=now)],
+        )
 
     def first_copy(self) -> "CollectionAlbumCopy":
         """Oldest copy (copies must be loaded); created if missing so that a write is never lost."""

@@ -37,7 +37,6 @@ def album_to_collection_album_response(album, collection_album=None) -> Collecti
     # Not guarded by is_loaded on purpose: a query that forgets to load copies must fail
     # loudly (lazy="raise") rather than answer an album with no condition.
     copies = [copy_to_response(copy) for copy in collection_album.copies] if collection_album else []
-    first = copies[0] if copies else None
 
     external_source_dict = external_source_to_dict(
         album.external_source if is_loaded(album, "external_source") else None
@@ -61,9 +60,6 @@ def album_to_collection_album_response(album, collection_album=None) -> Collecti
         external_source=external_source_dict,
         title=album.title,
         image_url=album.image_url,
-        state_record=first.state_record if first else None,
-        state_cover=first.state_cover if first else None,
-        acquisition_month_year=first.acquisition_month_year if first else None,
         created_at=created_at,
         updated_at=updated_at,
         collections_count=album.collections_count,

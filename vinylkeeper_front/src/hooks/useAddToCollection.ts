@@ -39,7 +39,6 @@ export function useAddToCollection(
   open: boolean,
   onClose: () => void
 ) {
-  const [showCollectionSelection, setShowCollectionSelection] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [messageType, setMessageType] = useState<MessageType>("success");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -73,33 +72,14 @@ export function useAddToCollection(
   });
   const [pendingDuplicate, setPendingDuplicate] = useState<DuplicatePrompt | null>(null);
 
-  const handleMutationSuccess = (
-    queryKey: string,
-    customMessage?: string,
-    isNew?: boolean
-  ) => {
-    if (!customMessage && isNew === undefined) return;
-
-    const message = customMessage || `Successfully added to ${queryKey}`;
-    let type: MessageType = "success";
-
-    if (customMessage?.includes("Error")) {
-      type = "error";
-    } else if (isNew === false) {
-      type = "warning";
-    } else if (isNew === true) {
-      type = "success";
-    } else if (customMessage?.includes("Already have")) {
-      type = "warning";
-    } else if (customMessage?.includes("Added")) {
-      type = "success";
-    }
-
+  // The API always says whether the item was new: no need to read its message to pick a color
+  const handleMutationSuccess = (message: string, isNew: boolean) => {
+    const type: MessageType = isNew ? "success" : "warning";
     setMessageType(type);
     setSuccessMessage(message);
     setIsDatePickerOpen(false);
 
-    // Keep modal open on duplicate/error so the user can retry with another collection
+    // Keep the actions open on a duplicate so the user can pick another collection
     if (type === "success") {
       setTimeout(() => {
         setSuccessMessage("");
@@ -110,12 +90,9 @@ export function useAddToCollection(
     }
   };
 
-  const handleMutationError = (error: Error) => {
+  const handleMutationError = () => {
     setMessageType("error");
-    const errorMessage = error.message.includes("Error adding to")
-      ? error.message
-      : "An error occurred while adding to collection";
-    setSuccessMessage(errorMessage);
+    setSuccessMessage("Could not add the record. Please try again.");
     setTimeout(() => setSuccessMessage(""), 3000);
   };
 
@@ -136,7 +113,7 @@ export function useAddToCollection(
           ? queryKeys.wishlist.forUser(currentUser.user_uuid)
           : queryKeys.wishlist.all(),
       });
-      handleMutationSuccess("wishlist", response.message, response.is_new);
+      handleMutationSuccess(response.message, response.is_new);
     },
     onError: handleMutationError,
   });
@@ -160,7 +137,7 @@ export function useAddToCollection(
       if (isAlbum) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.ownedPressings(variables.item.external_id) });
       }
-      handleMutationSuccess("collections", response.message, response.is_new);
+      handleMutationSuccess(response.message, response.is_new);
     },
     onError: handleMutationError,
   });
@@ -212,15 +189,12 @@ export function useAddToCollection(
           },
         },
       });
-    } catch (err) {
-      handleMutationError(
-        err instanceof Error ? err : new Error("An error occurred")
-      );
+    } catch {
+      // Shown by the mutation's onError
     }
   };
 
   const handleClose = useCallback(() => {
-    setShowCollectionSelection(false);
     setPendingDuplicate(null);
     setSuccessMessage("");
     setIsDatePickerOpen(false);
@@ -233,8 +207,6 @@ export function useAddToCollection(
   }, [onClose]);
 
   return {
-    showCollectionSelection,
-    setShowCollectionSelection,
     successMessage,
     messageType,
     albumStateData,

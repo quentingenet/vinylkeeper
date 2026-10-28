@@ -1,4 +1,5 @@
 import { createTheme } from "@mui/material/styles";
+import { colors } from "@styles/colors";
 
 const shadow = "0 0 10px rgba(0,0,0,0.6)";
 
@@ -6,40 +7,40 @@ const DesktopThemeAppVinylKeeper = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#C9A726",
-      dark: "#B8961F",
+      main: colors.gold,
+      dark: colors.goldDark,
     },
     background: {
-      default: "#3f3f41",
-      paper: "#2c2c2e",
+      default: colors.surface,
+      paper: colors.paper,
     },
     text: {
-      primary: "#fffbf9",
-      secondary: "#b0b0b0",
+      primary: colors.textLight,
+      secondary: colors.textSecondary,
     },
   },
   typography: {
     fontFamily: "Roboto, Oswald, sans-serif",
     h1: {
-      color: "#C9A726",
+      color: colors.gold,
       fontSize: "2.8rem",
       fontWeight: 600,
-      textShadow: "2px 2px 4px #000000",
+      textShadow: `2px 2px 4px ${colors.black}`,
     },
     h2: {
-      color: "#fffbf9",
+      color: colors.textLight,
       fontSize: "2rem",
       fontWeight: 500,
       textShadow: "2px 2px 5px rgba(0,0,0,0.7)",
     },
     h3: {
-      color: "#fffbf9",
+      color: colors.textLight,
       fontSize: "1.5rem",
       fontWeight: 500,
       textShadow: "2px 2px 5px rgba(0,0,0,0.7)",
     },
     body1: {
-      color: "#e4e4e4",
+      color: colors.textMuted,
       fontSize: "1rem",
       textShadow: "1px 1px 3px rgba(0,0,0,0.5)",
     },
@@ -60,23 +61,23 @@ const DesktopThemeAppVinylKeeper = createTheme({
     MuiDialogTitle: {
       styleOverrides: {
         root: {
-          color: "#C9A726",
+          color: colors.gold,
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          backgroundColor: "#2e3440",
-          color: "#fffbf9",
-          border: "1px solid #2e3440",
+          backgroundColor: colors.slate,
+          color: colors.textLight,
+          border: `1px solid ${colors.slate}`,
           borderRadius: "5px",
-          textShadow: "0 0 10px #2e3440",
+          textShadow: `0 0 10px ${colors.slate}`,
           boxShadow: shadow,
           transition: "all 0.3s ease-in-out",
           "&:hover": {
-            backgroundColor: "#fffbf9",
-            color: "#2e3440",
+            backgroundColor: colors.textLight,
+            color: colors.slate,
           },
         },
       },
@@ -84,8 +85,8 @@ const DesktopThemeAppVinylKeeper = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: "#1f1f1f",
-          color: "#fffbf9",
+          backgroundColor: colors.deep,
+          color: colors.textLight,
           boxShadow: shadow,
           transition: "width 0.3s ease-in-out",
           width: 240,
@@ -98,21 +99,21 @@ const DesktopThemeAppVinylKeeper = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#3f3f41",
+          backgroundColor: colors.surface,
           boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-          borderBottom: "1px solid #2e3440",
+          borderBottom: `1px solid ${colors.slate}`,
         },
       },
     },
     MuiTypography: {
       styleOverrides: {
         body1: {
-          color: "#fffbf9",
+          color: colors.textLight,
           opacity: 0.9,
           textShadow: "1px 1px 3px rgba(0,0,0,0.5)",
         },
         h2: {
-          color: "#fffbf9",
+          color: colors.textLight,
           textShadow: "2px 2px 5px rgba(0,0,0,0.7)",
         },
       },

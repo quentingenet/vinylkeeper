@@ -28,6 +28,7 @@ import {
   passwordWithLetter,
   passwordWithNumber,
 } from "@utils/Regex";
+import { colors } from "@styles/colors";
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function ResetPasswordForm() {
     margin: "5% auto",
     height: isMobile ? "280px" : "300px",
     width: "300px",
-    bgcolor: "#fffbf9",
+    bgcolor: colors.textLight,
     border: "2px solid black",
     borderRadius: "5px",
     padding: "20px",

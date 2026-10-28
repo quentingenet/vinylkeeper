@@ -1,6 +1,7 @@
 import { logger } from "@utils/logger";
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import { colors } from "@styles/colors";
 
 interface Props {
   children: ReactNode;
@@ -23,8 +24,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     minHeight: "100vh",
-    backgroundColor: "#313132",
-    color: "#fffbf9",
+    backgroundColor: colors.raised,
+    color: colors.textLight,
     textAlign: "center",
     padding: "2rem",
     gap: "1.8rem",
@@ -32,7 +33,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: "2.2rem",
     fontFamily: "RockSalt, Oswald, sans-serif",
-    color: "#C9A726",
+    color: colors.gold,
     margin: 0,
     lineHeight: 1.3,
   },
@@ -40,7 +41,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "1.05rem",
     fontFamily: "Oswald-Regular, Oswald, sans-serif",
     fontWeight: 300,
-    color: "#b0b0b0",
+    color: colors.textSecondary,
     margin: 0,
     maxWidth: 440,
     lineHeight: 1.7,
@@ -48,8 +49,8 @@ const styles: Record<string, React.CSSProperties> = {
   errorCode: {
     fontFamily: "Oswald-Light, Oswald, monospace",
     fontSize: "0.8rem",
-    color: "#666",
-    backgroundColor: "#2c2c2e",
+    color: colors.grey600,
+    backgroundColor: colors.paper,
     padding: "0.3rem 0.9rem",
     borderRadius: "4px",
     letterSpacing: "0.04em",
@@ -67,8 +68,8 @@ const styles: Record<string, React.CSSProperties> = {
   button: {
     padding: "0.65rem 2rem",
     backgroundColor: "transparent",
-    color: "#C9A726",
-    border: "1px solid #C9A726",
+    color: colors.gold,
+    border: `1px solid ${colors.gold}`,
     borderRadius: "6px",
     fontFamily: "Oswald-Medium, Oswald, sans-serif",
     fontSize: "1rem",
@@ -80,7 +81,7 @@ const styles: Record<string, React.CSSProperties> = {
   link: {
     fontFamily: "Oswald-Regular, Oswald, sans-serif",
     fontSize: "0.9rem",
-    color: "#666",
+    color: colors.grey600,
     cursor: "pointer",
     background: "none",
     border: "none",
@@ -108,13 +109,13 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
           onClick={onReset}
           onMouseEnter={(e) => {
             const btn = e.currentTarget as HTMLButtonElement;
-            btn.style.backgroundColor = "#C9A726";
-            btn.style.color = "#1f1f1f";
+            btn.style.backgroundColor = colors.gold;
+            btn.style.color = colors.deep;
           }}
           onMouseLeave={(e) => {
             const btn = e.currentTarget as HTMLButtonElement;
             btn.style.backgroundColor = "transparent";
-            btn.style.color = "#C9A726";
+            btn.style.color = colors.gold;
           }}
         >
           Try again
@@ -122,8 +123,8 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
         <button
           style={styles.link}
           onClick={() => { window.location.href = "/"; }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#b0b0b0"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#666"; }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = colors.textSecondary; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = colors.grey600; }}
         >
           Go to home page
         </button>

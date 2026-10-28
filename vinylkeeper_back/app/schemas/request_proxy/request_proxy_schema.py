@@ -21,36 +21,6 @@ class SearchQuery(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ExternalData(BaseModel):
-    """Schema for external data."""
-    id: str = Field(
-        ...,
-        description="External ID as string"
-    )
-    title: str = Field(
-        ...,
-        description="Title of the album or artist"
-    )
-    artist: str = Field(
-        ...,
-        description="Artist name"
-    )
-    year: Optional[str] = Field(
-        None,
-        description="Release year"
-    )
-    image_url: Optional[str] = Field(
-        None,
-        description="URL of the image"
-    )
-    source: str = Field(
-        ...,
-        description="Source of the data (e.g., 'DISCOGS')"
-    )
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class Artist(BaseModel):
     """Schema for artist data from external source."""
     uuid: str = Field(

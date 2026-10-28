@@ -45,6 +45,13 @@ $border-color: #333; // border color
 $button-color: #c9a726; // button color
 $button-hover-color: #e0b936; // button hover color
 
+/* Same names and values as src/styles/colors.ts (used by the TypeScript code and the MUI themes) */
+$color-gold: #c9a726;
+$color-text-light: #fffbf9;
+$color-text-muted: #e4e4e4;
+$color-raised: #313132;
+$color-paper: #2c2c2e;
+
 /* Transition mixin */
 @mixin transition($properties: all, $duration: 0.3s, $ease: ease-in-out) {
     transition: $properties $duration $ease;

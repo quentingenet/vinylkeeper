@@ -1,5 +1,3 @@
-from typing import Optional, List
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -12,23 +10,6 @@ class RoleBase(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class RoleCreate(RoleBase):
-    """Schema for creating a new role."""
-    pass
-
-
-class RoleUpdate(BaseModel):
-    """Schema for updating a role."""
-    name: Optional[str] = Field(
-        None,
-        min_length=1,
-        max_length=50,
-        description="New role name"
-    )
-
-    model_config = ConfigDict(extra="forbid")
 
 
 class RoleInDB(RoleBase):
@@ -44,12 +25,4 @@ class RoleResponse(RoleInDB):
     users_count: int = Field(
         default=0,
         description="Number of users with this role"
-    )
-
-
-class RoleDetailResponse(RoleResponse):
-    """Detailed role response including all related data."""
-    users: List[dict] = Field(
-        default_factory=list,
-        description="List of users with this role"
     )

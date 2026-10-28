@@ -24,6 +24,7 @@ import { registerValidationSchema } from "@utils/validators/registerValidationSc
 import styles from "../../styles/pages/Landpage.module.scss";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import AuthSwitchLink from "@components/Auth/AuthSwitchLink";
+import { colors } from "@styles/colors";
 
 interface RegisterProps {
   setRegister: (value: boolean) => void;
@@ -121,7 +122,7 @@ const Register = ({
           spacing={2}
           justifyContent="center"
           sx={{
-            bgcolor: "#fffbf9",
+            bgcolor: colors.textLight,
             borderRadius: "5px",
             width: isMobile ? "90dvw" : "24vw",
             minWidth: isMobile ? "280px" : 350,

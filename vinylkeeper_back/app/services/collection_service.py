@@ -17,14 +17,11 @@ from app.schemas.collection_schema import (
     CollectionDetailResponse,
     CollectionAlbumResponse,
     PaginatedRecordsResponse,
-    PaginatedAlbumsResponse,
     PaginatedArtistsResponse,
     CollectionSearchResponse
 )
 from app.schemas.collection_album_schema import (
     CollectionAlbumCopyData,
-    CollectionAlbumCreate,
-    CollectionAlbumUpdate
 )
 from app.core.exceptions import (
     AppException,
@@ -56,8 +53,10 @@ class CollectionService:
         self.wishlist_repository = wishlist_repository
 
     async def _get_owned_collection(
-        self, user_id: int, collection_id: int, load_relations: bool = True
+        self, user_id: int, collection_id: int, load_relations: bool = False
     ) -> Collection:
+        # An ownership check needs owner_id only: loading every album (and its copies) of a
+        # large collection on each write is what made writes slow. Ask for relations explicitly.
         collection = await self.repository.get_by_id(collection_id, load_relations=load_relations)
         if not collection:
             raise ResourceNotFoundError("Collection", collection_id)
@@ -102,10 +101,6 @@ class CollectionService:
             created_collection = await self.repository.get_by_id(created_collection.id, load_relations=True)
             return await self._build_collection_response(created_collection, user_id)
 
-    async def get_user_counts_batch(self, user_id: int) -> dict:
-        """Get all user counts in a single SQL query."""
-        return await self.repository.get_user_stats_all(user_id)
-
     async def get_collection(self, collection_id: int) -> CollectionResponse:
         """Get a collection by ID"""
         collection = await self.repository.get_by_id(collection_id, load_relations=True)
@@ -134,38 +129,13 @@ class CollectionService:
     async def delete_collection(self, user_id: int, collection_id: int) -> bool:
         """Delete a collection"""
         async with transaction_context(self.repository.db):
-            collection = await self._get_owned_collection(user_id, collection_id)
+            # Relations loaded: the ORM cascade removes the albums and artists of the collection
+            collection = await self._get_owned_collection(user_id, collection_id, load_relations=True)
             await self.repository.delete(collection)
         return True
 
-    async def add_album_to_collection(
-        self, user_id: int, collection_id: int, album_data: CollectionAlbumCreate
-    ) -> CollectionAlbumResponse:
-        """Add an album to a collection"""
-        async with transaction_context(self.collection_album_repository.db):
-            await self._get_owned_collection(user_id, collection_id)
-            collection_album = await self.collection_album_repository.add_album_to_collection(
-                collection_id, album_data.album_id, album_data.model_dump(exclude={'album_id'})
-            )
-
-        album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_data.album_id)
-        return collection_mapper.album_to_collection_album_response(album, collection_album)
-
-    async def update_album_metadata(
-        self, user_id: int, collection_id: int, album_id: int, metadata: CollectionAlbumUpdate
-    ) -> CollectionAlbumResponse:
-        """Update album metadata in a collection"""
-        async with transaction_context(self.collection_album_repository.db):
-            await self._get_owned_collection(user_id, collection_id)
-            updated_metadata = await self.collection_album_repository.update_album_metadata(
-                collection_id, album_id, metadata.model_dump(exclude_unset=True)
-            )
-
-        album = await self.collection_album_repository.get_album_with_metadata(collection_id, album_id)
-        return collection_mapper.album_to_collection_album_response(album, updated_metadata)
-
     async def _get_owned_album_copies(self, user_id: int, collection_id: int, album_id: int) -> CollectionAlbum:
-        await self._get_owned_collection(user_id, collection_id, load_relations=False)
+        await self._get_owned_collection(user_id, collection_id)
         collection_album = await self.collection_album_repository.find_with_copies(collection_id, album_id)
         if not collection_album:
             raise ResourceNotFoundError("Album", album_id)
@@ -459,47 +429,6 @@ class CollectionService:
                 details={}
             )
 
-    async def get_collection_albums_paginated(
-        self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
-    ) -> PaginatedAlbumsResponse:
-        """Get paginated albums from a collection"""
-        try:
-            collection = await self.repository.get_by_id(collection_id)
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
-
-            self._assert_collection_accessible(collection, user_id)
-
-            albums_data, total = await self.collection_album_repository.get_collection_albums_paginated(
-                collection_id, page, limit, sort_order
-            )
-
-            album_responses = [
-                collection_mapper.album_to_collection_album_response(album, collection_album)
-                for album, collection_album in albums_data
-            ]
-
-            return PaginatedAlbumsResponse(
-                items=album_responses,
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=(total + limit - 1) // limit,
-            )
-
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-            raise e
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(
-                f"Error getting collection albums paginated: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection albums",
-                details={}
-            )
-
     async def get_collection_records_paginated(
         self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
     ) -> PaginatedRecordsResponse:
@@ -709,8 +638,6 @@ class CollectionService:
             artists_count=artists_count,
             created_at=collection.created_at,
             updated_at=collection.updated_at,
-            # Kept for backward compatibility with installed mobile app versions
-            image_preview=preview_images[0] if preview_images else None,
             preview_images=preview_images,
         )
 

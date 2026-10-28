@@ -4,6 +4,7 @@ import {
   passwordWithLetter,
   passwordWithNumber,
 } from "@utils/Regex";
+import { colors } from "@styles/colors";
 
 interface PasswordStrengthIndicatorProps {
   password: string;
@@ -31,9 +32,9 @@ export default function PasswordStrengthIndicator({
   const strength = (passedChecks / checks.length) * 100;
 
   const getStrengthColor = (strength: number) => {
-    if (strength <= 33) return "#f44336";
-    if (strength <= 66) return "#ff9800";
-    return "#4caf50";
+    if (strength <= 33) return colors.error;
+    if (strength <= 66) return colors.warning;
+    return colors.success;
   };
 
   const getStrengthText = (strength: number) => {
@@ -60,7 +61,7 @@ export default function PasswordStrengthIndicator({
         sx={{
           height: 4,
           borderRadius: 2,
-          backgroundColor: "#e0e0e0",
+          backgroundColor: colors.grey200,
           "& .MuiLinearProgress-bar": {
             backgroundColor: getStrengthColor(strength),
           },

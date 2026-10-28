@@ -9,7 +9,7 @@
 
 .footerContainer {
     font-family: Oswald-Light, sans-serif;
-    color: #fffbf9;
+    color: $color-text-light;
     opacity: 0.6;
     display: flex;
     justify-content: center;
@@ -32,12 +32,12 @@
     }
 
     a {
-        color: #fffbf9;
+        color: $color-text-light;
         text-decoration: none;
     }
 
     a:visited {
-        color: #fffbf9;
+        color: $color-text-light;
     }
 }
 

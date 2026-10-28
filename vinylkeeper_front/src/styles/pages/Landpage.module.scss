@@ -64,7 +64,7 @@
             font-weight: 700;
             font-size: 1.5rem;
             opacity: 0.8;
-            color: #fffbf9;
+            color: $color-text-light;
             margin: 5rem 0;
         }
 
@@ -94,7 +94,7 @@
 
 /* Login and Register */
 .formContainer {
-    background-color: #fffbf9;
+    background-color: $color-text-light;
     opacity: 0.9;
     padding: 0 1rem;
     border-radius: 5px;
@@ -108,7 +108,7 @@
         gap: 0.7rem;
 
         .inputForm {
-            color: #fffbf9;
+            color: $color-text-light;
         }
 
         .errorText {

@@ -1,4 +1,5 @@
 import vinylKeeperLogo from "@assets/vinylKeeper.svg";
+import { colors } from "@styles/colors";
 
 interface VinylSpinnerProps {
   size?: number;
@@ -21,7 +22,7 @@ export default function VinylSpinner({ size = 48 }: VinylSpinnerProps) {
         style={{
           width: "100%",
           height: "100%",
-          filter: `drop-shadow(0 0 0 #000) drop-shadow(0 0 0 #000)`,
+          filter: `drop-shadow(0 0 0 ${colors.black}) drop-shadow(0 0 0 ${colors.black})`,
         }}
       />
       <style>{`

@@ -19,6 +19,7 @@ import {
   slideTextSx,
   slideTitleSx,
 } from "@components/Modals/carouselModalStyles";
+import { colors } from "@styles/colors";
 
 interface TutorialModalProps {
   open: boolean;
@@ -105,13 +106,13 @@ export default function TutorialModal({
           sx={{
             marginBottom: 2,
             "& .MuiStepLabel-root .Mui-completed": {
-              color: "#C9A726",
+              color: colors.gold,
             },
             "& .MuiStepLabel-root .Mui-active": {
-              color: "#C9A726",
+              color: colors.gold,
             },
             "& .MuiStepLabel-label": {
-              color: "#fffbf9",
+              color: colors.textLight,
             },
           }}
         >
@@ -128,9 +129,9 @@ export default function TutorialModal({
           sx={{
             height: 8,
             borderRadius: 4,
-            backgroundColor: "#3f3f41",
+            backgroundColor: colors.surface,
             "& .MuiLinearProgress-bar": {
-              backgroundColor: "#C9A726",
+              backgroundColor: colors.gold,
             },
             marginBottom: 2,
           }}
@@ -194,11 +195,11 @@ export default function TutorialModal({
             onClick={handleBack}
             disabled={activeStep === 0}
             sx={{
-              color: "#C9A726",
-              borderColor: "#C9A726",
+              color: colors.gold,
+              borderColor: colors.gold,
               "&:hover": {
-                borderColor: "#fffbf9",
-                color: "#fffbf9",
+                borderColor: colors.textLight,
+                color: colors.textLight,
               },
             }}
             variant="outlined"
@@ -211,10 +212,10 @@ export default function TutorialModal({
               <Button
                 onClick={handleClose}
                 sx={{
-                  backgroundColor: "#C9A726",
-                  color: "#2c2c2e",
+                  backgroundColor: colors.gold,
+                  color: colors.paper,
                   "&:hover": {
-                    backgroundColor: "#fffbf9",
+                    backgroundColor: colors.textLight,
                   },
                 }}
                 variant="contained"
@@ -225,10 +226,10 @@ export default function TutorialModal({
               <Button
                 onClick={handleNext}
                 sx={{
-                  backgroundColor: "#C9A726",
-                  color: "#2c2c2e",
+                  backgroundColor: colors.gold,
+                  color: colors.paper,
                   "&:hover": {
-                    backgroundColor: "#fffbf9",
+                    backgroundColor: colors.textLight,
                   },
                 }}
                 variant="contained"

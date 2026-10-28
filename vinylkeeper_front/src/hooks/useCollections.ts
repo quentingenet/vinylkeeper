@@ -129,7 +129,6 @@ export const useCollections = (
             username: currentUser.username,
             user_uuid: currentUser.user_uuid,
           },
-          image_preview: null,
           preview_images: [],
         };
 

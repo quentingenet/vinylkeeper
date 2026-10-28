@@ -7,15 +7,16 @@ import type { Edition } from "@components/AddVinyls/editionLabels";
 import PressingSection from "@components/Modals/PressingSection";
 import CopiesEditor from "@components/Modals/CopiesEditor";
 import { pressingTitle, storedEdition } from "@utils/collectionRecords";
+import { colors } from "@styles/colors";
 
 const accordionSx = {
-  backgroundColor: "#3f3f41",
-  color: "#fffbf9",
+  backgroundColor: colors.surface,
+  color: colors.textLight,
   mb: 1,
   "&:before": { display: "none" },
-  "& .MuiAccordionSummary-root": { backgroundColor: "#1F1F1F" },
+  "& .MuiAccordionSummary-root": { backgroundColor: colors.deep },
   "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
-  "& .MuiAccordionDetails-root": { backgroundColor: "#2a2a2a" },
+  "& .MuiAccordionDetails-root": { backgroundColor: colors.panel },
 };
 
 interface CollectionPressingsProps {

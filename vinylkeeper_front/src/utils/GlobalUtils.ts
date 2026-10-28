@@ -1,7 +1,4 @@
 export const API_VK_URL = import.meta.env.VITE_API_VK_URL;
-export const API_DEEZER_URL = import.meta.env.VITE_API_DEEZER_URL;
-export const API_MB_URL = import.meta.env.VITE_MB_API;
-export const API_DISCOGS_URL = import.meta.env.VITE_DISCOGS_API_URL;
 
 // Items per page for collections pagination
 export const ITEMS_PER_PAGE = 3;

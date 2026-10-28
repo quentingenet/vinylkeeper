@@ -1,5 +1,6 @@
 // MobileThemeAppVinylKeeper.js
 import { createTheme } from "@mui/material/styles";
+import { colors } from "@styles/colors";
 
 const shadow = "0 0 10px rgba(0,0,0,0.6)";
 
@@ -7,40 +8,40 @@ const MobileThemeAppVinylKeeper = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#C9A726",
-      dark: "#B8961F",
+      main: colors.gold,
+      dark: colors.goldDark,
     },
     background: {
-      default: "#3f3f41",
-      paper: "#2c2c2e",
+      default: colors.surface,
+      paper: colors.paper,
     },
     text: {
-      primary: "#fffbf9",
-      secondary: "#b0b0b0",
+      primary: colors.textLight,
+      secondary: colors.textSecondary,
     },
   },
   typography: {
     fontFamily: "Roboto, Oswald, sans-serif",
     h1: {
-      color: "#C9A726",
+      color: colors.gold,
       fontSize: "1.75rem",
       fontWeight: 600,
-      textShadow: "2px 2px 4px #000000",
+      textShadow: `2px 2px 4px ${colors.black}`,
     },
     h2: {
-      color: "#fffbf9",
+      color: colors.textLight,
       fontSize: "1.5rem", // Size adjustment for mobile
       fontWeight: 500,
-      textShadow: "0 0 8px #2e3440",
+      textShadow: `0 0 8px ${colors.slate}`,
     },
     h3: {
-      color: "#fffbf9",
+      color: colors.textLight,
       fontSize: "1.2rem",
       fontWeight: 500,
-      textShadow: "0 0 8px #2e3440",
+      textShadow: `0 0 8px ${colors.slate}`,
     },
     body1: {
-      color: "#e4e4e4",
+      color: colors.textMuted,
       fontSize: "0.875rem",
     },
     button: {
@@ -52,16 +53,16 @@ const MobileThemeAppVinylKeeper = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          backgroundColor: "#2e3440",
-          color: "#fffbf9",
-          border: "1px solid #2e3440",
+          backgroundColor: colors.slate,
+          color: colors.textLight,
+          border: `1px solid ${colors.slate}`,
           borderRadius: "5px",
-          textShadow: "0 0 10px #2e3440",
+          textShadow: `0 0 10px ${colors.slate}`,
           boxShadow: shadow,
           transition: "all 0.3s ease-in-out",
           "&:hover": {
-            backgroundColor: "#fffbf9",
-            color: "#2e3440",
+            backgroundColor: colors.textLight,
+            color: colors.slate,
           },
           padding: "6px 12px",
           fontSize: "0.875rem",
@@ -71,8 +72,8 @@ const MobileThemeAppVinylKeeper = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: "#1f1f1f",
-          color: "#fffbf9",
+          backgroundColor: colors.deep,
+          color: colors.textLight,
           width: "100%",
           boxShadow: shadow,
           transition: "all 0.3s ease-in-out",
@@ -82,7 +83,7 @@ const MobileThemeAppVinylKeeper = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#3f3f41",
+          backgroundColor: colors.surface,
           boxShadow: "0 0 5px rgba(0,0,0,0.4)",
         },
       },
@@ -90,7 +91,7 @@ const MobileThemeAppVinylKeeper = createTheme({
     MuiTypography: {
       styleOverrides: {
         body1: {
-          color: "#fffbf9",
+          color: colors.textLight,
           opacity: 0.9,
         },
       },

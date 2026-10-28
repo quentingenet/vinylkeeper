@@ -190,3 +190,18 @@ class TestPressingsOfOneWork:
         assert [c.albums_count for c in options.collections] == [1]
         assert [item.id for item in result.items] == [original.id]
         assert result.items[0].external_master_id == master
+
+
+class TestCollectionsOfAWork:
+    async def test_every_collection_holding_a_pressing_of_the_work_is_listed(self, real_session):
+        user = await make_real_test_user(real_session)
+        shelf = await make_test_collection(real_session, owner_id=user.id)
+        attic = await make_test_collection(real_session, owner_id=user.id)
+        master = f"itest-{uuid.uuid4().hex[:8]}"
+        await add_album(real_session, [shelf.id], ["calm"], genres=["Jazz"], external_master_id=master)
+        await add_album(real_session, [attic.id], ["calm"], genres=["Jazz"], external_master_id=master)
+
+        result = await service(real_session).pick(user.id, ["calm"], [], [], [], limit=50)
+
+        assert result.total == 1
+        assert {c.id for c in result.items[0].collections} == {shelf.id, attic.id}

@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -153,86 +153,6 @@ class ModerationRequestRepository(TransactionalMixin):
             raise ServerError(
                 error_code=5000,
                 message="Failed to update moderation request",
-                details={}
-            )
-
-    async def delete_request(self, request_id: int) -> bool:
-        """Delete a moderation request without committing (transaction managed by service)."""
-        try:
-            request = await self.get_request_by_id(request_id)
-            await self._delete_entity(request)
-            return True
-        except ResourceNotFoundError:
-            raise
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error deleting moderation request {request_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to delete moderation request",
-                details={}
-            )
-
-    async def get_requests_by_user(self, user_id: int) -> List[ModerationRequest]:
-        """Get all moderation requests submitted by a specific user."""
-        try:
-            query = select(ModerationRequest).filter(
-                ModerationRequest.submitted_by_id == user_id)
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error retrieving moderation requests for user {user_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation requests by user",
-                details={}
-            )
-
-    async def get_requests_by_entity_type(self, entity_type_id: int) -> List[ModerationRequest]:
-        """Get all moderation requests for a specific entity type."""
-        try:
-            query = select(ModerationRequest).filter(
-                ModerationRequest.entity_type_id == entity_type_id)
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error retrieving moderation requests by entity type {entity_type_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation requests by entity type",
-                details={}
-            )
-
-    async def get_pending_requests_count(self) -> int:
-        """Get the count of pending moderation requests."""
-        try:
-            return await self.get_moderation_request_count_by_status(ModerationStatusEnum.PENDING.value)
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error counting pending moderation requests: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to count pending moderation requests",
-                details={}
-            )
-
-    async def get_requests_by_entity_id(self, entity_id: int, entity_type_id: int) -> List[ModerationRequest]:
-        """Get moderation requests for a specific entity."""
-        try:
-            query = select(ModerationRequest).filter(
-                and_(ModerationRequest.entity_id == entity_id,
-                     ModerationRequest.entity_type_id == entity_type_id)
-            )
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error retrieving moderation requests for entity {entity_id} of type {entity_type_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation requests by entity",
                 details={}
             )
 

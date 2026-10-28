@@ -7,6 +7,7 @@ clients that know nothing about copies (the deployed mobile app).
 import csv
 import io
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError as PydanticValidationError
@@ -15,11 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, ResourceNotFoundError, ValidationError
 from app.models.album_model import Album
-from app.models.collection_album import CollectionAlbumCopy
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.collection_repository import CollectionRepository
 from app.schemas.collection_album_schema import (
-    CollectionAlbumCopyData, CollectionAlbumCreate, CollectionAlbumUpdate,
+    CollectionAlbumCopyData,
 )
 from app.schemas.external_reference_schema import (
     AddToCollectionRequest, AlbumStateData, ReplacePressingRequest,
@@ -31,6 +32,7 @@ from tests.integration.test_real_db_relationships import (
     make_external_reference_service,
     make_test_collection,
     make_test_user,
+    put_album_in_collection,
 )
 
 
@@ -42,8 +44,7 @@ async def owned_collection_with_album(session: AsyncSession, **states):
     user = await make_test_user(session)
     collection = await make_test_collection(session, owner_id=user.id)
     [album] = await existing_albums(session, 1)
-    await make_collection_service(session).add_album_to_collection(
-        user.id, collection.id, CollectionAlbumCreate(album_id=album.id, collection_id=collection.id, **states))
+    await put_album_in_collection(session, collection.id, album.id, **states)
     # Reads below start from a clean session, like a new request does
     session.expunge_all()
     return user, collection, album
@@ -51,11 +52,23 @@ async def owned_collection_with_album(session: AsyncSession, **states):
 
 async def copies_of(service, user, collection) -> list:
     """Copies of the only album of the collection."""
-    page = await service.get_collection_albums_paginated(collection.id, user.id, 1, 12, "newest")
+    page = await albums_page(service, collection.id, user.id)
     return page.items[0].copies
 
 
+async def albums_page(service, collection_id: int, user_id: int, page: int = 1, limit: int = 12,
+                      sort_order: str = "newest") -> SimpleNamespace:
+    """A page of the collection read like the app does (works), flattened to its albums (pressings)."""
+    records = await service.get_collection_records_paginated(collection_id, user_id, page, limit, sort_order)
+    return SimpleNamespace(items=[p for r in records.items for p in r.pressings], total=records.total)
+
+
 def states(response) -> tuple:
+    """Condition of a copy, or of the first copy of an album."""
+    if hasattr(response, "copies"):
+        if not response.copies:
+            return (None, None, None)
+        response = response.copies[0]
     return (
         response.state_record.value if response.state_record else None,
         response.state_cover.value if response.state_cover else None,
@@ -63,37 +76,14 @@ def states(response) -> tuple:
     )
 
 
-class TestWriteThroughCollectionRoutes:
+class TestWriteThroughTheAddPath:
     async def test_add_stores_the_states(self, real_session):
-        user = await make_test_user(real_session)
-        collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        user, collection, _ = await owned_collection_with_album(
+            real_session, state_record="mint", state_cover="very_good", acquisition_month_year="2023-02")
 
-        response = await make_collection_service(real_session).add_album_to_collection(
-            user.id, collection.id,
-            CollectionAlbumCreate(album_id=album.id, collection_id=collection.id, state_record="mint",
-                                  state_cover="very_good", acquisition_month_year="2023-02"))
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
 
-        assert states(response) == ("mint", "very_good", "2023-02")
-
-    async def test_partial_update_keeps_the_other_fields(self, real_session):
-        user, collection, album = await owned_collection_with_album(
-            real_session, state_record="mint", state_cover="good")
-
-        response = await make_collection_service(real_session).update_album_metadata(
-            user.id, collection.id, album.id, CollectionAlbumUpdate(acquisition_month_year="2024-06"))
-
-        assert states(response) == ("mint", "good", "2024-06")
-
-    async def test_update_to_null_clears_a_state(self, real_session):
-        """The album modal always sends the three fields."""
-        user, collection, album = await owned_collection_with_album(real_session, state_record="mint")
-
-        response = await make_collection_service(real_session).update_album_metadata(
-            user.id, collection.id, album.id,
-            CollectionAlbumUpdate(state_record=None, state_cover="good", acquisition_month_year=None))
-
-        assert states(response) == (None, "good", None)
+        assert [states(item) for item in page.items] == [("mint", "very_good", "2023-02")]
 
 
 class TestReadPaths:
@@ -101,8 +91,7 @@ class TestReadPaths:
         user, collection, _ = await owned_collection_with_album(
             real_session, state_record="near_mint", acquisition_month_year="2020-01")
 
-        page = await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
 
         assert [states(item) for item in page.items] == [("near_mint", None, "2020-01")]
 
@@ -150,8 +139,7 @@ class TestAddFromSearch:
         response = await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, self.request(album, state_record="mint", acquisition_month_year="2021-03"))
 
-        page = await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
         assert response.is_new is True
         assert [states(item) for item in page.items] == [("mint", None, "2021-03")]
 
@@ -165,8 +153,7 @@ class TestAddFromSearch:
 
         response = await service.add_to_collection(user.id, collection.id, self.request(album, state_record="fair"))
 
-        page = await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
         assert response.is_new is False
         assert [states(item) for item in page.items] == [("fair", "good", None)]
 
@@ -179,8 +166,7 @@ class TestCollectionCreatedWithAlbums:
 
         await CollectionRepository(real_session).add_albums(collection, [a.id for a in albums])
 
-        page = await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
         assert sorted(item.id for item in page.items) == sorted(a.id for a in albums)
         assert {states(item) for item in page.items} == {(None, None, None)}
 
@@ -196,16 +182,6 @@ class TestCopies:
         assert [states(copy) for copy in response.copies] == [("mint", None, None), ("fair", "good", None)]
         assert states(response) == ("mint", None, None)
 
-    async def test_old_metadata_route_edits_the_first_copy_only(self, real_session):
-        user, collection, album = await owned_collection_with_album(real_session, state_record="mint")
-        service = make_collection_service(real_session)
-        await service.add_album_copy(user.id, collection.id, album.id, CollectionAlbumCopyData(state_record="fair"))
-
-        response = await service.update_album_metadata(
-            user.id, collection.id, album.id, CollectionAlbumUpdate(state_record="poor"))
-
-        assert [states(copy) for copy in response.copies] == [("poor", None, None), ("fair", None, None)]
-
     async def test_old_add_route_updates_the_first_copy_only(self, real_session):
         user, collection, album = await owned_collection_with_album(real_session, state_record="mint")
         await make_collection_service(real_session).add_album_copy(
@@ -214,8 +190,7 @@ class TestCopies:
         await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, TestAddFromSearch.request(album, state_cover="good"))
 
-        page = await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
         assert [states(copy) for copy in page.items[0].copies] == [("mint", "good", None), ("fair", None, None)]
 
     async def test_update_a_copy_changes_only_the_fields_sent(self, real_session):
@@ -263,8 +238,7 @@ class TestCopies:
         first_album, second_album = await existing_albums(real_session, 2)
         service = make_collection_service(real_session)
         for album in (first_album, second_album):
-            await service.add_album_to_collection(
-                user.id, collection.id, CollectionAlbumCreate(album_id=album.id, collection_id=collection.id))
+            await put_album_in_collection(real_session, collection.id, album.id)
         other = await service.add_album_copy(user.id, collection.id, second_album.id, CollectionAlbumCopyData())
 
         with pytest.raises(ResourceNotFoundError):
@@ -297,7 +271,7 @@ class TestCopies:
         await service.add_album_copy(user.id, collection.id, album.id, CollectionAlbumCopyData())
         real_session.expunge_all()
 
-        page = await service.get_collection_albums_paginated(collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(service, collection.id, user.id)
         detail = await service.get_collection_by_id(collection.id, user.id)
 
         assert (page.total, len(page.items), len(detail.albums)) == (1, 1, 1)
@@ -336,8 +310,7 @@ class TestPressingConfirmation:
         await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, TestAddFromSearch.request(album))
 
-        [item] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [item] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
         assert item.pressing_confirmed is False
 
     async def test_picked_with_its_pressing_in_sight_is_confirmed(self, real_session):
@@ -348,8 +321,7 @@ class TestPressingConfirmation:
 
         await make_external_reference_service(real_session).add_to_collection(user.id, collection.id, request)
 
-        [item] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [item] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
         assert item.pressing_confirmed is True
 
     async def test_picking_the_same_release_again_confirms_it_but_an_old_client_never_unconfirms(
@@ -364,8 +336,7 @@ class TestPressingConfirmation:
             update={"pressing_confirmed": True}))
         await service.add_to_collection(user.id, collection.id, TestAddFromSearch.request(album))
 
-        [item] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [item] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
         assert item.pressing_confirmed is True
 
     async def test_owner_confirms_the_pressing(self, real_session):
@@ -385,8 +356,7 @@ class TestPressingConfirmation:
     async def test_response_carries_the_pressing_of_the_release(self, real_session):
         user, collection, album = await owned_collection_with_album(real_session)
 
-        [item] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [item] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
 
         assert (item.release_year, item.country, item.label, item.catno, item.formats) == (
             album.release_year, album.country, album.label, album.catno, album.formats or [])
@@ -403,15 +373,13 @@ class TestReplacePressing:
             real_session, state_record="mint", acquisition_month_year="2019-05")
         await make_collection_service(real_session).add_album_copy(
             user.id, collection.id, album.id, CollectionAlbumCopyData(state_record="fair"))
-        [before] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [before] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
         new_external_id = str(uuid.uuid4().int)[:12]
 
         response = await make_external_reference_service(real_session).replace_pressing(
             user.id, collection.id, album.id, replace_request(new_external_id))
 
-        page = await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(make_collection_service(real_session), collection.id, user.id)
         [after] = page.items
         assert response.id == after.id != album.id
         assert response.external_album_id == new_external_id
@@ -424,16 +392,14 @@ class TestReplacePressing:
         collection = await make_test_collection(real_session, owner_id=user.id)
         wrong, right = await existing_albums(real_session, 2)
         service = make_collection_service(real_session)
-        await service.add_album_to_collection(user.id, collection.id, CollectionAlbumCreate(
-            album_id=right.id, collection_id=collection.id, state_record="good"))
-        await service.add_album_to_collection(user.id, collection.id, CollectionAlbumCreate(
-            album_id=wrong.id, collection_id=collection.id, state_record="mint"))
+        await put_album_in_collection(real_session, collection.id, right.id, state_record="good")
+        await put_album_in_collection(real_session, collection.id, wrong.id, state_record="mint")
         real_session.expunge_all()
 
         response = await make_external_reference_service(real_session).replace_pressing(
             user.id, collection.id, wrong.id, replace_request(right.external_album_id))
 
-        page = await service.get_collection_albums_paginated(collection.id, user.id, 1, 12, "newest")
+        page = await albums_page(service, collection.id, user.id)
         assert [item.id for item in page.items] == [right.id]
         assert [states(c) for c in response.copies] == [("good", None, None), ("mint", None, None)]
 
@@ -478,8 +444,7 @@ class TestAddAnotherCopy:
         response = await service.add_to_collection(user.id, collection.id, TestAddFromSearch.request(
             album, state_record="fair").model_copy(update={"add_copy": True}))
 
-        [item] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [item] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
         assert [states(c) for c in item.copies] == [("mint", None, None), ("fair", None, None)]
         assert response.is_new is True
         assert response.message.startswith("Added another copy")
@@ -492,8 +457,7 @@ class TestAddAnotherCopy:
         response = await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, TestAddFromSearch.request(album).model_copy(update={"add_copy": True}))
 
-        [item] = (await make_collection_service(real_session).get_collection_albums_paginated(
-            collection.id, user.id, 1, 12, "newest")).items
+        [item] = (await albums_page(make_collection_service(real_session), collection.id, user.id)).items
         assert (response.is_new, item.copies_count) == (True, 1)
 
 
@@ -507,8 +471,7 @@ class TestOwnedPressings:
         reissue.external_master_id = master
         service = make_collection_service(real_session)
         for album in (original, reissue, other_work):
-            await service.add_album_to_collection(
-                user.id, collection.id, CollectionAlbumCreate(album_id=album.id, collection_id=collection.id))
+            await put_album_in_collection(real_session, collection.id, album.id)
         await service.add_album_copy(user.id, collection.id, original.id, CollectionAlbumCopyData())
 
         owned = await make_external_reference_service(real_session).find_owned_pressings(
@@ -547,10 +510,8 @@ class TestCollectionCountsWorks:
         await CollectionRepository(real_session).add_albums(collection, [original.id, reissue.id, other.id])
         real_session.expunge_all()
 
-        counts = await CollectionRepository(real_session).get_collection_counts(collection.id)
         [listed], _ = await make_collection_service(real_session).get_user_collections(user.id, 1, 12)
 
-        assert counts["albums_count"] == 2
         assert listed.albums_count == 2
 
 
@@ -567,8 +528,7 @@ class TestCollectionRecords:
         other.external_master_id = None
         service = make_collection_service(session)
         for album in (original, reissue, other):
-            await service.add_album_to_collection(
-                user.id, collection.id, CollectionAlbumCreate(album_id=album.id, collection_id=collection.id))
+            await put_album_in_collection(session, collection.id, album.id)
         await service.add_album_copy(user.id, collection.id, original.id, CollectionAlbumCopyData())
         session.expunge_all()
         return user, collection, (original, reissue, other), master
@@ -663,3 +623,32 @@ class TestExportOrder:
         rows = await CollectionAlbumRepository(real_session).get_collection_albums(collection.id)
 
         assert [album.title for album, _ in rows] == ["brel - Brel", "Miles Davis - Kind Of Blue", "Zappa - Hot Rats"]
+
+
+class TestSingleAddPath:
+    def test_a_new_collection_row_always_has_its_first_copy(self):
+        collection_album = CollectionAlbum.new(collection_id=1, album_id=2, pressing_confirmed=True)
+
+        assert len(collection_album.copies) == 1
+        assert collection_album.pressing_confirmed is True
+        assert collection_album.created_at == collection_album.copies[0].created_at
+
+    async def test_deleting_a_collection_removes_its_albums_and_copies(self, real_session):
+        user, collection, album = await owned_collection_with_album(real_session, state_record="mint")
+        service = make_collection_service(real_session)
+        await service.add_album_copy(user.id, collection.id, album.id, CollectionAlbumCopyData())
+
+        await service.delete_collection(user.id, collection.id)
+
+        remaining = (await real_session.execute(
+            select(func.count()).select_from(CollectionAlbumCopy)
+            .filter(CollectionAlbumCopy.collection_id == collection.id))).scalar_one()
+        assert remaining == 0
+
+    async def test_the_search_add_path_checks_the_owner(self, real_session):
+        _, collection, album = await owned_collection_with_album(real_session)
+        stranger = await make_test_user(real_session)
+
+        with pytest.raises(ForbiddenError):
+            await make_external_reference_service(real_session).add_to_collection(
+                stranger.id, collection.id, TestAddFromSearch.request(album))

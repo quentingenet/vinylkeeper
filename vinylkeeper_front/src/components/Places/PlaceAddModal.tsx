@@ -26,6 +26,7 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { placeApiService, PlaceTypeData } from "@services/PlaceApiService";
+import { colors } from "@styles/colors";
 
 interface Country {
   name: string;
@@ -130,23 +131,23 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
     "& .MuiOutlinedInput-root": {
       color: "text.primary",
       "& fieldset": {
-        borderColor: "#666",
+        borderColor: colors.grey600,
       },
       "&:hover fieldset": {
-        borderColor: "#888",
+        borderColor: colors.grey500,
       },
       "&.Mui-focused fieldset": {
-        borderColor: "#888",
+        borderColor: colors.grey500,
       },
     },
     "& .MuiInputLabel-root": {
-      color: "#e4e4e4",
+      color: colors.textMuted,
       "&.Mui-focused": {
-        color: "#e4e4e4",
+        color: colors.textMuted,
       },
     },
     "& .MuiFormHelperText-root": {
-      color: "#e4e4e4",
+      color: colors.textMuted,
     },
   };
 
@@ -359,7 +360,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
                       backgroundColor: "primary.dark",
                     },
                     "&:disabled": {
-                      backgroundColor: "#666",
+                      backgroundColor: colors.grey600,
                     },
                   }}
                 >
@@ -403,7 +404,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
             submitted and will be reviewed by our moderation team before being
             displayed on the map.
           </Typography>
-          <Typography sx={{ color: "#e4e4e4", fontSize: "0.9rem" }}>
+          <Typography sx={{ color: colors.textMuted, fontSize: "0.9rem" }}>
             This helps us maintain the quality and accuracy of our vinyl
             community places.
           </Typography>

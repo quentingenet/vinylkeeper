@@ -11,6 +11,7 @@ import { Grid } from "@mui/material";
 import { emailValidator } from "@utils/Regex";
 import { useState } from "react";
 import { userApiService } from "@services/UserApiService";
+import { colors } from "@styles/colors";
 
 type ForgotPasswordProps = {
   openForgotPassword: boolean;
@@ -74,7 +75,7 @@ export default function ForgotPasswordModal({
         spacing={2}
         justifyContent="center"
         sx={{
-          bgcolor: "#fffbf9",
+          bgcolor: colors.textLight,
           borderRadius: "5px",
           width: isMobile ? "90dvw" : "24vw",
           minWidth: isMobile ? "280px" : 350,

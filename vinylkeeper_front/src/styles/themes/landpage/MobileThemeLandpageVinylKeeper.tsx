@@ -1,37 +1,38 @@
 import { createTheme } from "@mui/material/styles";
+import { colors } from "@styles/colors";
 
 const MobileThemeLandpageVinylKeeper = createTheme({
   palette: {
     primary: {
-      main: "#2e3440",
+      main: colors.slate,
     },
     secondary: {
-      main: "#fffbf9",
+      main: colors.textLight,
     },
     error: {
-      main: "#2e3440",
+      main: colors.slate,
     },
   },
   typography: {
     h1: {
       textAlign: "center",
-      textShadow: "0 0 10px #2e3440",
+      textShadow: `0 0 10px ${colors.slate}`,
       opacity: 0.8,
       fontSize: "4rem",
       fontFamily: "RockSalt",
       fontWeight: "bold",
-      color: "#fffbf9",
+      color: colors.textLight,
     },
     subtitle2: {
       fontFamily: "Oswald-Light",
       fontSize: "1.2rem",
-      color: "#fffbf9",
+      color: colors.textLight,
       opacity: 0.9,
     },
     caption: {
       fontFamily: "Oswald-Light",
       fontSize: ".9rem",
-      color: "#fffbf9",
+      color: colors.textLight,
       opacity: 0.9,
     },
   },
@@ -43,19 +44,19 @@ const MobileThemeLandpageVinylKeeper = createTheme({
           fontSize: "1rem",
           fontFamily: "Oswald-Regular",
           textTransform: "none",
-          color: "#fffbf9",
+          color: colors.textLight,
           margin: "1rem",
           padding: "5px 25px",
-          backgroundColor: "#2e3440",
-          border: "1px solid #2e3440",
+          backgroundColor: colors.slate,
+          border: `1px solid ${colors.slate}`,
           borderRadius: "5px",
-          boxShadow: "0 0 10px #2e3440",
-          textShadow: "0 0 10px #2e3440",
+          boxShadow: `0 0 10px ${colors.slate}`,
+          textShadow: `0 0 10px ${colors.slate}`,
           opacity: 0.8,
           "&:hover": {
-            backgroundColor: "#fffbf9",
-            color: "#2e3440",
-            border: "1px solid #2e3440",
+            backgroundColor: colors.textLight,
+            color: colors.slate,
+            border: `1px solid ${colors.slate}`,
             borderRadius: "5px",
             opacity: 0.8,
           },

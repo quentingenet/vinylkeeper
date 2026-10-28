@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Box } from "@mui/material";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { colors } from "@styles/colors";
 
 export const MOSAIC_COVERS_COUNT = 6;
 const MOSAIC_HEIGHT = 220;
@@ -35,7 +36,7 @@ export default function CoverMosaic({ images }: CoverMosaicProps) {
           objectFit: "cover",
           borderTopLeftRadius: 4,
           borderTopRightRadius: 4,
-          background: "#C9A726",
+          background: colors.gold,
           opacity: 0.8,
         }}
       />

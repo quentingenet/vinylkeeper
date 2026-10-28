@@ -25,6 +25,7 @@ import { useModerationActions } from "@hooks/useModerationActions";
 import ModerationStatsCards from "@components/Admin/ModerationStatsCards";
 import ModerationDetailDialog from "@components/Admin/ModerationDetailDialog";
 import { getStatusChip, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
+import { colors } from "@styles/colors";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
@@ -93,7 +94,7 @@ const Admin: React.FC = () => {
         <Typography variant="h4" sx={{ color: "primary.main", mb: 2 }}>
           Administrator Access Required
         </Typography>
-        <Typography variant="body1" sx={{ color: "#fffbf9", textAlign: "center" }}>
+        <Typography variant="body1" sx={{ color: colors.textLight, textAlign: "center" }}>
           You must have administrator privileges to access this page.
         </Typography>
       </Box>
@@ -138,7 +139,7 @@ const Admin: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : pendingData && pendingData.items.length > 0 ? (
-        <Paper sx={{ bgcolor: "#3f3f41", mb: 4, overflowX: "auto" }}>
+        <Paper sx={{ bgcolor: colors.surface, mb: 4, overflowX: "auto" }}>
           <TableContainer>
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
@@ -153,10 +154,10 @@ const Admin: React.FC = () => {
               <TableBody>
                 {pendingData.items.map((request) => (
                   <TableRow key={request.id}>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.name ?? "N/A"}</TableCell>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.city}, {request.place?.country}</TableCell>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.name ?? "N/A"}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.city}, {request.place?.country}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small">
                         <Visibility />
@@ -191,7 +192,7 @@ const Admin: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : moderationData ? (
-        <Paper sx={{ bgcolor: "#3f3f41", overflowX: "auto" }}>
+        <Paper sx={{ bgcolor: colors.surface, overflowX: "auto" }}>
           <TableContainer>
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
@@ -206,11 +207,11 @@ const Admin: React.FC = () => {
               <TableBody>
                 {moderationData.items.map((request) => (
                   <TableRow key={request.id}>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.name ?? "N/A"}</TableCell>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.city}, {request.place?.country}</TableCell>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.name ?? "N/A"}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.city}, {request.place?.country}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
                     <TableCell>{getStatusChip(request.status?.name ?? "unknown")}</TableCell>
-                    <TableCell sx={{ color: "#fffbf9", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small">
                         <Visibility />

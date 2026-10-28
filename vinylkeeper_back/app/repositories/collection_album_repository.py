@@ -1,18 +1,14 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.album_model import Album
 from app.repositories.work_queries import work_key
 from app.utils.vinyl_state_mapping import VinylStateMapping
-from app.core.exceptions import (
-    ResourceNotFoundError,
-    ServerError,
-    DuplicateFieldError
-)
+from app.core.exceptions import ServerError
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
 
@@ -22,39 +18,6 @@ class CollectionAlbumRepository(TransactionalMixin):
 
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    async def create(self, collection_album: CollectionAlbum) -> CollectionAlbum:
-        """Create a new collection-album association without committing (transaction managed by service)."""
-        try:
-            await self._add_entity(collection_album, flush=True)
-            await self._refresh_entity(collection_album)
-            # copies is lazy="raise": loaded here because the mapper reads it right after this call
-            await self.db.refresh(collection_album, attribute_names=["copies"])
-            return collection_album
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error creating collection-album association: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to create collection-album association",
-                details={}
-            )
-
-    async def update(self, collection_album: CollectionAlbum) -> CollectionAlbum:
-        """Update a collection-album association without committing (transaction managed by service)."""
-        try:
-            await self._add_entity(collection_album, flush=True)
-            await self._refresh_entity(collection_album)
-            await self.db.refresh(collection_album, attribute_names=["copies"])
-            return collection_album
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error updating collection-album association: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to update collection-album association",
-                details={}
-            )
 
     async def delete(self, collection_album: CollectionAlbum) -> bool:
         """Delete a collection-album association without committing (transaction managed by service)."""
@@ -88,38 +51,6 @@ class CollectionAlbumRepository(TransactionalMixin):
                 details={}
             )
 
-    async def find_by_collection(self, collection_id: int) -> List[CollectionAlbum]:
-        """Find all album associations for a collection"""
-        try:
-            query = select(CollectionAlbum).filter(
-                CollectionAlbum.collection_id == collection_id
-            )
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except SQLAlchemyError as e:
-            logger.error(f"Error finding collection albums: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find collection albums",
-                details={}
-            )
-
-    async def find_by_album(self, album_id: int) -> List[CollectionAlbum]:
-        """Find all collection associations for an album"""
-        try:
-            query = select(CollectionAlbum).filter(
-                CollectionAlbum.album_id == album_id
-            )
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except SQLAlchemyError as e:
-            logger.error(f"Error finding album collections: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find album collections",
-                details={}
-            )
-
     @staticmethod
     def _state_id(field: str, state) -> Optional[int]:
         if state is None:
@@ -149,6 +80,47 @@ class CollectionAlbumRepository(TransactionalMixin):
             .execution_options(populate_existing=True)
         )
         return (await self.db.execute(query)).scalar_one_or_none()
+
+    async def add_or_update(
+        self, collection_id: int, album_id: int, data: dict, *, pressing_confirmed: bool = False,
+        add_copy: bool = False,
+    ) -> tuple[CollectionAlbum, bool]:
+        """
+        Add an album picked in a search. Already there: another copy when add_copy, otherwise
+        the given condition goes to the first copy.
+        Returns the collection row, with copies loaded, and whether it is new.
+        """
+        try:
+            existing = await self.find_with_copies(collection_id, album_id)
+            if existing is None:
+                collection_album = CollectionAlbum.new(collection_id, album_id, pressing_confirmed)
+                self.apply_copy_data(collection_album.first_copy(), data)
+                await self._add_entity(collection_album, flush=True)
+                return collection_album, True
+
+            if add_copy:
+                now = datetime.now(timezone.utc)
+                copy = CollectionAlbumCopy(created_at=now, updated_at=now)
+                self.apply_copy_data(copy, data)
+                existing.copies.append(copy)
+            elif data:
+                self.apply_copy_data(existing.first_copy(), data)
+            # Picked again with its pressing details in sight; a confirmed pressing never goes back
+            if pressing_confirmed:
+                existing.pressing_confirmed = True
+            # created_at is the first addition date: only updated_at moves
+            existing.updated_at = datetime.now(timezone.utc)
+            if existing.created_at is None:
+                existing.created_at = existing.updated_at
+            await self.db.flush()
+            return existing, False
+        except SQLAlchemyError as e:
+            logger.error(f"Error adding album {album_id} to collection {collection_id}: {str(e)}", exc_info=True)
+            raise ServerError(
+                error_code=5000,
+                message="Failed to add album to collection",
+                details={}
+            )
 
     async def add_copy(self, collection_album: CollectionAlbum, data: dict) -> CollectionAlbum:
         now = datetime.now(timezone.utc)
@@ -181,63 +153,6 @@ class CollectionAlbumRepository(TransactionalMixin):
         collection_album.updated_at = datetime.now(timezone.utc)
         await self.db.flush()
         return collection_album
-
-    async def get_vinyl_state_id(self, state_name: str) -> int | None:
-        """Get vinyl state ID by name using mapping"""
-        return VinylStateMapping.get_id_from_name(state_name)
-
-    async def get_vinyl_state_name(self, state_id: int) -> Optional[str]:
-        """Get vinyl state name by ID using mapping"""
-        return VinylStateMapping.get_name_from_id(state_id)
-
-    async def get_collection_albums_paginated(
-        self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
-    ) -> tuple[List[tuple], int]:
-        """Get paginated albums for a collection with metadata, sorted by collection_album.created_at"""
-        try:
-            # Calculate offset
-            offset = (page - 1) * limit
-
-            # Determine sort order
-            if sort_order == "oldest":
-                order_clause = CollectionAlbum.created_at.asc().nullslast()
-            else:  # default to newest
-                order_clause = CollectionAlbum.created_at.desc().nullslast()
-
-            # Query to get albums with collection metadata, sorted by collection_album.created_at
-            query = (
-                select(Album, CollectionAlbum)
-                .join(CollectionAlbum, Album.id == CollectionAlbum.album_id)
-                .options(
-                    selectinload(Album.external_source),
-                    selectinload(CollectionAlbum.copies)
-                )
-                .filter(CollectionAlbum.collection_id == collection_id)
-                .order_by(order_clause)
-                .offset(offset)
-                .limit(limit)
-            )
-
-            result = await self.db.execute(query)
-            albums_with_metadata = result.all()
-
-            # Get total count
-            count_query = select(func.count(CollectionAlbum.album_id)).filter(
-                CollectionAlbum.collection_id == collection_id
-            )
-            count_result = await self.db.execute(count_query)
-            total = count_result.scalar()
-
-            return albums_with_metadata, total
-
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error getting collection albums paginated: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get collection albums paginated",
-                details={}
-            )
 
     async def get_collection_records_paginated(
         self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
@@ -309,81 +224,6 @@ class CollectionAlbumRepository(TransactionalMixin):
                 details={}
             )
 
-    async def add_album_to_collection(self, collection_id: int, album_id: int, metadata: dict) -> CollectionAlbum:
-        """Add an album to a collection with metadata"""
-        try:
-            # Check if association already exists
-            existing = await self.find_by_collection_and_album(collection_id, album_id)
-            if existing:
-                # Album already in collection, update both album's and association's updated_at
-                stmt = update(Album).where(
-                    Album.id == album_id).values(updated_at=func.now())
-                await self.db.execute(stmt)
-                existing.updated_at = datetime.now(timezone.utc)
-                await self.db.flush()
-                raise DuplicateFieldError(
-                    field="album",
-                    value=f"collection_{collection_id}_album_{album_id}"
-                )
-
-            # Create new association with explicit timestamps, and its first copy
-            now = datetime.now(timezone.utc)
-            first_copy = CollectionAlbumCopy(created_at=now, updated_at=now)
-            self.apply_copy_data(first_copy, metadata)
-            collection_album = CollectionAlbum(
-                collection_id=collection_id,
-                album_id=album_id,
-                created_at=now,
-                updated_at=now,
-                copies=[first_copy],
-            )
-
-            # Update album's updated_at when adding to collection
-            stmt = update(Album).where(
-                Album.id == album_id).values(updated_at=func.now())
-            await self.db.execute(stmt)
-
-            return await self.create(collection_album)
-
-        except DuplicateFieldError:
-            raise
-        except SQLAlchemyError as e:
-            logger.error(f"Error adding album to collection: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to add album to collection",
-                details={}
-            )
-
-    async def update_album_metadata(self, collection_id: int, album_id: int, metadata: dict) -> CollectionAlbum:
-        """Update album metadata in a collection"""
-        try:
-            collection_album = await self.find_with_copies(collection_id, album_id)
-            if not collection_album:
-                raise ResourceNotFoundError("Album", album_id)
-
-            # Clients unaware of copies edit the first one
-            self.apply_copy_data(collection_album.first_copy(), metadata)
-
-            # Update only updated_at when modifying metadata
-            # Never modify created_at - it represents the initial addition date
-            collection_album.updated_at = datetime.now(timezone.utc)
-            # Preserve created_at if it's None (for old records)
-            if collection_album.created_at is None:
-                collection_album.created_at = collection_album.updated_at
-
-            return await self.update(collection_album)
-
-        except ResourceNotFoundError:
-            raise
-        except SQLAlchemyError as e:
-            logger.error(f"Error updating album metadata: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to update album metadata",
-                details={}
-            )
-
     async def remove_album_from_collection(self, collection_id: int, album_id: int) -> bool:
         """Remove an album from a collection"""
         try:
@@ -428,24 +268,3 @@ class CollectionAlbumRepository(TransactionalMixin):
                 message="Failed to get collection albums",
                 details={}
             )
-
-    async def get_collection_album_metadata(self, collection_id: int, album_id: int) -> Optional[CollectionAlbum]:
-        """Get collection album metadata for a specific album in a collection"""
-        try:
-            query = (
-                select(CollectionAlbum)
-                .options(
-                    selectinload(CollectionAlbum.copies)
-                )
-                .filter(
-                    CollectionAlbum.collection_id == collection_id,
-                    CollectionAlbum.album_id == album_id
-                )
-            )
-
-            result = await self.db.execute(query)
-            return result.scalar_one_or_none()
-
-        except SQLAlchemyError as e:
-            logger.error(f"Error getting collection album metadata: {str(e)}")
-            return None

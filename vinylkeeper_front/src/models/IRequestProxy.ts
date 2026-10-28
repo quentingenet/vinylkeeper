@@ -10,15 +10,6 @@ export interface SearchResultsPage {
   total_pages: number;
 }
 
-export interface ExternalData {
-  id: string;
-  title: string;
-  artist: string;
-  year?: string;
-  image_url?: string;
-  source: string;
-}
-
 export interface Artist {
   uuid: string;
   id: string;
@@ -106,20 +97,3 @@ export type IRequestToSend = SearchQuery;
 export type IArtistRequestResults = DiscogsData;
 export type IAlbumRequestResults = DiscogsData;
 
-export interface IRequestProxy {
-  id: string;
-  title: string;
-  artist: string;
-  year?: string;
-  image_url?: string;
-  external_url?: string;
-  source: string;
-}
-
-export interface IRequestProxyResponse {
-  items: IRequestProxy[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}

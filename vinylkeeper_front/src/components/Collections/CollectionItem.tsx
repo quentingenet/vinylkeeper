@@ -35,6 +35,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { truncateText } from "@utils/GlobalUtils";
 import { createPortal } from "react-dom";
+import { colors } from "@styles/colors";
 
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
 
@@ -141,7 +142,7 @@ export default function CollectionItem({
           onClick={handleLikeClick}
           disabled={isLiking || isUnliking || likeCooldown}
           sx={{
-            color: localIsLiked ? "#FFD700" : "grey.400",
+            color: localIsLiked ? colors.likeGold : "grey.400",
             position: "absolute",
             top: 12,
             right: 12,
@@ -151,7 +152,7 @@ export default function CollectionItem({
             "&:hover": {
               background: "rgba(30,30,30,0.7)",
               transform: "scale(1.15)",
-              color: "#FFD700",
+              color: colors.likeGold,
             },
             "&:active": { transform: "scale(0.95)" },
           }}
@@ -259,7 +260,7 @@ export default function CollectionItem({
                 variant="body2"
                 color="text.secondary"
                 sx={{
-                  color: "#fffbf9",
+                  color: colors.textLight,
                   fontWeight: 600,
                   transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",
                   transform: likeBounce ? "scale(1.35)" : "scale(1)",

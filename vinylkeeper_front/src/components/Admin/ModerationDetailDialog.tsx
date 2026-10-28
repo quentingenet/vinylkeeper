@@ -11,6 +11,7 @@ import {
 import { CheckCircle, Cancel } from "@mui/icons-material";
 import { ModerationRequest } from "@services/AdminApiService";
 import { getStatusChip, formatDate } from "./adminUtils";
+import { colors } from "@styles/colors";
 
 interface Props {
   open: boolean;
@@ -39,8 +40,8 @@ export default function ModerationDetailDialog({
       fullWidth
       PaperProps={{
         sx: {
-          bgcolor: "#3f3f41",
-          color: "#fffbf9",
+          bgcolor: colors.surface,
+          color: colors.textLight,
           m: { xs: 1, sm: 2 },
           width: { xs: "calc(100% - 16px)", sm: "auto" },
         },
@@ -98,7 +99,7 @@ export default function ModerationDetailDialog({
             </Stack>
 
             {selectedRequest.status?.name === "pending" && (
-              <Box sx={{ mt: 3, p: 2, bgcolor: "#2a2a2a", borderRadius: 1 }}>
+              <Box sx={{ mt: 3, p: 2, bgcolor: colors.panel, borderRadius: 1 }}>
                 <Typography
                   variant="subtitle2"
                   sx={{ color: "primary.main", mb: 2, fontSize: { xs: "0.875rem", sm: "1rem" } }}
@@ -113,8 +114,8 @@ export default function ModerationDetailDialog({
                     onClick={onApprove}
                     disabled={isApproving}
                     sx={{
-                      bgcolor: "#4caf50",
-                      "&:hover": { bgcolor: "#45a049" },
+                      bgcolor: colors.success,
+                      "&:hover": { bgcolor: colors.successDark },
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
@@ -127,8 +128,8 @@ export default function ModerationDetailDialog({
                     onClick={onReject}
                     disabled={isRejecting}
                     sx={{
-                      bgcolor: "#f44336",
-                      "&:hover": { bgcolor: "#d32f2f" },
+                      bgcolor: colors.error,
+                      "&:hover": { bgcolor: colors.errorDark },
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >

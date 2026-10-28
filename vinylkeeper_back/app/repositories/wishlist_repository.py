@@ -224,13 +224,3 @@ class WishlistRepository(TransactionalMixin):
                 message="Failed to delete wishlist item",
                 details={}
             )
-
-    async def count_user_wishlist_items(self, user_id: int) -> int:
-        """Count user's wishlist items"""
-        try:
-            query = select(func.count()).filter(Wishlist.user_id == user_id)
-            result = await self.db.execute(query)
-            return result.scalar()
-        except SQLAlchemyError as e:
-            logger.error(f"Error counting user wishlist items: {str(e)}", exc_info=True)
-            return 0

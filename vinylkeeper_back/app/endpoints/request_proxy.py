@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends
-from typing import List
 from app.deps.deps import get_search_service
 from app.models.user_model import User
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
-    DiscogsData,
     SearchQuery,
     SearchResultsPage,
     ArtistMetadata
@@ -14,31 +12,6 @@ from app.utils.auth_utils.auth import get_current_user
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
-
-
-@router.post("/search-music", response_model=List[DiscogsData], status_code=200)
-@handle_app_exceptions
-async def search(
-    search_query: SearchQuery,
-    service: SearchService = Depends(get_search_service),
-    current_user: User = Depends(get_current_user)
-) -> List[DiscogsData]:
-    """
-    Search music via the Discogs API. Requires authentication.
-
-    Args:
-        search_query: Search parameters containing query string and search type
-        service: Injected search service instance
-
-    Returns:
-        List[DiscogsData]: List of search results matching the query
-
-    Raises:
-        ValidationError: If search parameters are invalid (query length < 2 or > 100)
-        ServerError: If an error occurs during search or API communication
-    """
-    results = await service.search_music(search_query)
-    return results
 
 
 @router.post("/search-music/page", response_model=SearchResultsPage, status_code=200)

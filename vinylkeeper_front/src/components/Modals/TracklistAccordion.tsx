@@ -8,6 +8,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { colors } from "@styles/colors";
 
 interface Track {
   position: string;
@@ -23,17 +24,17 @@ export default function TracklistAccordion({ tracklist }: TracklistAccordionProp
   return (
     <Accordion
       sx={{
-        backgroundColor: "#3f3f41",
-        color: "#fffbf9",
+        backgroundColor: colors.surface,
+        color: colors.textLight,
         mb: 2,
         "&:before": { display: "none" },
         "& .MuiAccordionSummary-root": {
-          backgroundColor: "#1F1F1F",
+          backgroundColor: colors.deep,
           color: "primary.main",
           fontWeight: "bold",
         },
         "& .MuiAccordionSummary-expandIconWrapper": { color: "primary.main" },
-        "& .MuiAccordionDetails-root": { backgroundColor: "#2a2a2a" },
+        "& .MuiAccordionDetails-root": { backgroundColor: colors.panel },
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -47,12 +48,12 @@ export default function TracklistAccordion({ tracklist }: TracklistAccordionProp
             <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
               <ListItemText
                 primary={
-                  <Typography sx={{ color: "#fffbf9" }}>
+                  <Typography sx={{ color: colors.textLight }}>
                     {track.position} {track.title}
                   </Typography>
                 }
                 secondary={
-                  <Typography sx={{ color: "#e4e4e4" }}>
+                  <Typography sx={{ color: colors.textMuted }}>
                     {track.duration}
                   </Typography>
                 }

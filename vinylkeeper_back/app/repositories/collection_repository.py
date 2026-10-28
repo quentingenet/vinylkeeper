@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, func, and_, case, delete
+from sqlalchemy import select, func, and_, case
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.artist_model import Artist
-from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
+from app.models.collection_album import CollectionAlbum
 from app.repositories.work_queries import work_key, works_count_in_collection
 from app.models.association_tables import CollectionArtist
 from app.models.like_model import Like
@@ -192,17 +192,7 @@ class CollectionRepository(TransactionalMixin):
             valid_album_ids = {row[0] for row in albums_result.all()}
 
             if valid_album_ids:
-                now = datetime.now(timezone.utc)
-                collection_albums = [
-                    CollectionAlbum(
-                        collection_id=collection.id,
-                        album_id=album_id,
-                        created_at=now,
-                        updated_at=now,
-                        copies=[CollectionAlbumCopy(created_at=now, updated_at=now)],
-                    )
-                    for album_id in valid_album_ids
-                ]
+                collection_albums = [CollectionAlbum.new(collection.id, album_id) for album_id in valid_album_ids]
                 self.db.add_all(collection_albums)
                 await self.db.flush()
 
@@ -269,40 +259,6 @@ class CollectionRepository(TransactionalMixin):
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to add artists to collection",
-                details={}
-            )
-
-    async def remove_albums(self, collection: Collection, album_ids: List[int]) -> None:
-        """Remove albums from a collection."""
-        try:
-            await self.db.execute(
-                delete(CollectionAlbum).where(
-                    CollectionAlbum.collection_id == collection.id,
-                    CollectionAlbum.album_id.in_(album_ids)
-                )
-            )
-        except SQLAlchemyError as e:
-            logger.error(f"Error removing albums from collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to remove albums from collection",
-                details={}
-            )
-
-    async def remove_artists(self, collection: Collection, artist_ids: List[int]) -> None:
-        """Remove artists from a collection."""
-        try:
-            await self.db.execute(
-                delete(CollectionArtist).where(
-                    CollectionArtist.collection_id == collection.id,
-                    CollectionArtist.artist_id.in_(artist_ids)
-                )
-            )
-        except SQLAlchemyError as e:
-            logger.error(f"Error removing artists from collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to remove artists from collection",
                 details={}
             )
 
@@ -500,71 +456,6 @@ class CollectionRepository(TransactionalMixin):
                 details={}
             )
 
-    async def get_collections_likes_counts(self, collection_ids: List[int]) -> dict:
-        """Get likes counts for multiple collections in one query."""
-
-        query = select(Like.collection_id, func.count(Like.id)).filter(
-            Like.collection_id.in_(collection_ids)
-        ).group_by(Like.collection_id)
-
-        result = await self.db.execute(query)
-        likes_counts = {collection_id: count for collection_id,
-                        count in result.all()}
-
-        # Ensure all collection_ids have a count (even if 0)
-        for collection_id in collection_ids:
-            if collection_id not in likes_counts:
-                likes_counts[collection_id] = 0
-
-        return likes_counts
-
-    async def get_collection_counts(self, collection_id: int) -> Dict[str, int]:
-        """
-        Get albums_count and artists_count for a single collection (optimized with aggregation).
-
-        Returns:
-            dict: {"albums_count": int, "artists_count": int}
-        """
-        try:
-            # Albums count (CollectionAlbum uses composite primary key, so count album_id)
-            # Works, not pressings: what the collection grid shows
-            albums_count_query = select(works_count_in_collection(collection_id))
-            albums_result = await self.db.execute(albums_count_query)
-            albums_count = albums_result.scalar() or 0
-
-            # Artists count
-            artists_count_query = select(func.count(CollectionArtist.artist_id)).filter(
-                CollectionArtist.collection_id == collection_id
-            )
-            artists_result = await self.db.execute(artists_count_query)
-            artists_count = artists_result.scalar() or 0
-
-            return {
-                "albums_count": albums_count,
-                "artists_count": artists_count
-            }
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error getting collection counts for collection {collection_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection counts",
-                details={}
-            )
-
-    async def get_user_collections_likes(self, user_id: int, collection_ids: List[int]) -> dict:
-        """Get which collections are liked by a user in one query."""
-
-        query = select(Like.collection_id).filter(
-            and_(Like.user_id == user_id, Like.collection_id.in_(collection_ids))
-        )
-
-        result = await self.db.execute(query)
-        liked_collection_ids = {row[0] for row in result.all()}
-
-        # Create a dict mapping collection_id to is_liked boolean
-        return {collection_id: collection_id in liked_collection_ids for collection_id in collection_ids}
-
     async def get_collections_likes_info_batch(self, user_id: int | None, collection_ids: List[int]) -> dict:
         """Get both likes counts and user likes status in a single optimized query."""
         if not collection_ids:
@@ -660,20 +551,6 @@ class CollectionRepository(TransactionalMixin):
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to retrieve user collections",
                 details={}
-            )
-
-    async def count_user_collections(self, user_id: int) -> int:
-        """Count user's collections."""
-        try:
-            query = select(func.count(Collection.id)).where(Collection.owner_id == user_id)
-            result = await self.db.execute(query)
-            return result.scalar() or 0
-        except SQLAlchemyError as e:
-            logger.error(f"Error counting user collections for user {user_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to count user collections",
-                details={},
             )
 
     async def get_collection_artists_paginated(
@@ -790,55 +667,6 @@ class CollectionRepository(TransactionalMixin):
         except SQLAlchemyError as e:
             logger.error(f"Error searching collection items: {str(e)}", exc_info=True)
             return {"albums": [], "artists": []}
-
-    async def get_user_stats_all(self, user_id: int) -> dict:
-        """Get collections/wishlist/likes/places counts in a single query."""
-        from app.models.wishlist_model import Wishlist
-        from app.models.place_model import Place
-
-        collections_subq = (
-            select(func.count(Collection.id))
-            .where(Collection.owner_id == user_id)
-            .scalar_subquery()
-        )
-        wishlist_subq = (
-            select(func.count(Wishlist.id))
-            .where(Wishlist.user_id == user_id)
-            .scalar_subquery()
-        )
-        likes_subq = (
-            select(func.count(Like.id))
-            .where(Like.user_id == user_id)
-            .scalar_subquery()
-        )
-        places_subq = (
-            select(func.count(Place.id))
-            .where(Place.submitted_by_id == user_id)
-            .scalar_subquery()
-        )
-
-        query = select(
-            collections_subq.label("collections_count"),
-            wishlist_subq.label("wishlist_count"),
-            likes_subq.label("likes_count"),
-            places_subq.label("places_count"),
-        )
-        try:
-            result = await self.db.execute(query)
-            row = result.first()
-            return {
-                "collections_count": row.collections_count or 0,
-                "wishlist_count": row.wishlist_count or 0,
-                "likes_count": row.likes_count or 0,
-                "places_count": row.places_count or 0,
-            }
-        except SQLAlchemyError as e:
-            logger.error(f"Error getting user stats for user {user_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get user statistics",
-                details={},
-            )
 
     async def refresh(self, collection: Collection) -> Collection:
         """Refresh a collection object from the database."""

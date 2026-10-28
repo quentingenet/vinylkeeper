@@ -17,6 +17,7 @@ import { useMutation } from "@tanstack/react-query";
 import { userApiService } from "@services/UserApiService";
 import { useUserContext } from "@contexts/UserContext";
 import { useNavigate } from "react-router-dom";
+import { colors } from "@styles/colors";
 
 export default function DangerZoneSection() {
   const { logout } = useUserContext();
@@ -43,10 +44,10 @@ export default function DangerZoneSection() {
 
   return (
     <>
-      <Card sx={{ border: "2px solid #f44336" }}>
+      <Card sx={{ border: `2px solid ${colors.error}` }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <Security sx={{ color: "#f44336", mr: 1 }} />
+            <Security sx={{ color: colors.error, mr: 1 }} />
             <Typography variant="h6" color="error">
               Danger zone
             </Typography>

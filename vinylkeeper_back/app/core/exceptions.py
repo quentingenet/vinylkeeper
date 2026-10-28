@@ -175,15 +175,6 @@ class ValidationError(AppException):
         )
 
 
-class InvalidInputError(ValidationError):
-    def __init__(self, field: str, message: str):
-        super().__init__(
-            error_code=ErrorCode.INVALID_INPUT,
-            message=f"Invalid {field}: {message}",
-            details={"field": field}
-        )
-
-
 class DuplicateFieldError(ValidationError):
     def __init__(self, field: str, value: str):
         super().__init__(

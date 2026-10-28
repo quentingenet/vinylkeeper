@@ -4,6 +4,7 @@ import { Album as AlbumIcon, Person as PersonIcon } from "@mui/icons-material";
 import EditionChips from "@components/AddVinyls/EditionChips";
 import type { DiscogsData } from "@models/IRequestProxy";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { colors } from "@styles/colors";
 
 const THUMBNAIL_SIZE = 64;
 
@@ -24,7 +25,7 @@ export default function RecordResultRow({ item, isArtist, expanded, onToggle, ch
           variant="rounded"
           src={item.picture ? buildProxyImageUrl(item.picture, 128, 128, 75, false) : undefined}
           alt=""
-          sx={{ width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE, bgcolor: "#2a2a2a", color: "primary.main" }}
+          sx={{ width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE, bgcolor: colors.panel, color: "primary.main" }}
         >
           {isArtist ? <PersonIcon /> : <AlbumIcon />}
         </Avatar>

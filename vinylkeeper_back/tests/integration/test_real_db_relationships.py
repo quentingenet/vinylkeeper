@@ -35,7 +35,6 @@ from app.repositories.artist_repository import ArtistRepository
 from app.services.collection_service import CollectionService
 from app.services.external_reference_service import ExternalReferenceService
 
-from app.schemas.collection_album_schema import CollectionAlbumCreate, CollectionAlbumUpdate
 
 from tests.integration.conftest import make_real_test_user as make_test_user
 
@@ -47,6 +46,12 @@ def make_collection_service(session: AsyncSession) -> CollectionService:
         collection_album_repository=CollectionAlbumRepository(session),
         wishlist_repository=WishlistRepository(session),
     )
+
+
+async def put_album_in_collection(session: AsyncSession, collection_id: int, album_id: int, **states):
+    """An album in a collection, through the add path of the app (CollectionAlbumRepository.add_or_update)."""
+    collection_album, _ = await CollectionAlbumRepository(session).add_or_update(collection_id, album_id, states)
+    return collection_album
 
 
 def make_external_reference_service(session: AsyncSession) -> ExternalReferenceService:
@@ -113,51 +118,6 @@ class TestGetCollectionByIdRealData:
         assert response.albums[0].external_source is not None
 
 
-class TestAddAlbumToCollectionRealData:
-    async def test_add_existing_album_to_fresh_collection(self, real_session):
-        user = await make_test_user(real_session)
-        collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
-
-        service = make_collection_service(real_session)
-        response = await service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=CollectionAlbumCreate(
-                album_id=album_id, collection_id=collection.id, state_record="mint"
-            ),
-        )
-
-        assert response.id == album_id
-        assert response.state_record is not None
-        assert response.external_source is not None
-
-
-class TestUpdateAlbumMetadataRealData:
-    async def test_update_metadata_of_album_in_collection(self, real_session):
-        user = await make_test_user(real_session)
-        collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
-
-        service = make_collection_service(real_session)
-        await service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=CollectionAlbumCreate(album_id=album_id, collection_id=collection.id),
-        )
-
-        response = await service.update_album_metadata(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_id=album_id,
-            metadata=CollectionAlbumUpdate(state_record="good", acquisition_month_year="2024-06"),
-        )
-
-        assert response.state_record is not None
-        assert response.acquisition_month_year == "2024-06"
-        assert response.external_source is not None
-
-
 class TestRemoveFromCollectionRealData:
     async def test_remove_album_from_collection(self, real_session):
         user = await make_test_user(real_session)
@@ -167,12 +127,7 @@ class TestRemoveFromCollectionRealData:
             await real_session.execute(select(Album.external_album_id).filter(Album.id == album_id))
         ).scalar_one()
 
-        collection_service = make_collection_service(real_session)
-        await collection_service.add_album_to_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            album_data=CollectionAlbumCreate(album_id=album_id, collection_id=collection.id),
-        )
+        await put_album_in_collection(real_session, collection.id, album_id)
 
         from app.core.enums import EntityTypeEnum
 

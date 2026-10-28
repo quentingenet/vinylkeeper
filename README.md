@@ -25,13 +25,16 @@ It is **live in production** at **[vinylkeeper.org](https://vinylkeeper.org/)**,
 Pick a mood, an era, a genre or a collection, and get records from your own shelves. "Surprise me" draws one at random and opens it in Deezer, Spotify or YouTube Music.
 
 **📀 Collections**
-Organize your records into collections, keep a wishlist, track the condition of each record and cover, and export everything to CSV or ODS.
+Organize your records into collections and keep a wishlist. Own the same record more than once? Each copy keeps its own record condition, cover condition and acquisition date, and the cover shows a ×2, ×3 badge. Different pressings of the same album share a single cover, with one section per pressing. Export everything to CSV or ODS, one row per copy.
 
 **👥 Community**
 Make a collection public, browse and like other collectors' collections.
 
-**➕ Add vinyls**
-Search the Discogs catalogue by album or artist and add a record in a few clicks. Genres, styles, years and moods are filled in automatically in the background.
+**➕ Add a record, from anywhere**
+A floating "Add a record" button opens a quick search of the Discogs catalogue on any page. Every result shows its pressing (year, country, label, catalogue number, format) so you add the exact one on your shelf, to any collection or to your wishlist. Adding a record you already own asks whether it is another copy or another pressing. Genres, styles, years and moods are filled in automatically in the background.
+
+**🔎 The right pressing**
+Records added before pressings were shown can be confirmed in one click, or switched to the pressing you actually own, keeping their copies and conditions.
 
 **🌍 Places**
 A community map of record shops, flea markets and vinyl spots. New places go through moderation.
@@ -58,6 +61,7 @@ Moods (calm, groovy, laid back, dark...) come from **400+ versioned rules** mapp
 **Why no LLM at runtime?** The structured data was already there. Rules are deterministic, explainable and free, and the "Spinning now" queries are indexed SQL running in **under 4 ms** for the largest collection (measured with `EXPLAIN ANALYZE` on production data). No per-user AI cost, no latency, no user data sent to a third party. An LLM remains an optional offline enrichment step, and user or LLM moods would always take precedence over rules (`user` > `llm` > `rule`).
 
 Other details:
+- **Copies and pressings**: a Discogs master groups every pressing of a work. Collection grids, counters, Spinning now and the dashboard all count works, so a record never shows twice, while each physical copy lives in its own table with its own condition.
 - **Reissues are dated correctly**: a 2019 pressing of *Kind of Blue* is filed under the 1950s, thanks to the master release year.
 - **Resilient to Discogs rate limits**: requests are throttled to the 60/min limit with backoff, the backfill is resumable, and a nightly job catches up anything that failed.
 
@@ -79,7 +83,7 @@ flowchart LR
 
 - **Backend**: layered architecture (endpoints, services, repositories) with dependency injection through FastAPI `Depends`, async SQLAlchemy 2 with explicit loading (`lazy="raise"`), Alembic migrations.
 - **Frontend**: React 19, TypeScript in strict mode, TanStack Query, MUI, custom hooks for data logic.
-- **Quality**: 500+ backend tests (unit, endpoint and real-database integration tests run inside rolled-back transactions) and 180+ frontend tests (Vitest, Testing Library), flake8 and ESLint.
+- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint.
 - **Deployment**: Docker Compose on a Linux VPS, migrations applied on container start.
 
 ## Getting started

@@ -1,4 +1,5 @@
 import { Chip } from "@mui/material";
+import { colors } from "@styles/colors";
 
 export const getStatusChip = (statusName: string) => {
   switch (statusName) {
@@ -23,9 +24,9 @@ export const formatDate = (dateString: string) =>
   });
 
 export const tablePaginationSx = {
-  color: "#fffbf9",
+  color: colors.textLight,
   "& .MuiTablePagination-selectIcon": { color: "primary.main" },
   "& .MuiTablePagination-actions button": { color: "primary.main" },
-  "& .MuiTablePagination-actions button.Mui-disabled": { color: "#555" },
-  "& .MuiSelect-select": { color: "#fffbf9" },
+  "& .MuiTablePagination-actions button.Mui-disabled": { color: colors.grey700 },
+  "& .MuiSelect-select": { color: colors.textLight },
 };

@@ -35,6 +35,7 @@ import { useNavigate, Link } from "react-router-dom";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { toPlaybackItem } from "@utils/toPlaybackItem";
 import { COMMUNITY_COLLECTIONS_URL } from "@utils/GlobalUrls";
+import { colors } from "@styles/colors";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -56,8 +57,8 @@ const LatestAdditionCard = ({
   return (
     <Card
       sx={{
-        backgroundColor: "#2c2c2e",
-        color: "#e4e4e4",
+        backgroundColor: colors.paper,
+        color: colors.textMuted,
         height: "100%",
         boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
         cursor: "pointer",
@@ -244,7 +245,7 @@ export default function Dashboard() {
           data.global_artists_total,
           data.global_places_total,
         ],
-        backgroundColor: ["#c9a726", "#b0b0b0", "#d4a574"],
+        backgroundColor: [colors.gold, colors.textSecondary, colors.copper],
         borderColor: "grey",
         borderWidth: 0.2,
         borderAlign: "inner" as const,
@@ -272,7 +273,7 @@ export default function Dashboard() {
         display: true,
         position: "bottom",
         labels: {
-          color: "#FFFFFF",
+          color: colors.white,
           padding: 15,
           font: {
             size: 14,
@@ -325,7 +326,7 @@ export default function Dashboard() {
   );
 
   return (
-    <Box p={3} sx={{ backgroundColor: "#313132", color: "#e4e4e4" }}>
+    <Box p={3} sx={{ backgroundColor: colors.raised, color: colors.textMuted }}>
       <div className={styles.dashboard}>
         {renderStatCard(
           "My albums",
@@ -371,7 +372,7 @@ export default function Dashboard() {
                 title="Latest Album"
                 data={data.latest_album}
                 icon={<Album />}
-                color="#c9a726"
+                color={colors.gold}
                 onClick={() => {
                   const item = toPlaybackItem(data.latest_album, "album");
                   if (item) {
@@ -386,7 +387,7 @@ export default function Dashboard() {
                 title="Latest Artist"
                 data={data.latest_artist}
                 icon={<Person />}
-                color="#b0b0b0"
+                color={colors.textSecondary}
                 onClick={() => {
                   const item = toPlaybackItem(data.latest_artist, "artist");
                   if (item) {
@@ -416,7 +417,7 @@ export default function Dashboard() {
               <Typography
                 variant="h6"
                 sx={{
-                  color: "#C9A726",
+                  color: colors.gold,
                   mb: 2,
                   fontSize: isMobile ? "1rem" : "1.25rem",
                   fontWeight: 600,
@@ -481,7 +482,7 @@ export default function Dashboard() {
                         sx={{
                           width: "100%",
                           height: "100%",
-                          backgroundColor: "#2c2c2e",
+                          backgroundColor: colors.paper,
                           borderRadius: "4px",
                           display: "flex",
                           alignItems: "center",
@@ -491,7 +492,7 @@ export default function Dashboard() {
                       >
                         <Album
                           sx={{
-                            color: "#b0b0b0",
+                            color: colors.textSecondary,
                             fontSize: isMobile ? "1.5rem" : "2rem",
                           }}
                         />
@@ -514,8 +515,8 @@ export default function Dashboard() {
           >
             <Card
               sx={{
-                backgroundColor: "#2c2c2e",
-                color: "#e4e4e4",
+                backgroundColor: colors.paper,
+                color: colors.textMuted,
                 boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
                 cursor: "pointer",
                 transition:
@@ -536,7 +537,7 @@ export default function Dashboard() {
                 <Typography
                   variant="h5"
                   sx={{
-                    color: "#c9a726",
+                    color: colors.gold,
                     mb: 2,
                     fontSize: isMobile ? "1.25rem" : "1.5rem",
                     fontWeight: 600,
@@ -552,7 +553,7 @@ export default function Dashboard() {
                 <Typography
                   variant="h3"
                   sx={{
-                    color: "#e4e4e4",
+                    color: colors.textMuted,
                     fontWeight: "bold",
                     mb: 1,
                     fontSize: isMobile ? "2rem" : "3rem",
@@ -572,7 +573,7 @@ export default function Dashboard() {
                     variant="h6"
                     sx={{
                       fontSize: isMobile ? "1rem" : "1.25rem",
-                      color: "#b0b0b0",
+                      color: colors.textSecondary,
                       fontWeight: 400,
                     }}
                   >
@@ -582,7 +583,7 @@ export default function Dashboard() {
                 <Typography
                   variant="body1"
                   sx={{
-                    color: "#b0b0b0",
+                    color: colors.textSecondary,
                     mb: 3,
                     fontSize: isMobile ? "0.875rem" : "1rem",
                   }}
@@ -594,7 +595,7 @@ export default function Dashboard() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 1,
-                    color: "#c9a726",
+                    color: colors.gold,
                     fontSize: isMobile ? "0.875rem" : "1rem",
                     fontWeight: 500,
                     fontFamily: "Oswald, sans-serif",
@@ -607,7 +608,7 @@ export default function Dashboard() {
                   Explore collections now{" "}
                   <ArrowForward
                     sx={{
-                      color: "#c9a726",
+                      color: colors.gold,
                       fontSize: isMobile ? "1.25rem" : "1.5rem",
                       animation: `${growItem} 2s ease-in-out infinite`,
                     }}
@@ -624,7 +625,7 @@ export default function Dashboard() {
                     textAlign: "center",
                     mt: 3,
                     mb: 3,
-                    color: "#b0b0b0",
+                    color: colors.textSecondary,
                     fontSize: isMobile ? "0.875rem" : "0.9375rem",
                     fontWeight: 400,
                     opacity: 0.9,
@@ -682,7 +683,7 @@ export default function Dashboard() {
                   <Typography
                     variant="h4"
                     sx={{
-                      color: "#c9a726",
+                      color: colors.gold,
                       fontWeight: "bold",
                       textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
                       // Mobile only: shrinks with the doughnut hole instead of overflowing it
@@ -702,7 +703,7 @@ export default function Dashboard() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#e4e4e4",
+                      color: colors.textMuted,
                       mt: 0.5,
                       textShadow: "1px 1px 2px rgba(0, 0, 0, 0.5)",
                     }}

@@ -5,6 +5,7 @@ import { useAddRecord } from "@contexts/AddRecordContext";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { growItem } from "@utils/Animations";
+import { colors } from "@styles/colors";
 
 // Pages with their own floating add button, which this one must not compete with
 const PAGES_WITH_THEIR_OWN_ADD_BUTTON: string[] = [EGlobalUrls.PLACES];
@@ -30,9 +31,9 @@ export default function AddRecordFab() {
           bottom: { xs: 16, md: 32 },
           gap: 1,
           backgroundColor: "primary.main",
-          color: "#1F1F1F",
+          color: colors.deep,
           fontWeight: "bold",
-          "&:hover": { backgroundColor: "#B8961F" },
+          "&:hover": { backgroundColor: colors.goldDark },
           // Same pulse as the "Add a place" button of the map
           animation: `${growItem} 1.3s infinite`,
           boxShadow: "0 4px 8px rgba(0,0,0,0.3)",

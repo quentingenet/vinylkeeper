@@ -6,6 +6,7 @@ import AlbumStateForm from "@components/AddVinyls/AlbumStateForm";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { useAddToCollection } from "@hooks/useAddToCollection";
 import type { DiscogsData } from "@models/IRequestProxy";
+import { colors } from "@styles/colors";
 
 interface AddRecordPanelProps {
   item: DiscogsData;
@@ -41,7 +42,7 @@ export default function AddRecordPanel({ item, itemType, presetCollectionId, onD
   const collectionId = chosenCollectionId || preset;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, backgroundColor: "#2a2a2a", borderRadius: 1 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, backgroundColor: colors.panel, borderRadius: 1 }}>
       {successMessage && <Alert severity={messageType}>{successMessage}</Alert>}
 
       {pendingDuplicate && (

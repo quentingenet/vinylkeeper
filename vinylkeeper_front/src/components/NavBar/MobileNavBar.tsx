@@ -27,6 +27,7 @@ import { useAddRecord } from "@contexts/AddRecordContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 import { growItem } from "@utils/Animations";
+import { colors } from "@styles/colors";
 
 /**
  * MobileNavBar component props interface
@@ -49,7 +50,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const navigate = useNavigate();
   const { openAddRecord } = useAddRecord();
 
-  const colorYellow = "#C9A726";
+  const colorYellow = colors.gold;
   const sizeIcons = "large";
 
   // Check if user has admin permissions
@@ -134,7 +135,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
   return (
     <>
-      <AppBar position="fixed" sx={{ backgroundColor: "#1F1F1F" }}>
+      <AppBar position="fixed" sx={{ backgroundColor: colors.deep }}>
         <Toolbar>
           <IconButton edge="start" color="inherit" onClick={handleMenuToggle}>
             <MenuIcon
@@ -149,7 +150,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             fontFamily="Oswald"
             color={colorYellow}
             noWrap
-            sx={{ marginX: "auto", textShadow: "2px 2px 4px #000000" }}
+            sx={{ marginX: "auto", textShadow: `2px 2px 4px ${colors.black}` }}
           >
             {titlePage}
           </Typography>
@@ -164,8 +165,8 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
           "& .MuiDrawer-paper": {
             width: "100%",
             height: "100%",
-            backgroundColor: "#000000",
-            color: "#fffbf9",
+            backgroundColor: colors.black,
+            color: colors.textLight,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -191,7 +192,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
           color={colorYellow}
           sx={{
             textAlign: "center",
-            textShadow: "2px 2px 4px #000000",
+            textShadow: `2px 2px 4px ${colors.black}`,
             marginX: "auto",
           }}
         >

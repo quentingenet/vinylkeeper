@@ -9,15 +9,11 @@ from app.schemas.user_schema import UserMiniResponse
 from app.schemas.album_schema import AlbumBase
 
 
-from app.schemas.album_schema import AlbumInCollection
 from app.schemas.collection_album_schema import CollectionAlbumCopyResponse
 
 
-class CollectionAlbumResponse(AlbumBase, AlbumInCollection):
-    """
-    Schema for album data in collection responses. state_record, state_cover and
-    acquisition_month_year are those of the first copy, for clients unaware of copies.
-    """
+class CollectionAlbumResponse(AlbumBase):
+    """Schema for album data in collection responses: the condition of the record is on each copy."""
     id: int = Field(gt=0)
     created_at: datetime
     updated_at: datetime
@@ -184,8 +180,6 @@ class CollectionListItemResponse(BaseSchema):
         default=0, description="Number of artists in collection")
     created_at: datetime
     updated_at: datetime
-    image_preview: Optional[str] = Field(
-        None, description="First album image URL if available")
     preview_images: List[str] = Field(
         default_factory=list,
         description="Random album cover URLs (max 6, renewed daily), for the card mosaic")
@@ -206,15 +200,6 @@ class CollectionDetailResponse(BaseSchema):
     is_liked_by_user: bool = Field(default=False)
     created_at: datetime
     updated_at: datetime
-
-
-class PaginatedAlbumsResponse(BaseSchema):
-    """Schema for paginated albums response."""
-    items: List[CollectionAlbumResponse] = Field(default_factory=list)
-    total: int = Field(ge=0, description="Total number of albums")
-    page: int = Field(gt=0, description="Current page number")
-    limit: int = Field(gt=0, description="Number of items per page")
-    total_pages: int = Field(ge=0, description="Total number of pages")
 
 
 class CollectionRecordResponse(BaseSchema):
@@ -253,15 +238,6 @@ class CollectionSearchResponse(BaseSchema):
     artists: List[CollectionArtistResponse] = Field(default_factory=list)
     query: str = Field(..., description="Search query used")
     search_type: str = Field(..., description="Type of search performed")
-
-
-class PaginatedCollectionResponse(BaseSchema):
-    """Schema for paginated collections response."""
-    items: List[CollectionResponse] = Field(default_factory=list)
-    total: int = Field(ge=0, description="Total number of collections")
-    page: int = Field(gt=0, description="Current page number")
-    limit: int = Field(gt=0, description="Number of items per page")
-    total_pages: int = Field(ge=0, description="Total number of pages")
 
 
 class PaginatedCollectionListResponse(BaseSchema):

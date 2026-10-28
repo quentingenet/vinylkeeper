@@ -41,7 +41,8 @@ class ExternalReferenceService:
 
     async def _verify_collection_access(self, collection_id: int, user_id: int) -> Collection:
         """Verify collection exists and user has access to it"""
-        collection = await self.repository.find_collection_by_id(collection_id, load_relations=True)
+        # owner_id is all a check needs: never load every album of the collection for it
+        collection = await self.repository.find_collection_by_id(collection_id, load_relations=False)
         if not collection:
             raise ResourceNotFoundError("Collection", collection_id)
         if collection.owner_id != user_id:
@@ -279,32 +280,11 @@ class ExternalReferenceService:
                 if request.entity_type == EntityTypeEnum.ALBUM:
                     album = entity
 
-                    processed_album_data = None
-                    if request.album_data:
-                        album_data_dict = request.album_data.model_dump(
-                            exclude_none=True)
-                        processed_album_data = album_data_dict.copy()
-
-                        state_record = processed_album_data.pop(
-                            'state_record', None)
-                        if state_record:
-                            state_record_str = state_record.value if hasattr(
-                                state_record, 'value') else str(state_record)
-                            processed_album_data['state_record_id'] = await self.repository.get_vinyl_state_id(
-                                state_record_str
-                            )
-
-                        state_cover = processed_album_data.pop(
-                            'state_cover', None)
-                        if state_cover:
-                            state_cover_str = state_cover.value if hasattr(
-                                state_cover, 'value') else str(state_cover)
-                            processed_album_data['state_cover_id'] = await self.repository.get_vinyl_state_id(
-                                state_cover_str
-                            )
+                    # State names: converted to ids in one place, CollectionAlbumRepository.apply_copy_data
+                    album_data = request.album_data.model_dump(exclude_none=True) if request.album_data else None
 
                     collection_item, is_new = await self.repository.add_album_to_collection(
-                        collection, album, processed_album_data, is_new_entity,
+                        collection, album, album_data, is_new_entity,
                         pressing_confirmed=request.pressing_confirmed, add_copy=request.add_copy,
                     )
                     copy_added = request.add_copy and not is_new

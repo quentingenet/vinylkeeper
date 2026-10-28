@@ -4,7 +4,6 @@ import type {
   UserMiniResponse,
   AlbumBase,
   ArtistBase,
-  AlbumInCollection,
   CollectionAlbumResponse,
   CollectionArtistResponse,
   CollectionBase,
@@ -16,7 +15,6 @@ import type {
   CollectionDetailResponse,
   LikeStatusResponse,
   CollectionSearchResponse,
-  PaginatedAlbumsResponse,
   PaginatedArtistsResponse,
   PaginatedCollectionResponse,
   PaginatedCollectionListResponse,
@@ -29,7 +27,6 @@ export type {
   UserMiniResponse,
   AlbumBase,
   ArtistBase,
-  AlbumInCollection,
   CollectionAlbumResponse,
   CollectionArtistResponse,
   CollectionBase,
@@ -41,7 +38,6 @@ export type {
   CollectionDetailResponse,
   LikeStatusResponse,
   CollectionSearchResponse,
-  PaginatedAlbumsResponse,
   PaginatedArtistsResponse,
   PaginatedCollectionResponse,
   PaginatedCollectionListResponse,
@@ -159,18 +155,6 @@ export class CollectionApiService extends BaseApiService {
     artistId: number
   ): Promise<void> {
     return this.delete<void>(`/collections/${collectionId}/artists/${artistId}`);
-  }
-
-  async getCollectionAlbumsPaginated(
-    collectionId: number,
-    page: number = 1,
-    limit: number = 12,
-    sortOrder: "newest" | "oldest" = "newest"
-  ): Promise<PaginatedAlbumsResponse> {
-    const response = await this.get<PaginatedAlbumsResponse>(
-      `/collections/${collectionId}/albums?page=${page}&limit=${limit}&sort_order=${sortOrder}`
-    );
-    return response;
   }
 
   async getCollectionRecordsPaginated(
@@ -295,18 +279,6 @@ export const collectionApiService = {
     collectionApiServiceInstance.removeArtistFromCollection(
       collectionId,
       artistId
-    ),
-  getCollectionAlbumsPaginated: (
-    collectionId: number,
-    page: number = 1,
-    limit: number = 12,
-    sortOrder: "newest" | "oldest" = "newest"
-  ) =>
-    collectionApiServiceInstance.getCollectionAlbumsPaginated(
-      collectionId,
-      page,
-      limit,
-      sortOrder
     ),
   getCollectionArtistsPaginated: (
     collectionId: number,

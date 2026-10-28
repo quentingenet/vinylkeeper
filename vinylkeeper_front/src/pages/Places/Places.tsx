@@ -12,6 +12,7 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@utils/queryKeys";
 import LoadingCenter from "@components/UI/LoadingCenter";
+import { colors } from "@styles/colors";
 
 export default function Places() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,8 +56,8 @@ export default function Places() {
   return (
     <Box
       sx={{
-        backgroundColor: "#313132",
-        color: "#e4e4e4",
+        backgroundColor: colors.raised,
+        color: colors.textMuted,
         minHeight: "100vh",
         position: "relative",
       }}
