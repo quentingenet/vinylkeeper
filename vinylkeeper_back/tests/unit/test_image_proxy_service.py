@@ -1,6 +1,10 @@
 """Sizes and qualities of the public image proxy are bounded to what the frontend requests."""
-import pytest
+from io import BytesIO
 
+import pytest
+from PIL import Image
+
+from app.core.exceptions import ValidationError
 from app.services.image_proxy_service import ImageProxyService
 
 
@@ -41,3 +45,30 @@ async def test_arbitrary_variants_share_the_cache_entry_of_a_served_one(service,
 
     assert first == second == b"300x300q85"
     assert len(fetched) == 1
+
+
+def encode(format: str) -> bytes:
+    output = BytesIO()
+    Image.new("RGB", (600, 400), "orange").save(output, format=format)
+    return output.getvalue()
+
+
+@pytest.mark.parametrize("source_format", ["JPEG", "PNG", "WEBP"])
+@pytest.mark.parametrize("output_format", ["webp", "jpeg"])
+def test_discogs_formats_are_resized(service, source_format, output_format):
+    processed = service._process_image(encode(source_format), 300, 300, 85, output_format)
+
+    image = Image.open(BytesIO(processed))
+    assert image.format == output_format.upper()
+    assert image.size == (300, 200)
+
+
+@pytest.mark.parametrize("source_format", ["GIF", "BMP", "TIFF"])
+def test_other_formats_are_refused_before_decoding(service, source_format):
+    with pytest.raises(ValidationError, match="Unsupported image format"):
+        service._process_image(encode(source_format), 300, 300, 85, "webp")
+
+
+def test_bytes_that_are_no_image_are_refused(service):
+    with pytest.raises(ValidationError):
+        service._process_image(b"not an image", 300, 300, 85, "webp")

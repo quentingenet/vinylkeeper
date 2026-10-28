@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 from urllib.parse import urlparse
 import httpx
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
@@ -16,6 +16,9 @@ class ImageProxyService:
     ALLOWED_DOMAINS = ["i.discogs.com"]
     MAX_IMAGE_SIZE = 10 * 1024 * 1024
     MAX_DIMENSION = 2048
+    # The formats Discogs serves. Pillow reads many more, rarely audited ones: an image of
+    # outside origin is decoded only by these decoders.
+    ALLOWED_FORMATS = ("JPEG", "PNG", "WEBP")
     REQUEST_TIMEOUT = 10.0
     DEFAULT_QUALITY = 85
     # The sizes and qualities the frontend requests. Any other request is served at the
@@ -200,7 +203,14 @@ class ImageProxyService:
         format: str
     ) -> bytes:
         try:
-            image = Image.open(BytesIO(image_data))
+            image = Image.open(BytesIO(image_data), formats=self.ALLOWED_FORMATS)
+        except UnidentifiedImageError:
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="Unsupported image format",
+                details={"allowed_formats": list(self.ALLOWED_FORMATS)}
+            )
+        try:
             image = image.convert("RGB")
 
             image.thumbnail((width, height), Image.Resampling.LANCZOS)
