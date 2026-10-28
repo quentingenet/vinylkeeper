@@ -6,7 +6,7 @@ from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
-from app.repositories.work_queries import works_count_in_collection
+from app.repositories.work_queries import work_key, works_count_in_collection
 from app.models.association_tables import CollectionArtist
 from app.models.like_model import Like
 from app.core.exceptions import (
@@ -453,22 +453,31 @@ class CollectionRepository(TransactionalMixin):
         if not collection_ids:
             return {}
         try:
-            ranked = (
+            # One cover per work: the pressings of a record never show twice in a mosaic
+            covers = (
                 select(
                     CollectionAlbum.collection_id.label("collection_id"),
+                    CollectionAlbum.album_id.label("album_id"),
                     Album.image_url.label("image_url"),
-                    func.row_number().over(
-                        partition_by=CollectionAlbum.collection_id,
-                        order_by=func.md5(
-                            func.concat(CollectionAlbum.album_id, ":", func.current_date())
-                        ),
-                    ).label("position"),
                 )
                 .join(Album, Album.id == CollectionAlbum.album_id)
                 .where(
                     CollectionAlbum.collection_id.in_(collection_ids),
                     Album.image_url.isnot(None),
                     Album.image_url != "",
+                )
+                .distinct(CollectionAlbum.collection_id, work_key())
+                .order_by(CollectionAlbum.collection_id, work_key(), CollectionAlbum.album_id)
+                .subquery()
+            )
+            ranked = (
+                select(
+                    covers.c.collection_id,
+                    covers.c.image_url,
+                    func.row_number().over(
+                        partition_by=covers.c.collection_id,
+                        order_by=func.md5(func.concat(covers.c.album_id, ":", func.current_date())),
+                    ).label("position"),
                 )
                 .subquery()
             )

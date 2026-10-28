@@ -633,3 +633,19 @@ class TestExportCopies:
             ("1", "2", "mint", ""), ("2", "2", "fair", "good")]
         assert {r["album_id"] for r in rows} == {str(album.id)}
         assert rows[0]["pressing_confirmed"] == "no"
+
+
+class TestCollectionMosaic:
+    async def test_one_cover_per_work(self, real_session):
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        original, reissue = await existing_albums(real_session, 2)
+        master = f"itest-{uuid.uuid4().hex[:8]}"
+        for album, cover in ((original, "https://i.discogs.com/a.jpg"), (reissue, "https://i.discogs.com/b.jpg")):
+            album.external_master_id = master
+            album.image_url = cover
+        await CollectionRepository(real_session).add_albums(collection, [original.id, reissue.id])
+
+        previews = await CollectionRepository(real_session).get_preview_images_batch([collection.id])
+
+        assert previews[collection.id] == ["https://i.discogs.com/a.jpg"]
