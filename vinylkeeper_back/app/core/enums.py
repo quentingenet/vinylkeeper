@@ -48,6 +48,13 @@ class MoodEnum(str, Enum):
     UPLIFTING = "uplifting"
     MELANCHOLIC = "melancholic"
     POWERFUL = "powerful"
+    GROOVY = "groovy"
+    AGGRESSIVE = "aggressive"
+    DARK = "dark"
+    DREAMY = "dreamy"
+    SPIRITUAL = "spiritual"
+    LAID_BACK = "laid_back"
+    REBELLIOUS = "rebellious"
 
 
 class ExternalSourceEnum(str, Enum):

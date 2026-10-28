@@ -30,6 +30,26 @@ VINYL_STATE_DESCRIPTIONS = {
     "not_defined": "Condition not specified. Use when the vinyl's state is unknown."
 }
 
+MOOD_DESCRIPTIONS = {
+    "happy": "Joyful, light and carefree. Bright melodies and a sunny feel, with no deeper emotional weight.",
+    "uplifting": "Inspiring and hopeful. Builds up and lifts the listener's spirit; more emotional and soaring than simply happy.",
+    "energetic": "Fast, driving and dynamic. High tempo and momentum that keeps the listener moving.",
+    "groovy": "Rhythm-first and danceable. A tight, infectious groove that makes you nod or dance, as in funk, soul, disco or afrobeat.",
+    "powerful": "Epic, grand and majestic. Large scale, dramatic build-ups and a strong sense of grandeur.",
+    "aggressive": "Raw, harsh and intense. Anger, distortion and brute force, as in punk, thrash or hardcore.",
+    "rebellious": "Defiant, militant or socially conscious. Music of protest, resistance and empowerment, as in roots reggae, punk, conscious hip-hop or protest folk.",
+    "dark": "Somber, cold or ominous. Bleak atmospheres and a sense of unease, as in post-punk, goth, doom or dark ambient.",
+    "mysterious": "Enigmatic and intriguing. Unusual harmonies or textures that create suspense and curiosity rather than fear.",
+    "dreamy": "Hazy, floating and ethereal. Washed-out textures and a weightless, otherworldly feel, as in shoegaze, dream pop or ambient.",
+    "calm": "Peaceful, still and soothing. Slow pace, gentle dynamics and little rhythmic drive, ideal for quiet listening. More static than laid_back.",
+    "laid_back": "Relaxed and easygoing with a gentle, swaying groove. Warm and unhurried, as in roots reggae, dub, lounge or yacht rock. Looser and more rhythmic than calm.",
+    "romantic": "Tender, loving or sensual. Intimate, warm and affectionate music about love and closeness.",
+    "spiritual": "Devotional, sacred or transcendent. Music of faith, meditation or inner elevation, as in gospel or spiritual jazz.",
+    "nostalgic": "Evokes the past and fond memories. A vintage or retro feel that recalls another era.",
+    "melancholic": "Bittersweet and wistful. A gentle sadness that remains beautiful and reflective. Never combined with sad.",
+    "sad": "Heavy, sorrowful and grieving. Deep sadness, loss or heartbreak without consolation. Never combined with melancholic.",
+}
+
 
 async def check_reference_data_exists(db: AsyncSession) -> bool:
     reference_models = [
@@ -62,7 +82,7 @@ async def insert_reference_values(db: AsyncSession):
         await insert_enum_values(db, PlaceType, PlaceTypeEnum)
         await insert_enum_values(db, EntityType, EntityTypeEnum)
         await insert_enum_values(db, VinylState, VinylStateEnum, VINYL_STATE_DESCRIPTIONS)
-        await insert_enum_values(db, Mood, MoodEnum)
+        await insert_enum_values(db, Mood, MoodEnum, MOOD_DESCRIPTIONS)
         await insert_enum_values(db, ExternalSource, ExternalSourceEnum)
         await db.commit()
     except Exception as e:
