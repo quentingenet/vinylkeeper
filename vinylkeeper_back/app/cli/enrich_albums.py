@@ -1,6 +1,7 @@
 """
 Backfill Discogs metadata on albums. Resumable and idempotent: only albums that
 are not enriched yet are fetched, so it can be interrupted and run again.
+Albums enriched by a run also get their rule-based moods.
 
 Usage (from vinylkeeper_back/):
     poetry run python -m app.cli.enrich_albums [--limit N] [--dry-run] [--skip-masters]
@@ -17,12 +18,14 @@ import httpx
 from app.core.logging import logger
 from app.db.session import AsyncSessionLocal, engine
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
+from app.repositories.mood_assignment_repository import MoodAssignmentRepository
 from app.services.album_enrichment_service import (
     DISCOGS_MIN_INTERVAL_SECONDS,
     AlbumEnrichmentService,
     DiscogsClient,
     EnrichmentReport,
 )
+from app.services.mood_assignment_service import MoodAssignmentService
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -48,6 +51,11 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
         async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as http_client:
             service = AlbumEnrichmentService(repository, DiscogsClient(http_client))
             await service.enrich_pending_releases(args.limit, report=report)
+            # Styles are known now: moods do not wait for the (longer) masters pass
+            if report.enriched_album_ids:
+                moods = await MoodAssignmentService(MoodAssignmentRepository(db)).assign(report.enriched_album_ids)
+                await db.commit()
+                print(f"Moods: {moods.with_moods} album(s) with moods, {moods.without_moods} without")
             if not args.skip_masters:
                 await service.enrich_pending_masters(args.limit, report=report)
 

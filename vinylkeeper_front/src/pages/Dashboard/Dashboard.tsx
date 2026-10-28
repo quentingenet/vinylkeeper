@@ -13,6 +13,7 @@ import {
   Tooltip,
   Legend,
   ChartOptions,
+  type Plugin,
   type TooltipItem,
 } from "chart.js";
 import { Album, Person, ArrowForward } from "@mui/icons-material";
@@ -29,7 +30,7 @@ import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import TutorialModal from "@components/Modals/TutorialModal";
 import { useUserContext } from "@contexts/UserContext";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { toPlaybackItem } from "@utils/toPlaybackItem";
@@ -136,6 +137,25 @@ export default function Dashboard() {
   });
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  // Real center of the doughnut (in px, relative to its container): the legend
+  // below the ring shifts it, so a fixed percentage is off on small screens
+  const [chartCenter, setChartCenter] = useState<{ x: number; y: number } | null>(null);
+  const chartCenterPlugin = useMemo<Plugin<"doughnut">>(
+    () => ({
+      id: "chartCenterPosition",
+      afterLayout(chart) {
+        const { left, right, top, bottom } = chart.chartArea;
+        const x = chart.canvas.offsetLeft + (left + right) / 2;
+        const y = chart.canvas.offsetTop + (top + bottom) / 2;
+        setChartCenter((previous) =>
+          previous && Math.abs(previous.x - x) < 0.5 && Math.abs(previous.y - y) < 0.5
+            ? previous
+            : { x, y }
+        );
+      },
+    }),
+    []
+  );
 
   useEffect(() => {
     if (chartContainerRef.current && data) {
@@ -235,6 +255,8 @@ export default function Dashboard() {
   const chartOptions: ChartOptions<"doughnut"> = {
     responsive: true,
     maintainAspectRatio: true,
+    // Mobile only: larger hole than the 50% default so the center total fits
+    ...(isMobile && { cutout: "62%" }),
     onHover: (event, activeElements) => {
       const target = event.native?.target as HTMLElement;
       if (target) {
@@ -635,17 +657,19 @@ export default function Dashboard() {
                   margin: "0 auto",
                   padding: 2,
                   minHeight: "300px",
+                  // Mobile only: lets the center total scale with the chart width (cqi units)
+                  ...(isMobile && { containerType: "inline-size" }),
                   "& canvas": {
                     cursor: "pointer",
                   },
                 }}
               >
-                <Doughnut data={chartData} options={chartOptions} />
+                <Doughnut data={chartData} options={chartOptions} plugins={[chartCenterPlugin]} />
                 <Box
                   sx={{
                     position: "absolute",
-                    top: "47%",
-                    left: "50%",
+                    top: isMobile && chartCenter ? `${chartCenter.y}px` : "47%",
+                    left: isMobile && chartCenter ? `${chartCenter.x}px` : "50%",
                     transform: "translate(-50%, -50%)",
                     textAlign: "center",
                     pointerEvents: "none",
@@ -661,6 +685,12 @@ export default function Dashboard() {
                       color: "#c9a726",
                       fontWeight: "bold",
                       textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                      // Mobile only: shrinks with the doughnut hole instead of overflowing it
+                      ...(isMobile && {
+                        fontSize: "clamp(1.25rem, 8cqi, 2.125rem)",
+                        lineHeight: 1.1,
+                        whiteSpace: "nowrap",
+                      }),
                     }}
                   >
                     {(

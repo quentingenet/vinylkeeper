@@ -17,7 +17,7 @@ class AlbumMood(Base):
     __tablename__ = "album_moods"
 
     __table_args__ = (
-        CheckConstraint("source IN ('llm', 'user')", name="ck_album_moods_source"),
+        CheckConstraint("source IN ('rule', 'llm', 'user')", name="ck_album_moods_source"),
         Index("ix_album_moods_mood_id", "mood_id"),
     )
 
@@ -27,7 +27,7 @@ class AlbumMood(Base):
         "moods.id", ondelete="RESTRICT"), primary_key=True)
 
     source = Column(String(10), nullable=False,
-                    comment="Who assigned the mood: 'llm' or 'user'")
+                    comment="Who assigned the mood: 'rule', 'llm' or 'user'")
 
     created_at = Column(DateTime(timezone=True),
                         server_default=func.now(), nullable=False)

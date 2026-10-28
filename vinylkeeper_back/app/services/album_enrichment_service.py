@@ -16,6 +16,8 @@ from app.core.config_env import settings
 from app.core.logging import logger
 from app.db.session import AsyncSessionLocal
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
+from app.repositories.mood_assignment_repository import MoodAssignmentRepository
+from app.services.mood_assignment_service import MoodAssignmentService
 
 DISCOGS_MIN_INTERVAL_SECONDS = 1.05  # authenticated limit is 60 requests/minute
 RATE_LIMIT_BACKOFF_SECONDS = (5, 10, 20, 40, 60)
@@ -124,6 +126,7 @@ class EnrichmentReport:
     enriched: int = 0
     not_found: int = 0
     failed: list[str] = field(default_factory=list)
+    enriched_album_ids: list[int] = field(default_factory=list)
     masters_done: int = 0
     master_rows_updated: int = 0
 
@@ -160,6 +163,7 @@ class AlbumEnrichmentService:
                 outcome = await self.enrich_release(album_id, external_album_id)
                 if outcome == "enriched":
                     report.enriched += 1
+                    report.enriched_album_ids.append(album_id)
                 else:
                     report.not_found += 1
             except DiscogsUnavailableError as e:
@@ -196,7 +200,7 @@ async def enrich_album_in_background(external_album_id: str) -> None:
     Enrich a newly added album after the response is sent.
 
     Never raises: any failure leaves the album pending, and the CLI backfill
-    (python -m app.cli.enrich_albums) picks it up later.
+    (python -m app.cli.enrich_albums, then app.cli.assign_moods) picks it up later.
     """
     if not settings.ALBUM_ENRICHMENT_ENABLED:
         return
@@ -212,6 +216,10 @@ async def enrich_album_in_background(external_album_id: str) -> None:
                 outcome = await service.enrich_release(album_id, external_album_id)
                 await db.commit()
                 if outcome == "enriched":
+                    # Styles are known now: give the album its rule moods before the
+                    # master call, which may fail on Discogs rate limits.
+                    await MoodAssignmentService(MoodAssignmentRepository(db)).assign([album_id])
+                    await db.commit()
                     master = await repository.get_pending_master(album_id)
                     if master:
                         await service.enrich_master(master)

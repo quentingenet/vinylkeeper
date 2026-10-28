@@ -22,7 +22,8 @@ interface PreviewModalProps {
   onEnter: () => void;
 }
 
-const TITLE_ID = "preview-modal-title";
+// Visible title is the brand only; screen readers get the full purpose
+const DIALOG_LABEL = "A look inside VinylKeeper";
 const SCREENSHOT_ASPECT_RATIO = "16 / 9";
 
 const navButtonSx = {
@@ -60,7 +61,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter }: Preview
       <ModalContent
         role="dialog"
         aria-modal="true"
-        aria-labelledby={TITLE_ID}
+        aria-label={DIALOG_LABEL}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         sx={{ position: "relative", overflowY: "auto" }}
@@ -74,16 +75,18 @@ export default function PreviewModal({ open, slides, onClose, onEnter }: Preview
         </IconButton>
 
         <Typography
-          id={TITLE_ID}
           variant="h4"
           component="h2"
+          aria-hidden="true"
           sx={(theme) => ({
             ...modalTitleSx,
             px: 5,
+            fontFamily: "RockSalt",
+            marginBottom: 3,
             fontSize: { xs: theme.typography.h5.fontSize, sm: theme.typography.h4.fontSize },
           })}
         >
-          A look inside VinylKeeper
+          Vinyl Keeper
         </Typography>
 
         <ImageContainer sx={{ height: "auto", aspectRatio: SCREENSHOT_ASPECT_RATIO, flexShrink: 0 }}>

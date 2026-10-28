@@ -199,6 +199,7 @@ class TestAlbumEnrichmentService:
         report = await service.enrich_pending_releases(commit_every=2)
 
         assert (report.enriched, report.not_found, report.failed) == (1, 1, ["b"])
+        assert report.enriched_album_ids == [1]
         assert repository.db.commit.await_count == 2  # one batch commit + the final one
 
     async def test_pending_masters_report(self):
@@ -247,12 +248,41 @@ class TestBackgroundEnrichment:
         service = AsyncMock()
         service.enrich_release = AsyncMock(return_value="enriched")
 
+        mood_service = AsyncMock()
+        calls = []
+        service.enrich_release.side_effect = lambda *a: calls.append("release") or "enriched"
+        mood_service.assign.side_effect = lambda *a: calls.append("moods")
+        service.enrich_master.side_effect = lambda *a: calls.append("master")
+
         with patch.object(enrichment_module.settings, "ALBUM_ENRICHMENT_ENABLED", True), \
                 patch.object(enrichment_module, "AsyncSessionLocal", return_value=session), \
                 patch.object(enrichment_module, "AlbumEnrichmentRepository", return_value=repository), \
-                patch.object(enrichment_module, "AlbumEnrichmentService", return_value=service):
+                patch.object(enrichment_module, "AlbumEnrichmentService", return_value=service), \
+                patch.object(enrichment_module, "MoodAssignmentService", return_value=mood_service):
             await enrich_album_in_background("380980")
 
         service.enrich_release.assert_awaited_once_with(7, "380980")
+        mood_service.assign.assert_awaited_once_with([7])
         service.enrich_master.assert_awaited_once_with("8522")
-        assert session.commit.await_count == 2
+        # Moods are assigned before the master call, which may fail on rate limits
+        assert calls == ["release", "moods", "master"]
+        assert session.commit.await_count == 3
+
+    async def test_not_found_release_gets_no_moods(self):
+        repository = AsyncMock()
+        repository.get_pending_release_by_external_id = AsyncMock(return_value=7)
+        session = AsyncMock()
+        session.__aenter__.return_value = session
+        service = AsyncMock()
+        service.enrich_release = AsyncMock(return_value="not_found")
+        mood_service = AsyncMock()
+
+        with patch.object(enrichment_module.settings, "ALBUM_ENRICHMENT_ENABLED", True), \
+                patch.object(enrichment_module, "AsyncSessionLocal", return_value=session), \
+                patch.object(enrichment_module, "AlbumEnrichmentRepository", return_value=repository), \
+                patch.object(enrichment_module, "AlbumEnrichmentService", return_value=service), \
+                patch.object(enrichment_module, "MoodAssignmentService", return_value=mood_service):
+            await enrich_album_in_background("380980")
+
+        mood_service.assign.assert_not_called()
+        service.enrich_master.assert_not_called()
