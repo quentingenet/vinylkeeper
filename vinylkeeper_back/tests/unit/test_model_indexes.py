@@ -34,7 +34,10 @@ PRODUCTION_INDEXES = {
         "ON places (latitude, longitude, id, city) WHERE is_valid = true AND is_moderated = true "
         "AND latitude IS NOT NULL AND longitude IS NOT NULL",
     "ix_wishlist_user_id_entity_type": "ON wishlist (user_id, entity_type_id)",
+    # Migration d4a7c2e9f1b3: one account per email whatever its case
+    "ix_users_email_lower": "ON users (lower(email))",
 }
+UNIQUE_PRODUCTION_INDEXES = {"ix_users_email_lower"}
 
 
 def _declared_indexes():
@@ -51,7 +54,8 @@ def test_production_index_is_declared_with_the_same_definition(name):
     assert index is not None, f"{name} exists in production but is not declared in the models"
 
     ddl = str(CreateIndex(index).compile(dialect=postgresql.dialect()))
-    assert _normalize(ddl) == _normalize(f"CREATE INDEX {name} {PRODUCTION_INDEXES[name]}")
+    create = "CREATE UNIQUE INDEX" if name in UNIQUE_PRODUCTION_INDEXES else "CREATE INDEX"
+    assert _normalize(ddl) == _normalize(f"{create} {name} {PRODUCTION_INDEXES[name]}")
 
 
 def _dropped_indexes():
@@ -65,6 +69,10 @@ def _dropped_indexes():
 @pytest.mark.parametrize("name", sorted(_dropped_indexes()))
 def test_dropped_index_is_not_declared_again(name):
     assert name not in _declared_indexes()
+
+
+def test_unique_indexes_are_production_indexes():
+    assert UNIQUE_PRODUCTION_INDEXES <= set(PRODUCTION_INDEXES)
 
 
 def test_no_index_is_both_kept_and_dropped():
