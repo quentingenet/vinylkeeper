@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     # external API
     DISCOGS_API_URL: str
     DISCOGS_API_KEY: str
+    # Background Discogs enrichment of newly created albums (disabled in tests)
+    ALBUM_ENRICHMENT_ENABLED: bool = True
 
     # User-Agent
     USER_AGENT: str

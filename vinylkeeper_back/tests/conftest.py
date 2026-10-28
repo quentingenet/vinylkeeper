@@ -32,6 +32,7 @@ os.environ.setdefault("DEFAULT_ROLE_ID", "1")
 os.environ.setdefault("DISCOGS_API_URL", "https://api.discogs.com")
 os.environ.setdefault("DISCOGS_API_KEY", "test_discogs_key")
 os.environ.setdefault("USER_AGENT", "VinylKeeperTest/1.0")
+os.environ.setdefault("ALBUM_ENRICHMENT_ENABLED", "false")
 
 # Génère les clés RSA de test si elles n'existent pas déjà
 _KEYS_DIR = pathlib.Path(__file__).parent.parent / "app" / "keys"

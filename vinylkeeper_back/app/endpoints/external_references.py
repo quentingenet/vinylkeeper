@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Path, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Path, Response
 from fastapi import status as http_status
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
@@ -29,21 +29,33 @@ from app.deps.deps import (
     get_wishlist_export_service,
 )
 from app.services.wishlist_export_service import WishlistExportService
-from app.core.enums import EntityTypeEnum
+from app.core.enums import EntityTypeEnum, ExternalSourceEnum
 from app.utils.endpoint_utils import handle_app_exceptions
+from app.services.album_enrichment_service import enrich_album_in_background
 
 router = APIRouter()
+
+
+def schedule_album_enrichment(
+    background_tasks: BackgroundTasks, request: AddToWishlistRequest | AddToCollectionRequest
+) -> None:
+    """Fetch Discogs metadata for an added album once the response is sent."""
+    if (request.entity_type == EntityTypeEnum.ALBUM
+            and request.source.lower() == ExternalSourceEnum.DISCOGS.value):
+        background_tasks.add_task(enrich_album_in_background, request.get_external_id())
 
 
 @router.post("/wishlist/add", response_model=AddToWishlistResponse)
 @handle_app_exceptions
 async def add_to_wishlist(
     request: AddToWishlistRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     service: WishlistService = Depends(get_wishlist_service)
 ):
     """Add an item to user's wishlist"""
     wishlist_item = await service.add_to_wishlist(current_user.id, request)
+    schedule_album_enrichment(background_tasks, request)
     return wishlist_item
 
 
@@ -64,12 +76,14 @@ async def remove_from_wishlist(
 async def add_to_collection(
     request: AddToCollectionRequest,
     collection_id: int,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     service: ExternalReferenceService = Depends(get_external_reference_service)
 ):
     """Add an item to user's collection"""
     collection_item = await service.add_to_collection(
         current_user.id, collection_id, request)
+    schedule_album_enrichment(background_tasks, request)
     return collection_item
 
 
