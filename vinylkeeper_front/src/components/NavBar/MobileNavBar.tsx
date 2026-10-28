@@ -23,6 +23,7 @@ import {
   AdminPanelSettings,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
+import { useAddRecord } from "@contexts/AddRecordContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 import { growItem } from "@utils/Animations";
@@ -46,6 +47,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [_activeItem, setActiveItem] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { openAddRecord } = useAddRecord();
 
   const colorYellow = "#C9A726";
   const sizeIcons = "large";
@@ -70,7 +72,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       linkTo: EGlobalUrls.SPINNING_NOW,
     },
     {
-      text: "Add vinyls",
+      text: "Add a record",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ADD_VINYLS,
     },
@@ -111,6 +113,12 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
    * @param {EGlobalUrls} linkTo - The URL to navigate to
    */
   const handleMenuItemClick = (text: string, linkTo: EGlobalUrls) => {
+    // Adding a record is a dialog over the current page, not a page of its own
+    if (linkTo === EGlobalUrls.ADD_VINYLS) {
+      setIsMenuOpen(false);
+      openAddRecord();
+      return;
+    }
     setActiveItem(text);
     setTitlePage(text);
     setTimeout(() => {

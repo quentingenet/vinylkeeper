@@ -11,6 +11,9 @@ const mobileState = vi.hoisted(() => ({ isMobile: false }));
 
 vi.mock("@hooks/useDetectMobile", () => ({ default: () => mobileState }));
 
+const addRecord = vi.hoisted(() => ({ openAddRecord: vi.fn() }));
+vi.mock("@contexts/AddRecordContext", () => ({ useAddRecord: () => addRecord }));
+
 vi.mock("@services/SpinningNowApiService", () => ({ spinningNowApiService: api }));
 vi.mock("@components/Modals/PlaybackModal", () => ({
   default: ({ isOpen, item }: { isOpen: boolean; item: { title: string } | null }) =>
@@ -156,7 +159,9 @@ describe("SpinningNow page", () => {
     api.getOptions.mockResolvedValue({ ...options, total_albums: 0, moods: [], eras: [], genres: [], collections: [] });
     renderPage();
 
-    expect(await screen.findByRole("link", { name: "Add your first vinyls" })).toHaveAttribute("href", "/add-vinyls");
+    await userEvent.click(await screen.findByRole("button", { name: "Add your first vinyls" }));
+
+    expect(addRecord.openAddRecord).toHaveBeenCalled();
     expect(screen.getByText(/No records in your collections yet/)).toBeInTheDocument();
     expect(api.pick).not.toHaveBeenCalled();
   });

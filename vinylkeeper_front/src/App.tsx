@@ -12,7 +12,7 @@ const Layout = lazy(() => import("@components/Layout/Layout"));
 const ResetPassword = lazy(() => import("@pages/ResetPassword/ResetPassword"));
 const Settings = lazy(() => import("@pages/Settings/Settings"));
 const CollectionsPage = lazy(() => import("@pages/Collections/CollectionsPage"));
-const AddVinyls = lazy(() => import("@pages/AddVinyls/AddVinyls"));
+const OpenAddRecordRoute = lazy(() => import("@components/AddRecord/OpenAddRecordRoute"));
 const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
 const Places = lazy(() => import("@pages/Places/Places"));
 const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
@@ -81,7 +81,7 @@ function App() {
               path={EGlobalUrls.ADD_VINYLS}
               element={
                 <Protected>
-                  <AddVinyls />
+                  <OpenAddRecordRoute />
                 </Protected>
               }
             />

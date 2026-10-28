@@ -1,4 +1,4 @@
-import { EGlobalUrls } from "@utils/GlobalUrls";
+// /add-vinyls links (bookmarks, older "Find my pressing" links) open the add dialog with these
 
 // An album of a collection whose release is not the pressing on the owner's shelf
 export interface ReplaceTarget {
@@ -10,15 +10,6 @@ export interface ReplaceTarget {
 const COLLECTION_PARAM = "replaceCollection";
 const ALBUM_PARAM = "replaceAlbum";
 const QUERY_PARAM = "q";
-
-export function buildFindPressingUrl({ collectionId, albumId, title }: ReplaceTarget): string {
-  const params = new URLSearchParams({
-    [QUERY_PARAM]: title,
-    [COLLECTION_PARAM]: String(collectionId),
-    [ALBUM_PARAM]: String(albumId),
-  });
-  return `${EGlobalUrls.ADD_VINYLS}?${params.toString()}`;
-}
 
 export function parseInitialQuery(params: URLSearchParams): string {
   return params.get(QUERY_PARAM)?.trim() ?? "";
@@ -33,6 +24,3 @@ export function parseReplaceTarget(params: URLSearchParams): ReplaceTarget | nul
   }
   return { collectionId, albumId, title };
 }
-
-export const collectionDetailsUrl = (collectionId: number) =>
-  EGlobalUrls.COLLECTION_DETAILS.replace(":id", String(collectionId));

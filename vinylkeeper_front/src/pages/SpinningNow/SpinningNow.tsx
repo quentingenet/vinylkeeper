@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import { Box, Button, Link, Paper, Typography } from "@mui/material";
 import { Casino as CasinoIcon, Shuffle as ShuffleIcon } from "@mui/icons-material";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import EmptyState from "@components/UI/EmptyState";
@@ -11,7 +10,7 @@ import { formatDecade, formatMoodName } from "@components/SpinningNow/spinningNo
 import { useSpinningNow } from "@hooks/useSpinningNow";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { spinningNowAlbumToPlaybackItem } from "@utils/toPlaybackItem";
-import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useAddRecord } from "@contexts/AddRecordContext";
 import type { SpinningNowAlbum } from "@models/ISpinningNow";
 
 const PAGE_MAX_WIDTH = 1200;
@@ -31,6 +30,7 @@ export default function SpinningNow() {
     clearFilters,
   } = useSpinningNow();
   const { isMobile } = useDetectMobile();
+  const { openAddRecord } = useAddRecord();
   const [playbackItem, setPlaybackItem] = useState<PlaybackItem | null>(null);
   const [surpriseMessage, setSurpriseMessage] = useState<string | null>(null);
 
@@ -55,7 +55,10 @@ export default function SpinningNow() {
         message={
           <>
             No records in your collections yet.{" "}
-            <Link to={EGlobalUrls.ADD_VINYLS}>Add your first vinyls</Link> and come back to pick one to play.
+            <Link component="button" onClick={() => openAddRecord()} sx={{ verticalAlign: "baseline" }}>
+              Add your first vinyls
+            </Link>{" "}
+            and come back to pick one to play.
           </>
         }
       />

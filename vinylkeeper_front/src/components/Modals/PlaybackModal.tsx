@@ -13,7 +13,8 @@ import {
   useArtistMetadata,
 } from "@services/MusicMetadataService";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useAddRecord } from "@contexts/AddRecordContext";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import StreamingLinksAccordion from "@components/Modals/StreamingLinksAccordion";
@@ -22,7 +23,6 @@ import PressingSection from "@components/Modals/PressingSection";
 import CollectionPressings from "@components/Modals/CollectionPressings";
 import OwnedPressingsSection from "@components/Modals/OwnedPressingsSection";
 import type { CollectionAlbumResponse } from "@models/Collection";
-import { buildFindPressingUrl } from "@utils/findPressing";
 
 export interface PlaybackItem {
   id: string;
@@ -56,7 +56,7 @@ export default function PlaybackModal({
 }: PlaybackModalProps) {
   const { isMobile } = useDetectMobile();
   const { id: collectionId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { openAddRecord } = useAddRecord();
 
   const {
     data: albumMetadata,
@@ -84,9 +84,10 @@ export default function PlaybackModal({
   const handleFindPressing = (pressing: CollectionAlbumResponse) => {
     if (!collectionId) return;
     onClose();
-    void navigate(
-      buildFindPressingUrl({ collectionId: parseInt(collectionId), albumId: pressing.id, title: pressing.title })
-    );
+    openAddRecord({
+      initialQuery: pressing.title,
+      replaceTarget: { collectionId: parseInt(collectionId), albumId: pressing.id, title: pressing.title },
+    });
   };
 
   const modalStyle = {

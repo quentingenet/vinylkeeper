@@ -6,6 +6,8 @@ import { useTheme } from "@mui/material/styles";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { Typography } from "@mui/material";
 import { usePageTitle } from "@hooks/usePageTitle";
+import AddRecordProvider from "@components/AddRecord/AddRecordProvider";
+import AddRecordFab from "@components/AddRecord/AddRecordFab";
 
 /**
  * Layout component that provides the main structure for the application
@@ -55,6 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [titlePage, currentTitle]);
 
   return (
+    <AddRecordProvider>
     <Box sx={{ display: "flex", minHeight: "100vh", overflow: "hidden" }}>
       {isMobile ? (
         <MobileNavBar setTitlePage={setTitlePage} titlePage={titlePage} />
@@ -116,7 +119,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         ></Box>
       </Box>
+      <AddRecordFab />
     </Box>
+    </AddRecordProvider>
   );
 };
 

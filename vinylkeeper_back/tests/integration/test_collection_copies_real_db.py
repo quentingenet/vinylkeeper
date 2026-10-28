@@ -649,3 +649,17 @@ class TestCollectionMosaic:
         previews = await CollectionRepository(real_session).get_preview_images_batch([collection.id])
 
         assert previews[collection.id] == ["https://i.discogs.com/a.jpg"]
+
+
+class TestExportOrder:
+    async def test_rows_follow_the_titles(self, real_session):
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        albums = await existing_albums(real_session, 3)
+        for album, title in zip(albums, ("Zappa - Hot Rats", "brel - Brel", "Miles Davis - Kind Of Blue")):
+            album.title = title
+        await CollectionRepository(real_session).add_albums(collection, [a.id for a in albums])
+
+        rows = await CollectionAlbumRepository(real_session).get_collection_albums(collection.id)
+
+        assert [album.title for album, _ in rows] == ["brel - Brel", "Miles Davis - Kind Of Blue", "Zappa - Hot Rats"]

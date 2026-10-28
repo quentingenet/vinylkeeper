@@ -24,6 +24,7 @@ import {
   AdminPanelSettings,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
+import { useAddRecord } from "@contexts/AddRecordContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 import { growItem } from "@utils/Animations";
@@ -58,9 +59,15 @@ const NavBar: React.FC<NavBarProps> = ({
   titlePage,
 }) => {
   const { logout, currentUser } = useUserContext();
+  const { openAddRecord } = useAddRecord();
   const navigate = useNavigate();
 
   const handleItemClick = (title: string, linkTo: EGlobalUrls) => {
+    // Adding a record is a dialog over the current page, not a page of its own
+    if (linkTo === EGlobalUrls.ADD_VINYLS) {
+      openAddRecord();
+      return;
+    }
     setTitlePage(title);
     void navigate(linkTo);
   };
@@ -78,7 +85,7 @@ const NavBar: React.FC<NavBarProps> = ({
       linkTo: EGlobalUrls.DASHBOARD,
     },
     {
-      text: "Add vinyls",
+      text: "Add a record",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ADD_VINYLS,
     },

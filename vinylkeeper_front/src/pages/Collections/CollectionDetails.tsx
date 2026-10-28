@@ -25,7 +25,10 @@ import {
   SelectChangeEvent,
   TextField,
   InputAdornment,
+  Button,
 } from "@mui/material";
+import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
+import { useAddRecord } from "@contexts/AddRecordContext";
 import { useEffect, useState, useMemo } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
@@ -93,6 +96,8 @@ export default function CollectionDetails() {
   const { isMobile } = useDetectMobile();
   const { currentUser, isUserLoggedIn } = useUserContext();
   const queryClient = useQueryClient();
+
+  const { openAddRecord } = useAddRecord();
 
   // Tab state
   const [tabValue, setTabValue] = useState(0);
@@ -481,11 +486,24 @@ export default function CollectionDetails() {
             mb: 1,
             width: "100%",
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             columnGap: 2,
           }}
         >
           {isOwner && <CollectionExportMenu collectionId={collectionId} />}
+          {isOwner && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<LibraryAddIcon fontSize="small" />}
+              onClick={() => openAddRecord({ presetCollectionId: collectionId })}
+              // Same look as the "Export to" button next to it
+              sx={{ minHeight: 30, paddingY: 0.25, paddingX: 1, lineHeight: 1.2, textTransform: "none", whiteSpace: "nowrap" }}
+            >
+              Add records
+            </Button>
+          )}
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Created on{" "}

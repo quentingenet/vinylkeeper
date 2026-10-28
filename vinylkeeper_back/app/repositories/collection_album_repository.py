@@ -404,7 +404,7 @@ class CollectionAlbumRepository(TransactionalMixin):
             )
 
     async def get_collection_albums(self, collection_id: int) -> List[tuple]:
-        """Get all albums in a collection with metadata"""
+        """Get all albums in a collection with metadata, by title: pressings of a record end up side by side"""
         try:
             query = (
                 select(Album, CollectionAlbum)
@@ -414,6 +414,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                     selectinload(CollectionAlbum.copies)
                 )
                 .filter(CollectionAlbum.collection_id == collection_id)
+                .order_by(func.lower(Album.title), CollectionAlbum.created_at, Album.id)
             )
 
             result = await self.db.execute(query)
