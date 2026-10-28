@@ -327,3 +327,61 @@ class TestChangeMyPassword:
         assert "access_token" in resp.cookies and "refresh_token" in resp.cookies
         payload = decode_token(resp.cookies["access_token"], TokenType.ACCESS)
         assert payload["ver"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Email confirmation
+# ---------------------------------------------------------------------------
+
+class TestEmailConfirmationEndpoints:
+    async def test_register_sends_the_welcome_email(self, client, mock_user):
+        mock_service = AsyncMock()
+        mock_service.create_user = AsyncMock(return_value=mock_user)
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
+        resp = await client.post("/api/users/register", json={
+            "username": "newuser", "email": "new@example.com", "password": "Test1234",
+            "is_accepted_terms": True, "timezone": "Europe/Paris",
+        })
+
+        assert resp.status_code == 201
+        mock_service.send_welcome_email.assert_awaited_once_with(mock_user)
+
+    async def test_register_ignores_a_role_id(self, client, mock_user):
+        mock_service = AsyncMock()
+        mock_service.create_user = AsyncMock(return_value=mock_user)
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
+        resp = await client.post("/api/users/register", json={
+            "username": "newuser", "email": "new@example.com", "password": "Test1234",
+            "is_accepted_terms": True, "timezone": "Europe/Paris", "role_id": 1,
+        })
+
+        assert resp.status_code == 201
+        assert not hasattr(mock_service.create_user.await_args.args[0], "role_id")
+
+    async def test_confirm_email_needs_no_session(self, client):
+        mock_service = AsyncMock()
+        mock_service.confirm_email = AsyncMock(return_value="a@example.com")
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
+        resp = await client.post("/api/users/confirm-email", json={"token": "tok"})
+
+        assert resp.status_code == 200
+        mock_service.confirm_email.assert_awaited_once_with("tok")
+
+    async def test_invalid_link_returns_400(self, client):
+        from app.core.exceptions import InvalidEmailTokenError
+        mock_service = AsyncMock()
+        mock_service.confirm_email = AsyncMock(side_effect=InvalidEmailTokenError())
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
+        resp = await client.post("/api/users/confirm-email", json={"token": "tok"})
+
+        assert resp.status_code == 400
+
+    async def test_profile_update_endpoint_is_gone(self, client):
+        # The username never changes, the email only through POST /me/email and its link
+        resp = await client.put("/api/users/me", json={"username": "renamed"})
+
+        assert resp.status_code == 405

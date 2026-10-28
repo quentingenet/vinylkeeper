@@ -1,14 +1,25 @@
 """Pressing details of a Discogs /releases/{id} payload, shared by album details and enrichment."""
 import re
-from typing import Any
+from typing import Any, Optional
+from urllib.parse import urlparse
 
 # Discogs disambiguates homonyms: "Columbia (2)", "Wings (2)"
 DISAMBIGUATION_SUFFIX = re.compile(r"\s*\(\d+\)$")
+
+DISCOGS_IMAGE_HOST = "i.discogs.com"
 
 # Column sizes of the albums table
 COUNTRY_MAX_LENGTH = 100
 LABEL_MAX_LENGTH = 512
 CATNO_MAX_LENGTH = 255
+
+
+def is_discogs_image(url: Optional[str]) -> bool:
+    """An https image of the Discogs CDN, the only host the image proxy serves."""
+    if not url:
+        return False
+    parsed = urlparse(url)
+    return parsed.scheme == "https" and parsed.hostname == DISCOGS_IMAGE_HOST
 
 
 def parse_release_edition(data: dict[str, Any]) -> dict[str, Any]:

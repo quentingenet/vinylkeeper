@@ -18,6 +18,7 @@ export interface UserSettingsResponse {
   user_uuid: string;
   created_at: string;
   is_accepted_terms: boolean;
+  is_email_confirmed: boolean;
 }
 
 export interface LoginResponse {
@@ -37,9 +38,9 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-export interface ProfileUpdateData {
-  username: string;
-  email: string;
+export interface EmailChangeData {
+  newEmail: string;
+  currentPassword: string;
 }
 
 export interface PasswordChangeData {
@@ -117,11 +118,32 @@ export class UserApiService extends BaseApiService {
     }
   }
 
-  async updateProfile(data: ProfileUpdateData): Promise<{ message: string }> {
+  /** Link of the registration or email change email: no session needed */
+  async confirmEmail(token: string): Promise<{ message: string }> {
     try {
-      return await this.put<{ message: string }>("/users/me", { username: data.username, email: data.email });
-    } catch {
-      throw new Error("Failed to update profile. Please try again.");
+      return await this.post<{ message: string }>("/users/confirm-email", { token }, true);
+    } catch (error: unknown) {
+      throw new Error(isApiError(error) ? error.message : "Failed to confirm your email address.");
+    }
+  }
+
+  async resendEmailConfirmation(): Promise<{ message: string }> {
+    try {
+      return await this.post<{ message: string }>("/users/me/confirm-email/resend");
+    } catch (error: unknown) {
+      throw new Error(isApiError(error) ? error.message : "Failed to send the confirmation email.");
+    }
+  }
+
+  /** The email changes once the link sent to the new address is opened */
+  async requestEmailChange(data: EmailChangeData): Promise<{ message: string }> {
+    try {
+      return await this.post<{ message: string }>("/users/me/email", {
+        new_email: data.newEmail,
+        current_password: data.currentPassword,
+      });
+    } catch (error: unknown) {
+      throw new Error(isApiError(error) ? error.message : "Failed to change your email address.");
     }
   }
 
@@ -170,7 +192,9 @@ export const userApiService = {
   resetPassword: (data: IResetPasswordToBackend) => userApiServiceInstance.resetPassword(data),
   getCurrentUser: () => userApiServiceInstance.getCurrentUser(),
   getCurrentUserSettings: () => userApiServiceInstance.getCurrentUserSettings(),
-  updateProfile: (data: ProfileUpdateData) => userApiServiceInstance.updateProfile(data),
+  confirmEmail: (token: string) => userApiServiceInstance.confirmEmail(token),
+  resendEmailConfirmation: () => userApiServiceInstance.resendEmailConfirmation(),
+  requestEmailChange: (data: EmailChangeData) => userApiServiceInstance.requestEmailChange(data),
   changePassword: (data: PasswordChangeData) => userApiServiceInstance.changePassword(data),
   deleteAccount: () => userApiServiceInstance.deleteAccount(),
   sendContactMessage: (data: ContactMessageData) => userApiServiceInstance.sendContactMessage(data),

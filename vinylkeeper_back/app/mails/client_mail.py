@@ -7,6 +7,12 @@ from app.mails.templates_mails.new_user import new_user_register_template
 from app.mails.templates_mails.reset_password import reset_password_template
 from app.mails.templates_mails.contact_message import contact_message_template
 from app.mails.templates_mails.new_place_suggestion import new_place_suggestion_template
+from app.mails.templates_mails.email_confirmation import (
+    welcome_template,
+    email_confirmation_template,
+    email_change_confirmation_template,
+    email_change_notice_template,
+)
 from app.core.config_env import settings
 import asyncio
 
@@ -16,6 +22,10 @@ class MailSubject(Enum):
     NewUserRegistered = "New user registered"
     ContactMessage = "Contact message from VinylKeeper user"
     NewPlaceSuggestion = "New place suggestion requires moderation"
+    Welcome = "Welcome to Vinyl Keeper, please confirm your email"
+    EmailConfirmation = "Confirm your email address"
+    EmailChangeConfirmation = "Confirm your new email address"
+    EmailChangeNotice = "Email change requested on your Vinyl Keeper account"
 
 
 def smtp_client():
@@ -38,6 +48,10 @@ def get_template(subject: MailSubject, **kwargs) -> str:
         MailSubject.PasswordReset: reset_password_template,
         MailSubject.ContactMessage: contact_message_template,
         MailSubject.NewPlaceSuggestion: new_place_suggestion_template,
+        MailSubject.Welcome: welcome_template,
+        MailSubject.EmailConfirmation: email_confirmation_template,
+        MailSubject.EmailChangeConfirmation: email_change_confirmation_template,
+        MailSubject.EmailChangeNotice: email_change_notice_template,
     }
     template_function = templates.get(subject)
     if template_function:

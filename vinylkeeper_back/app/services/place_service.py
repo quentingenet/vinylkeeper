@@ -94,26 +94,7 @@ class PlaceService:
             )
 
             # Notify admins after commit (email failure must not roll back DB)
-            try:
-                email_sent = await send_mail(
-                    to=settings.EMAIL_ADMIN,
-                    subject=MailSubject.NewPlaceSuggestion,
-                    place_name=created_place.name,
-                    place_city=created_place.city,
-                    place_country=created_place.country,
-                    place_type=place_type_name,
-                    username=user.username,
-                    user_email=user.email,
-                    place_description=created_place.description,
-                )
-                if not email_sent:
-                    logger.warning(
-                        "New place suggestion email could not be sent for place_id=%s", created_place.id
-                    )
-            except Exception as mail_error:
-                logger.error(
-                    "New place suggestion email failed for place_id=%s: %s", created_place.id, mail_error
-                )
+            await self._notify_admin_of_suggestion(created_place, place_type_name, user)
 
             # Get likes info for the new place
             likes_count = await self.repository.get_place_likes_count(created_place.id)
@@ -257,8 +238,21 @@ class PlaceService:
                         message=f"Place type with ID {update_dict['place_type_id']} not found"
                     )
 
+            # An approved place that changes goes back to moderation: hidden from the map
+            # until an admin approves the new content, or the approval would cover anything
+            content_changed = any(getattr(place, key) != value for key, value in update_dict.items())
+            needs_moderation = content_changed and place.is_moderated
+            if needs_moderation:
+                update_dict["is_moderated"] = False
+
             async with transaction_context(self.repository.db):
                 updated_place = await self.repository.update_place(place_id, update_dict)
+                if needs_moderation:
+                    await self._create_moderation_request(place_id, user.id)
+
+            if needs_moderation:
+                place_type_name = updated_place.place_type.name if updated_place.place_type else ""
+                await self._notify_admin_of_suggestion(updated_place, place_type_name, user)
 
             likes_count = await self.repository.get_place_likes_count(place_id)
             is_liked = await self.repository.is_place_liked_by_user(user.id, place_id)
@@ -476,6 +470,25 @@ class PlaceService:
                 message="Failed to get places in region",
                 details={}
             )
+
+    async def _notify_admin_of_suggestion(self, place: Place, place_type_name: str, user: User) -> None:
+        """Email the admins that a place awaits moderation. Never raises: the place is already saved."""
+        try:
+            email_sent = await send_mail(
+                to=settings.EMAIL_ADMIN,
+                subject=MailSubject.NewPlaceSuggestion,
+                place_name=place.name,
+                place_city=place.city,
+                place_country=place.country,
+                place_type=place_type_name,
+                username=user.username,
+                user_email=user.email,
+                place_description=place.description,
+            )
+            if not email_sent:
+                logger.warning("New place suggestion email could not be sent for place_id=%s", place.id)
+        except Exception as mail_error:
+            logger.error("New place suggestion email failed for place_id=%s: %s", place.id, mail_error)
 
     async def _create_moderation_request(self, place_id: int, user_id: int) -> ModerationRequest:
         """Create a moderation request for a place"""

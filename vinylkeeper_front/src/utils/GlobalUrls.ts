@@ -12,6 +12,7 @@
  * @property {string} SPINNING_NOW - Spinning now page URL "/spinning-now"
  * @property {string} SETTINGS - Settings page URL "/settings"
  * @property {string} RESET_PASSWORD - Reset password page URL "/reset-password"
+ * @property {string} CONFIRM_EMAIL - Page of the email confirmation link "/confirm-email", logged in or not
  * @property {string} NO_MATCH - 404 page URL "*"
  */
 export enum EGlobalUrls {
@@ -27,6 +28,7 @@ export enum EGlobalUrls {
   SETTINGS = "/settings",
   ADMIN = "/admin",
   RESET_PASSWORD = "/reset-password",
+  CONFIRM_EMAIL = "/confirm-email",
   NO_MATCH = "*",
 }
 

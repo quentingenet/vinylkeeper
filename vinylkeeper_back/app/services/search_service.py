@@ -7,7 +7,7 @@ import httpx
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
-from app.utils.discogs_release import parse_release_edition
+from app.utils.discogs_release import DISCOGS_IMAGE_HOST, parse_release_edition
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
     SearchQuery,
@@ -20,7 +20,6 @@ from app.schemas.request_proxy.request_proxy_schema import (
 )
 
 
-DISCOGS_IMAGE_HOST = "i.discogs.com"
 # 4 columns x 3 rows on desktop
 SEARCH_PAGE_SIZE = 12
 
@@ -43,6 +42,8 @@ class SearchService:
         self.base_url = settings.DISCOGS_API_URL
         self.search_url = f"{self.base_url}/database/search"
         self.http_client = http_client
+        # Discogs requires a User-Agent identifying the application
+        self.headers = {"Authorization": f"Discogs token={self.token}", "User-Agent": settings.USER_AGENT}
 
     @staticmethod
     def normalize(text: Optional[str]) -> str:
@@ -85,7 +86,7 @@ class SearchService:
             response = await client_to_use.get(
                 self.search_url,
                 params=params,
-                headers={"Authorization": f"Discogs token={self.token}"},
+                headers=self.headers,
             )
             response.raise_for_status()
             return response.json()
@@ -261,7 +262,7 @@ class SearchService:
             )
 
         try:
-            response = await self.http_client.get(url, headers={"Authorization": f"Discogs token={self.token}"})
+            response = await self.http_client.get(url, headers=self.headers)
             response.raise_for_status()
             data = response.json()
 
@@ -302,7 +303,7 @@ class SearchService:
         try:
             releases_data = await self.http_client.get(
                 f"{self.base_url}/artists/{artist_id}/releases",
-                headers={"Authorization": f"Discogs token={self.token}"},
+                headers=self.headers,
             )
             releases_data.raise_for_status()
             releases_data = releases_data.json()
@@ -389,7 +390,7 @@ class SearchService:
             )
 
         try:
-            response = await self.http_client.get(url, headers={"Authorization": f"Discogs token={self.token}"})
+            response = await self.http_client.get(url, headers=self.headers)
             response.raise_for_status()
             data = response.json()
 

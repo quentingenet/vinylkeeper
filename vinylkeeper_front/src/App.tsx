@@ -17,6 +17,7 @@ const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetail
 const Places = lazy(() => import("@pages/Places/Places"));
 const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
+const ConfirmEmail = lazy(() => import("@pages/ConfirmEmail/ConfirmEmail"));
 
 function App() {
   const userContext = useUserContext();
@@ -122,6 +123,8 @@ function App() {
                 </Protected>
               }
             />
+            {/* Not protected: the link of the email is opened logged in or not */}
+            <Route path={EGlobalUrls.CONFIRM_EMAIL} element={<ConfirmEmail />} />
             <Route path="*" element={<Landpage />} />
           </Routes>
         </Layout>
@@ -132,6 +135,7 @@ function App() {
             path={EGlobalUrls.RESET_PASSWORD}
             element={<ResetPassword />}
           />
+          <Route path={EGlobalUrls.CONFIRM_EMAIL} element={<ConfirmEmail />} />
           <Route path={EGlobalUrls.NO_MATCH} element={<Landpage />} />
         </Routes>
       )}

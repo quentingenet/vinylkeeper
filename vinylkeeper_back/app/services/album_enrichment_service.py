@@ -17,7 +17,11 @@ from app.db.session import AsyncSessionLocal
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
 from app.repositories.mood_assignment_repository import MoodAssignmentRepository
 from app.services.mood_assignment_service import MoodAssignmentService
-from app.utils.discogs_release import DISAMBIGUATION_SUFFIX, parse_release_edition
+from app.utils.discogs_release import DISAMBIGUATION_SUFFIX, is_discogs_image, parse_release_edition
+
+# Column sizes of the albums table
+TITLE_MAX_LENGTH = 512
+IMAGE_URL_MAX_LENGTH = 1024
 
 DISCOGS_MIN_INTERVAL_SECONDS = 1.05  # authenticated limit is 60 requests/minute
 RATE_LIMIT_BACKOFF_SECONDS = (5, 10, 20, 40, 60)
@@ -97,6 +101,31 @@ def _clean_artist_name(name: str) -> str:
     return DISAMBIGUATION_SUFFIX.sub("", name.strip()).rstrip("*").strip()
 
 
+def _primary_image(data: dict[str, Any]) -> Optional[str]:
+    """The primary image of the release, else its first one, if served by the Discogs CDN."""
+    images = [image for image in data.get("images") or [] if isinstance(image, dict)]
+    image = next((i for i in images if i.get("type") == "primary"), images[0] if images else {})
+    uri = image.get("uri")
+    return uri if is_discogs_image(uri) and len(uri) <= IMAGE_URL_MAX_LENGTH else None
+
+
+def parse_release_identity(data: dict[str, Any], artist_name: Optional[str]) -> dict[str, Any]:
+    """
+    Title and cover from Discogs, which replace what the client sent when the album was created:
+    the first user to add a release must not decide its title and cover for everyone.
+    Only what Discogs provides is returned, so a sparse payload keeps the current values.
+    """
+    values: dict[str, Any] = {}
+    title = (data.get("title") or "").strip()
+    if title:
+        # Same "Artist - Title" shape as the search results, which the frontend splits
+        values["title"] = (f"{artist_name} - {title}" if artist_name else title)[:TITLE_MAX_LENGTH]
+    image_url = _primary_image(data)
+    if image_url:
+        values["image_url"] = image_url
+    return values
+
+
 def parse_release(data: dict[str, Any]) -> dict[str, Any]:
     """Map a Discogs /releases/{id} payload to album columns."""
     names = [_clean_artist_name(a.get("name", "")) for a in data.get("artists") or []]
@@ -104,6 +133,7 @@ def parse_release(data: dict[str, Any]) -> dict[str, Any]:
     master_id = data.get("master_id")
     external_master_id = str(master_id) if isinstance(master_id, int) and master_id > 0 else None
     return {
+        **parse_release_identity(data, artist_name),
         "external_master_id": external_master_id,
         "release_year": _year_or_none(data.get("year")),
         "artist_name": artist_name,

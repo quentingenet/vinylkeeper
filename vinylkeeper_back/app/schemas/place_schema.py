@@ -82,6 +82,16 @@ class PlaceUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    @field_validator("name", "address", "city", "country")
+    @classmethod
+    def validate_and_trim_text_fields(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Field cannot be empty or whitespace only")
+        return stripped
+
     @field_validator("source_url")
     @classmethod
     def validate_source_url(cls, v: Optional[str]) -> Optional[str]:

@@ -18,6 +18,7 @@ from app.core.exceptions import (
     RefreshTokenNotFoundError,
     UnauthorizedError,
     InvalidResetTokenError,
+    InvalidEmailTokenError,
     CsrfValidationError,
 )
 from app.core.logging import logger
@@ -55,6 +56,8 @@ class TokenType(str, Enum):
     ACCESS = "access"
     REFRESH = "refresh"
     RESET = "reset"
+    EMAIL_CONFIRM = "email_confirm"
+    EMAIL_CHANGE = "email_change"
 
 
 def create_token(user_uuid: str, token_type: TokenType, token_version: int = 0) -> str:
@@ -176,6 +179,43 @@ def verify_reset_token(token: str) -> tuple[str, int]:
         return user_uuid, token_version_of(payload)
     except PyJWTError:
         raise InvalidResetTokenError()
+
+
+def create_email_confirmation_token(user_uuid: str, email: str) -> str:
+    """Link of the registration email: confirms this very address, not a later one"""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.EMAIL_TOKEN_EXPIRE_MINUTES)
+    to_encode = {"sub": str(user_uuid), "exp": expire, "type": TokenType.EMAIL_CONFIRM.value, "email": email}
+    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+
+
+def create_email_change_token(user_uuid: str, current_email: str, new_email: str, token_version: int) -> str:
+    """
+    Link sent to the new address. Valid while the account still has current_email and the same
+    token_version: a password reset (after a stolen session, say) cancels a pending change.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.EMAIL_TOKEN_EXPIRE_MINUTES)
+    to_encode = {
+        "sub": str(user_uuid),
+        "exp": expire,
+        "type": TokenType.EMAIL_CHANGE.value,
+        "email": new_email,
+        "cur": current_email,
+        "ver": token_version,
+    }
+    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+
+
+def decode_email_token(token: str) -> dict:
+    """Payload of a confirmation or email change link"""
+    try:
+        payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+    except PyJWTError:
+        raise InvalidEmailTokenError()
+    if payload.get("type") not in (TokenType.EMAIL_CONFIRM.value, TokenType.EMAIL_CHANGE.value):
+        raise InvalidEmailTokenError()
+    if not payload.get("sub") or not payload.get("email"):
+        raise InvalidEmailTokenError()
+    return payload
 
 
 def verify_csrf(request: Request) -> None:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Response, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Response, Depends, status
 from app.schemas.user_schema import (
     UserAuthSchema,
     UserCreate,
@@ -6,8 +6,9 @@ from app.schemas.user_schema import (
     ResetPasswordSchema,
     UserMeResponse,
     UserSettingsResponse,
-    UserUpdate,
     PasswordChangeSchema,
+    EmailChangeRequest,
+    ConfirmEmailRequest,
     ContactMessageRequest,
     ContactMessageResponse,
     LoginResponse,
@@ -69,11 +70,14 @@ async def login(
 async def register(
     response: Response,
     new_user: UserCreate,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service)
 ) -> RegisterResponse:
     user = await user_service.create_user(new_user)
     set_session_cookies(response, user)
     logger.info(f"New user registered: {user.username}")
+    # After the response: a slow or failing SMTP never delays nor fails the registration
+    background_tasks.add_task(user_service.send_welcome_email, user)
     await user_service.send_new_user_registered_email(user)
     return RegisterResponse(message="User registered successfully", isLoggedIn=True)
 
@@ -138,18 +142,6 @@ async def get_current_user_settings(
     return user_settings_data
 
 
-@router.put("/me", response_model=UserSettingsResponse)
-@handle_app_exceptions
-async def update_current_user(
-    user_data: UserUpdate,
-    current_user=Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service)
-):
-    """Update current user information"""
-    updated_user = await user_service.update_user(current_user, user_data)
-    return UserSettingsResponse.model_validate(updated_user)
-
-
 @router.put("/me/password", response_model=MessageResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def change_my_password(
@@ -166,6 +158,40 @@ async def change_my_password(
     # Other sessions are revoked; this one gets tokens for the new token_version
     set_session_cookies(response, current_user)
     return MessageResponse(message="Password changed successfully")
+
+
+@router.post("/confirm-email", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def confirm_email(
+    data: ConfirmEmailRequest,
+    user_service: UserService = Depends(get_user_service)
+) -> MessageResponse:
+    """Apply a confirmation link (registration or email change). No session needed."""
+    await user_service.confirm_email(data.token)
+    return MessageResponse(message="Email address confirmed")
+
+
+@router.post("/me/confirm-email/resend", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def resend_email_confirmation(
+    current_user=Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> MessageResponse:
+    if not await user_service.resend_email_confirmation(current_user):
+        return MessageResponse(message="Your email address is already confirmed")
+    return MessageResponse(message="A confirmation link has been sent to your email address")
+
+
+@router.post("/me/email", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def request_email_change(
+    data: EmailChangeRequest,
+    current_user=Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> MessageResponse:
+    """The email changes once the link sent to the new address is opened. The username never changes."""
+    await user_service.request_email_change(current_user, data.new_email, data.current_password)
+    return MessageResponse(message="A confirmation link has been sent to your new email address")
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

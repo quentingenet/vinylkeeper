@@ -97,6 +97,7 @@ def make_user(
     user.is_active = is_active
     user.is_superuser = is_superuser
     user.token_version = 0
+    user.is_email_confirmed = False
     user.role = make_role(role_name)
     user.password = hash_password(password)
     return user
@@ -119,6 +120,9 @@ def make_user_repo(user: MagicMock = None) -> AsyncMock:
     repo.is_email_taken = AsyncMock(return_value=False)
     repo.is_username_taken = AsyncMock(return_value=False)
     repo.delete_user = AsyncMock(return_value=True)
+    repo.get_role_id_by_name = AsyncMock(return_value=2)
+    repo.confirm_email = AsyncMock(return_value=True)
+    repo.change_email = AsyncMock(return_value=True)
     return repo
 
 

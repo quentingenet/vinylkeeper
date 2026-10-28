@@ -17,6 +17,7 @@ export const usePageTitle = (setTitlePage?: (title: string) => void) => {
       [EGlobalUrls.PLACES]: "Places",
       [EGlobalUrls.SETTINGS]: "Settings",
       [EGlobalUrls.ADMIN]: "Admin",
+      [EGlobalUrls.CONFIRM_EMAIL]: "Email confirmation",
     };
 
     const title = pathToTitle[location.pathname] || "Vinyl Keeper";

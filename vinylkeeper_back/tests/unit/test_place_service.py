@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+from pydantic import ValidationError as PydanticValidationError
 
 from app.services.place_service import PlaceService
 from app.schemas.place_schema import PlaceCreate, PlaceUpdate, PaginatedPlaceResponse
@@ -219,20 +220,53 @@ class TestUpdatePlace:
         with pytest.raises(ForbiddenError):
             await service.update_place(user, place_id=1, place_data=PlaceUpdate(name="New name"))
 
-    async def test_success(self):
-        service, repo, *_ = make_service()
-        place = make_place(submitted_by_id=1)
+    async def _update(self, place, data: PlaceUpdate):
+        service, repo, mod_repo = make_service()
         repo.get_place_by_id = AsyncMock(return_value=place)
-        updated = make_place(submitted_by_id=1, name="Updated")
-        repo.update_place = AsyncMock(return_value=updated)
+        repo.update_place = AsyncMock(return_value=make_place(submitted_by_id=1))
         repo.get_place_likes_count = AsyncMock(return_value=3)
         repo.is_place_liked_by_user = AsyncMock(return_value=False)
-        user = make_user(user_id=1)
+        send_mail = AsyncMock(return_value=True)
 
-        with patch.object(service, "_create_place_response", return_value=MagicMock()) as mock_resp:
-            await service.update_place(user, place_id=1, place_data=PlaceUpdate(name="Updated"))
+        with patch("app.services.place_service.send_mail", send_mail), \
+                patch.object(service, "_create_place_response", return_value=MagicMock()) as mock_resp:
+            await service.update_place(make_user(user_id=1), place_id=1, place_data=data)
 
         mock_resp.assert_called_once()
+        return repo, mod_repo, send_mail
+
+    async def test_editing_an_approved_place_sends_it_back_to_moderation(self):
+        repo, mod_repo, send_mail = await self._update(make_place(submitted_by_id=1), PlaceUpdate(name="Updated"))
+
+        repo.update_place.assert_awaited_once_with(1, {"name": "Updated", "is_moderated": False})
+        mod_repo.create_request.assert_awaited_once()
+        send_mail.assert_awaited_once()
+
+    async def test_same_values_keep_the_approval(self):
+        repo, mod_repo, send_mail = await self._update(make_place(submitted_by_id=1), PlaceUpdate(name="Vinyl Shop"))
+
+        repo.update_place.assert_awaited_once_with(1, {"name": "Vinyl Shop"})
+        mod_repo.create_request.assert_not_awaited()
+        send_mail.assert_not_awaited()
+
+    async def test_editing_a_pending_place_reuses_its_moderation_request(self):
+        place = make_place(submitted_by_id=1)
+        place.is_moderated = False
+        repo, mod_repo, send_mail = await self._update(place, PlaceUpdate(name="Updated"))
+
+        repo.update_place.assert_awaited_once_with(1, {"name": "Updated"})
+        mod_repo.create_request.assert_not_awaited()
+        send_mail.assert_not_awaited()
+
+
+class TestPlaceUpdateSchema:
+    @pytest.mark.parametrize("field", ["name", "address", "city", "country"])
+    def test_text_fields_cannot_be_emptied(self, field):
+        with pytest.raises(PydanticValidationError):
+            PlaceUpdate(**{field: "   "})
+
+    def test_text_fields_are_trimmed(self):
+        assert PlaceUpdate(city="  Lyon ").city == "Lyon"
 
 
 class TestDeletePlace:

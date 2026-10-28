@@ -9,8 +9,9 @@ class EntityType(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)
 
+    # Never loaded: looking a reference value up must not load all the rows pointing to it
     wishlist_items = relationship(
-        "Wishlist", back_populates="entity_type", lazy="selectin")
+        "Wishlist", back_populates="entity_type", lazy="noload")
 
     def __repr__(self):
         return f"<EntityType(name={self.name})>"

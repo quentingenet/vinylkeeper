@@ -50,6 +50,13 @@ class User(Base):
         default=True,
         nullable=False
     )
+    # Set by the link sent at registration or on an email change; never blocks the login
+    is_email_confirmed = Column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False
+    )
     is_superuser = Column(
         Boolean,
         default=False,

@@ -118,6 +118,32 @@ class TestUpdatePlace:
         with pytest.raises(ForbiddenError):
             await service.update_place(intruder, created.id, PlaceUpdate(name="Hijacked"))
 
+    async def test_editing_an_approved_place_hides_it_until_approved_again(self, real_session):
+        from app.models.moderation_request_model import ModerationRequest
+        user = await make_test_user(real_session)
+        place_type_id = await pick_existing_place_type_id(real_session)
+        service = make_place_service(real_session)
+        created = await service.create_place(make_place_create(place_type_id), user)
+        first_request = (
+            await real_session.execute(
+                select(ModerationRequest).filter(ModerationRequest.place_id == created.id)
+            )
+        ).scalar_one()
+        await make_moderation_service(real_session).approve_moderation_request(
+            first_request.id, admin_user_id=user.id
+        )
+
+        await service.update_place(user, created.id, PlaceUpdate(description="Changed after approval"))
+
+        map_ids = {place.id for place in await service.get_map_places()}
+        assert created.id not in map_ids
+        requests = (
+            await real_session.execute(
+                select(ModerationRequest).filter(ModerationRequest.place_id == created.id)
+            )
+        ).scalars().all()
+        assert len(requests) == 2
+
 
 class TestDeletePlace:
     async def test_owner_can_soft_delete(self, real_session):

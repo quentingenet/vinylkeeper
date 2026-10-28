@@ -52,7 +52,7 @@ class TestWishlistItemDetailVisibility:
                 external_id=fresh_numeric_external_id(),
                 entity_type=EntityTypeEnum.ALBUM,
                 title="Owner's item",
-                image_url="https://example.com/cover.jpg",
+                image_url="https://i.discogs.com/cover.jpg",
                 source="discogs",
             ),
         )
@@ -78,7 +78,7 @@ class TestWishlistItemDetailVisibility:
                 external_id=fresh_numeric_external_id(),
                 entity_type=EntityTypeEnum.ALBUM,
                 title="Private item",
-                image_url="https://example.com/cover.jpg",
+                image_url="https://i.discogs.com/cover.jpg",
                 source="discogs",
             ),
         )
@@ -104,7 +104,7 @@ class TestWishlistItemDetailVisibility:
                 external_id=fresh_numeric_external_id(),
                 entity_type=EntityTypeEnum.ALBUM,
                 title="Public item",
-                image_url="https://example.com/cover.jpg",
+                image_url="https://i.discogs.com/cover.jpg",
                 source="discogs",
             ),
         )

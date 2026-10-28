@@ -53,6 +53,8 @@ export const queryKeys = {
     forUserPage: (userUuid: string | undefined, page: number, itemsPerPage?: number, sortOrder?: string, search?: string) =>
       ["wishlist", userUuid, page, itemsPerPage, sortOrder, search] as const,
   },
+  // A confirmation link is applied once per page view, even under StrictMode double effects
+  confirmEmail: (token: string) => ["confirmEmail", token] as const,
   userSettings: {
     all: () => ["userSettings"] as const,
     forUser: (userUuid: string | undefined) => ["userSettings", userUuid] as const,

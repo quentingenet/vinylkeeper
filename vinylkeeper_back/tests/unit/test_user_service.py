@@ -10,8 +10,15 @@ from app.core.exceptions import (
     InvalidResetTokenError,
     PasswordUpdateError,
     UserNotFoundError,
+    ValidationError,
+    InvalidEmailTokenError,
+    ServerError,
 )
-from app.utils.auth_utils.auth import create_reset_token
+from app.utils.auth_utils.auth import (
+    create_email_change_token,
+    create_email_confirmation_token,
+    create_reset_token,
+)
 
 from tests.conftest import make_user_repo
 
@@ -27,7 +34,6 @@ def make_user_data(**overrides) -> UserCreate:
         email="test@example.com",
         password="Test1234",
         is_accepted_terms=True,
-        role_id=2,
         timezone="Europe/Paris",
     )
     return UserCreate.model_construct(**{**defaults, **overrides})
@@ -89,6 +95,27 @@ class TestCreateUser:
         repo.create_user.assert_awaited_once()
         collection_service.create_collection.assert_awaited_once()
         assert result is regular_user
+
+    async def test_role_is_the_user_role_looked_up_by_name(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        repo.get_role_id_by_name = AsyncMock(return_value=7)
+        repo.create_user = AsyncMock(return_value=regular_user)
+
+        await service.create_user(make_user_data())
+
+        repo.get_role_id_by_name.assert_awaited_once_with("user")
+        assert repo.create_user.await_args.args[0].role_id == 7
+
+    def test_role_id_is_not_a_registration_field(self):
+        # A role_id sent at registration is dropped by the schema: it cannot reach the service
+        assert "role_id" not in UserCreate.model_fields
+
+    async def test_missing_user_role_raises_server_error(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        repo.get_role_id_by_name = AsyncMock(return_value=None)
+
+        with pytest.raises(ServerError):
+            await service.create_user(make_user_data())
 
     async def test_sets_initial_connection_count(self, regular_user):
         service, repo, _ = make_service(regular_user)
@@ -260,38 +287,150 @@ class TestGetUserMe:
 # update_user()
 # ---------------------------------------------------------------------------
 
-class TestUpdateUser:
-    async def test_success(self, regular_user):
+class TestRequestEmailChange:
+    async def test_wrong_password_raises_400_not_401(self, regular_user):
         service, repo, _ = make_service(regular_user)
-        repo.update_user = AsyncMock(return_value=regular_user)
-        user_data = UserCreate.model_construct(email=None, username="newname", timezone=None)
+        regular_user.email = "old@example.com"
 
-        result = await service.update_user(regular_user, user_data)
-        assert result is regular_user
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock) as send_mail:
+            with pytest.raises(ValidationError) as exc:
+                await service.request_email_change(regular_user, "new@example.com", "wrong_password")
+        # A 401 would make the frontend refresh the session and report it expired
+        assert exc.value.status_code == 400
+        send_mail.assert_not_awaited()
 
-    async def test_new_email_already_taken_raises(self, regular_user):
+    async def test_same_email_raises(self, regular_user):
+        service, _, _ = make_service(regular_user)
+        regular_user.email = "same@example.com"
+
+        with pytest.raises(ValidationError):
+            await service.request_email_change(regular_user, "same@example.com", "correct_password")
+
+    async def test_taken_email_raises(self, regular_user):
         service, repo, _ = make_service(regular_user)
         regular_user.email = "old@example.com"
         repo.is_email_taken = AsyncMock(return_value=True)
-        user_data = UserCreate.model_construct(email="taken@example.com", username=None, timezone=None)
 
         with pytest.raises(DuplicateEmailError):
-            await service.update_user(regular_user, user_data)
+            await service.request_email_change(regular_user, "taken@example.com", "correct_password")
 
-    async def test_same_email_skips_uniqueness_check(self, regular_user):
+    async def test_sends_link_to_new_address_and_notice_to_current_one(self, regular_user):
         service, repo, _ = make_service(regular_user)
-        regular_user.email = "same@example.com"
-        repo.update_user = AsyncMock(return_value=regular_user)
-        user_data = UserCreate.model_construct(email="same@example.com", username=None, timezone=None)
+        regular_user.email = "old@example.com"
+        regular_user.username = "alice"
 
-        await service.update_user(regular_user, user_data)
-        repo.is_email_taken.assert_not_awaited()
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=True) as send_mail:
+            await service.request_email_change(regular_user, "new@example.com", "correct_password")
 
-    async def test_new_username_already_taken_raises(self, regular_user):
+        recipients = [call.kwargs["to"] for call in send_mail.await_args_list]
+        assert recipients == ["new@example.com", "old@example.com"]
+        # Nothing changes before the link is opened
+        assert regular_user.email == "old@example.com"
+        repo.change_email.assert_not_awaited()
+
+    async def test_unsent_confirmation_raises(self, regular_user):
+        service, _, _ = make_service(regular_user)
+        regular_user.email = "old@example.com"
+        regular_user.username = "alice"
+
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=False):
+            with pytest.raises(ServerError):
+                await service.request_email_change(regular_user, "new@example.com", "correct_password")
+
+
+class TestConfirmEmail:
+    async def test_registration_link_confirms_the_email(self, regular_user):
         service, repo, _ = make_service(regular_user)
-        regular_user.username = "oldname"
-        repo.is_username_taken = AsyncMock(return_value=True)
-        user_data = UserCreate.model_construct(email=None, username="taken", timezone=None)
+        regular_user.email = "a@example.com"
+        token = create_email_confirmation_token(regular_user.user_uuid, "a@example.com")
 
-        with pytest.raises(DuplicateUsernameError):
-            await service.update_user(regular_user, user_data)
+        assert await service.confirm_email(token) == "a@example.com"
+        repo.confirm_email.assert_awaited_once_with(regular_user.id, "a@example.com")
+
+    async def test_registration_link_of_a_previous_email_is_refused(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        regular_user.email = "now@example.com"
+        token = create_email_confirmation_token(regular_user.user_uuid, "before@example.com")
+
+        with pytest.raises(InvalidEmailTokenError):
+            await service.confirm_email(token)
+        repo.confirm_email.assert_not_awaited()
+
+    async def test_change_link_replaces_the_email(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        regular_user.email = "old@example.com"
+        token = create_email_change_token(regular_user.user_uuid, "old@example.com", "new@example.com", 0)
+
+        assert await service.confirm_email(token) == "new@example.com"
+        repo.change_email.assert_awaited_once_with(regular_user.id, "old@example.com", "new@example.com")
+
+    async def test_change_link_opened_twice_succeeds(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        regular_user.email = "new@example.com"
+        token = create_email_change_token(regular_user.user_uuid, "old@example.com", "new@example.com", 0)
+
+        assert await service.confirm_email(token) == "new@example.com"
+        repo.change_email.assert_not_awaited()
+
+    async def test_change_link_is_cancelled_by_a_password_reset(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        regular_user.email = "old@example.com"
+        token = create_email_change_token(regular_user.user_uuid, "old@example.com", "new@example.com", 0)
+        regular_user.token_version = 1
+
+        with pytest.raises(InvalidEmailTokenError):
+            await service.confirm_email(token)
+        repo.change_email.assert_not_awaited()
+
+    async def test_change_link_to_an_address_taken_meanwhile_raises(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        regular_user.email = "old@example.com"
+        repo.is_email_taken = AsyncMock(return_value=True)
+        token = create_email_change_token(regular_user.user_uuid, "old@example.com", "new@example.com", 0)
+
+        with pytest.raises(DuplicateEmailError):
+            await service.confirm_email(token)
+
+    @pytest.mark.parametrize("token", ["garbage", create_reset_token("test-uuid-1234-5678", 0)])
+    async def test_other_tokens_are_refused(self, regular_user, token):
+        service, _, _ = make_service(regular_user)
+
+        with pytest.raises(InvalidEmailTokenError) as exc:
+            await service.confirm_email(token)
+        assert exc.value.status_code == 400
+
+
+class TestEmailConfirmationMails:
+    async def test_resend_when_already_confirmed_sends_nothing(self, regular_user):
+        service, _, _ = make_service(regular_user)
+        regular_user.is_email_confirmed = True
+
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock) as send_mail:
+            assert await service.resend_email_confirmation(regular_user) is False
+        send_mail.assert_not_awaited()
+
+    async def test_resend_sends_a_link(self, regular_user):
+        service, _, _ = make_service(regular_user)
+        regular_user.email = "a@example.com"
+        regular_user.username = "alice"
+
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=True) as send_mail:
+            assert await service.resend_email_confirmation(regular_user) is True
+        assert send_mail.await_args.kwargs["to"] == "a@example.com"
+
+    async def test_welcome_email_never_raises(self, regular_user):
+        service, _, _ = make_service(regular_user)
+        regular_user.email = "a@example.com"
+        regular_user.username = "alice"
+
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, side_effect=Exception("SMTP down")):
+            await service.send_welcome_email(regular_user)
+
+
+class TestEmailTemplates:
+    def test_welcome_mentions_the_username_escaped_and_the_link(self):
+        from app.mails.templates_mails.email_confirmation import welcome_template
+
+        html = welcome_template(username="<b>alice</b>", token="tok123")
+        assert "Welcome to Vinyl Keeper, &lt;b&gt;alice&lt;/b&gt;!" in html
+        assert "/confirm-email?token=tok123" in html

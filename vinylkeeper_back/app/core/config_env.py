@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_MINUTES: int
     RESET_TOKEN_EXPIRE_MINUTES: int
+    # Confirmation links of the registration and email change emails (a default: no .env change needed)
+    EMAIL_TOKEN_EXPIRE_MINUTES: int = 2880
     ALGORITHM: str
     COOKIE_DOMAIN: str
     CSRF_ENFORCE: bool = True

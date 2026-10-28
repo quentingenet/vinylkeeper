@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError as PydanticValidationError
 
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import ServerError
@@ -32,7 +33,7 @@ async def test_add_to_collection_runs_repo_work_inside_transaction_context():
         external_id="ext-123",
         entity_type=EntityTypeEnum.ALBUM,
         title="Test Album",
-        image_url="https://example.com/cover.jpg",
+        image_url="https://i.discogs.com/cover.jpg",
         source="discogs",
     )
 
@@ -83,7 +84,7 @@ async def test_add_to_collection_unexpected_error_raises_server_error():
         external_id="ext-456",
         entity_type=EntityTypeEnum.ALBUM,
         title="Failing Album",
-        image_url="https://example.com/cover.jpg",
+        image_url="https://i.discogs.com/cover.jpg",
         source="discogs",
     )
 
@@ -97,3 +98,27 @@ async def test_add_to_collection_unexpected_error_raises_server_error():
 
         with pytest.raises(ServerError):
             await service.add_to_collection(1, 7, request)
+
+
+class TestExternalReferenceSchema:
+    """title and image_url come from the client: bounded until the enrichment replaces them."""
+
+    BODY = {"external_id": "380980", "entity_type": "album", "title": "AC/DC - Highway To Hell",
+            "image_url": "https://i.discogs.com/abc.jpg", "source": "discogs"}
+
+    def test_discogs_image_and_empty_image_are_accepted(self):
+        assert AddToCollectionRequest(**self.BODY).image_url == "https://i.discogs.com/abc.jpg"
+        assert AddToCollectionRequest(**{**self.BODY, "image_url": ""}).image_url == ""
+
+    @pytest.mark.parametrize("image_url", [
+        "https://evil.example/a.jpg", "http://i.discogs.com/a.jpg", "javascript:alert(1)",
+        "https://i.discogs.com.evil.example/a.jpg",
+    ])
+    def test_image_outside_the_discogs_cdn_is_refused(self, image_url):
+        with pytest.raises(PydanticValidationError):
+            AddToCollectionRequest(**{**self.BODY, "image_url": image_url})
+
+    @pytest.mark.parametrize("field, value", [("title", "x" * 513), ("external_id", ""), ("external_id", "1" * 256)])
+    def test_lengths_are_bounded(self, field, value):
+        with pytest.raises(PydanticValidationError):
+            AddToCollectionRequest(**{**self.BODY, field: value})

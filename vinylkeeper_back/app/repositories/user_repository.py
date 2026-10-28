@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.user_model import User
 from app.models.moderation_request_model import ModerationRequest
+from app.models.reference_data.roles import Role
 from typing import Optional
 from app.core.exceptions import ServerError
 from app.core.logging import logger
@@ -113,6 +114,40 @@ class UserRepository(TransactionalMixin):
                 message="Failed to update user password",
                 details={}
             )
+
+    async def get_role_id_by_name(self, role_name: str) -> Optional[int]:
+        """Id of a role, looked up by name: role ids differ between databases"""
+        try:
+            result = await self.db.execute(select(Role.id).where(Role.name == role_name))
+            return result.scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(f"Error retrieving role {role_name}: {str(e)}")
+            raise ServerError(error_code=5000, message="Failed to get role", details={})
+
+    async def confirm_email(self, user_id: int, email: str) -> bool:
+        """Mark the email confirmed, only if it is still the email of the account (no commit)"""
+        try:
+            result = await self.db.execute(
+                update(User)
+                .where(User.id == user_id, User.email == email)
+                .values(is_email_confirmed=True)
+            )
+            return result.rowcount > 0
+        except SQLAlchemyError as e:
+            logger.error(f"Error confirming email of user {user_id}: {str(e)}")
+            raise ServerError(error_code=5000, message="Failed to confirm email", details={})
+
+    async def change_email(self, user_id: int, current_email: str, new_email: str) -> bool:
+        """
+        Replace the email, only if the account still has current_email (no commit).
+        A unique violation (address taken meanwhile) propagates as IntegrityError.
+        """
+        result = await self.db.execute(
+            update(User)
+            .where(User.id == user_id, User.email == current_email)
+            .values(email=new_email, is_email_confirmed=True)
+        )
+        return result.rowcount > 0
 
     async def delete_user(self, user_id: int) -> bool:
         """Delete a user using batch operations (optimized)."""

@@ -47,6 +47,8 @@ class TestParseRelease:
         values = parse_release(HIGHWAY_TO_HELL)
 
         assert values == {
+            # Discogs decides the title, in the "Artist - Title" shape of the search results
+            "title": "AC/DC - Highway To Hell",
             "external_master_id": "8522",
             "release_year": 1979,
             "artist_name": "AC/DC",
@@ -115,6 +117,43 @@ class TestParseRelease:
         values = parse_release({**HIGHWAY_TO_HELL, "artists": [{"name": "x" * 600}]})
 
         assert len(values["artist_name"]) == 512
+
+
+class TestParseReleaseIdentity:
+    def test_primary_discogs_image_replaces_the_client_one(self):
+        values = parse_release({**HIGHWAY_TO_HELL, "images": [
+            {"type": "secondary", "uri": "https://i.discogs.com/back.jpg"},
+            {"type": "primary", "uri": "https://i.discogs.com/front.jpg"},
+        ]})
+
+        assert values["image_url"] == "https://i.discogs.com/front.jpg"
+
+    def test_first_image_when_none_is_primary(self):
+        values = parse_release({**HIGHWAY_TO_HELL,
+                                "images": [{"type": "secondary", "uri": "https://i.discogs.com/a.jpg"}]})
+
+        assert values["image_url"] == "https://i.discogs.com/a.jpg"
+
+    @pytest.mark.parametrize("uri", ["https://evil.example/a.jpg", "http://i.discogs.com/a.jpg", "", None])
+    def test_image_outside_the_discogs_cdn_is_ignored(self, uri):
+        values = parse_release({**HIGHWAY_TO_HELL, "images": [{"type": "primary", "uri": uri}]})
+
+        assert "image_url" not in values
+
+    def test_sparse_payload_keeps_the_current_title_and_image(self):
+        values = parse_release({"id": 1})
+
+        assert "title" not in values and "image_url" not in values
+
+    def test_title_without_artist(self):
+        values = parse_release({**HIGHWAY_TO_HELL, "artists": []})
+
+        assert values["title"] == "Highway To Hell"
+
+    def test_title_fits_the_column(self):
+        values = parse_release({**HIGHWAY_TO_HELL, "title": "x" * 600})
+
+        assert len(values["title"]) == 512
 
 
 class TestParseMasterYear:

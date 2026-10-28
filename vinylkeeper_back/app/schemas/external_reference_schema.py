@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
 from app.core.enums import EntityTypeEnum, VinylStateEnum
+from app.utils.discogs_release import DISCOGS_IMAGE_HOST, is_discogs_image
 
 
 class AlbumStateData(BaseSchema):
@@ -24,9 +25,16 @@ class AlbumStateData(BaseSchema):
 
 
 class ExternalReferenceBase(BaseSchema):
-    """Base schema for external reference data."""
+    """
+    Base schema for external reference data.
+
+    title and image_url come from the client: they are bounded here, and the
+    Discogs enrichment of a new album replaces them with the Discogs values.
+    """
     external_id: str = Field(
         ...,
+        min_length=1,
+        max_length=255,
         description="External ID"
     )
     entity_type: EntityTypeEnum = Field(
@@ -35,16 +43,32 @@ class ExternalReferenceBase(BaseSchema):
     )
     title: str = Field(
         ...,
+        max_length=512,
         description="Title of the album or artist"
     )
     image_url: str = Field(
         ...,
-        description="URL of the image"
+        max_length=1024,
+        description="URL of the image: empty, or an https image of the Discogs CDN"
     )
     source: str = Field(
         ...,
+        max_length=50,
         description="Source of the data (e.g., 'DISCOGS')"
     )
+
+    @field_validator("title")
+    @classmethod
+    def strip_title(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("image_url")
+    @classmethod
+    def validate_image_url(cls, v: str) -> str:
+        v = v.strip()
+        if v and not is_discogs_image(v):
+            raise ValueError(f"image_url must be an https URL of {DISCOGS_IMAGE_HOST}")
+        return v
 
     def get_external_id(self) -> str:
         """Get the external ID."""

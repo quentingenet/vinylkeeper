@@ -1,0 +1,8 @@
+# Netlify security headers, applied to every page of the SPA.
+# No Content-Security-Policy yet: it must list the API domain and be checked on a deploy preview first.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), payment=(), usb=(), geolocation=(self)
+  Strict-Transport-Security: max-age=31536000

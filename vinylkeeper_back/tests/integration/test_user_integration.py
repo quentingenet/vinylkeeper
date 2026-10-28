@@ -15,7 +15,8 @@ from sqlalchemy import select
 
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
-from app.schemas.user_schema import UserCreate, UserUpdate
+from app.schemas.user_schema import UserCreate
+from app.utils.auth_utils.auth import create_email_change_token, create_email_confirmation_token
 from app.core.exceptions import (
     DuplicateEmailError,
     DuplicateUsernameError,
@@ -122,22 +123,53 @@ class TestCreateUser:
             )
 
 
-class TestUpdateUser:
-    async def test_updates_username(self, real_session):
-        user = await make_test_user(real_session)
+class TestEmailConfirmation:
+    async def test_new_account_is_not_confirmed_and_has_the_user_role(self, real_session):
+        service = make_user_service(real_session)
+        user_data = UserCreate.model_construct(
+            username=f"itest_{uuid.uuid4().hex[:12]}", email=f"itest_{uuid.uuid4().hex[:12]}@example.com",
+            password="Str0ng!Passw0rd", is_accepted_terms=True, timezone="Europe/Paris",
+        )
+
+        user = await service.create_user(user_data)
+
+        assert user.is_email_confirmed is False
+        role_name = (await real_session.execute(select(Role.name).where(Role.id == user.role_id))).scalar_one()
+        assert role_name == RoleEnum.USER.value
+
+    async def test_registration_link_confirms(self, real_session):
+        user = await make_test_user(real_session, is_email_confirmed=False)
         service = make_user_service(real_session)
 
-        updated = await service.update_user(user, UserUpdate(username="renamed_user"))
+        await service.confirm_email(create_email_confirmation_token(str(user.user_uuid), user.email))
 
-        assert updated.username == "renamed_user"
+        await real_session.refresh(user)
+        assert user.is_email_confirmed is True
 
-    async def test_duplicate_email_raises(self, real_session):
+    async def test_email_change_link_replaces_and_confirms(self, real_session):
+        user = await make_test_user(real_session, is_email_confirmed=False)
+        service = make_user_service(real_session)
+        new_email = f"moved_{uuid.uuid4().hex[:8]}@example.com"
+        token = create_email_change_token(str(user.user_uuid), user.email, new_email, user.token_version)
+
+        await service.confirm_email(token)
+        await service.confirm_email(token)  # opened twice
+
+        await real_session.refresh(user)
+        assert (user.email, user.is_email_confirmed) == (new_email, True)
+
+    async def test_email_change_to_a_taken_address_is_refused(self, real_session):
         user_a = await make_test_user(real_session)
         user_b = await make_test_user(real_session)
+        old_email = user_b.email
         service = make_user_service(real_session)
+        token = create_email_change_token(str(user_b.user_uuid), user_b.email, user_a.email, user_b.token_version)
 
         with pytest.raises(DuplicateEmailError):
-            await service.update_user(user_b, UserUpdate(email=user_a.email))
+            await service.confirm_email(token)
+
+        await real_session.refresh(user_b)
+        assert user_b.email == old_email
 
 
 class TestChangePassword:

@@ -61,7 +61,7 @@ class TestAddToWishlist:
                 external_id=external_id,
                 entity_type=EntityTypeEnum.ALBUM,
                 title="Integration Test Album",
-                image_url="https://example.com/cover.jpg",
+                image_url="https://i.discogs.com/cover.jpg",
                 source="discogs",
             ),
         )
@@ -90,7 +90,7 @@ class TestAddToWishlist:
                 external_id=external_id,
                 entity_type=EntityTypeEnum.ARTIST,
                 title="Integration Test Artist",
-                image_url="https://example.com/artist.jpg",
+                image_url="https://i.discogs.com/artist.jpg",
                 source="musicbrainz",
             ),
         )
@@ -106,7 +106,7 @@ class TestAddToWishlist:
             external_id=external_id,
             entity_type=EntityTypeEnum.ALBUM,
             title="Duplicate Test Album",
-            image_url="https://example.com/cover.jpg",
+            image_url="https://i.discogs.com/cover.jpg",
             source="discogs",
         )
 
@@ -137,7 +137,7 @@ class TestConcurrentWishlistInsert:
             external_id=external_id,
             entity_type=EntityTypeEnum.ALBUM,
             title="Race Test Album",
-            image_url="https://example.com/cover.jpg",
+            image_url="https://i.discogs.com/cover.jpg",
             source="discogs",
         )
 
@@ -171,7 +171,7 @@ class TestRemoveFromWishlist:
                 external_id=external_id,
                 entity_type=EntityTypeEnum.ALBUM,
                 title="To Remove",
-                image_url="https://example.com/cover.jpg",
+                image_url="https://i.discogs.com/cover.jpg",
                 source="discogs",
             ),
         )
@@ -192,7 +192,7 @@ class TestRemoveFromWishlist:
                 external_id=fresh_numeric_external_id(),
                 entity_type=EntityTypeEnum.ALBUM,
                 title="Not Yours",
-                image_url="https://example.com/cover.jpg",
+                image_url="https://i.discogs.com/cover.jpg",
                 source="discogs",
             ),
         )
@@ -212,7 +212,7 @@ class TestGetUserWishlistPaginated:
                     external_id=fresh_numeric_external_id(),
                     entity_type=EntityTypeEnum.ALBUM,
                     title="Paginated Item",
-                    image_url="https://example.com/cover.jpg",
+                    image_url="https://i.discogs.com/cover.jpg",
                     source="discogs",
                 ),
             )
@@ -233,7 +233,7 @@ class TestGetWishlistItemDetail:
                 external_id=fresh_numeric_external_id(),
                 entity_type=EntityTypeEnum.ARTIST,
                 title="Detail Test Artist",
-                image_url="https://example.com/artist.jpg",
+                image_url="https://i.discogs.com/artist.jpg",
                 source="musicbrainz",
             ),
         )

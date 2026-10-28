@@ -16,6 +16,7 @@ import { queryKeys } from "@utils/queryKeys";
 import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import ChangePasswordSection from "@components/Settings/ChangePasswordSection";
+import EmailSection from "@components/Settings/EmailSection";
 import ContactSection from "@components/Settings/ContactSection";
 import DangerZoneSection from "@components/Settings/DangerZoneSection";
 
@@ -73,15 +74,6 @@ export default function Settings() {
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
-                label="Email"
-                type="email"
-                value={settingsUser?.email ?? ""}
-                disabled
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
                 label="Account Created"
                 value={
                   settingsUser?.created_at
@@ -112,6 +104,9 @@ export default function Settings() {
         </CardContent>
       </Card>
 
+      {settingsUser && (
+        <EmailSection email={settingsUser.email} isEmailConfirmed={settingsUser.is_email_confirmed} />
+      )}
       <ChangePasswordSection />
       <ContactSection />
       <DangerZoneSection />

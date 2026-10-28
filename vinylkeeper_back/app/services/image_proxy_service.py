@@ -18,10 +18,11 @@ class ImageProxyService:
     MAX_DIMENSION = 2048
     REQUEST_TIMEOUT = 10.0
     DEFAULT_QUALITY = 85
-    # Only the variants the frontend requests are written to disk, so varying
-    # w/h/q cannot multiply the cache. Other variants are served uncached.
-    CACHEABLE_SIZES = frozenset({200, 220, 240, 300, 500})
-    CACHEABLE_QUALITIES = frozenset({75, 80, 85})
+    # The sizes and qualities the frontend requests. Any other request is served at the
+    # nearest of them: the endpoint is public, so arbitrary w/h/q must neither cost a resize
+    # each nor multiply the disk cache.
+    SERVED_SIZES = (128, 200, 220, 240, 300, 500)
+    SERVED_QUALITIES = (75, 80, 85)
     # Disk budget: past it, the least recently used files are removed down to
     # PRUNE_TARGET_RATIO of the budget. Checked on about one save in PRUNE_PROBABILITY,
     # which needs no counter shared between gunicorn workers.
@@ -110,12 +111,12 @@ class ImageProxyService:
         if random.random() < self.PRUNE_PROBABILITY:
             self._prune_cache()
 
-    def _is_cacheable_variant(self, width: int, height: int, quality: int) -> bool:
-        return (
-            width in self.CACHEABLE_SIZES
-            and height in self.CACHEABLE_SIZES
-            and quality in self.CACHEABLE_QUALITIES
-        )
+    def _snap_size(self, value: int) -> int:
+        """Smallest served size at least as large as asked (images are never upscaled past it)."""
+        return next((size for size in self.SERVED_SIZES if size >= value), self.SERVED_SIZES[-1])
+
+    def _snap_quality(self, quality: int) -> int:
+        return min(self.SERVED_QUALITIES, key=lambda served: (abs(served - quality), served))
 
     def _prune_cache(self) -> None:
         """Remove the least recently used files once the cache exceeds its budget."""
@@ -206,7 +207,7 @@ class ImageProxyService:
 
             output = BytesIO()
             if format.lower() == "webp":
-                image.save(output, format="WEBP", quality=quality, method=6)
+                image.save(output, format="WEBP", quality=quality, method=4)
             else:
                 image.save(output, format="JPEG",
                            quality=quality, optimize=True)
@@ -234,8 +235,10 @@ class ImageProxyService:
         self._validate_dimensions(width, height)
         self._validate_quality(quality)
 
+        width, height = self._snap_size(width), self._snap_size(height)
+        quality = self._snap_quality(quality)
+
         format = "webp" if accept_webp else "jpeg"
-        cacheable = cacheable and self._is_cacheable_variant(width, height, quality)
 
         if cacheable:
             cache_key = self._generate_cache_key(

@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 from email_validator import validate_email, EmailNotValidError
 
@@ -93,55 +92,11 @@ class UserCreate(UserBase):
         default=False,
         description="Whether the user has accepted the terms"
     )
-    role_id: int = Field(
-        default=2,
-        gt=0,
-        description="ID of the user's role (defaults to regular user)"
-    )
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         return _validate_password_complexity(v)
-
-
-class UserUpdate(BaseSchema):
-    """Schema for updating a user."""
-    username: Optional[str] = Field(
-        None,
-        min_length=2,
-        max_length=50,
-        description="Username must be between 2 and 50 characters"
-    )
-    email: Optional[str] = Field(
-        None,
-        max_length=255
-    )
-    password: Optional[str] = Field(
-        None,
-        max_length=1024,
-        repr=False
-    )
-    timezone: Optional[str] = Field(
-        None,
-        max_length=100
-    )
-    is_active: Optional[bool] = None
-    is_accepted_terms: Optional[bool] = None
-
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            return _validate_username_value(v)
-        return v
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            return _validate_email_value(v, check_deliverability=False)
-        return v
 
 
 class RoleResponse(BaseModel):
@@ -209,6 +164,25 @@ class PasswordChangeSchema(BaseModel):
         return _validate_password_complexity(v)
 
 
+class EmailChangeRequest(BaseModel):
+    """Schema for an email change: applied once confirmed from the new address."""
+    model_config = ConfigDict(extra="forbid")
+
+    new_email: str = Field(max_length=255, description="New email address")
+    current_password: str = Field(max_length=1024, repr=False, description="Current password")
+
+    @field_validator("new_email")
+    @classmethod
+    def validate_new_email(cls, v: str) -> str:
+        # Same check as at registration, deliverability (DNS) included
+        return _validate_email_value(v, check_deliverability=True)
+
+
+class ConfirmEmailRequest(BaseModel):
+    """Schema for the token of a confirmation link."""
+    token: str = Field(min_length=1, max_length=2048, description="Token of the confirmation link")
+
+
 class UserMeResponse(BaseModel):
     """Schema for /me endpoint response - secure data for frontend."""
     username: str = Field(
@@ -258,6 +232,9 @@ class UserSettingsResponse(BaseSchema):
     )
     is_accepted_terms: bool = Field(
         description="Whether the user has accepted the terms"
+    )
+    is_email_confirmed: bool = Field(
+        description="Whether the user confirmed their email address"
     )
 
 
