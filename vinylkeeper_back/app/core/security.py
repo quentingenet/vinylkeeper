@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from app.core.config_env import settings
@@ -46,3 +48,13 @@ def verify_password(hashed_password: str, plain_password: str) -> bool:
         return True
     except VerifyMismatchError:
         return False
+
+
+# Argon2 is deliberately slow and CPU bound: from async code, run it in a thread so the
+# event loop keeps serving the worker's other requests meanwhile.
+async def hash_password_async(password: str) -> str:
+    return await asyncio.to_thread(hash_password, password)
+
+
+async def verify_password_async(hashed_password: str, plain_password: str) -> bool:
+    return await asyncio.to_thread(verify_password, hashed_password, plain_password)

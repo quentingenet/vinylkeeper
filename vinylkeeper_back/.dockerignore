@@ -1,0 +1,28 @@
+# Secrets: provided at runtime (env_file and volumes in docker-compose.yml), never baked into the image
+.env
+.env.*
+app/.env*
+!app/.env.template.contributors
+!app/.env.db.contributors
+app/keys/
+keys/
+*.pem
+
+# Runtime data
+cache/
+*.log
+*.log.*
+
+# Tests and tooling
+tests/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+**/__pycache__/
+**/*.py[cod]
+.venv/
+
+# Editors
+.vscode/
+.idea/

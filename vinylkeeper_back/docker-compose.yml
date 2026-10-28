@@ -36,8 +36,8 @@ services:
     networks:
       - vk_network
     volumes:
-      - ./:/app
-      - ./app/keys:/app/keys
+      # Code comes from the image (rebuilt on deploy); only secrets and runtime data are mounted
+      - ./app/keys:/app/app/keys:ro
       - vinylkeeper_image_cache:/app/cache/images
     env_file:
       - app/.env.production

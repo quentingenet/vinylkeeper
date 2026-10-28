@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from app.repositories.user_repository import UserRepository
-from app.core.security import verify_password, hash_password
+from app.core.security import verify_password_async, hash_password_async
 from app.utils.auth_utils.auth import create_reset_token, verify_reset_token
 from app.models.user_model import User
 from app.schemas.user_schema import (
@@ -39,7 +39,7 @@ class UserService:
         if not user:
             raise InvalidCredentialsError()
 
-        if not verify_password(user.password, password):
+        if not await verify_password_async(user.password, password):
             raise InvalidCredentialsError()
 
         user.number_of_connections += 1
@@ -76,7 +76,7 @@ class UserService:
                 user_uuid=uuid.uuid4(),
                 username=user_data.username,
                 email=user_data.email,
-                password=hash_password(user_data.password),
+                password=await hash_password_async(user_data.password),
                 role_id=user_data.role_id if user_data.role_id else settings.DEFAULT_ROLE_ID,
                 is_accepted_terms=user_data.is_accepted_terms,
                 timezone=user_data.timezone
@@ -148,14 +148,14 @@ class UserService:
 
     async def change_password(self, user: User, current_password: str, new_password: str) -> None:
         """Change user password and revoke every session (the caller issues new tokens)"""
-        if not verify_password(user.password, current_password):
+        if not await verify_password_async(user.password, current_password):
             raise InvalidCredentialsError()
 
         await self._update_password(user, new_password)
 
     async def _update_password(self, user: User, new_password: str) -> None:
         """Store the new password and bump token_version, which revokes every token issued before"""
-        hashed_password = hash_password(new_password)
+        hashed_password = await hash_password_async(new_password)
         new_token_version = user.token_version + 1
         async with transaction_context(self.repository.db):
             success = await self.repository.update_user_password(user.id, hashed_password, new_token_version)
