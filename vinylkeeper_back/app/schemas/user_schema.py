@@ -11,7 +11,8 @@ from app.schemas import BaseSchema
 def _validate_email_value(v: str, check_deliverability: bool = True) -> str:
     try:
         validation = validate_email(v, check_deliverability=check_deliverability)
-        return validation.normalized
+        # Lowercase: John@x.fr and john@x.fr are the same account
+        return validation.normalized.lower()
     except EmailNotValidError as e:
         raise ValueError(f"Invalid email format: {str(e)}")
 
@@ -90,6 +91,7 @@ class UserCreate(UserBase):
     )
     is_accepted_terms: bool = Field(
         default=False,
+        validate_default=True,
         description="Whether the user has accepted the terms"
     )
 
@@ -98,6 +100,14 @@ class UserCreate(UserBase):
     def validate_password(cls, v: str) -> str:
         return _validate_password_complexity(v)
 
+    @field_validator("is_accepted_terms")
+    @classmethod
+    def validate_terms_accepted(cls, v: bool) -> bool:
+        # Enforced here too: the frontend checkbox alone can be bypassed
+        if not v:
+            raise ValueError("You must accept the terms to create an account")
+        return v
+
 
 class RoleResponse(BaseModel):
     """Schema for role data in responses."""
@@ -105,6 +115,11 @@ class RoleResponse(BaseModel):
     name: str = Field(description="Role name")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+def _normalize_email_lookup(v: str) -> str:
+    """Email typed to find an account: no format check, the lookup simply finds nothing."""
+    return v.strip().lower()
 
 
 class UserAuthSchema(BaseModel):
@@ -119,6 +134,11 @@ class UserAuthSchema(BaseModel):
         repr=False
     )
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return _normalize_email_lookup(v)
+
 
 class ForgotPasswordSchema(BaseModel):
     """Schema for forgot password request."""
@@ -126,6 +146,11 @@ class ForgotPasswordSchema(BaseModel):
         max_length=255,
         description="User's email address"
     )
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return _normalize_email_lookup(v)
 
 
 class ResetPasswordSchema(BaseModel):

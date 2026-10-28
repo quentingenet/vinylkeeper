@@ -18,7 +18,8 @@ class UserRepository(TransactionalMixin):
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get a user by email"""
         try:
-            result = await self.db.execute(select(User).filter(User.email == email))
+            # lower(): accounts created before emails were lowercased may hold capitals
+            result = await self.db.execute(select(User).filter(func.lower(User.email) == email.lower()))
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
             logger.error(f"Error retrieving user by email: {str(e)}")
@@ -175,7 +176,7 @@ class UserRepository(TransactionalMixin):
         """Check if email is already taken"""
         try:
             result = await self.db.execute(
-                select(func.count(User.id)).where(User.email == email)
+                select(func.count(User.id)).where(func.lower(User.email) == email.lower())
             )
             return result.scalar() > 0
         except SQLAlchemyError as e:

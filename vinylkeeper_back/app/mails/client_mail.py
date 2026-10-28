@@ -16,6 +16,8 @@ from app.mails.templates_mails.email_confirmation import (
 from app.core.config_env import settings
 import asyncio
 
+SMTP_TIMEOUT_SECONDS = 10
+
 
 class MailSubject(Enum):
     PasswordReset = "Password reset"
@@ -37,7 +39,8 @@ def smtp_client():
         raise EnvironmentError(
             "SMTP_SERVER, SMTP_USERNAME, and SMTP_PASSWORD must be set")
 
-    server = SMTP_SSL(smtp_server)
+    # Without a timeout, an unresponsive SMTP server blocks the worker thread forever
+    server = SMTP_SSL(smtp_server, timeout=SMTP_TIMEOUT_SECONDS)
     server.login(smtp_username, smtp_password)
     return server
 

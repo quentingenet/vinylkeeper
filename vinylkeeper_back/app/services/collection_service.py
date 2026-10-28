@@ -321,6 +321,8 @@ class CollectionService:
         collection = await self.repository.get_by_id(collection_id)
         if not collection:
             raise ResourceNotFoundError("Collection", collection_id)
+        # A private collection of someone else is neither likeable nor its likes count readable
+        self._assert_collection_accessible(collection, user_id)
 
         if await self.like_repository.is_liked_by_user(collection_id, user_id):
             raise DuplicateFieldError(
@@ -349,6 +351,7 @@ class CollectionService:
         collection = await self.repository.get_by_id(collection_id)
         if not collection:
             raise ResourceNotFoundError("Collection", collection_id)
+        self._assert_collection_accessible(collection, user_id)
 
         if not await self.like_repository.is_liked_by_user(collection_id, user_id):
             raise ResourceNotFoundError("Like", f"collection_{collection_id}_user_{user_id}")

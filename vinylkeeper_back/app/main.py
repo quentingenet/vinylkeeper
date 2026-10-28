@@ -6,13 +6,21 @@ from app.endpoints import users, collections, request_proxy, dashboard, places, 
 from app.endpoints import external_references, images, spinning_now
 from app.core.lifespan import lifespan
 
+from app.core.config_env import settings
+
 os.environ["TZ"] = "Europe/Paris"
+
+# No interactive docs nor schema in production: they map every endpoint for anyone
+is_production = settings.APP_ENV.lower() == "production"
 
 app = FastAPI(
     title="VinylKeeper API",
     description="API for the VinylKeeper Application",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
 )
 
 configure_cors(app)

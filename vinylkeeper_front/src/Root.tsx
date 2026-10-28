@@ -25,9 +25,9 @@ const queryClient = new QueryClient({
       refetchOnReconnect: true,
       refetchOnMount: true,
     },
+    // No retry: a write that reached the server before a network error would run twice
     mutations: {
-      retry: 1,
-      retryDelay: 1000,
+      retry: 0,
     },
   },
 });
@@ -58,11 +58,12 @@ const RootContent: React.FC = () => {
 const Root: React.FC = () => (
   <React.StrictMode>
     <BrowserRouter>
-      <UserContextProvider>
-        <QueryClientProvider client={queryClient}>
+      {/* Above the user context: it clears the cache when the session ends */}
+      <QueryClientProvider client={queryClient}>
+        <UserContextProvider>
           <RootContent />
-        </QueryClientProvider>
-      </UserContextProvider>
+        </UserContextProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

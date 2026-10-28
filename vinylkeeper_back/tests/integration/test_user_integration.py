@@ -222,3 +222,27 @@ class TestUserMeAndSettings:
 
         assert settings_data["email"] == user.email
         assert settings_data["is_accepted_terms"] is True
+
+
+class TestEmailCase:
+    """An account created before emails were lowercased may hold capitals."""
+
+    async def test_lookup_ignores_the_case_of_the_stored_email(self, real_session):
+        stored = f"Itest_{uuid.uuid4().hex[:12]}@Example.com"
+        user = await make_test_user(real_session, email=stored)
+        repo = UserRepository(real_session)
+
+        found = await repo.get_user_by_email(stored.lower())
+
+        assert found is not None and found.id == user.id
+        assert await repo.is_email_taken(stored.upper()) is True
+
+    async def test_same_address_with_another_case_is_refused(self, real_session):
+        from sqlalchemy.exc import IntegrityError
+
+        stored = f"itest_{uuid.uuid4().hex[:12]}@example.com"
+        await make_test_user(real_session, email=stored)
+
+        with pytest.raises(IntegrityError):
+            async with real_session.begin_nested():
+                await make_test_user(real_session, email=stored.upper())

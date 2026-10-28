@@ -3,6 +3,7 @@ from sqlalchemy import (
     UUID as SQLUUID,
     Column,
     ForeignKey,
+    Index,
     Integer,
     String,
     Boolean,
@@ -35,6 +36,10 @@ class User(Base):
         unique=True,
         index=True,
         nullable=False
+    )
+    __table_args__ = (
+        # One account per address whatever its case (migration d4a7c2e9f1b3)
+        Index("ix_users_email_lower", func.lower(email), unique=True),
     )
     password = Column(
         String(1024),

@@ -1,8 +1,18 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
+from datetime import datetime, timezone
+
+from pydantic import ValidationError as PydanticValidationError
+
 from app.services.user_service import UserService
-from app.schemas.user_schema import UserCreate
+from app.schemas.user_schema import (
+    ContactMessageRequest,
+    ForgotPasswordSchema,
+    UserAuthSchema,
+    UserCreate,
+    _validate_email_value,
+)
 from app.core.exceptions import (
     DuplicateEmailError,
     DuplicateUsernameError,
@@ -434,3 +444,59 @@ class TestEmailTemplates:
         html = welcome_template(username="<b>alice</b>", token="tok123")
         assert "Welcome to Vinyl Keeper, &lt;b&gt;alice&lt;/b&gt;!" in html
         assert "/confirm-email?token=tok123" in html
+
+
+# ---------------------------------------------------------------------------
+# Terms of use and contact message
+# ---------------------------------------------------------------------------
+
+class TestTermsAcceptance:
+    def test_registration_without_accepted_terms_is_refused(self):
+        with pytest.raises(PydanticValidationError, match="accept the terms"):
+            UserCreate.model_validate({
+                "username": "newuser",
+                "email": "new@example.com",
+                "password": "Test1234",
+                "is_accepted_terms": False,
+            })
+
+    def test_registration_without_terms_field_is_refused(self):
+        with pytest.raises(PydanticValidationError, match="accept the terms"):
+            UserCreate.model_validate({
+                "username": "newuser",
+                "email": "new@example.com",
+                "password": "Test1234",
+            })
+
+
+class TestSendContactMessage:
+    async def test_mail_carries_user_subject_and_send_date(self, regular_user):
+        service, *_ = make_service(regular_user)
+        regular_user.created_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        data = ContactMessageRequest(subject="Bug on the map", message="Hello")
+
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=True) as send_mail:
+            response = await service.send_contact_message(regular_user, data)
+
+        kwargs = send_mail.await_args.kwargs
+        assert kwargs["subject_line"] == "Bug on the map"
+        # The send date, not the account creation date
+        assert not kwargs["sent_at"].startswith("2020")
+        assert kwargs["sent_at"].startswith(response.sent_at.strftime("%Y-%m-%d"))
+
+
+class TestEmailCase:
+    def test_new_email_is_stored_lowercase(self):
+        assert _validate_email_value("John.Doe@Example.COM", check_deliverability=False) == "john.doe@example.com"
+
+    def test_login_and_forgot_password_look_up_the_lowercase_email(self):
+        assert UserAuthSchema(email=" John@Example.com ", password="x").email == "john@example.com"
+        assert ForgotPasswordSchema(email="JOHN@example.com").email == "john@example.com"
+
+    async def test_email_change_to_own_address_with_another_case_is_refused(self, regular_user):
+        regular_user.email = "John@example.com"
+        service, *_ = make_service(regular_user)
+
+        with patch("app.services.user_service.verify_password_async", new_callable=AsyncMock, return_value=True):
+            with pytest.raises(ValidationError, match="already your email"):
+                await service.request_email_change(regular_user, "john@example.com", "pwd")

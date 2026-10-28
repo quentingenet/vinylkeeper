@@ -229,8 +229,37 @@ class TestLikeCollection:
         assert result["is_liked"] is True
         assert result["likes_count"] == 5
 
+    async def test_private_collection_of_someone_else_raises(self):
+        service, repo, like_repo, *_ = make_service()
+        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=2, is_public=False))
+        like_repo.create_like = AsyncMock()
+
+        with pytest.raises(ForbiddenError):
+            await service.like_collection(user_id=1, collection_id=1)
+        like_repo.create_like.assert_not_called()
+
+    async def test_owner_can_like_own_private_collection(self):
+        service, repo, like_repo, *_ = make_service()
+        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=1, is_public=False))
+        like_repo.is_liked_by_user = AsyncMock(return_value=False)
+        like_repo.create_like = AsyncMock()
+        like_repo.count_likes = AsyncMock(return_value=1)
+
+        result = await service.like_collection(user_id=1, collection_id=1)
+
+        assert result["is_liked"] is True
+
 
 class TestUnlikeCollection:
+    async def test_private_collection_of_someone_else_raises(self):
+        service, repo, like_repo, *_ = make_service()
+        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=2, is_public=False))
+        like_repo.remove = AsyncMock()
+
+        with pytest.raises(ForbiddenError):
+            await service.unlike_collection(user_id=1, collection_id=1)
+        like_repo.remove.assert_not_called()
+
     async def test_collection_not_found_raises(self):
         service, repo, *_ = make_service()
         repo.get_by_id = AsyncMock(return_value=None)

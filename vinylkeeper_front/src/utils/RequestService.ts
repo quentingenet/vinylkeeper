@@ -138,6 +138,10 @@ const requestService = async <T = unknown>({
     if (enriched instanceof HTTPError && enriched.errorData) {
       throw enriched.errorData;
     }
+    // Body that is not JSON (a 429 or 502 page of the proxy, say): keep the HTTP status
+    if (error instanceof HTTPError) {
+      throw { code: error.response.status, message: error.message, details: {} } satisfies AppError;
+    }
 
     const message = error instanceof Error ? error.message : "Unknown error occurred";
     throw { code: 9999, message, details: {} } satisfies AppError;

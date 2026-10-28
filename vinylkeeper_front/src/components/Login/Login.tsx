@@ -46,6 +46,7 @@ export default function Login({
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [openSnackBar, setOpenSnackBar] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const { isMobile } = useDetectMobile();
 
   const handleClose = () => {
@@ -80,7 +81,8 @@ export default function Login({
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
       void navigate("/dashboard");
-    } catch {
+    } catch (error: unknown) {
+      setLoginError(error instanceof Error ? error.message : "Error while logging in. Try again.");
       setOpenSnackBar(true);
     } finally {
       userContext.setIsLoading(false);
@@ -209,11 +211,11 @@ export default function Login({
           {openSnackBar && (
             <Snackbar
               open={openSnackBar}
-              autoHideDuration={3000}
+              autoHideDuration={5000}
               onClose={() => setOpenSnackBar(false)}
             >
               <Alert onClose={() => setOpenSnackBar(false)} severity="error">
-                Error while logging in. Try again.
+                {loginError}
               </Alert>
             </Snackbar>
           )}

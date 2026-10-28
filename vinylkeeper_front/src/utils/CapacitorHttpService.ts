@@ -37,8 +37,9 @@ class CapacitorHttpService {
       defaultHeaders["X-CSRF-Token"] = cookies.csrf_token;
     }
 
+    let response: Awaited<ReturnType<typeof CapacitorHttp.request>>;
     try {
-      const response = await CapacitorHttp.request({
+      response = await CapacitorHttp.request({
         method,
         url,
         headers: defaultHeaders,
@@ -46,45 +47,39 @@ class CapacitorHttpService {
         connectTimeout: 60000,
         readTimeout: 60000,
       });
-
-      if (response.status >= 200 && response.status < 300) {
-        const contentType = response.headers["content-type"] || "";
-
-        if (contentType.includes("application/json")) {
-          return (typeof response.data === "string"
-            ? JSON.parse(response.data)
-            : response.data) as unknown as T;
-        } else if (contentType.includes("text/")) {
-          return response.data as T;
-        }
-
-        return response.data as T;
-      }
-
-      throw this.handleError(response);
     } catch (error: unknown) {
-      const httpError = error as {
-        status?: number;
-        data?: unknown;
-        message?: string;
-      };
-      if (httpError.status === 401 && !skipRefresh) {
-        try {
-          await this.refreshToken();
-          return this.request<T>({
-            method,
-            endpoint,
-            body,
-            headers,
-            skipRefresh: true,
-          });
-        } catch {
-          throw new Error("Unauthorized and token refresh failed");
-        }
-      }
-
-      throw this.handleError(httpError);
+      // Network failure: no HTTP response at all
+      throw this.handleError(error as { message?: string });
     }
+
+    if (response.status >= 200 && response.status < 300) {
+      const contentType = response.headers["content-type"] || "";
+
+      if (contentType.includes("application/json")) {
+        return (typeof response.data === "string"
+          ? JSON.parse(response.data)
+          : response.data) as unknown as T;
+      }
+      return response.data as T;
+    }
+
+    // CapacitorHttp resolves whatever the HTTP status: the 401 is read on the response
+    if (response.status === 401 && !skipRefresh) {
+      try {
+        await this.refreshToken();
+      } catch {
+        throw new Error("Unauthorized and token refresh failed");
+      }
+      return this.request<T>({
+        method,
+        endpoint,
+        body,
+        headers,
+        skipRefresh: true,
+      });
+    }
+
+    throw this.handleError(response);
   }
 
   private refreshToken(): Promise<void> {
@@ -95,7 +90,11 @@ class CapacitorHttpService {
         "Content-Type": "application/json",
       },
     })
-      .then(() => undefined)
+      .then((response) => {
+        if (response.status < 200 || response.status >= 300) {
+          throw new Error(`Token refresh failed (${response.status})`);
+        }
+      })
       .finally(() => {
         this.refreshInFlight = null;
       });

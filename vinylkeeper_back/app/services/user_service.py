@@ -157,7 +157,7 @@ class UserService:
                 message="Wrong current password",
                 details={"field": "current_password"},
             )
-        if new_email == user.email:
+        if new_email == user.email.lower():
             raise ValidationError(
                 error_code=ErrorCode.INVALID_INPUT,
                 message="This is already your email address",
@@ -333,18 +333,19 @@ class UserService:
 
     async def send_contact_message(self, user: User, message_data: ContactMessageRequest) -> ContactMessageResponse:
         """Send contact message"""
+        sent_at = datetime.now(timezone.utc)
         await send_mail(
             to=settings.EMAIL_ADMIN,
             subject=MailSubject.ContactMessage,
             username=user.username,
             email=user.email,
             user_id=user.id,
-            subject_line="Contact message from VinylKeeper",
+            subject_line=message_data.subject,
             message=message_data.message,
-            sent_at=user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else "Unknown"
+            sent_at=sent_at.strftime("%Y-%m-%d %H:%M:%S UTC")
         )
         logger.info(f"Contact message sent to admin from user {user.username}")
         return ContactMessageResponse(
             message="Contact message sent successfully",
-            sent_at=datetime.now(timezone.utc)
+            sent_at=sent_at
         )

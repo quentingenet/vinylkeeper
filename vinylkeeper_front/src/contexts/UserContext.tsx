@@ -8,6 +8,7 @@ import {
   useCallback,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SESSION_KEY = "vk_has_session";
 
@@ -56,6 +57,7 @@ export function UserContextProvider({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
   const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -110,8 +112,11 @@ export function UserContextProvider({
       localStorage.setItem(SESSION_KEY, "1");
     } else if (isUserLoggedIn === false) {
       localStorage.removeItem(SESSION_KEY);
+      // Logout, expired session or deleted account: the next user on this device
+      // must not see cached data of the previous one
+      queryClient.clear();
     }
-  }, [isUserLoggedIn]);
+  }, [isUserLoggedIn, queryClient]);
 
   useEffect(() => {
     void checkUserLoggedIn();

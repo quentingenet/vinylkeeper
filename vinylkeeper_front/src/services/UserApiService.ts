@@ -59,6 +59,33 @@ export interface ContactMessageResponse {
   sent_at: string;
 }
 
+// Error codes of the API (app/core/exceptions.py ErrorCode)
+const INVALID_CREDENTIALS = 1000;
+const ACCOUNT_LOCKED = 1003;
+const TERMS_NOT_ACCEPTED = 1008;
+const TOO_MANY_REQUESTS = 429;
+
+/** What the user can do about a failed login, from the error of the API or of the network. */
+export function loginErrorMessage(error: unknown): string {
+  if (!isApiError(error)) {
+    return "Unable to reach Vinyl Keeper. Check your connection and try again.";
+  }
+  switch (error.code) {
+    case INVALID_CREDENTIALS:
+      return "Wrong email or password.";
+    case ACCOUNT_LOCKED:
+      return "This account is disabled. Contact us if you think it is a mistake.";
+    case TERMS_NOT_ACCEPTED:
+      return "This account has not accepted the terms of use. Contact us to restore access.";
+    case TOO_MANY_REQUESTS:
+      return "Too many login attempts. Wait a few minutes and try again.";
+    default:
+      return error.code >= 500 && error.code < 600
+        ? "Vinyl Keeper is having trouble right now. Try again in a moment."
+        : "Unable to reach Vinyl Keeper. Check your connection and try again.";
+  }
+}
+
 export class UserApiService extends BaseApiService {
   async refreshToken(): Promise<{ isLoggedIn: boolean }> {
     return this.post<{ isLoggedIn: boolean }>("/users/refresh-token", undefined, true);
@@ -71,8 +98,8 @@ export class UserApiService extends BaseApiService {
   async login(data: ILoginForm): Promise<LoginResponse> {
     try {
       return await this.post<LoginResponse>("/users/auth", { email: data.email, password: data.password }, true);
-    } catch {
-      throw new Error("Failed to login. Please check your credentials.");
+    } catch (error: unknown) {
+      throw new Error(loginErrorMessage(error));
     }
   }
 
