@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { duplicatePrompt, ownedHint, pressingSummary } from "@components/AddVinyls/duplicateLabels";
+import { duplicatePrompt, ownedHint, pressingSummary } from "@components/Records/duplicateLabels";
 import type { OwnedPressing } from "@models/IExternalReference";
 
 const owned = (overrides: Partial<OwnedPressing>): OwnedPressing => ({

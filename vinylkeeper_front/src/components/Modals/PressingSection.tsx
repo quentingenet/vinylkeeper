@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from "@mui/material";
-import EditionChips from "@components/AddVinyls/EditionChips";
-import { hasEdition, type Edition } from "@components/AddVinyls/editionLabels";
+import EditionChips from "@components/Records/EditionChips";
+import { hasEdition, type Edition } from "@components/Records/editionLabels";
 
 interface PressingSectionProps {
   edition: Edition;

@@ -84,6 +84,13 @@ class User(Base):
         default=0,
         nullable=False
     )
+    # Bumped on password change or reset: tokens carrying an older version are refused
+    token_version = Column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False
+    )
 
     # Relationships
     role = relationship(

@@ -96,6 +96,7 @@ def make_user(
     user.user_uuid = user_uuid
     user.is_active = is_active
     user.is_superuser = is_superuser
+    user.token_version = 0
     user.role = make_role(role_name)
     user.password = hash_password(password)
     return user

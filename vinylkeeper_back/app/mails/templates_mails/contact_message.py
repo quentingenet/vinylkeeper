@@ -1,11 +1,14 @@
+from html import escape
+
+
 def contact_message_template(**kwargs) -> str:
     """Template for contact messages"""
-    username = kwargs.get('username', 'Unknown')
-    email = kwargs.get('email', 'Unknown')
-    user_id = kwargs.get('user_id', 'Unknown')
-    subject_line = kwargs.get('subject_line', 'No subject')
-    message = kwargs.get('message', 'No message')
-    sent_at = kwargs.get('sent_at', 'Unknown')
+    username = escape(str(kwargs.get('username', 'Unknown')))
+    email = escape(str(kwargs.get('email', 'Unknown')))
+    user_id = escape(str(kwargs.get('user_id', 'Unknown')))
+    subject_line = escape(str(kwargs.get('subject_line', 'No subject')))
+    message = escape(str(kwargs.get('message', 'No message')))
+    sent_at = escape(str(kwargs.get('sent_at', 'Unknown')))
 
     return f"""
     <html>

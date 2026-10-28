@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Alert, Box, Button, FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import AlbumStateForm from "@components/AddVinyls/AlbumStateForm";
+import AlbumStateForm from "@components/Records/AlbumStateForm";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { useAddToCollection } from "@hooks/useAddToCollection";
 import type { DiscogsData } from "@models/IRequestProxy";

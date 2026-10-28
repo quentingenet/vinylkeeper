@@ -30,7 +30,7 @@ vi.mock("@services/ExternalReferenceService", () => ({
 vi.mock("@hooks/useDetectMobile", () => ({ default: () => ({ isMobile: false }) }));
 vi.mock("@contexts/UserContext", () => ({ useUserContext: () => ({ currentUser: { user_uuid: "u-1" } }) }));
 // Needs the date pickers localization context of the app; not what is tested here
-vi.mock("@components/AddVinyls/AlbumStateForm", () => ({ default: () => null }));
+vi.mock("@components/Records/AlbumStateForm", () => ({ default: () => null }));
 vi.mock("@components/Modals/PlaybackModal", () => ({
   default: ({ isOpen, item }: { isOpen: boolean; item: { title: string; itemType: string } | null }) =>
     isOpen ? <div data-testid="details">{`${item?.itemType}: ${item?.title}`}</div> : null,

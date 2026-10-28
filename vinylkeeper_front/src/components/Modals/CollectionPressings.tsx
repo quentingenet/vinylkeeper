@@ -3,7 +3,7 @@ import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Typography 
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { CollectionAlbumResponse } from "@models/Collection";
 import { useConfirmAlbumPressing } from "@hooks/useCollections";
-import type { Edition } from "@components/AddVinyls/editionLabels";
+import type { Edition } from "@components/Records/editionLabels";
 import PressingSection from "@components/Modals/PressingSection";
 import CopiesEditor from "@components/Modals/CopiesEditor";
 import { pressingTitle, storedEdition } from "@utils/collectionRecords";

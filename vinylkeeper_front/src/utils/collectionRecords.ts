@@ -1,5 +1,5 @@
 import type { CollectionAlbumResponse, CollectionRecordResponse } from "@models/Collection";
-import { editionChips, type Edition } from "@components/AddVinyls/editionLabels";
+import { editionChips, type Edition } from "@components/Records/editionLabels";
 
 // Same rule as the API: pressings of one Discogs master are one work
 export const workKey = (album: CollectionAlbumResponse): string =>

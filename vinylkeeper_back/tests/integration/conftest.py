@@ -1,4 +1,7 @@
+import os
 import uuid
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -6,6 +9,7 @@ from httpx import AsyncClient, ASGITransport
 from email_validator import EmailNotValidError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from dotenv import dotenv_values
 
 from app.main import app
 from app.deps.deps import get_user_service
@@ -81,13 +85,20 @@ async def client():
 # durablement.
 # ---------------------------------------------------------------------------
 
-REAL_TEST_DATABASE_URL = "postgresql+asyncpg://testeur:ton_mot_de_passe_ici@localhost:5432/vinylkeeper_db"
+# Read from the environment, or from vinylkeeper_back/.env.test (ignored by git).
+# Unset: the real-database tests are skipped, the others still run (CI).
+REAL_TEST_DATABASE_URL = (
+    os.getenv("TEST_DATABASE_URL")
+    or dotenv_values(Path(__file__).parents[2] / ".env.test").get("TEST_DATABASE_URL")
+)
 
 
 @pytest_asyncio.fixture
 async def real_engine():
     """Function-scoped : pytest-asyncio ouvre une event loop par test, et les
     connexions asyncpg ne survivent pas au changement de loop."""
+    if not REAL_TEST_DATABASE_URL:
+        pytest.skip("TEST_DATABASE_URL not set: real-database test skipped")
     engine = create_async_engine(REAL_TEST_DATABASE_URL)
     yield engine
     await engine.dispose()

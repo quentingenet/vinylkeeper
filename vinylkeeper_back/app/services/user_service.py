@@ -13,6 +13,7 @@ import uuid
 from app.mails.client_mail import send_mail, MailSubject
 from app.core.exceptions import (
     InvalidCredentialsError,
+    InvalidResetTokenError,
     ResourceNotFoundError,
     PasswordUpdateError,
     UserNotFoundError,
@@ -122,7 +123,7 @@ class UserService:
         if not user:
             return
 
-        reset_token = create_reset_token(str(user.user_uuid))
+        reset_token = create_reset_token(str(user.user_uuid), user.token_version)
         email_sent = await send_mail(
             to=user.email,
             subject=MailSubject.PasswordReset,
@@ -134,28 +135,33 @@ class UserService:
             logger.info(f"Password reset email sent for user {user.username}")
 
     async def reset_password(self, token: str, new_password: str) -> None:
-        """Reset user password"""
-        user_uuid = verify_reset_token(token)
+        """Reset user password, then revoke every session and this reset link"""
+        user_uuid, token_version = verify_reset_token(token)
         user = await self.repository.get_user_by_uuid(user_uuid)
         if not user:
             raise UserNotFoundError(user_uuid)
+        if token_version != user.token_version:
+            # Link already used, or the password changed since it was sent
+            raise InvalidResetTokenError()
 
-        hashed_password = hash_password(new_password)
-        async with transaction_context(self.repository.db):
-            success = await self.repository.update_user_password(user.id, hashed_password)
-            if not success:
-                raise PasswordUpdateError()
+        await self._update_password(user, new_password)
 
     async def change_password(self, user: User, current_password: str, new_password: str) -> None:
-        """Change user password"""
+        """Change user password and revoke every session (the caller issues new tokens)"""
         if not verify_password(user.password, current_password):
             raise InvalidCredentialsError()
 
+        await self._update_password(user, new_password)
+
+    async def _update_password(self, user: User, new_password: str) -> None:
+        """Store the new password and bump token_version, which revokes every token issued before"""
         hashed_password = hash_password(new_password)
+        new_token_version = user.token_version + 1
         async with transaction_context(self.repository.db):
-            success = await self.repository.update_user_password(user.id, hashed_password)
+            success = await self.repository.update_user_password(user.id, hashed_password, new_token_version)
             if not success:
                 raise PasswordUpdateError()
+        user.token_version = new_token_version
 
     async def send_new_user_registered_email(self, user: User) -> None:
         """Send email to admin about new user registration. Skipped in dev or for admin users."""

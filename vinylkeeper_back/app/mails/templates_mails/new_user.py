@@ -1,4 +1,9 @@
+from html import escape
+
+
 def new_user_register_template(username: str, user_email: str) -> str:
+    username = escape(username)
+    user_email = escape(user_email)
     return f"""<!DOCTYPE html>
     <html>
     <body>

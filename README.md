@@ -136,9 +136,19 @@ Open **http://localhost:5173**. The API URL is set in [`.env.development`](vinyl
 ### Tests
 
 ```bash
-cd vinylkeeper_back && poetry run pytest      # real-database tests expect a local PostgreSQL copy
+cd vinylkeeper_back && poetry run pytest
 cd vinylkeeper_front && npm run test
 ```
+
+Unit and endpoint tests need no database and no `.env` file: the test settings are set in [`tests/conftest.py`](vinylkeeper_back/tests/conftest.py).
+
+The real-database integration tests run against a local PostgreSQL copy of the database, migrated with `alembic upgrade head` (some tests read existing albums). Each test runs inside a transaction rolled back at the end, so nothing is ever written. Point them to the database in `vinylkeeper_back/.env.test`, a file ignored by git:
+
+```bash
+TEST_DATABASE_URL=postgresql+asyncpg://<user>:<password>@localhost:5432/<database>
+```
+
+You can also export `TEST_DATABASE_URL` in your shell instead. Without it, the real-database tests are skipped and the other tests still run.
 
 ## Contributing
 

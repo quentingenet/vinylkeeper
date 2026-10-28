@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from jose import jwt
+import jwt
 
 from app.utils.auth_utils.auth import (
     ALGORITHM,
@@ -136,8 +136,8 @@ class TestVerifyRefreshToken:
 
 class TestResetToken:
     def test_round_trip(self):
-        token = create_reset_token("uuid-456")
-        assert verify_reset_token(token) == "uuid-456"
+        token = create_reset_token("uuid-456", 3)
+        assert verify_reset_token(token) == ("uuid-456", 3)
 
     def test_access_token_as_reset_raises(self):
         token = create_token("uuid-456", TokenType.ACCESS)
@@ -222,6 +222,37 @@ class TestGetCurrentUser:
         request = make_request({"access_token": "bad.token"})
         with pytest.raises(UnauthorizedError):
             await get_current_user(request, response=MagicMock(), db=AsyncMock())
+
+    async def _current_user_with(self, token: str, user):
+        request = make_request({"access_token": token})
+        mock_repo = AsyncMock()
+        mock_repo.get_user_by_uuid = AsyncMock(return_value=user)
+        with patch("app.utils.auth_utils.auth.UserRepository", return_value=mock_repo):
+            return await get_current_user(request, response=MagicMock(), db=AsyncMock())
+
+    async def test_disabled_user_raises(self, regular_user):
+        regular_user.is_active = False
+        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        with pytest.raises(UnauthorizedError, match="Account is disabled"):
+            await self._current_user_with(token, regular_user)
+
+    async def test_token_of_an_older_version_raises(self, regular_user):
+        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS, 0)
+        regular_user.token_version = 1
+        with pytest.raises(UnauthorizedError, match="Session revoked"):
+            await self._current_user_with(token, regular_user)
+
+    async def test_token_of_the_current_version_is_accepted(self, regular_user):
+        regular_user.token_version = 4
+        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS, 4)
+        assert await self._current_user_with(token, regular_user) is regular_user
+
+    async def test_token_issued_before_versions_counts_as_version_0(self, regular_user):
+        expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+        legacy = jwt.encode(
+            {"sub": str(regular_user.user_uuid), "exp": expire, "type": "access"}, PRIVATE_KEY, algorithm=ALGORITHM
+        )
+        assert await self._current_user_with(legacy, regular_user) is regular_user
 
     async def test_refresh_token_in_access_cookie_raises(self, regular_user):
         token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)

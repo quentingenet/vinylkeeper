@@ -1,14 +1,21 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from app.main import app
 from app.deps.deps import get_user_service
-from app.utils.auth_utils.auth import create_token, TokenType
+from app.utils.auth_utils.auth import create_token, decode_token, TokenType
 from app.core.exceptions import (
     DuplicateEmailError,
     EmailNotFoundError,
     InvalidCredentialsError,
     InvalidResetTokenError,
 )
+
+
+def patch_user_lookup(user):
+    """The refresh token's user, as the database would return it"""
+    repo = AsyncMock()
+    repo.get_user_by_uuid = AsyncMock(return_value=user)
+    return patch("app.utils.auth_utils.auth.UserRepository", return_value=repo)
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +177,8 @@ class TestRefreshToken:
         refresh_token = create_token(str(mock_user.user_uuid), TokenType.REFRESH)
         client.cookies.set("refresh_token", refresh_token)
 
-        resp = await client.post("/api/users/refresh-token")
+        with patch_user_lookup(mock_user):
+            resp = await client.post("/api/users/refresh-token")
 
         assert resp.status_code == 200
         assert resp.json()["isLoggedIn"] is True
@@ -190,6 +198,27 @@ class TestRefreshToken:
         wrong_token = create_token(str(mock_user.user_uuid), TokenType.ACCESS)
         client.cookies.set("refresh_token", wrong_token)
         resp = await client.post("/api/users/refresh-token")
+        assert resp.status_code == 401
+
+    async def test_deleted_user_returns_401(self, client, mock_user):
+        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH))
+        with patch_user_lookup(None):
+            resp = await client.post("/api/users/refresh-token")
+        assert resp.status_code == 401
+
+    async def test_disabled_user_returns_401(self, client, mock_user):
+        mock_user.is_active = False
+        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH))
+        with patch_user_lookup(mock_user):
+            resp = await client.post("/api/users/refresh-token")
+        assert resp.status_code == 401
+        assert "access_token" not in resp.cookies
+
+    async def test_revoked_token_returns_401(self, client, mock_user):
+        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH, 0))
+        mock_user.token_version = 1  # password changed since the token was issued
+        with patch_user_lookup(mock_user):
+            resp = await client.post("/api/users/refresh-token")
         assert resp.status_code == 401
 
 
@@ -274,3 +303,27 @@ class TestResetPassword:
 
         assert resp.status_code == 401
         assert resp.json()["code"] == 1004  # ErrorCode.INVALID_TOKEN
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/users/me/password
+# ---------------------------------------------------------------------------
+
+class TestChangeMyPassword:
+    async def test_current_session_gets_tokens_of_the_new_version(self, auth_client):
+        client, mock_service, mock_user = auth_client
+
+        async def bump_version(user, current_password, new_password):
+            user.token_version = 1
+
+        mock_service.change_password = AsyncMock(side_effect=bump_version)
+
+        resp = await client.put("/api/users/me/password", json={
+            "current_password": "correct_password",
+            "new_password": "NewStr0ng!Passw0rd",
+        })
+
+        assert resp.status_code == 200
+        assert "access_token" in resp.cookies and "refresh_token" in resp.cookies
+        payload = decode_token(resp.cookies["access_token"], TokenType.ACCESS)
+        assert payload["ver"] == 1

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Avatar, Box, Collapse, ListItemButton, Typography } from "@mui/material";
 import { Album as AlbumIcon, Person as PersonIcon } from "@mui/icons-material";
-import EditionChips from "@components/AddVinyls/EditionChips";
+import EditionChips from "@components/Records/EditionChips";
 import type { DiscogsData } from "@models/IRequestProxy";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { colors } from "@styles/colors";

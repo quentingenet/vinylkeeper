@@ -169,6 +169,24 @@ class TestResetPassword:
         with pytest.raises(UserNotFoundError):
             await service.reset_password(token, "NewPass1")
 
+    async def test_success_bumps_the_token_version(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        token = create_reset_token(str(regular_user.user_uuid), 0)
+
+        await service.reset_password(token, "NewPass1")
+
+        assert repo.update_user_password.await_args.args[2] == 1
+        assert regular_user.token_version == 1
+
+    async def test_used_link_raises(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        token = create_reset_token(str(regular_user.user_uuid), 0)
+        regular_user.token_version = 1  # the link was already used
+
+        with pytest.raises(InvalidResetTokenError):
+            await service.reset_password(token, "NewPass1")
+        repo.update_user_password.assert_not_awaited()
+
     async def test_db_update_failure_raises(self, regular_user):
         service, repo, _ = make_service(regular_user)
         repo.update_user_password = AsyncMock(return_value=False)
@@ -187,6 +205,8 @@ class TestChangePassword:
         service, repo, _ = make_service(regular_user)
         await service.change_password(regular_user, "correct_password", "NewPass1")
         repo.update_user_password.assert_awaited_once()
+        assert repo.update_user_password.await_args.args[2] == 1
+        assert regular_user.token_version == 1
 
     async def test_wrong_current_password_raises(self, regular_user):
         service, _, _ = make_service(regular_user)

@@ -97,13 +97,13 @@ class UserRepository(TransactionalMixin):
                 details={}
             )
 
-    async def update_user_password(self, user_id: int, hashed_password: str) -> bool:
-        """Update user's password without committing (transaction managed by service)."""
+    async def update_user_password(self, user_id: int, hashed_password: str, token_version: int) -> bool:
+        """Update user's password and token_version without committing (transaction managed by service)."""
         try:
             result = await self.db.execute(
                 update(User)
                 .where(User.id == user_id)
-                .values(password=hashed_password)
+                .values(password=hashed_password, token_version=token_version)
             )
             return result.rowcount > 0
         except SQLAlchemyError as e:

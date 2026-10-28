@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import EditionChips from "@components/AddVinyls/EditionChips";
-import { editionChips } from "@components/AddVinyls/editionLabels";
+import EditionChips from "@components/Records/EditionChips";
+import { editionChips } from "@components/Records/editionLabels";
 import type { IAlbumRequestResults } from "@models/IRequestProxy";
 
 afterEach(cleanup);

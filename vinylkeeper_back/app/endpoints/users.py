@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Response, Depends, status, Request
+from fastapi import APIRouter, Response, Depends, status
 from app.schemas.user_schema import (
     UserAuthSchema,
     UserCreate,
@@ -25,8 +25,8 @@ from app.utils.auth_utils.auth import (
 from app.core.config_env import settings
 from app.deps.deps import get_user_service
 from app.core.logging import logger
-from app.utils.auth_utils.auth import TokenType, get_current_user
-from app.utils.auth_utils.auth import verify_refresh_token
+from app.utils.auth_utils.auth import TokenType, get_current_user, get_refresh_user
+from app.models.user_model import User
 from app.core.exceptions import (
     AccountLockedError,
     TermsNotAcceptedError,
@@ -35,6 +35,15 @@ from app.core.exceptions import (
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
+
+
+def set_session_cookies(response: Response, user: User) -> None:
+    """Issue fresh access, refresh and CSRF cookies for the user's current token_version"""
+    access_token = create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version)
+    refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH, user.token_version)
+    set_token_cookie(response, access_token, TokenType.ACCESS)
+    set_token_cookie(response, refresh_token, TokenType.REFRESH)
+    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
 
 
 @router.post("/auth", response_model=LoginResponse, status_code=status.HTTP_200_OK)
@@ -50,11 +59,7 @@ async def login(
     if not user.is_accepted_terms:
         raise TermsNotAcceptedError()
 
-    access_token = create_token(str(user.user_uuid), TokenType.ACCESS)
-    refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH)
-    set_token_cookie(response, access_token, TokenType.ACCESS)
-    set_token_cookie(response, refresh_token, TokenType.REFRESH)
-    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
+    set_session_cookies(response, user)
     logger.info(f"User logged in: {user.username}")
     return LoginResponse(isLoggedIn=True)
 
@@ -67,11 +72,7 @@ async def register(
     user_service: UserService = Depends(get_user_service)
 ) -> RegisterResponse:
     user = await user_service.create_user(new_user)
-    access_token = create_token(str(user.user_uuid), TokenType.ACCESS)
-    refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH)
-    set_token_cookie(response, access_token, TokenType.ACCESS)
-    set_token_cookie(response, refresh_token, TokenType.REFRESH)
-    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
+    set_session_cookies(response, user)
     logger.info(f"New user registered: {user.username}")
     await user_service.send_new_user_registered_email(user)
     return RegisterResponse(message="User registered successfully", isLoggedIn=True)
@@ -99,13 +100,11 @@ async def reset_password(
 
 @router.post("/refresh-token", response_model=TokenRefreshResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
-async def refresh_token(response: Response, request: Request) -> TokenRefreshResponse:
-    user_uuid = verify_refresh_token(request)
-    access_token = create_token(user_uuid, TokenType.ACCESS)
-    new_refresh_token = create_token(user_uuid, TokenType.REFRESH)
-    set_token_cookie(response, access_token, TokenType.ACCESS)
-    set_token_cookie(response, new_refresh_token, TokenType.REFRESH)
-    set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
+async def refresh_token(
+    response: Response,
+    user: User = Depends(get_refresh_user)
+) -> TokenRefreshResponse:
+    set_session_cookies(response, user)
     return TokenRefreshResponse(message="Tokens refreshed", isLoggedIn=True)
 
 
@@ -154,6 +153,7 @@ async def update_current_user(
 @router.put("/me/password", response_model=MessageResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def change_my_password(
+    response: Response,
     password_data: PasswordChangeSchema,
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
@@ -163,6 +163,8 @@ async def change_my_password(
         password_data.current_password,
         password_data.new_password
     )
+    # Other sessions are revoked; this one gets tokens for the new token_version
+    set_session_cookies(response, current_user)
     return MessageResponse(message="Password changed successfully")
 
 

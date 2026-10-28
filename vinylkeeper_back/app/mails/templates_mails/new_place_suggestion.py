@@ -1,3 +1,6 @@
+from html import escape
+
+
 def new_place_suggestion_template(
     place_name: str,
     place_city: str,
@@ -7,7 +10,12 @@ def new_place_suggestion_template(
     user_email: str,
     place_description: str = None
 ) -> str:
-    description_html = f"<li><strong>Description:</strong> {place_description}</li>" if place_description else ""
+    place_name, place_city, place_country, place_type, username, user_email = (
+        escape(str(value)) for value in (place_name, place_city, place_country, place_type, username, user_email)
+    )
+    description_html = (
+        f"<li><strong>Description:</strong> {escape(place_description)}</li>" if place_description else ""
+    )
 
     return f"""<!DOCTYPE html>
     <html>

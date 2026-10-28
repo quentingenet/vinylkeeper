@@ -17,7 +17,7 @@ import {
   duplicatePrompt,
   ownedHint,
   type DuplicatePrompt,
-} from "@components/AddVinyls/duplicateLabels";
+} from "@components/Records/duplicateLabels";
 
 export interface AlbumStateData {
   state_cover?: VinylStateEnum | null;

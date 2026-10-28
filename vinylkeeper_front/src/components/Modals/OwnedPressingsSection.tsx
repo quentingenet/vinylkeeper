@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
-import EditionChips from "@components/AddVinyls/EditionChips";
+import EditionChips from "@components/Records/EditionChips";
 import type { OwnedPressing } from "@models/IExternalReference";
 import { queryKeys } from "@utils/queryKeys";
 
