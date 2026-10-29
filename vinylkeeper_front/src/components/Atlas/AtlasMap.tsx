@@ -14,6 +14,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Fab,
+  Link,
 } from "@mui/material";
 import {
   Favorite,
@@ -21,9 +22,11 @@ import {
   Close,
   ExpandMore,
   Add,
+  Language,
 } from "@mui/icons-material";
 import { growItem } from "@utils/Animations";
 import { usePlaceLike } from "@hooks/usePlaceLike";
+import { safeWebsiteUrl, websiteLabel } from "@utils/website";
 import AtlasSpotsByCountry from "@components/Atlas/AtlasSpotsByCountry";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -102,7 +105,9 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
         selectedLocation?.city ?? ""
       ),
     enabled: selectedLocation !== null && selectedLocation.country !== "" && selectedLocation.city !== "",
-    staleTime: 5 * 60 * 1000,
+    // Same freshness as the map: an approved spot shows in its city at once
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const placesList = Array.isArray(placesAtLocation) ? placesAtLocation : [];
@@ -355,6 +360,8 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
     }
   };
 
+  const websiteUrl = safeWebsiteUrl(place.source_url);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {place.address && (
@@ -381,6 +388,20 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
         >
           {place.description}
         </Typography>
+      )}
+
+      {websiteUrl && (
+        <Link
+          href={websiteUrl}
+          target="_blank"
+          // Entered by a user: no access to this page, no referrer, no SEO credit
+          rel="noopener noreferrer nofollow ugc"
+          underline="hover"
+          sx={{ color: "primary.main", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.75, alignSelf: "flex-start" }}
+        >
+          <Language fontSize="small" />
+          {websiteLabel(websiteUrl)}
+        </Link>
       )}
 
       <Box

@@ -32,7 +32,11 @@ export default function Atlas({ isPublic = false }: AtlasProps) {
   } = useQuery<PlaceMapResponse[]>({
     queryKey: queryKeys.places.map(),
     queryFn: () => atlasApiService.getPlacesMap(),
-    staleTime: 5 * 60 * 1000,
+    // A light response: read again each time the Atlas is opened or its tab comes back,
+    // so a spot approved meanwhile (another tab, another admin) shows without a reload
+    staleTime: 30 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     gcTime: 30 * 60 * 1000,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

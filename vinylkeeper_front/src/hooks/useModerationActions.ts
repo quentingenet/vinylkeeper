@@ -30,6 +30,8 @@ export function useModerationActions() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moderation.stats() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.places.all(), refetchType: "all" }),
       queryClient.invalidateQueries({ queryKey: queryKeys.places.map(), refetchType: "all" }),
+      // The spots of a city (popup of a marker): an approved spot shows there at once too
+      queryClient.invalidateQueries({ queryKey: queryKeys.places.allByLocation(), refetchType: "all" }),
     ]);
   };
 
