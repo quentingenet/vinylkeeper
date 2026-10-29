@@ -148,16 +148,18 @@ class AtlasService:
             if not places_tuples:
                 return []
 
-            # Build lightweight responses (id, latitude, longitude, city, country)
+            # Lightweight responses: the marker, and the name and type for the list by city
             return [
                 PlaceMapResponse(
                     id=place_id,
                     latitude=latitude,
                     longitude=longitude,
                     city=city,
-                    country=country
+                    country=country,
+                    name=name,
+                    place_type=place_type,
                 )
-                for place_id, latitude, longitude, city, country in places_tuples
+                for place_id, latitude, longitude, city, country, name, place_type in places_tuples
             ]
         except AppException:
             raise

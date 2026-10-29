@@ -84,7 +84,7 @@ export default function Atlas({ isPublic = false }: AtlasProps) {
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <AtlasMap
             mapPlaces={mapPlaces}
             onAddPlace={isPublic ? openJoin : () => setIsModalOpen(true)}

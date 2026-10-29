@@ -24,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import { growItem } from "@utils/Animations";
 import { usePlaceLike } from "@hooks/usePlaceLike";
+import AtlasSpotsByCountry from "@components/Atlas/AtlasSpotsByCountry";
 import { useQuery } from "@tanstack/react-query";
 import {
   atlasApiService,
@@ -213,6 +214,9 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
           </Box>
         )}
       </Box>
+
+      {/* The same spots by country and city: a city opens the same popup as its marker */}
+      <AtlasSpotsByCountry spots={mapPlaces} onSelectCity={handleMarkerClick} />
 
       {/* Spots at coordinates: modal with accordion */}
       <Modal

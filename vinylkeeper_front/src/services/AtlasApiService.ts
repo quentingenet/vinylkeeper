@@ -12,6 +12,9 @@ export interface PlaceMapResponse {
   longitude: number;
   city?: string;
   country?: string;
+  name: string;
+  /** Name of the spot type */
+  place_type?: string | null;
 }
 
 export interface Place {

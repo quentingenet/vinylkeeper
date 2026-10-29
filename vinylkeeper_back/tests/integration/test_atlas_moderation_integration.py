@@ -239,3 +239,14 @@ class TestLikeUnlikePlace:
         unlike_result = await place_service.unlike_place(user, created.id)
         assert unlike_result["is_liked"] is False
         assert unlike_result["likes_count"] == 0
+
+
+async def test_map_spots_carry_their_name_and_type_for_the_list_by_city(real_session):
+    """The list under the map shows the name and type of every spot, read from the map response."""
+    service = AtlasService(AtlasRepository(real_session), ModerationRequestRepository(real_session))
+    spots = await service.get_map_places()
+
+    if not spots:
+        pytest.skip("No moderated spot in this dataset")
+    assert all(spot.name for spot in spots)
+    assert all(spot.place_type for spot in spots)

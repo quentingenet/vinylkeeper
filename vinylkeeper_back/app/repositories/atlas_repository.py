@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.place_model import Place
 from app.models.place_like_model import PlaceLike
+from app.models.reference_data.place_types import PlaceType
 from app.core.exceptions import ResourceNotFoundError
 from app.core.transaction import TransactionalMixin
 
@@ -56,14 +57,19 @@ class AtlasRepository(TransactionalMixin):
         return result.scalars().all()
 
     async def get_map_places(self) -> List[tuple]:
-        """Get all moderated places with coordinates for map markers. Grouping by country+city is done client-side."""
+        """
+        Moderated spots with coordinates: map markers, and the list by country and city under the map,
+        which shows their name and type. Grouping is done client-side.
+        """
         query = select(
             Place.id,
             Place.latitude,
             Place.longitude,
             Place.city,
-            Place.country
-        ).filter(
+            Place.country,
+            Place.name,
+            PlaceType.name,
+        ).join(PlaceType, PlaceType.id == Place.place_type_id).filter(
             and_(
                 Place.is_valid.is_(True),
                 Place.is_moderated.is_(True),

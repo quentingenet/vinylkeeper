@@ -165,6 +165,9 @@ class PlaceMapResponse(BaseModel):
         ge=-180, le=180, description="Longitude coordinate")
     city: Optional[str] = Field(None, description="City name")
     country: Optional[str] = Field(None, description="Country name")
+    # Public already (shown in the spot popup): listed by country and city under the map
+    name: str = Field(description="Name of the spot")
+    place_type: Optional[str] = Field(None, description="Name of the spot type")
 
     model_config = ConfigDict(from_attributes=True)
 
