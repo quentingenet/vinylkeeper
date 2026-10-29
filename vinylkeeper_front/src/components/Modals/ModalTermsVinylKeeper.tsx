@@ -1,6 +1,10 @@
 import { Box, Modal, Typography, Button, Link } from "@mui/material";
 import { colors } from "@styles/colors";
 
+// The popup has a light background: its links take the color of the text around them (black),
+// underlined, whatever the theme of the page opening it (the gold primary is unreadable on it)
+const readableLink = { color: "inherit", underline: "always", sx: { fontWeight: 600 } } as const;
+
 interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: (value: boolean) => void;
   openTermsModal: boolean;
@@ -71,6 +75,7 @@ export default function ModalTermsVinylKeeper(
             https://vinylkeeper.org
             <br />
             <Link
+              {...readableLink}
               href="https://github.com/quentingenet/vinylkeeper"
               target="_blank"
               rel="noopener noreferrer"
@@ -197,13 +202,14 @@ export default function ModalTermsVinylKeeper(
           processing of your data at any time.
           <br />
           7.6. To exercise any of these rights, contact:{" "}
-          <Link href="mailto:vinylkeeper@quentingenet.fr">
+          <Link {...readableLink} href="mailto:vinylkeeper@quentingenet.fr">
             vinylkeeper@quentingenet.fr
           </Link>
           <br />
           7.7. If you believe your rights have not been respected, you may lodge
           a complaint with the French data protection authority (CNIL) at{" "}
           <Link
+            {...readableLink}
             href="https://www.cnil.fr"
             target="_blank"
             rel="noopener noreferrer"
@@ -225,7 +231,7 @@ export default function ModalTermsVinylKeeper(
           <br />
           9.1. For any questions regarding these Terms or the processing of your
           personal data, you may contact the developer at:{" "}
-          <Link href="mailto:vinylkeeper@quentingenet.fr">
+          <Link {...readableLink} href="mailto:vinylkeeper@quentingenet.fr">
             vinylkeeper@quentingenet.fr
           </Link>
           <br />

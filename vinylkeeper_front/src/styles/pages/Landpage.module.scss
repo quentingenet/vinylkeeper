@@ -19,6 +19,11 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    // Darker: the bright parts of the video made the white texts hard to read
+    filter: brightness(0.65);
+    // Under the texts of globalContainer, which holds it: a fixed element is otherwise painted
+    // above every text that is neither positioned nor transparent (negative: below in-flow content)
+    z-index: -1;
 }
 
 .imgMobileBackgroundVinylKeeper {
@@ -33,9 +38,15 @@
     min-height: 100%;
     width: auto;
     height: auto;
+    filter: brightness(0.65);
+    z-index: -1;
 }
 
 .globalContainer {
+    // Its own stacking context: the fixed background inside (z-index -1) stays under its texts,
+    // whatever their opacity, and above the background color of the page
+    position: relative;
+    z-index: 0;
     animation: fadeIn 4s;
 
     .titleNormal,
@@ -60,12 +71,15 @@
         margin-top: 2rem;
 
         .textTypo {
-            font-family: Oswald-ExtraLight, sans-serif;
+            font-family: Oswald-Light, sans-serif;
             font-weight: 700;
             font-size: 1.5rem;
-            opacity: 0.8;
+            opacity: 0.95;
             color: $color-text-light;
             margin: 5rem 0;
+            text-shadow:
+                0 1px 3px rgba($text-color-dark, 0.9),
+                0 0 12px rgba($text-color-dark, 0.6);
         }
 
         .textTypo.previewLink {
@@ -97,14 +111,14 @@
             }
 
             .textTypo.previewLink {
-                opacity: 0.95;
+                opacity: 1;
             }
 
             .orSeparator {
-                font-family: Oswald-ExtraLight, sans-serif;
-                font-size: 1rem;
+                font-family: Oswald-Light, sans-serif;
+                font-size: 1.05rem;
                 color: $color-text-light;
-                opacity: 0.85;
+                opacity: 0.95;
             }
         }
     }

@@ -1,4 +1,8 @@
 import { Box } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
+import useDetectMobile from "@hooks/useDetectMobile";
+import DesktopThemeAppVinylKeeper from "@styles/themes/app/DesktopThemeAppVinylKeeper";
+import MobileThemeAppVinylKeeper from "@styles/themes/app/MobileThemeAppVinylKeeper";
 import styles from "../../styles/components/Footer.module.scss";
 import { growItem } from "@utils/Animations";
 import ModalTermsVinylKeeper from "@components/Modals/ModalTermsVinylKeeper";
@@ -18,6 +22,7 @@ export default function Footer(props: FooterProps) {
     setOpenFounderModal,
     openFounderModal,
   } = props;
+  const { isMobile } = useDetectMobile();
 
   return (
     // mui-fixed: a fixed element gets the scrollbar compensation of the popups, so it does not jump
@@ -42,14 +47,17 @@ export default function Footer(props: FooterProps) {
         </Box>
         &nbsp;by Quentin Genet
       </span>
-      <ModalTermsVinylKeeper
-        setOpenTermsModal={setOpenTermsModal}
-        openTermsModal={openTermsModal}
-      />
-      <ModalFounderVinylKeeper
-        setOpenFounderModal={setOpenFounderModal}
-        openFounderModal={openFounderModal}
-      />
+      {/* The theme of the app, whatever page opens them (home page or Atlas): same popups, same gold buttons */}
+      <ThemeProvider theme={isMobile ? MobileThemeAppVinylKeeper : DesktopThemeAppVinylKeeper}>
+        <ModalTermsVinylKeeper
+          setOpenTermsModal={setOpenTermsModal}
+          openTermsModal={openTermsModal}
+        />
+        <ModalFounderVinylKeeper
+          setOpenFounderModal={setOpenFounderModal}
+          openFounderModal={openFounderModal}
+        />
+      </ThemeProvider>
     </div>
   );
 }

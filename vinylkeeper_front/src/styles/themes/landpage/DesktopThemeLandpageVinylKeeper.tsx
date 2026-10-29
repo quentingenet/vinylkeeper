@@ -17,8 +17,9 @@ const DesktopThemeLandpageVinylKeeper = createTheme({
     h1: {
       margin: "3% 2%",
       textAlign: "center",
-      textShadow: `0 0 10px ${colors.slate}`,
-      opacity: 0.8,
+      // Bright white with a dark shadow, readable over the video like the texts under it
+      textShadow: `0 2px 4px ${colors.black}, 0 0 18px ${colors.black}`,
+      opacity: 1,
       fontSize: "6rem",
       fontFamily: "RockSalt",
       fontWeight: "bold",
