@@ -5,9 +5,10 @@ import CollectionItem from "@components/Collections/CollectionItem";
 import type { CollectionListItemResponse } from "@services/CollectionApiService";
 
 const saveCopyMutate = vi.hoisted(() => vi.fn());
+const deleteCollectionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@hooks/useCollections", () => ({
-  useCollections: () => ({ deleteCollection: vi.fn(), isDeletingCollection: false }),
+  useCollections: () => ({ deleteCollection: deleteCollectionMock, isDeletingCollection: false }),
   useSaveCollectionCopy: () => ({ mutate: saveCopyMutate, isPending: false }),
 }));
 vi.mock("@hooks/useLikeButton", () => ({
@@ -103,6 +104,38 @@ describe("CollectionItem", () => {
       )
     ).toBeInTheDocument();
     expect(saveCopyMutate).not.toHaveBeenCalled();
+  });
+
+  it("names the collection and what goes with it before deleting it", async () => {
+    renderOwned(makeCollection({ name: "Jazz shelf", albums_count: 12, artists_count: 1 }));
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Delete collection" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Delete “Jazz shelf”?");
+    expect(dialog).toHaveTextContent("is deleted with 12 records, 1 artist, 0 likes. This cannot be undone.");
+    expect(dialog).toHaveTextContent("To keep a copy first");
+  });
+
+  it("deletes only once DELETE is typed", async () => {
+    deleteCollectionMock.mockClear();
+    renderOwned(makeCollection({ id: 5, name: "Jazz shelf" }));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Delete collection" }));
+    const deleteButton = await screen.findByRole("button", { name: "Delete" });
+
+    expect(deleteButton).toBeDisabled();
+    await user.type(screen.getByLabelText("Confirm deletion"), "delete");
+    expect(deleteButton).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(deleteCollectionMock).not.toHaveBeenCalled();
+
+    await user.clear(screen.getByLabelText("Confirm deletion"));
+    await user.type(screen.getByLabelText("Confirm deletion"), "DELETE");
+    await user.click(deleteButton);
+
+    expect(deleteCollectionMock).toHaveBeenCalledWith(5);
   });
 
   it("offers no save of a save", () => {

@@ -14,7 +14,7 @@ export const usePageTitle = (setTitlePage?: (title: string) => void) => {
       [EGlobalUrls.COLLECTIONS]: "Collections",
       [EGlobalUrls.SPINNING_NOW]: "Spinning now",
       [EGlobalUrls.ADD_VINYLS]: "Add a record",
-      [EGlobalUrls.PLACES]: "Places",
+      [EGlobalUrls.ATLAS]: "Vinyl Atlas",
       [EGlobalUrls.SETTINGS]: "Settings",
       [EGlobalUrls.ADMIN]: "Admin",
       [EGlobalUrls.CONFIRM_EMAIL]: "Email confirmation",

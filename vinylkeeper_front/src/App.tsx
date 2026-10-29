@@ -14,7 +14,7 @@ const Settings = lazy(() => import("@pages/Settings/Settings"));
 const CollectionsPage = lazy(() => import("@pages/Collections/CollectionsPage"));
 const OpenAddRecordRoute = lazy(() => import("@components/AddRecord/OpenAddRecordRoute"));
 const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
-const Places = lazy(() => import("@pages/Places/Places"));
+const Atlas = lazy(() => import("@pages/Atlas/Atlas"));
 const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
 const ConfirmEmail = lazy(() => import("@pages/ConfirmEmail/ConfirmEmail"));
@@ -100,12 +100,17 @@ function App() {
               }
             />
             <Route
-              path={EGlobalUrls.PLACES}
+              path={EGlobalUrls.ATLAS}
               element={
                 <Protected>
-                  <Places />
+                  <Atlas />
                 </Protected>
               }
+            />
+            {/* Former URL of the Atlas */}
+            <Route
+              path={EGlobalUrls.PLACES_LEGACY}
+              element={<Navigate to={EGlobalUrls.ATLAS} replace />}
             />
             <Route
               path={EGlobalUrls.SETTINGS}

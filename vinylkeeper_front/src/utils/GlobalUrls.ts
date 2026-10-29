@@ -8,7 +8,7 @@
  * @property {string} ADD_VINYLS - "/add-vinyls": opens the add record dialog over the dashboard (older links)
  * @property {string} EXPLORE - Legacy Explore URL "/explore", redirects to the Community tab of Collections
  * @property {string} WISHLIST - Wishlist page URL "/wishlist"
- * @property {string} PLACES - Places page URL "/places"
+ * @property {string} ATLAS - Vinyl Atlas page URL "/atlas" (formerly "/places", redirected)
  * @property {string} SPINNING_NOW - Spinning now page URL "/spinning-now"
  * @property {string} SETTINGS - Settings page URL "/settings"
  * @property {string} RESET_PASSWORD - Reset password page URL "/reset-password"
@@ -23,7 +23,9 @@ export enum EGlobalUrls {
   ADD_VINYLS = "/add-vinyls",
   EXPLORE = "/explore",
   WISHLIST = "/wishlist",
-  PLACES = "/places",
+  ATLAS = "/atlas",
+  // Former URL of the Atlas: old links and bookmarks are redirected
+  PLACES_LEGACY = "/places",
   SPINNING_NOW = "/spinning-now",
   SETTINGS = "/settings",
   ADMIN = "/admin",

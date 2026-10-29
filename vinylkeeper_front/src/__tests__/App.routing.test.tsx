@@ -18,6 +18,13 @@ vi.mock("@pages/Collections/CollectionsPage", () => ({
   },
 }));
 
+vi.mock("@pages/Atlas/Atlas", () => ({
+  default: function AtlasMock() {
+    const location = useLocation();
+    return <div data-testid="atlas-page">{location.pathname}</div>;
+  },
+}));
+
 afterEach(cleanup);
 
 describe("App routing", () => {
@@ -43,5 +50,15 @@ describe("App routing", () => {
     expect(await screen.findByTestId("collections-page")).toHaveTextContent(
       "/collections"
     );
+  });
+
+  it("redirects the former /places URL to the Atlas", async () => {
+    render(
+      <MemoryRouter initialEntries={["/places"]}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId("atlas-page")).toHaveTextContent("/atlas");
   });
 });

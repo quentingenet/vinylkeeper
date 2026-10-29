@@ -26,12 +26,12 @@ import { growItem } from "@utils/Animations";
 import { usePlaceLike } from "@hooks/usePlaceLike";
 import { useQuery } from "@tanstack/react-query";
 import {
-  placeApiService,
+  atlasApiService,
   Place,
   PlaceMapResponse,
-} from "@services/PlaceApiService";
+} from "@services/AtlasApiService";
 import "leaflet/dist/leaflet.css";
-import "./place-map.css";
+import "./atlas-map.css";
 import "./vinyl-marker.css";
 import { queryKeys } from "@utils/queryKeys";
 import { colors } from "@styles/colors";
@@ -44,12 +44,12 @@ const vinylIcon = divIcon({
   popupAnchor: [0, -14],
 });
 
-interface PlaceMapProps {
+interface AtlasMapProps {
   mapPlaces: PlaceMapResponse[];
   onAddPlace?: () => void;
 }
 
-const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
+const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace }) => {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
   const defaultZoom = 5;
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -94,7 +94,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
   } = useQuery<Place[]>({
     queryKey: queryKeys.places.byLocation(selectedLocation?.country, selectedLocation?.city),
     queryFn: () =>
-      placeApiService.getPlacesByLocation(
+      atlasApiService.getPlacesByLocation(
         selectedLocation?.country ?? "",
         selectedLocation?.city ?? ""
       ),
@@ -179,7 +179,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
           >
             <Fab
               color="primary"
-              aria-label="add place"
+              aria-label="Add a spot to the Atlas"
               onClick={onAddPlace}
               sx={{
                 backgroundColor: "primary.main",
@@ -206,13 +206,13 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                 whiteSpace: "nowrap",
               }}
             >
-              Add a place
+              Add a spot
             </Typography>
           </Box>
         )}
       </Box>
 
-      {/* Places at Coordinates Modal with Accordion */}
+      {/* Spots at coordinates: modal with accordion */}
       <Modal
         open={selectedLocation !== null}
         onClose={handleCloseModal}
@@ -233,8 +233,8 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
                 sx={{ color: "primary.main", fontWeight: "bold" }}
               >
                 {selectedLocation
-                  ? `🏙️ ${[selectedLocation.city, selectedLocation.country].filter(Boolean).join(", ") || "Places"}`
-                  : "🏙️ Places"}
+                  ? `🏙️ ${[selectedLocation.city, selectedLocation.country].filter(Boolean).join(", ") || "Atlas"}`
+                  : "🏙️ Atlas"}
                 {isLoadingPlaces && " (Loading...)"}
               </Typography>
               <IconButton onClick={handleCloseModal} size="small">
@@ -304,7 +304,7 @@ const PlaceMap: React.FC<PlaceMapProps> = ({ mapPlaces, onAddPlace }) => {
               </Box>
             ) : (
               <Typography sx={{ color: colors.textLight }}>
-                No places found at this location.
+                No spots found at this location.
               </Typography>
             )}
           </Box>
@@ -436,4 +436,4 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
   );
 };
 
-export default PlaceMap;
+export default AtlasMap;

@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.repositories.moderation_request_repository import ModerationRequestRepository
-from app.repositories.place_repository import PlaceRepository
+from app.repositories.atlas_repository import AtlasRepository
 from app.models.moderation_request_model import ModerationRequest
 from app.schemas.moderation_request_schema import (
     ModerationRequestResponse,
@@ -22,7 +22,7 @@ from app.core.transaction import transaction_context
 class ModerationService:
     """Service for managing moderation requests"""
 
-    def __init__(self, moderation_repository: ModerationRequestRepository, place_repository: PlaceRepository):
+    def __init__(self, moderation_repository: ModerationRequestRepository, place_repository: AtlasRepository):
         self.moderation_repository = moderation_repository
         self.place_repository = place_repository
 

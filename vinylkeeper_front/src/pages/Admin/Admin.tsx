@@ -144,7 +144,7 @@ const Admin: React.FC = () => {
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
                 <TableRow>
-                  {["Place", "City", "User", "Date", "Actions"].map((h) => (
+                  {["Spot", "City", "User", "Date", "Actions"].map((h) => (
                     <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                       {h}
                     </TableCell>
@@ -197,7 +197,7 @@ const Admin: React.FC = () => {
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
                 <TableRow>
-                  {["Place", "City", "User", "Status", "Date", "Actions"].map((h) => (
+                  {["Spot", "City", "User", "Status", "Date", "Actions"].map((h) => (
                     <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                       {h}
                     </TableCell>

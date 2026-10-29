@@ -34,7 +34,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { toPlaybackItem } from "@utils/toPlaybackItem";
-import { COMMUNITY_COLLECTIONS_URL } from "@utils/GlobalUrls";
+import { COMMUNITY_COLLECTIONS_URL, EGlobalUrls } from "@utils/GlobalUrls";
 import { colors } from "@styles/colors";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -236,7 +236,7 @@ export default function Dashboard() {
   }
 
   const chartData = {
-    labels: ["Albums", "Artists", "Places"],
+    labels: ["Albums", "Artists", "Atlas spots"],
     datasets: [
       {
         label: "Global Totals",
@@ -350,11 +350,11 @@ export default function Dashboard() {
           data?.user_collections_total > 0 ? "/collections" : "/add-vinyls"
         )}
         {renderStatCard(
-          "Community places",
+          "Atlas spots",
           data?.moderated_places_total ?? 0,
           900,
           "",
-          "/places"
+          EGlobalUrls.ATLAS
         )}
 
         <div className={styles.rowCenter}>

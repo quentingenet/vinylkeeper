@@ -53,8 +53,8 @@ describe("AddRecordFab", () => {
     expect(screen.getByRole("button", { name: "Add a record" })).toBeInTheDocument();
   });
 
-  it("is not shown on Places, which has its own add button", () => {
-    renderAt("/places");
+  it("is not shown on the Atlas, which has its own add button", () => {
+    renderAt("/atlas");
 
     expect(screen.queryByRole("button", { name: "Add a record" })).not.toBeInTheDocument();
   });

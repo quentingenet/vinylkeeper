@@ -20,7 +20,7 @@ import {
   GraphicEq as GraphicEqIcon,
   AddBox as AddBoxIcon,
   Settings as SettingsIcon,
-  Place as PlaceIcon,
+  Public as PublicIcon,
   AdminPanelSettings,
 } from "@mui/icons-material";
 import { useUserContext } from "@contexts/UserContext";
@@ -101,9 +101,9 @@ const NavBar: React.FC<NavBarProps> = ({
       linkTo: EGlobalUrls.SPINNING_NOW,
     },
     {
-      text: "Places",
-      icon: <PlaceIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.PLACES,
+      text: "Atlas",
+      icon: <PublicIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.ATLAS,
     },
     {
       text: "Settings",

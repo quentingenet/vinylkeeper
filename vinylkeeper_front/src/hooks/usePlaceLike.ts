@@ -1,6 +1,6 @@
 import { logger } from "@utils/logger";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { placeApiService, Place } from "@services/PlaceApiService";
+import { atlasApiService, Place } from "@services/AtlasApiService";
 import { queryKeys } from "@utils/queryKeys";
 
 export function usePlaceLike(
@@ -24,7 +24,7 @@ export function usePlaceLike(
   };
 
   const likeMutation = useMutation({
-    mutationFn: () => placeApiService.likePlace(placeId),
+    mutationFn: () => atlasApiService.likePlace(placeId),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: queryKeys.places.allByLocation() });
       const snapshots = queryClient.getQueriesData<Place[]>({
@@ -46,7 +46,7 @@ export function usePlaceLike(
   });
 
   const unlikeMutation = useMutation({
-    mutationFn: () => placeApiService.unlikePlace(placeId),
+    mutationFn: () => atlasApiService.unlikePlace(placeId),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: queryKeys.places.allByLocation() });
       const snapshots = queryClient.getQueriesData<Place[]>({

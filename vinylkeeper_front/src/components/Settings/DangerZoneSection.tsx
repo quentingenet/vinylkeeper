@@ -74,7 +74,7 @@ export default function DangerZoneSection() {
           <Typography mb={2}>This action cannot be undone.</Typography>
           <TextField
             fullWidth
-            placeholder="Type DELETE to confirm"
+            placeholder="Type DELETE in uppercase to delete"
             label="Confirm deletion"
             value={confirmation}
             onChange={(e) => {

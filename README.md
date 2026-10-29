@@ -36,8 +36,8 @@ A floating "Add a record" button opens a quick search of the Discogs catalogue o
 **🔎 The right pressing**
 Records added before pressings were shown can be confirmed in one click, or switched to the pressing you actually own, keeping their copies and conditions.
 
-**🌍 Places**
-A community map of record shops, flea markets and vinyl spots. New places go through moderation.
+**🌍 Vinyl Atlas**
+A community map of record shops, flea markets and vinyl spots. New spots go through moderation.
 
 **📊 Dashboard**
 Your collection at a glance and what the community added recently.

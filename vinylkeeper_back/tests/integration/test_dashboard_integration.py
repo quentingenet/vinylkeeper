@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from app.models.album_model import Album
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.dashboard_repository import DashboardRepository
-from app.repositories.place_repository import PlaceRepository
+from app.repositories.atlas_repository import AtlasRepository
 from app.models.reference_data.place_types import PlaceType
 from sqlalchemy import select
 from app.models.collection_album import CollectionAlbum
@@ -95,7 +95,7 @@ class TestPlacesCountsBatch:
         place_type_id = (
             await real_session.execute(select(PlaceType.id).limit(1))
         ).scalar_one()
-        place_repo = PlaceRepository(real_session)
+        place_repo = AtlasRepository(real_session)
         place = await place_repo.create_place({
             "name": "Integration Test Record Store",
             "address": "1 Test Street",

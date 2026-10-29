@@ -25,6 +25,7 @@ import {
   DialogActions,
   Button,
   Tooltip,
+  TextField,
   Stack,
   Snackbar,
   Alert,
@@ -75,6 +76,8 @@ export default function CollectionItem({
     "artists_count" in collection ? collection.artists_count : collection.artists.length;
   const [localIsPublic, setLocalIsPublic] = useState(collection.is_public);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  // Same safeguard as the account deletion: the word typed, not a single click
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [showStatusToast, setShowStatusToast] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusSeverity, setStatusSeverity] = useState<"success" | "error">("success");
@@ -137,14 +140,28 @@ export default function CollectionItem({
     });
   };
 
+  // What the delete dialog says goes away with the collection
+  const countOf = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+  const deletedContents = [
+    countOf(albumsCount, "record"),
+    countOf(artistsCount, "artist"),
+    countOf(localLikesCount, "like"),
+  ].join(", ");
+
+  const closeDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+    setDeleteConfirmation("");
+  };
+
   const handleDelete = () => {
+    if (deleteConfirmation !== "DELETE") return;
     if (collection.id < 0) {
       logger.warn("Cannot delete collection with temporary ID");
       setOpenDeleteDialog(false);
       return;
     }
     deleteCollection(collection.id);
-    setOpenDeleteDialog(false);
+    closeDeleteDialog();
   };
 
   const handleEdit = (e: React.MouseEvent) => {
@@ -259,7 +276,7 @@ export default function CollectionItem({
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Tooltip title="Edit collection">
                   <span style={{ display: "inline-flex" }}>
-                    <IconButton size="small" onClick={handleEdit} sx={{ color: "primary.main" }}>
+                    <IconButton size="small" aria-label="Edit collection" onClick={handleEdit} sx={{ color: "primary.main" }}>
                       <EditIcon />
                     </IconButton>
                   </span>
@@ -285,6 +302,7 @@ export default function CollectionItem({
                   <span style={{ display: "inline-flex" }}>
                     <IconButton
                       size="small"
+                      aria-label="Delete collection"
                       onClick={(e) => { e.stopPropagation(); setOpenDeleteDialog(true); }}
                       disabled={collection.id < 0}
                       sx={{ color: collection.id < 0 ? "grey.400" : "primary.main", opacity: collection.id < 0 ? 0.5 : 1 }}
@@ -344,16 +362,36 @@ export default function CollectionItem({
         document.body
       )}
 
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} onClick={(e) => e.stopPropagation()}>
-        <DialogTitle>Delete Collection</DialogTitle>
+      <Dialog open={openDeleteDialog} onClose={closeDeleteDialog} onClick={(e) => e.stopPropagation()}>
+        <DialogTitle>Delete “{collection.name}”?</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this collection? This action cannot be undone.
+            The collection <strong>“{collection.name}”</strong> is deleted with {deletedContents}. This cannot be undone.
           </Typography>
+          {!isSave && !existingSaveName && albumsCount > 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              To keep a copy first, cancel and use the save button of the collection.
+            </Typography>
+          )}
+          <TextField
+            fullWidth
+            sx={{ mt: 2 }}
+            placeholder="Type DELETE in uppercase to delete"
+            label="Confirm deletion"
+            value={deleteConfirmation}
+            onChange={(e) => setDeleteConfirmation(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleDelete()}
+            autoComplete="off"
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained" disabled={isDeletingCollection}>
+          <Button onClick={closeDeleteDialog}>Cancel</Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            variant="contained"
+            disabled={deleteConfirmation !== "DELETE" || isDeletingCollection}
+          >
             {isDeletingCollection ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>

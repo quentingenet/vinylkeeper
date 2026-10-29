@@ -19,10 +19,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.reference_data.place_types import PlaceType
 from app.models.place_model import Place
 
-from app.repositories.place_repository import PlaceRepository
+from app.repositories.atlas_repository import AtlasRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 
-from app.services.place_service import PlaceService
+from app.services.atlas_service import AtlasService
 from app.services.moderation_service import ModerationService
 
 from app.schemas.place_schema import PlaceCreate, PlaceUpdate
@@ -32,9 +32,9 @@ from app.core.enums import ModerationStatusEnum
 from tests.integration.conftest import make_real_test_user as make_test_user
 
 
-def make_place_service(session: AsyncSession) -> PlaceService:
-    return PlaceService(
-        repository=PlaceRepository(session),
+def make_place_service(session: AsyncSession) -> AtlasService:
+    return AtlasService(
+        repository=AtlasRepository(session),
         moderation_request_repository=ModerationRequestRepository(session),
     )
 
@@ -42,7 +42,7 @@ def make_place_service(session: AsyncSession) -> PlaceService:
 def make_moderation_service(session: AsyncSession) -> ModerationService:
     return ModerationService(
         moderation_repository=ModerationRequestRepository(session),
-        place_repository=PlaceRepository(session),
+        place_repository=AtlasRepository(session),
     )
 
 
@@ -65,7 +65,7 @@ def make_place_create(place_type_id: int) -> PlaceCreate:
 
 @pytest.fixture(autouse=True)
 def _no_real_mail():
-    with patch("app.services.place_service.send_mail", new_callable=AsyncMock, return_value=True):
+    with patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True):
         yield
 
 

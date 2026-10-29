@@ -25,7 +25,7 @@ import { Close, MyLocation, CheckCircle } from "@mui/icons-material";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { placeApiService, PlaceTypeData } from "@services/PlaceApiService";
+import { atlasApiService, PlaceTypeData } from "@services/AtlasApiService";
 import { colors } from "@styles/colors";
 
 interface Country {
@@ -33,7 +33,7 @@ interface Country {
   code: string;
 }
 
-interface PlaceAddModalProps {
+interface AtlasSpotAddModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: PlaceFormData) => Promise<void>;
@@ -67,12 +67,12 @@ const schema = yup
     source_url: yup.string().url("Must be a valid URL").optional().default(""),
     place_type_id: yup
       .number()
-      .required("Place type is required")
-      .positive("Place type is required"),
+      .required("Spot type is required")
+      .positive("Spot type is required"),
   })
   .required();
 
-const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
+const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
   open,
   onClose,
   onSubmit,
@@ -95,7 +95,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
 
   const { data: placeTypes = [], isError: typesError } = useQuery<PlaceTypeData[]>({
     queryKey: ["place-types"],
-    queryFn: () => placeApiService.getPlaceTypes(),
+    queryFn: () => atlasApiService.getPlaceTypes(),
     enabled: open,
     staleTime: 5 * 60 * 1000,
   });
@@ -161,7 +161,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
       setShowSuccessDialog(true);
     } catch (err: unknown) {
       logger.error("Error submitting place:", err);
-      const message = isApiError(err) ? err.message : "Failed to add place. Please try again.";
+      const message = isApiError(err) ? err.message : "Failed to add the spot. Please try again.";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -231,7 +231,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
               color: "primary.main",
             }}
           >
-            🎯 Add new place
+            🎯 Add a spot to the Atlas
           </Typography>
 
           {(error || loadError) && (
@@ -243,12 +243,12 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
           <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }}>
             <Box sx={{ maxWidth: "600px", margin: "0 auto" }}>
               <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                Place details
+                Spot details
               </Typography>
 
               <TextField
                 fullWidth
-                label="Place name"
+                label="Spot name"
                 {...register("name")}
                 error={!!errors.name}
                 helperText={errors.name?.message}
@@ -260,12 +260,12 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth sx={formFieldStyle}>
-                    <InputLabel>Place type</InputLabel>
+                    <InputLabel>Spot type</InputLabel>
                     <Select
                       {...field}
                       value={field.value ?? ""}
                       error={!!errors.place_type_id}
-                      label="Place type"
+                      label="Spot type"
                     >
                       {placeTypes.map((type) => (
                         <MenuItem key={type.id} value={type.id}>
@@ -364,7 +364,7 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
                     },
                   }}
                 >
-                  {isLoading ? "Adding..." : "Add Place"}
+                  {isLoading ? "Adding..." : "Add to the Atlas"}
                 </Button>
               </Stack>
             </Box>
@@ -396,17 +396,17 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
           }}
         >
           <CheckCircle sx={{ color: "primary.main" }} />
-          Place Submitted Successfully!
+          Spot submitted!
         </DialogTitle>
         <DialogContent>
           <Typography sx={{ color: "text.primary", mb: 2 }}>
-            Thank you for your contribution! Your place suggestion has been
-            submitted and will be reviewed by our moderation team before being
-            displayed on the map.
+            Thank you for your contribution! Your spot has been submitted and
+            will be reviewed by our moderation team before being displayed on
+            the Atlas.
           </Typography>
           <Typography sx={{ color: colors.textMuted, fontSize: "0.9rem" }}>
-            This helps us maintain the quality and accuracy of our vinyl
-            community places.
+            This helps us keep the Vinyl Atlas accurate and reliable for the
+            whole community.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -428,4 +428,4 @@ const PlaceAddModal: React.FC<PlaceAddModalProps> = ({
   );
 };
 
-export default PlaceAddModal;
+export default AtlasSpotAddModal;

@@ -42,9 +42,9 @@ const steps = [
     image: "/vk_tutorial/2_collection.jpg",
   },
   {
-    title: "Places",
+    title: "Vinyl Atlas",
     content:
-      "Share and discover with the vinyl culture community: shops, flea markets...",
+      "Share and discover the spots of the vinyl culture community on the Atlas: shops, flea markets...",
     images: ["/vk_tutorial/3_places.jpg", "/vk_tutorial/4_suggest_places.jpg"],
   },
 ];

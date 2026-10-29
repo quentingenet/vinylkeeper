@@ -66,7 +66,7 @@ export default function ModerationDetailDialog({
                   variant="subtitle2"
                   sx={{ color: "primary.main", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
-                  Place Information
+                  Spot information
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                   <strong>City:</strong> {selectedRequest.place?.city},{" "}

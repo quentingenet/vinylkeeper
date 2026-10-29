@@ -1,20 +1,20 @@
 import { logger } from "@utils/logger";
 import { useState } from "react";
-import PlaceMap from "@components/Places/PlaceMap";
-import PlaceAddModal from "@components/Places/PlaceAddModal";
+import AtlasMap from "@components/Atlas/AtlasMap";
+import AtlasSpotAddModal from "@components/Atlas/AtlasSpotAddModal";
 import { Box, Typography } from "@mui/material";
 import {
-  placeApiService,
+  atlasApiService,
   PlaceMapResponse,
   CreatePlaceData,
-} from "@services/PlaceApiService";
+} from "@services/AtlasApiService";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@utils/queryKeys";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import { colors } from "@styles/colors";
 
-export default function Places() {
+export default function Atlas() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isMobile } = useDetectMobile();
   const {
@@ -23,7 +23,7 @@ export default function Places() {
     error,
   } = useQuery<PlaceMapResponse[]>({
     queryKey: queryKeys.places.map(),
-    queryFn: () => placeApiService.getPlacesMap(),
+    queryFn: () => atlasApiService.getPlacesMap(),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 2,
@@ -32,7 +32,7 @@ export default function Places() {
 
   const handleAddPlace = async (placeData: CreatePlaceData) => {
     try {
-      await placeApiService.createPlace(placeData);
+      await atlasApiService.createPlace(placeData);
     } catch (error) {
       logger.error("Error creating place:", error);
       throw error;
@@ -47,7 +47,7 @@ export default function Places() {
     return (
       <Box>
         <Typography variant="h6" color="white">
-          Error loading places
+          Error loading the Atlas
         </Typography>
       </Box>
     );
@@ -74,14 +74,14 @@ export default function Places() {
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <PlaceMap
+          <AtlasMap
             mapPlaces={mapPlaces}
             onAddPlace={() => setIsModalOpen(true)}
           />
         </Box>
       </Box>
 
-      <PlaceAddModal
+      <AtlasSpotAddModal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddPlace}

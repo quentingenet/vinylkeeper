@@ -5,7 +5,7 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app
-from app.deps.deps import get_place_service
+from app.deps.deps import get_atlas_service
 from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
 from app.core.exceptions import (
     ForbiddenError,
@@ -112,7 +112,7 @@ async def place_client(mock_user, mock_place_service):
         return mock_user
 
     app.dependency_overrides[get_current_user] = override_current_user
-    app.dependency_overrides[get_place_service] = lambda: mock_place_service
+    app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
 
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
@@ -123,7 +123,7 @@ async def place_client(mock_user, mock_place_service):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/places/
+# POST /api/atlas/
 # ---------------------------------------------------------------------------
 
 class TestCreatePlace:
@@ -131,11 +131,11 @@ class TestCreatePlace:
         client, service, user = place_client
         service.create_place = AsyncMock(return_value=_make_public_place_response(owner_id=user.id))
 
-        resp = await client.post("/api/places/", json=_VALID_PAYLOAD)
+        resp = await client.post("/api/atlas/", json=_VALID_PAYLOAD)
 
         assert resp.status_code == 201
         body = resp.json()
-        assert body["message"] == "Place created successfully"
+        assert body["message"] == "Spot added to the Atlas"
         assert "place" in body
         assert body["place"]["name"] == "Vinyl Shop"
 
@@ -145,7 +145,7 @@ class TestCreatePlace:
             side_effect=ValidationError(error_code=4000, message="Place type with ID 99 not found")
         )
 
-        resp = await client.post("/api/places/", json={**_VALID_PAYLOAD, "place_type_id": 99})
+        resp = await client.post("/api/atlas/", json={**_VALID_PAYLOAD, "place_type_id": 99})
 
         assert resp.status_code == 400
         body = resp.json()
@@ -154,16 +154,16 @@ class TestCreatePlace:
 
     async def test_missing_required_field_returns_422(self, place_client):
         client, *_ = place_client
-        resp = await client.post("/api/places/", json={"name": "Vinyl Shop"})
+        resp = await client.post("/api/atlas/", json={"name": "Vinyl Shop"})
         assert resp.status_code == 422
 
     async def test_no_auth_returns_401(self, client):
-        resp = await client.post("/api/places/", json=_VALID_PAYLOAD)
+        resp = await client.post("/api/atlas/", json=_VALID_PAYLOAD)
         assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
-# GET /api/places/
+# GET /api/atlas/
 # ---------------------------------------------------------------------------
 
 class TestGetPlaces:
@@ -173,12 +173,12 @@ class TestGetPlaces:
             items=[], total=0, page=1, limit=20, total_pages=1
         ))
 
-        resp = await client.get("/api/places/")
+        resp = await client.get("/api/atlas/")
 
         assert resp.status_code == 200
 
     async def test_no_auth_returns_401(self, client):
-        resp = await client.get("/api/places/")
+        resp = await client.get("/api/atlas/")
         assert resp.status_code == 401
 
     async def test_pagination_params_forwarded(self, place_client):
@@ -187,7 +187,7 @@ class TestGetPlaces:
             items=[], total=0, page=2, limit=5, total_pages=1
         ))
 
-        await client.get("/api/places/?page=2&limit=5")
+        await client.get("/api/atlas/?page=2&limit=5")
 
         service.get_all_places.assert_awaited_once()
         _, call_page, call_limit = service.get_all_places.call_args[0]
@@ -196,7 +196,7 @@ class TestGetPlaces:
 
 
 # ---------------------------------------------------------------------------
-# GET /api/places/map
+# GET /api/atlas/map
 # ---------------------------------------------------------------------------
 
 class TestGetMapPlaces:
@@ -204,23 +204,23 @@ class TestGetMapPlaces:
         client, service, _ = place_client
         service.get_map_places = AsyncMock(return_value=[])
 
-        resp = await client.get("/api/places/map")
+        resp = await client.get("/api/atlas/map")
 
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
 
     async def test_no_auth_returns_401(self, client):
-        resp = await client.get("/api/places/map")
+        resp = await client.get("/api/atlas/map")
         assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
-# GET /api/places/place-types  (public — no auth required)
+# GET /api/atlas/place-types  (public — no auth required)
 # ---------------------------------------------------------------------------
 
 class TestGetPlaceTypes:
     async def test_success_no_auth_required(self, client, mock_place_service):
-        app.dependency_overrides[get_place_service] = lambda: mock_place_service
+        app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
         pt = MagicMock()
         pt.id = 1
         pt.name = "record_store"
@@ -228,7 +228,7 @@ class TestGetPlaceTypes:
 
         with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-                resp = await c.get("/api/places/place-types")
+                resp = await c.get("/api/atlas/place-types")
 
         app.dependency_overrides.clear()
 
@@ -240,7 +240,7 @@ class TestGetPlaceTypes:
 
 
 # ---------------------------------------------------------------------------
-# GET /api/places/{place_id}
+# GET /api/atlas/{place_id}
 # ---------------------------------------------------------------------------
 
 class TestGetPlaceById:
@@ -248,7 +248,7 @@ class TestGetPlaceById:
         client, service, _ = place_client
         service.get_place = AsyncMock(return_value=_make_public_place_response())
 
-        resp = await client.get("/api/places/1")
+        resp = await client.get("/api/atlas/1")
 
         assert resp.status_code == 200
 
@@ -256,18 +256,18 @@ class TestGetPlaceById:
         client, service, _ = place_client
         service.get_place = AsyncMock(side_effect=ResourceNotFoundError("Place", 99))
 
-        resp = await client.get("/api/places/99")
+        resp = await client.get("/api/atlas/99")
 
         assert resp.status_code == 404
         assert resp.json()["code"] == 2000
 
     async def test_no_auth_returns_401(self, client):
-        resp = await client.get("/api/places/1")
+        resp = await client.get("/api/atlas/1")
         assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
-# PATCH /api/places/{place_id}
+# PATCH /api/atlas/{place_id}
 # ---------------------------------------------------------------------------
 
 class TestUpdatePlace:
@@ -275,18 +275,18 @@ class TestUpdatePlace:
         client, service, _ = place_client
         service.update_place = AsyncMock(return_value=_make_public_place_response())
 
-        resp = await client.patch("/api/places/1", json={"name": "New Name"})
+        resp = await client.patch("/api/atlas/1", json={"name": "New Name"})
 
         assert resp.status_code == 200
         body = resp.json()
-        assert body["message"] == "Place updated successfully"
+        assert body["message"] == "Spot updated"
         assert "place" in body
 
     async def test_not_owner_returns_403(self, place_client):
         client, service, _ = place_client
         service.update_place = AsyncMock(side_effect=ForbiddenError())
 
-        resp = await client.patch("/api/places/2", json={"name": "New Name"})
+        resp = await client.patch("/api/atlas/2", json={"name": "New Name"})
 
         assert resp.status_code == 403
         assert resp.json()["code"] == 4030
@@ -295,22 +295,22 @@ class TestUpdatePlace:
         client, service, _ = place_client
         service.update_place = AsyncMock(side_effect=ResourceNotFoundError("Place", 99))
 
-        resp = await client.patch("/api/places/99", json={"name": "New Name"})
+        resp = await client.patch("/api/atlas/99", json={"name": "New Name"})
 
         assert resp.status_code == 404
 
     async def test_no_auth_returns_401(self, client):
-        resp = await client.patch("/api/places/1", json={"name": "New Name"})
+        resp = await client.patch("/api/atlas/1", json={"name": "New Name"})
         assert resp.status_code == 401
 
     async def test_empty_body_returns_422(self, place_client):
         client, *_ = place_client
-        resp = await client.patch("/api/places/1", json={})
+        resp = await client.patch("/api/atlas/1", json={})
         assert resp.status_code == 422
 
 
 # ---------------------------------------------------------------------------
-# DELETE /api/places/{place_id}
+# DELETE /api/atlas/{place_id}
 # ---------------------------------------------------------------------------
 
 class TestDeletePlace:
@@ -318,7 +318,7 @@ class TestDeletePlace:
         client, service, _ = place_client
         service.delete_place = AsyncMock(return_value=None)
 
-        resp = await client.delete("/api/places/1")
+        resp = await client.delete("/api/atlas/1")
 
         assert resp.status_code == 204
 
@@ -326,7 +326,7 @@ class TestDeletePlace:
         client, service, _ = place_client
         service.delete_place = AsyncMock(side_effect=ForbiddenError())
 
-        resp = await client.delete("/api/places/2")
+        resp = await client.delete("/api/atlas/2")
 
         assert resp.status_code == 403
 
@@ -334,18 +334,18 @@ class TestDeletePlace:
         client, service, _ = place_client
         service.delete_place = AsyncMock(side_effect=ResourceNotFoundError("Place", 99))
 
-        resp = await client.delete("/api/places/99")
+        resp = await client.delete("/api/atlas/99")
 
         assert resp.status_code == 404
 
     async def test_no_auth_returns_401(self, client):
-        resp = await client.delete("/api/places/1")
+        resp = await client.delete("/api/atlas/1")
         assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
-# POST /api/places/{place_id}/like
-# DELETE /api/places/{place_id}/like
+# POST /api/atlas/{place_id}/like
+# DELETE /api/atlas/{place_id}/like
 # ---------------------------------------------------------------------------
 
 class TestLikeUnlikePlace:
@@ -356,7 +356,7 @@ class TestLikeUnlikePlace:
             "message": "Successfully liked Vinyl Shop",
         })
 
-        resp = await client.post("/api/places/1/like")
+        resp = await client.post("/api/atlas/1/like")
 
         assert resp.status_code == 200
         body = resp.json()
@@ -370,7 +370,7 @@ class TestLikeUnlikePlace:
             "message": "Already liked Vinyl Shop",
         })
 
-        resp = await client.post("/api/places/1/like")
+        resp = await client.post("/api/atlas/1/like")
 
         assert resp.status_code == 200
         body = resp.json()
@@ -384,7 +384,7 @@ class TestLikeUnlikePlace:
             "message": "Successfully unliked Vinyl Shop",
         })
 
-        resp = await client.delete("/api/places/1/like")
+        resp = await client.delete("/api/atlas/1/like")
 
         assert resp.status_code == 200
         body = resp.json()
@@ -398,7 +398,7 @@ class TestLikeUnlikePlace:
             "message": "Not liked Vinyl Shop",
         })
 
-        resp = await client.delete("/api/places/1/like")
+        resp = await client.delete("/api/atlas/1/like")
 
         assert resp.status_code == 200
         body = resp.json()
@@ -409,6 +409,6 @@ class TestLikeUnlikePlace:
         client, service, _ = place_client
         service.like_place = AsyncMock(side_effect=ResourceNotFoundError("Place", 99))
 
-        resp = await client.post("/api/places/99/like")
+        resp = await client.post("/api/atlas/99/like")
 
         assert resp.status_code == 404

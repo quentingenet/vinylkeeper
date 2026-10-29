@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app.repositories.place_repository import PlaceRepository
+from app.repositories.atlas_repository import AtlasRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.models.place_model import Place
 from app.models.moderation_request_model import ModerationRequest
@@ -32,10 +32,10 @@ from app.models.user_model import User
 from app.schemas.moderation_request_schema import ModerationRequestCreate
 
 
-class PlaceService:
+class AtlasService:
     """Service for managing places"""
 
-    def __init__(self, repository: PlaceRepository, moderation_request_repository: ModerationRequestRepository):
+    def __init__(self, repository: AtlasRepository, moderation_request_repository: ModerationRequestRepository):
         self.repository = repository
         self.moderation_request_repository = moderation_request_repository
 
@@ -47,7 +47,7 @@ class PlaceService:
             if not await self.repository.get_place_type_by_id(place_data.place_type_id):
                 raise ValidationError(
                     error_code=4000,
-                    message=f"Place type with ID {place_data.place_type_id} not found"
+                    message=f"Spot type with ID {place_data.place_type_id} not found"
                 )
 
             place_dict = place_data.model_dump()
@@ -112,7 +112,7 @@ class PlaceService:
             logger.error(f"Error creating place: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to create place",
+                message="Failed to create spot",
                 details={}
             )
 
@@ -136,7 +136,7 @@ class PlaceService:
             logger.error("Unexpected error in get_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to get place",
+                message="Failed to get spot",
                 details={}
             )
 
@@ -165,7 +165,7 @@ class PlaceService:
             logger.error(f"Error in get_map_places: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to get map places",
+                message="Failed to get map spots",
                 details={}
             )
 
@@ -183,7 +183,7 @@ class PlaceService:
             logger.error(f"Error in get_places_by_location: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to get places by location",
+                message="Failed to get spots by location",
                 details={}
             )
 
@@ -214,7 +214,7 @@ class PlaceService:
             logger.error(f"Error in get_all_places: {str(e)}", exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to get places",
+                message="Failed to get spots",
                 details={}
             )
 
@@ -226,7 +226,7 @@ class PlaceService:
             if place.submitted_by_id != user.id:
                 raise ForbiddenError(
                     error_code=4030,
-                    message="You don't have permission to update this place"
+                    message="You don't have permission to update this spot"
                 )
 
             update_dict = place_data.model_dump(exclude_unset=True)
@@ -235,7 +235,7 @@ class PlaceService:
                 if not await self.repository.get_place_type_by_id(update_dict["place_type_id"]):
                     raise ValidationError(
                         error_code=4000,
-                        message=f"Place type with ID {update_dict['place_type_id']} not found"
+                        message=f"Spot type with ID {update_dict['place_type_id']} not found"
                     )
 
             # An approved place that changes goes back to moderation: hidden from the map
@@ -266,7 +266,7 @@ class PlaceService:
             logger.error("Unexpected error in update_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to update place",
+                message="Failed to update spot",
                 details={}
             )
 
@@ -278,7 +278,7 @@ class PlaceService:
             if place.submitted_by_id != user.id:
                 raise ForbiddenError(
                     error_code=4030,
-                    message="You don't have permission to delete this place"
+                    message="You don't have permission to delete this spot"
                 )
 
             async with transaction_context(self.repository.db):
@@ -292,7 +292,7 @@ class PlaceService:
             logger.error("Unexpected error in delete_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to delete place",
+                message="Failed to delete spot",
                 details={}
             )
 
@@ -336,7 +336,7 @@ class PlaceService:
             logger.error("Unexpected error in like_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to like place",
+                message="Failed to like spot",
                 details={}
             )
 
@@ -370,7 +370,7 @@ class PlaceService:
             logger.error("Unexpected error in unlike_place: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to unlike place",
+                message="Failed to unlike spot",
                 details={}
             )
 
@@ -401,7 +401,7 @@ class PlaceService:
             logger.error("Unexpected error in search_places: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to search places",
+                message="Failed to search spots",
                 details={}
             )
 
@@ -432,7 +432,7 @@ class PlaceService:
             logger.error("Unexpected error in get_places_by_type: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to get places by type",
+                message="Failed to get spots by type",
                 details={}
             )
 
@@ -467,7 +467,7 @@ class PlaceService:
             logger.error("Unexpected error in get_places_in_region: %s", e, exc_info=True)
             raise ServerError(
                 error_code=5000,
-                message="Failed to get places in region",
+                message="Failed to get spots in region",
                 details={}
             )
 
@@ -476,7 +476,7 @@ class PlaceService:
         try:
             email_sent = await send_mail(
                 to=settings.EMAIL_ADMIN,
-                subject=MailSubject.NewPlaceSuggestion,
+                subject=MailSubject.NewAtlasSpot,
                 place_name=place.name,
                 place_city=place.city,
                 place_country=place.country,
@@ -567,7 +567,7 @@ class PlaceService:
         if not data.name or len(data.name.strip()) == 0:
             raise ValidationError(
                 error_code=4000,
-                message="Place name is required"
+                message="Spot name is required"
             )
 
         if not data.address or len(data.address.strip()) == 0:

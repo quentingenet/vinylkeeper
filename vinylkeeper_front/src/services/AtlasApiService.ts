@@ -77,50 +77,50 @@ export interface GeocodingResult {
   };
 }
 
-class PlaceApiService extends BaseApiService {
+class AtlasApiService extends BaseApiService {
   async getPlacesMap(): Promise<PlaceMapResponse[]> {
-    return this.get<PlaceMapResponse[]>("/places/map");
+    return this.get<PlaceMapResponse[]>("/atlas/map");
   }
 
   async getPlacesByLocation(country: string, city: string): Promise<Place[]> {
     return this.get<Place[]>(
-      `/places/by-location?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`
+      `/atlas/by-location?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`
     );
   }
 
   async getPlaces(page = 1, limit = 20): Promise<PaginatedPlaceResponse> {
-    return this.get<PaginatedPlaceResponse>(`/places/?page=${page}&limit=${limit}`);
+    return this.get<PaginatedPlaceResponse>(`/atlas/?page=${page}&limit=${limit}`);
   }
 
   async getPlace(id: number): Promise<Place> {
-    return this.get<Place>(`/places/${id}`);
+    return this.get<Place>(`/atlas/${id}`);
   }
 
   async createPlace(data: CreatePlaceData): Promise<PlaceMutationResponse> {
-    return this.post<PlaceMutationResponse>("/places/", data);
+    return this.post<PlaceMutationResponse>("/atlas/", data);
   }
 
   async updatePlace(
     id: number,
     data: Partial<CreatePlaceData>
   ): Promise<PlaceMutationResponse> {
-    return this.patch<PlaceMutationResponse>(`/places/${id}`, data);
+    return this.patch<PlaceMutationResponse>(`/atlas/${id}`, data);
   }
 
   async deletePlace(id: number): Promise<void> {
-    return this.delete<void>(`/places/${id}`);
+    return this.delete<void>(`/atlas/${id}`);
   }
 
   async likePlace(id: number): Promise<PlaceLikeStatusResponse> {
-    return this.post<PlaceLikeStatusResponse>(`/places/${id}/like`);
+    return this.post<PlaceLikeStatusResponse>(`/atlas/${id}/like`);
   }
 
   async unlikePlace(id: number): Promise<PlaceLikeStatusResponse> {
-    return this.delete<PlaceLikeStatusResponse>(`/places/${id}/like`);
+    return this.delete<PlaceLikeStatusResponse>(`/atlas/${id}/like`);
   }
 
   async getPlaceTypes(): Promise<PlaceTypeData[]> {
-    return this.get<PlaceTypeData[]>("/places/place-types");
+    return this.get<PlaceTypeData[]>("/atlas/place-types");
   }
 
   async reverseGeocode(lat: number, lng: number): Promise<GeocodingResult> {
@@ -136,4 +136,4 @@ class PlaceApiService extends BaseApiService {
   }
 }
 
-export const placeApiService = new PlaceApiService();
+export const atlasApiService = new AtlasApiService();

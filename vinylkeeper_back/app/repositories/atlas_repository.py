@@ -9,7 +9,7 @@ from app.core.exceptions import ResourceNotFoundError
 from app.core.transaction import TransactionalMixin
 
 
-class PlaceRepository(TransactionalMixin):
+class AtlasRepository(TransactionalMixin):
     """Repository for place-related database operations."""
 
     def __init__(self, db: AsyncSession):
@@ -103,7 +103,7 @@ class PlaceRepository(TransactionalMixin):
         place = result.scalar_one_or_none()
 
         if not place:
-            raise ResourceNotFoundError("Place", place_id)
+            raise ResourceNotFoundError("Spot", place_id)
 
         return place
 
@@ -128,7 +128,7 @@ class PlaceRepository(TransactionalMixin):
         place = result.scalar_one_or_none()
 
         if not place:
-            raise ResourceNotFoundError("Place", place_id)
+            raise ResourceNotFoundError("Spot", place_id)
 
         return place
 

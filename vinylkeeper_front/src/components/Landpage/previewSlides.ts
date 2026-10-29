@@ -24,9 +24,9 @@ export const previewSlides: PreviewSlide[] = [
     image: "/vk_preview/preview_vk_3.webp",
   },
   {
-    title: "Places",
+    title: "Vinyl Atlas",
     description:
-      "Discover record shops, flea markets and vinyl spots on a community map, and suggest your own favourite places.",
+      "Discover record shops, flea markets and vinyl spots on the community map of the Vinyl Atlas, and suggest your own favourite spots.",
     image: "/vk_preview/preview_vk_4.webp",
   },
 ];

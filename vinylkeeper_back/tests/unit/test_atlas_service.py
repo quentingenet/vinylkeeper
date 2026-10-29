@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from pydantic import ValidationError as PydanticValidationError
 
-from app.services.place_service import PlaceService
+from app.services.atlas_service import AtlasService
 from app.schemas.place_schema import PlaceCreate, PlaceUpdate, PaginatedPlaceResponse
 from app.core.exceptions import ForbiddenError, ServerError, ValidationError
 
@@ -72,7 +72,7 @@ def make_service():
     repo = AsyncMock()
     repo.db = make_db()
     mod_repo = AsyncMock()
-    service = PlaceService(repo, mod_repo)
+    service = AtlasService(repo, mod_repo)
     return service, repo, mod_repo
 
 # ---------------------------------------------------------------------------
@@ -83,12 +83,12 @@ def make_service():
 class TestValidatePlaceData:
     def test_empty_name_raises(self):
         service, *_ = make_service()
-        with pytest.raises(ValidationError, match="Place name is required"):
+        with pytest.raises(ValidationError, match="Spot name is required"):
             service._validate_place_data(make_place_data(name=""))
 
     def test_whitespace_name_raises(self):
         service, *_ = make_service()
-        with pytest.raises(ValidationError, match="Place name is required"):
+        with pytest.raises(ValidationError, match="Spot name is required"):
             service._validate_place_data(make_place_data(name="   "))
 
     def test_empty_city_raises(self):
@@ -136,8 +136,8 @@ class TestCreatePlace:
         mod_repo.create_request = AsyncMock(return_value=MagicMock())
         user = make_user()
 
-        with patch("app.services.place_service.geocode_city") as mock_geocode, \
-                patch("app.services.place_service.send_mail", new_callable=AsyncMock, return_value=True), \
+        with patch("app.services.atlas_service.geocode_city") as mock_geocode, \
+                patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True), \
                 patch.object(service, "_create_place_response", return_value=MagicMock()):
             await service.create_place(make_place_data(latitude=48.8566, longitude=2.3522), user)
 
@@ -155,10 +155,10 @@ class TestCreatePlace:
         user = make_user()
 
         geocode_patch = patch(
-            "app.services.place_service.geocode_city",
+            "app.services.atlas_service.geocode_city",
             new_callable=AsyncMock, return_value=(48.8566, 2.3522)
         )
-        send_mail_patch = patch("app.services.place_service.send_mail", new_callable=AsyncMock, return_value=True)
+        send_mail_patch = patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True)
         resp_patch = patch.object(service, "_create_place_response", return_value=MagicMock())
         with geocode_patch as mock_geocode, send_mail_patch, resp_patch:
             await service.create_place(make_place_data(latitude=None, longitude=None), user)
@@ -171,7 +171,7 @@ class TestCreatePlace:
         repo.get_place_type_by_id = AsyncMock(return_value=place_type)
         user = make_user()
 
-        with patch("app.services.place_service.geocode_city", new_callable=AsyncMock, return_value=None):
+        with patch("app.services.atlas_service.geocode_city", new_callable=AsyncMock, return_value=None):
             with pytest.raises(ValidationError, match="Could not find coordinates"):
                 await service.create_place(make_place_data(latitude=None, longitude=None), user)
 
@@ -186,7 +186,7 @@ class TestCreatePlace:
         mod_repo.create_request = AsyncMock(return_value=MagicMock())
         user = make_user()
 
-        with patch("app.services.place_service.send_mail", new_callable=AsyncMock, return_value=True), \
+        with patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True), \
                 patch.object(service, "_create_place_response", return_value=MagicMock()):
             await service.create_place(make_place_data(), user)
 
@@ -204,7 +204,7 @@ class TestCreatePlace:
         user = make_user()
 
         send_mail_patch = patch(
-            "app.services.place_service.send_mail",
+            "app.services.atlas_service.send_mail",
             new_callable=AsyncMock, side_effect=Exception("SMTP down")
         )
         with send_mail_patch, patch.object(service, "_create_place_response", return_value=MagicMock()):
@@ -228,7 +228,7 @@ class TestUpdatePlace:
         repo.is_place_liked_by_user = AsyncMock(return_value=False)
         send_mail = AsyncMock(return_value=True)
 
-        with patch("app.services.place_service.send_mail", send_mail), \
+        with patch("app.services.atlas_service.send_mail", send_mail), \
                 patch.object(service, "_create_place_response", return_value=MagicMock()) as mock_resp:
             await service.update_place(make_user(user_id=1), place_id=1, place_data=data)
 

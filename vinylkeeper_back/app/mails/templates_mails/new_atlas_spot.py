@@ -1,7 +1,7 @@
 from html import escape
 
 
-def new_place_suggestion_template(
+def new_atlas_spot_template(
     place_name: str,
     place_city: str,
     place_country: str,
@@ -21,9 +21,9 @@ def new_place_suggestion_template(
     <html>
     <body>
         <p>Hello Admin,</p>
-        <p>A new place has been suggested and requires moderation:</p>
+        <p>A new spot has been suggested for the Atlas and requires moderation:</p>
         <ul>
-            <li><strong>Place Name:</strong> {place_name}</li>
+            <li><strong>Spot name:</strong> {place_name}</li>
             <li><strong>Location:</strong> {place_city}, {place_country}</li>
             <li><strong>Type:</strong> {place_type}</li>
             {description_html}

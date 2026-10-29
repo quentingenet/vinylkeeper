@@ -18,7 +18,7 @@ import {
   Album as AlbumIcon,
   GraphicEq as GraphicEqIcon,
   AddBox as AddBoxIcon,
-  SwapHoriz as SwapHorizIcon,
+  Public as PublicIcon,
   Settings as SettingsIcon,
   AdminPanelSettings,
 } from "@mui/icons-material";
@@ -78,9 +78,9 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
       linkTo: EGlobalUrls.ADD_VINYLS,
     },
     {
-      text: "Places",
-      icon: <SwapHorizIcon fontSize={sizeIcons} />,
-      linkTo: EGlobalUrls.PLACES,
+      text: "Atlas",
+      icon: <PublicIcon fontSize={sizeIcons} />,
+      linkTo: EGlobalUrls.ATLAS,
     },
     {
       text: "Settings",

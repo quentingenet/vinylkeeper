@@ -8,7 +8,7 @@ import { growItem } from "@utils/Animations";
 import { colors } from "@styles/colors";
 
 // Pages with their own floating add button, which this one must not compete with
-const PAGES_WITH_THEIR_OWN_ADD_BUTTON: string[] = [EGlobalUrls.PLACES];
+const PAGES_WITH_THEIR_OWN_ADD_BUTTON: string[] = [EGlobalUrls.ATLAS];
 
 /** "Add a record" from any page; labelled, so it never reads like the other "+" buttons of the app. */
 export default function AddRecordFab() {
@@ -34,7 +34,7 @@ export default function AddRecordFab() {
           color: colors.deep,
           fontWeight: "bold",
           "&:hover": { backgroundColor: colors.goldDark },
-          // Same pulse as the "Add a place" button of the map
+          // Same pulse as the "Add a spot" button of the Atlas map
           animation: `${growItem} 1.3s infinite`,
           boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
         }}

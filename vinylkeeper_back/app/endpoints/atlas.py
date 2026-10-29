@@ -10,8 +10,8 @@ from app.schemas.place_schema import (
     PlaceMutationResponse,
 )
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
-from app.services.place_service import PlaceService
-from app.deps.deps import get_place_service
+from app.services.atlas_service import AtlasService
+from app.deps.deps import get_atlas_service
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.utils.endpoint_utils import handle_app_exceptions
@@ -24,18 +24,18 @@ router = APIRouter()
 async def create_place(
     data: PlaceCreate,
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Create a new place"""
     place = await service.create_place(data, user)
-    return PlaceMutationResponse(message="Place created successfully", place=place)
+    return PlaceMutationResponse(message="Spot added to the Atlas", place=place)
 
 
 @router.get("/", response_model=PaginatedPlaceResponse, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def get_places(
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service),
+    service: AtlasService = Depends(get_atlas_service),
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
@@ -47,7 +47,7 @@ async def get_places(
 @handle_app_exceptions
 async def get_map_places(
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Get all moderated places with coordinates for map markers (ultra-lightweight response)."""
     places = await service.get_map_places()
@@ -60,7 +60,7 @@ async def get_places_by_location(
     country: str = Query(..., min_length=1, description="Country name"),
     city: str = Query(..., min_length=1, description="City name"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Get all moderated places in the given country and city (for map popup)."""
     places = await service.get_places_by_location(country, city, user)
@@ -70,7 +70,7 @@ async def get_places_by_location(
 @router.get("/place-types", status_code=status.HTTP_200_OK, response_model=List[PlaceTypeResponse])
 @handle_app_exceptions
 async def get_place_types(
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Get all place types (public endpoint)"""
     place_types = await service.get_place_types()
@@ -82,7 +82,7 @@ async def get_place_types(
 async def search_places(
     q: str = Query(..., min_length=1, description="Search term"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service),
+    service: AtlasService = Depends(get_atlas_service),
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
@@ -95,7 +95,7 @@ async def search_places(
 async def get_places_by_type(
     place_type_id: int = Path(..., gt=0, title="Place Type ID"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service),
+    service: AtlasService = Depends(get_atlas_service),
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
@@ -111,7 +111,7 @@ async def get_places_in_region(
     min_lng: float = Query(..., ge=-180, le=180, description="Minimum longitude"),
     max_lng: float = Query(..., ge=-180, le=180, description="Maximum longitude"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service),
+    service: AtlasService = Depends(get_atlas_service),
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(20, gt=0, le=100, description="Items per page"),
 ):
@@ -124,7 +124,7 @@ async def get_places_in_region(
 async def get_place_by_id(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Get a place by ID (only moderated places)"""
     place = await service.get_place(place_id, user)
@@ -137,11 +137,11 @@ async def update_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     data: PlaceUpdate = Body(...),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Update a place"""
     updated_place = await service.update_place(user, place_id, data)
-    return PlaceMutationResponse(message="Place updated successfully", place=updated_place)
+    return PlaceMutationResponse(message="Spot updated", place=updated_place)
 
 
 @router.delete("/{place_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -149,7 +149,7 @@ async def update_place(
 async def delete_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Delete a place"""
     await service.delete_place(user, place_id)
@@ -160,7 +160,7 @@ async def delete_place(
 async def like_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Like a place"""
     result = await service.like_place(user, place_id)
@@ -177,7 +177,7 @@ async def like_place(
 async def unlike_place(
     place_id: int = Path(..., gt=0, title="Place ID"),
     user: User = Depends(get_current_user),
-    service: PlaceService = Depends(get_place_service)
+    service: AtlasService = Depends(get_atlas_service)
 ):
     """Unlike a place"""
     result = await service.unlike_place(user, place_id)
