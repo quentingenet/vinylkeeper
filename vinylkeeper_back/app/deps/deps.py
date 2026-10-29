@@ -17,6 +17,7 @@ from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.place_repository import PlaceRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.spinning_now_repository import SpinningNowRepository
+from app.repositories.discogs_import_repository import DiscogsImportRepository
 
 # Services
 from app.services.user_service import UserService
@@ -95,6 +96,10 @@ def get_place_repository(db: AsyncSession = Depends(get_db)) -> PlaceRepository:
 def get_moderation_request_repository(db: AsyncSession = Depends(get_db)) -> ModerationRequestRepository:
     """Get moderation request repository instance."""
     return ModerationRequestRepository(db)
+
+
+def get_discogs_import_repository(db: AsyncSession = Depends(get_db)) -> DiscogsImportRepository:
+    return DiscogsImportRepository(db)
 
 
 # Service Dependencies

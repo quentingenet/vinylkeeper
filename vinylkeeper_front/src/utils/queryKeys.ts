@@ -60,6 +60,9 @@ export const queryKeys = {
     forUser: (userUuid: string | undefined) => ["userSettings", userUuid] as const,
   },
   ownedPressings: (externalId: string) => ["ownedPressings", externalId] as const,
+  discogsImport: {
+    latest: (userUuid: string | undefined) => ["discogsImport", "latest", userUuid] as const,
+  },
   search: {
     page: (query: string, isArtist: boolean, page: number) => ["musicSearch", query, isArtist, page] as const,
   },

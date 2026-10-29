@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, func, and_, case
+from sqlalchemy import select, func, and_, case, insert, literal
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
 from app.models.artist_model import Artist
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.repositories.work_queries import work_key, works_count_in_collection
 from app.models.association_tables import CollectionArtist
 from app.models.like_model import Like
@@ -21,9 +21,69 @@ from datetime import datetime, timezone
 from typing import List, Optional, Tuple, Dict
 
 
+COLLECTION_NAME_MAX_LENGTH = 255
+
+
 class CollectionRepository(TransactionalMixin):
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def free_name(self, owner_id: int, base_name: str) -> str:
+        """base_name, or "base_name 2", "base_name 3"... when the owner already has it (names are unique per owner)."""
+        # Room for the number, within the column size
+        base_name = base_name[:COLLECTION_NAME_MAX_LENGTH - 5]
+        taken = set((await self.db.execute(
+            select(Collection.name).where(
+                Collection.owner_id == owner_id, Collection.name.startswith(base_name, autoescape=True))
+        )).scalars())
+        name, number = base_name, 1
+        while name in taken:
+            number += 1
+            name = f"{base_name} {number}"
+        return name
+
+    async def find_save_of(self, collection_id: int) -> Optional[Collection]:
+        """The saved copy of a collection, if any (one at most)."""
+        return (await self.db.execute(
+            select(Collection).where(Collection.saved_from_collection_id == collection_id)
+        )).scalar_one_or_none()
+
+    async def saves_of(self, collection_ids: List[int]) -> Dict[int, Tuple[int, str]]:
+        """collection id -> (id, name) of its saved copy, for the collections that have one."""
+        if not collection_ids:
+            return {}
+        rows = (await self.db.execute(
+            select(Collection.saved_from_collection_id, Collection.id, Collection.name)
+            .where(Collection.saved_from_collection_id.in_(collection_ids))
+        )).all()
+        return {source_id: (save_id, name) for source_id, save_id, name in rows}
+
+    async def copy_contents(self, source_id: int, target_id: int) -> None:
+        """
+        Every record of a collection, each copy with its condition and acquisition date, and its
+        artists, into another one. One INSERT ... SELECT per table, whatever the size (no commit).
+        """
+        target = literal(target_id)
+        await self.db.execute(insert(CollectionAlbum).from_select(
+            ["collection_id", "album_id", "pressing_confirmed", "created_at", "updated_at"],
+            select(target, CollectionAlbum.album_id, CollectionAlbum.pressing_confirmed,
+                   CollectionAlbum.created_at, CollectionAlbum.updated_at)
+            .where(CollectionAlbum.collection_id == source_id),
+        ))
+        await self.db.execute(insert(CollectionAlbumCopy).from_select(
+            ["collection_id", "album_id", "state_record", "state_cover", "acquisition_month_year",
+             "created_at", "updated_at"],
+            select(target, CollectionAlbumCopy.album_id, CollectionAlbumCopy.state_record,
+                   CollectionAlbumCopy.state_cover, CollectionAlbumCopy.acquisition_month_year,
+                   CollectionAlbumCopy.created_at, CollectionAlbumCopy.updated_at)
+            .where(CollectionAlbumCopy.collection_id == source_id)
+            .order_by(CollectionAlbumCopy.id),
+        ))
+        await self.db.execute(insert(CollectionArtist).from_select(
+            ["collection_id", "artist_id", "created_at", "updated_at"],
+            select(target, CollectionArtist.artist_id, CollectionArtist.created_at, CollectionArtist.updated_at)
+            .where(CollectionArtist.collection_id == source_id),
+        ))
 
     async def create(self, collection: Collection) -> Collection:
         """Create a new collection without committing (transaction managed by service)."""

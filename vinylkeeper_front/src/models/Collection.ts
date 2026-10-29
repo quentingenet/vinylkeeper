@@ -116,6 +116,11 @@ export interface CollectionListItemResponse {
   artists_count: number;
   /** Random album covers (max 6, renewed daily), optional for older API versions */
   preview_images?: string[];
+  /** Set on a saved copy: the collection it saves */
+  saved_from_collection_id?: number | null;
+  /** The saved copy of this collection, if any: one save per collection (owner's list only) */
+  save_collection_id?: number | null;
+  save_collection_name?: string | null;
 }
 
 export interface CollectionDetailResponse {

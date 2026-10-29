@@ -30,6 +30,7 @@ import {
   CollectionResponse,
   CollectionListItemResponse,
   PaginatedCollectionListResponse,
+  type CollectionDetailResponse,
 } from "@services/CollectionApiService";
 import { isApiError } from "@utils/apiError";
 import { colors } from "@styles/colors";
@@ -134,29 +135,33 @@ export default function ModalCollection({
   >({
     mutationFn: ({ id, data }) =>
       collectionApiService.updateCollection(id, data),
-    onSuccess: (_, variables) => {
-      // Optimistic update instead of full invalidation
-      queryClient.setQueryData(
-        ["collections", userContext.currentUser?.user_uuid],
-        (oldData: PaginatedCollectionListResponse | undefined) => {
-          if (!oldData?.items) return oldData;
-          return {
-            ...oldData,
-            items: oldData.items.map((item: CollectionListItemResponse) =>
-              item.id === variables.id
-                ? {
-                    ...item,
-                    name: variables.data.name,
-                    description: variables.data.description,
-                    is_public: variables.data.is_public,
-                  }
-                : item
-            ),
-          };
-        }
+    onSuccess: async (_, { id, data }) => {
+      // Only the fields sent: an absent one keeps the cached value
+      const changes: Partial<{ name: string; description: string; is_public: boolean }> = {};
+      if (data.name !== undefined) changes.name = data.name;
+      if (data.description !== undefined) changes.description = data.description;
+      if (data.is_public !== undefined) changes.is_public = data.is_public;
+      const userUuid = userContext.currentUser?.user_uuid;
+      // Shown at once: every page of the user's list and the page of the collection
+      queryClient.setQueriesData<PaginatedCollectionListResponse>(
+        { queryKey: queryKeys.collections.forUser(userUuid) },
+        (oldData) =>
+          oldData?.items
+            ? { ...oldData, items: oldData.items.map((item) => (item.id === id ? { ...item, ...changes } : item)) }
+            : oldData
       );
-      onCollectionAdded();
+      queryClient.setQueryData<CollectionDetailResponse>(queryKeys.collections.detail(id), (oldData) =>
+        oldData ? { ...oldData, ...changes } : oldData
+      );
       handleClose();
+      // Then the server values, for everything else showing the collection: the Community list,
+      // and the wishlist, visible when the owner has a public collection
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.forUser(userUuid) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.wishlist.all() }),
+      ]);
     },
     onError: (error: Error) => {
       if (isApiError(error) && error.code === 2001 && error.message.includes("Collection name already exists")) {

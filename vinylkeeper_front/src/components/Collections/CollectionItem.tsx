@@ -4,7 +4,7 @@ import {
   type CollectionResponse,
   type CollectionListItemResponse,
 } from "@services/CollectionApiService";
-import { useCollections } from "@hooks/useCollections";
+import { useCollections, useSaveCollectionCopy } from "@hooks/useCollections";
 import { useLikeButton } from "@hooks/useLikeButton";
 import CoverMosaic from "@components/Collections/CoverMosaic";
 import {
@@ -31,9 +31,12 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { truncateText } from "@utils/GlobalUtils";
+import { isApiError } from "@utils/apiError";
+import { oneSaveMessage } from "@components/Collections/discogsImportLabels";
 import { createPortal } from "react-dom";
 import { colors } from "@styles/colors";
 
@@ -74,8 +77,10 @@ export default function CollectionItem({
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [showStatusToast, setShowStatusToast] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusSeverity, setStatusSeverity] = useState<"success" | "error">("success");
 
   const { deleteCollection, isDeletingCollection } = useCollections();
+  const saveCopy = useSaveCollectionCopy();
   const {
     localIsLiked,
     localLikesCount,
@@ -103,8 +108,33 @@ export default function CollectionItem({
         ? "Your collection is public and visible by other users now"
         : "Your collection is private and visible only by you"
     );
+    setStatusSeverity("success");
     setShowStatusToast(true);
     onSwitchArea(newValue);
+  };
+
+  const showToast = (message: string, severity: "success" | "error") => {
+    setStatusMessage(message);
+    setStatusSeverity(severity);
+    setShowStatusToast(true);
+  };
+
+  const isSave = "saved_from_collection_id" in collection && collection.saved_from_collection_id != null;
+  const existingSaveName =
+    "save_collection_name" in collection ? collection.save_collection_name ?? null : null;
+
+  const handleSaveCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // One save per collection: explained right away, the API refuses it anyway
+    if (existingSaveName) {
+      showToast(oneSaveMessage(existingSaveName), "error");
+      return;
+    }
+    saveCopy.mutate(collection.id, {
+      onSuccess: (copy) => showToast(`Saved as “${copy.name}”`, "success"),
+      onError: (error) =>
+        showToast(isApiError(error) ? error.message : "The save could not be made. Try again.", "error"),
+    });
   };
 
   const handleDelete = () => {
@@ -234,6 +264,23 @@ export default function CollectionItem({
                     </IconButton>
                   </span>
                 </Tooltip>
+                {!isSave && (
+                  <Tooltip
+                    title={existingSaveName ? `Save: already saved as “${existingSaveName}”` : "Save a copy of this collection"}
+                  >
+                    <span style={{ display: "inline-flex" }}>
+                      <IconButton
+                        size="small"
+                        aria-label="Save"
+                        onClick={handleSaveCopy}
+                        disabled={collection.id < 0 || saveCopy.isPending}
+                        sx={{ color: "primary.main" }}
+                      >
+                        <SaveIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
                 <Tooltip title="Delete collection">
                   <span style={{ display: "inline-flex" }}>
                     <IconButton
@@ -277,14 +324,19 @@ export default function CollectionItem({
       {createPortal(
         <Snackbar
           open={showStatusToast}
-          autoHideDuration={2000}
+          autoHideDuration={statusSeverity === "error" ? 5000 : 3000}
           onClose={() => setShowStatusToast(false)}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
           <Alert
             onClose={() => setShowStatusToast(false)}
-            severity="success"
-            sx={{ backgroundColor: "green", color: "white", fontWeight: "bold", "& .MuiAlert-icon": { color: "white" } }}
+            severity={statusSeverity}
+            sx={{
+              backgroundColor: statusSeverity === "error" ? "error.main" : "green",
+              color: "white",
+              fontWeight: "bold",
+              "& .MuiAlert-icon": { color: "white" },
+            }}
           >
             {statusMessage}
           </Alert>

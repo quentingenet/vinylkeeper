@@ -4,8 +4,11 @@ import userEvent from "@testing-library/user-event";
 import CollectionItem from "@components/Collections/CollectionItem";
 import type { CollectionListItemResponse } from "@services/CollectionApiService";
 
+const saveCopyMutate = vi.hoisted(() => vi.fn());
+
 vi.mock("@hooks/useCollections", () => ({
   useCollections: () => ({ deleteCollection: vi.fn(), isDeletingCollection: false }),
+  useSaveCollectionCopy: () => ({ mutate: saveCopyMutate, isPending: false }),
 }));
 vi.mock("@hooks/useLikeButton", () => ({
   useLikeButton: () => ({
@@ -52,6 +55,61 @@ const renderItem = (
   );
 
 describe("CollectionItem", () => {
+  it("lets the owner save a copy without opening the collection", async () => {
+    const onCollectionClick = vi.fn();
+    render(
+      <CollectionItem
+        collection={makeCollection({ id: 42 })}
+        onSwitchArea={vi.fn()}
+        handleOpenModalCollection={vi.fn()}
+        onCollectionClick={onCollectionClick}
+        isOwner={true}
+        showOwner={false}
+      />
+    );
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Save" }));
+
+    expect(saveCopyMutate).toHaveBeenCalledWith(42, expect.any(Object));
+    expect(onCollectionClick).not.toHaveBeenCalled();
+  });
+
+  it("offers no copy of someone else's collection", () => {
+    renderItem(makeCollection());
+    expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+  });
+
+  const renderOwned = (collection: CollectionListItemResponse) =>
+    render(
+      <CollectionItem
+        collection={collection}
+        onSwitchArea={vi.fn()}
+        handleOpenModalCollection={vi.fn()}
+        onCollectionClick={vi.fn()}
+        isOwner={true}
+        showOwner={false}
+      />
+    );
+
+  it("explains that a collection has one save only, without asking the API", async () => {
+    saveCopyMutate.mockClear();
+    renderOwned(makeCollection({ save_collection_id: 8, save_collection_name: "SAVE Jazz shelf (2026-10-29)" }));
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText(
+        "Only one save per collection: “SAVE Jazz shelf (2026-10-29)” already exists. Delete it to make a new one."
+      )
+    ).toBeInTheDocument();
+    expect(saveCopyMutate).not.toHaveBeenCalled();
+  });
+
+  it("offers no save of a save", () => {
+    renderOwned(makeCollection({ name: "SAVE Jazz shelf (2026-10-29)", saved_from_collection_id: 1 }));
+    expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+  });
+
   it("shows the album and artist counts", () => {
     renderItem(makeCollection());
 

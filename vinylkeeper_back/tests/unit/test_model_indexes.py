@@ -36,8 +36,12 @@ PRODUCTION_INDEXES = {
     "ix_wishlist_user_id_entity_type": "ON wishlist (user_id, entity_type_id)",
     # Migration d4a7c2e9f1b3: one account per email whatever its case
     "ix_users_email_lower": "ON users (lower(email))",
+    # Migration e7b3d9a1c5f2: the latest Discogs import of a user, polled while it runs
+    "ix_discogs_imports_user_id_id": "ON discogs_imports (user_id, id)",
+    # Migration f1c8a3b7d2e4: one save per collection
+    "ix_collections_saved_from_collection_id": "ON collections (saved_from_collection_id)",
 }
-UNIQUE_PRODUCTION_INDEXES = {"ix_users_email_lower"}
+UNIQUE_PRODUCTION_INDEXES = {"ix_users_email_lower", "ix_collections_saved_from_collection_id"}
 
 
 def _declared_indexes():

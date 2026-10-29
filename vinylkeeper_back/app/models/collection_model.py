@@ -31,6 +31,10 @@ class Collection(Base):
         "users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="collections", lazy="raise")
 
+    # Set on a saved copy ("SAVE <name> (<date>)"): the collection it saves. One save per
+    # collection (unique index). SET NULL: deleting the original keeps its save, as a collection.
+    saved_from_collection_id = Column(Integer, ForeignKey("collections.id", ondelete="SET NULL"), nullable=True)
+
     collection_albums = relationship(
         "CollectionAlbum",
         back_populates="collection",
@@ -83,6 +87,8 @@ class Collection(Base):
         ),
         Index("ix_collections_is_public_created_at", "is_public", created_at.desc()),
         Index("ix_collections_is_public_updated_at", "is_public", updated_at.desc()),
+        # One save per collection (migration f1c8a3b7d2e4)
+        Index("ix_collections_saved_from_collection_id", "saved_from_collection_id", unique=True),
     )
 
     @validates('name')

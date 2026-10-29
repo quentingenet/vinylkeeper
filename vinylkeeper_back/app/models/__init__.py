@@ -12,6 +12,7 @@ from .association_tables import CollectionArtist, collection_artist
 from .place_like_model import PlaceLike
 from .album_mood_model import AlbumMood
 from .tag_mood_rule_model import TagMoodRule
+from .discogs_import_model import DiscogsImport
 
 from .reference_data.external_sources import ExternalSource
 from .reference_data.entity_types import EntityType
@@ -45,4 +46,5 @@ __all__ = [
     "PlaceLike",
     "AlbumMood",
     "TagMoodRule",
+    "DiscogsImport",
 ]

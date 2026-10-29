@@ -54,6 +54,7 @@ def make_collection(
 def make_service():
     repo = AsyncMock()
     repo.db = make_db()
+    repo.saves_of = AsyncMock(return_value={})
 
     like_repo = AsyncMock()
     like_repo.count_likes = AsyncMock(return_value=0)

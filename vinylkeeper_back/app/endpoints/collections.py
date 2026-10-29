@@ -8,6 +8,7 @@ from app.schemas.collection_schema import (
     PaginatedCollectionListResponse,
     CollectionAlbumResponse,
     CollectionCreateResponse,
+    CollectionCopyResponse,
     MessageResponse,
     PaginatedArtistsResponse,
     PaginatedRecordsResponse,
@@ -142,6 +143,19 @@ async def delete_collection(
 ):
     await service.delete_collection(user.id, collection_id)
     return MessageResponse(message="Collection deleted successfully")
+
+
+@router.post("/{collection_id}/save-copy", status_code=status.HTTP_201_CREATED, response_model=CollectionCopyResponse)
+@handle_app_exceptions
+async def save_collection_copy(
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    user=Depends(get_current_user),
+    service: CollectionService = Depends(get_collection_service),
+):
+    """A private copy of the collection, records, copies and conditions included."""
+    copy = await service.save_copy(user.id, collection_id)
+    logger.info(f"Collection {collection_id} saved as a copy by user {user.username}")
+    return CollectionCopyResponse(message="Collection saved", collection_id=copy.id, name=copy.name)
 
 
 @router.get("/{collection_id}/details", status_code=status.HTTP_200_OK, response_model=CollectionDetailResponse)

@@ -46,6 +46,12 @@ export type {
   CollectionAlbumCopyData,
 };
 
+export interface CollectionCopyResponse {
+  message: string;
+  collection_id: number;
+  name: string;
+}
+
 export class CollectionApiService extends BaseApiService {
   constructor() {
     super();
@@ -215,6 +221,11 @@ export class CollectionApiService extends BaseApiService {
     );
   }
 
+  /** A private copy of the collection, named "SAVE <name> (<date>)" */
+  async saveCollectionCopy(collectionId: number): Promise<CollectionCopyResponse> {
+    return this.post<CollectionCopyResponse>(`/collections/${collectionId}/save-copy`, {});
+  }
+
   async confirmAlbumPressing(collectionId: number, albumId: number): Promise<CollectionAlbumResponse> {
     return this.post<CollectionAlbumResponse>(
       `/collections/${collectionId}/albums/${albumId}/pressing/confirm`,
@@ -314,6 +325,8 @@ export const collectionApiService = {
     collectionApiServiceInstance.updateAlbumCopy(collectionId, albumId, copyId, data),
   deleteAlbumCopy: (collectionId: number, albumId: number, copyId: number) =>
     collectionApiServiceInstance.deleteAlbumCopy(collectionId, albumId, copyId),
+  saveCollectionCopy: (collectionId: number): Promise<CollectionCopyResponse> =>
+    collectionApiServiceInstance.saveCollectionCopy(collectionId),
   confirmAlbumPressing: (collectionId: number, albumId: number): Promise<CollectionAlbumResponse> =>
     collectionApiServiceInstance.confirmAlbumPressing(collectionId, albumId),
   exportCollectionFile: (collectionId: number, pathSuffix: string) =>

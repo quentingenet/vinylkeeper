@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List, Tuple
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -35,6 +36,43 @@ from app.core.exceptions import (
 )
 from app.core.logging import logger
 from app.core.transaction import transaction_context
+
+
+def saved_copy_name(name: str) -> str:
+    """Explicit name of a saved copy: "SAVE Jazz shelf (2026-10-29)"."""
+    return f"SAVE {name} ({date.today().isoformat()})"
+
+
+async def save_collection_copy(repository: CollectionRepository, source: Collection) -> Collection:
+    """
+    A private copy of the collection with all its records, copies and conditions included: kept
+    before a change that adds many records (an import), deleted by the owner once all is fine.
+    One save per collection, and a save is not saved again. No commit: the caller owns the transaction.
+    """
+    if source.saved_from_collection_id is not None:
+        raise ValidationError(
+            error_code=ErrorCode.INVALID_RESOURCE_STATE,
+            message="This collection is already a save: it cannot be saved again",
+            details={"collection_id": source.id},
+        )
+    existing = await repository.find_save_of(source.id)
+    if existing:
+        raise ValidationError(
+            error_code=ErrorCode.INVALID_RESOURCE_STATE,
+            message=f"This collection is already saved as “{existing.name}”: delete that save to make a new one",
+            details={"collection_id": source.id, "save_collection_id": existing.id, "save_name": existing.name},
+        )
+    copy = Collection(
+        name=await repository.free_name(source.owner_id, saved_copy_name(source.name)),
+        description=source.description,
+        is_public=False,
+        owner_id=source.owner_id,
+        mood_id=source.mood_id,
+        saved_from_collection_id=source.id,
+    )
+    await repository.create(copy)
+    await repository.copy_contents(source.id, copy.id)
+    return copy
 
 
 class CollectionService:
@@ -198,6 +236,14 @@ class CollectionService:
             collection_album = await self.collection_album_repository.confirm_pressing(collection_album)
         return await self._album_copies_response(collection_id, album_id, collection_album)
 
+    async def save_copy(self, user_id: int, collection_id: int) -> Collection:
+        """Save a private copy of one of the user's collections ("SAVE <name> (<date>)")."""
+        async with transaction_context(self.repository.db):
+            source = await self._get_owned_collection(user_id, collection_id)
+            copy = await save_collection_copy(self.repository, source)
+        logger.info(f"Collection {collection_id} saved as {copy.name!r} (id {copy.id})")
+        return copy
+
     async def remove_album_from_collection(self, user_id: int, collection_id: int, album_id: int) -> bool:
         """Remove an album from a collection"""
         async with transaction_context(self.collection_album_repository.db):
@@ -228,6 +274,8 @@ class CollectionService:
             likes_counts = likes_info['counts']
             user_likes = likes_info['user_likes']
             preview_images = await self.repository.get_preview_images_batch(collection_ids)
+            # The owner sees which collections are saved already (one save each)
+            saves = await self.repository.saves_of(collection_ids)
 
             collection_responses = []
             dropped = 0
@@ -241,6 +289,7 @@ class CollectionService:
                         collection.albums_count,
                         collection.artists_count,
                         preview_images.get(collection.id, []),
+                        save=saves.get(collection.id),
                     )
                     collection_responses.append(response)
                 except AppException:
@@ -615,7 +664,7 @@ class CollectionService:
 
     def _build_collection_list_item(
         self, collection, user_id=None, likes_count=None, is_liked=None, albums_count=0, artists_count=0,
-        preview_images=None
+        preview_images=None, save=None
     ) -> CollectionListItemResponse:
         """Build lightweight collection list item response."""
         owner = None
@@ -642,6 +691,9 @@ class CollectionService:
             created_at=collection.created_at,
             updated_at=collection.updated_at,
             preview_images=preview_images,
+            saved_from_collection_id=collection.saved_from_collection_id,
+            save_collection_id=save[0] if save else None,
+            save_collection_name=save[1] if save else None,
         )
 
     async def has_public_collections(self, user_id: int) -> bool:

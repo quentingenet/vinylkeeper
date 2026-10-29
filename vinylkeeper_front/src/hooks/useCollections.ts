@@ -6,6 +6,7 @@ import {
   type PaginatedCollectionListResponse,
   type CollectionCreate,
   type CollectionAlbumCopyData,
+  type CollectionCopyResponse,
 } from "@services/CollectionApiService";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
@@ -304,5 +305,18 @@ export function useConfirmAlbumPressing() {
     onError: (error) => {
       logger.error("Error confirming album pressing:", error);
     },
+  });
+}
+
+/** Save a private copy of a collection ("SAVE <name> (<date>)"), listed with the user's collections. */
+export function useSaveCollectionCopy() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CollectionCopyResponse, ApiError, number>({
+    mutationFn: (collectionId) => collectionApiService.saveCollectionCopy(collectionId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.collections.all() });
+    },
+    onError: (error) => logger.error("Error saving a copy of the collection:", error),
   });
 }

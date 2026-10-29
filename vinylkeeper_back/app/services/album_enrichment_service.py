@@ -33,6 +33,10 @@ class DiscogsUnavailableError(Exception):
     """Transient failure (rate limit exhausted, 5xx, network): retry later."""
 
 
+class DiscogsAccessDeniedError(DiscogsUnavailableError):
+    """Discogs refuses the resource (401/403), a private user collection for instance: retrying is useless."""
+
+
 class DiscogsClient:
     """Minimal Discogs client that spaces requests and backs off on 429."""
 
@@ -73,6 +77,8 @@ class DiscogsClient:
                 continue
             if response.status_code == 404:
                 return None
+            if response.status_code in (401, 403):
+                raise DiscogsAccessDeniedError(f"Discogs refused access to {path}")
             if response.status_code >= 400:
                 raise DiscogsUnavailableError(f"Discogs returned {response.status_code} on {path}")
 

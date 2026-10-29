@@ -183,6 +183,11 @@ class CollectionListItemResponse(BaseSchema):
     preview_images: List[str] = Field(
         default_factory=list,
         description="Random album cover URLs (max 6, renewed daily), for the card mosaic")
+    saved_from_collection_id: Optional[int] = Field(
+        default=None, description="Set on a saved copy: the collection it saves")
+    save_collection_id: Optional[int] = Field(
+        default=None, description="The saved copy of this collection, if any (owner's list only)")
+    save_collection_name: Optional[str] = None
 
 
 class CollectionDetailResponse(BaseSchema):
@@ -253,6 +258,13 @@ class CollectionCreateResponse(BaseSchema):
     """Response schema for collection creation."""
     message: str
     collection_id: int
+
+
+class CollectionCopyResponse(BaseSchema):
+    """The saved copy of a collection."""
+    message: str
+    collection_id: int
+    name: str
 
 
 class MessageResponse(BaseSchema):

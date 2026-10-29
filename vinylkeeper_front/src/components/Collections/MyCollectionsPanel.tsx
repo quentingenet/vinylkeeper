@@ -1,5 +1,9 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import CloudDownloadOutlinedIcon from "@mui/icons-material/CloudDownloadOutlined";
+import DiscogsImportDialog from "@components/Collections/DiscogsImportDialog";
+import { useDiscogsImport } from "@hooks/useDiscogsImport";
+import { isImportActive } from "@models/IDiscogsImport";
 import { growItem } from "@utils/Animations";
 import CollectionItem from "@components/Collections/CollectionItem";
 import CollectionGrid from "@components/Collections/CollectionGrid";
@@ -31,6 +35,8 @@ export default function MyCollectionsPanel() {
   const itemsPerPage = ITEMS_PER_PAGE;
   const navigate = useNavigate();
   const location = useLocation();
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const { latestImport, startImport } = useDiscogsImport();
 
   // Debounce page changes to avoid too many requests
   useDebounce(
@@ -138,6 +144,28 @@ export default function MyCollectionsPanel() {
           </Typography>
         </Box>
       </Box>
+
+      <Box display="flex" justifyContent="center" mt={2}>
+        <Button
+          variant="text"
+          size="small"
+          startIcon={<CloudDownloadOutlinedIcon fontSize="small" />}
+          onClick={() => setIsImportOpen(true)}
+          sx={{ minHeight: 44, textTransform: "none" }}
+        >
+          {isImportActive(latestImport) ? "Discogs import in progress" : "Import from Discogs"}
+        </Button>
+      </Box>
+      <DiscogsImportDialog
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        latestImport={latestImport}
+        onStart={(discogsUsername, collectionId, saveCopy) =>
+          startImport.mutate({ discogsUsername, collectionId, saveCopy })
+        }
+        isStarting={startImport.isPending}
+        startError={startImport.error}
+      />
 
       {collections && collections.length > 0 ? (
         <CollectionGrid
