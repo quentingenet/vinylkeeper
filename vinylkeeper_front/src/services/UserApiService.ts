@@ -116,8 +116,12 @@ export class UserApiService extends BaseApiService {
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
     try {
       return await this.post<ForgotPasswordResponse>("/users/forgot-password", { email }, true);
-    } catch {
-      throw new Error("Failed to process forgot password request.");
+    } catch (error: unknown) {
+      throw new Error(
+        isApiError(error) && error.code === TOO_MANY_REQUESTS
+          ? "Too many requests. Wait a minute and try again."
+          : "The link could not be sent. Try again in a moment."
+      );
     }
   }
 

@@ -6,6 +6,7 @@ import {
   Alert,
   Box,
   CircularProgress,
+  Typography,
 } from "@mui/material";
 import { Grid } from "@mui/material";
 import { emailValidator } from "@utils/Regex";
@@ -44,10 +45,13 @@ export default function ForgotPasswordModal({
       try {
         setIsLoading(true);
         await userApiService.forgotPassword(email.toLowerCase());
-        setMessage("Mail sent. Check your inbox.");
+        // Same answer whether the account exists or not: nobody can test who has an account
+        setMessage(
+          "If an account exists with this email, a link to choose a new password has been sent. Check your inbox and your spam folder."
+        );
         setMessageType("success");
-      } catch {
-        setMessage("Error, email not sent");
+      } catch (error: unknown) {
+        setMessage(error instanceof Error ? error.message : "The link could not be sent. Try again in a moment.");
         setMessageType("error");
       } finally {
         setIsLoading(false);
@@ -61,6 +65,7 @@ export default function ForgotPasswordModal({
     <Modal
       open={openForgotPassword}
       onClose={handleCloseForgotPassword}
+      aria-labelledby="forgot-password-title"
       sx={{
         display: "flex",
         alignItems: isMobile ? "flex-start" : "center",
@@ -86,9 +91,25 @@ export default function ForgotPasswordModal({
           mt: isMobile ? "10dvh" : 0,
           mb: isMobile ? "5dvh" : 0,
           p: isMobile ? 2 : 4,
+          // The fonts of the home page, which opens this popup
+          "& .MuiTypography-root, & .MuiInputBase-root, & .MuiFormLabel-root, & .MuiFormHelperText-root, & .MuiAlert-message": {
+            fontFamily: "Oswald-Light, sans-serif",
+          },
+          "& .MuiButton-root": { fontFamily: "Oswald-Regular, sans-serif" },
         }}
       >
         <Box sx={{ width: "100%" }}>
+          <Typography
+            id="forgot-password-title"
+            variant="h6"
+            component="h2"
+            sx={{ color: "common.black", textAlign: "center", mb: 1, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
+          >
+            Forgot your password?
+          </Typography>
+          <Typography variant="body2" sx={{ color: "common.black", textAlign: "center", mb: 2.5 }}>
+            Enter the email of your account: we send you a link to choose a new password.
+          </Typography>
           <TextField
             fullWidth
             label="Email"
@@ -111,11 +132,12 @@ export default function ForgotPasswordModal({
               alignItems: "center",
             }}
           >
+            {/* The buttons of the home page theme are grey at 60% opacity: readable ones on this white popup */}
             <Button
               variant="contained"
               onClick={(e) => { void handleSubmit(e); }}
               disabled={!email || isLoading}
-              sx={{ mb: 2 }}
+              sx={{ mb: 1, mx: 0, opacity: 1, "&.Mui-disabled": { opacity: 0.5 } }}
             >
               {isLoading ? <CircularProgress size={24} /> : "Send Reset Link"}
             </Button>
@@ -124,13 +146,23 @@ export default function ForgotPasswordModal({
               variant="text"
               onClick={handleCloseForgotPassword}
               disabled={isLoading}
+              sx={{
+                mx: 0,
+                opacity: 1,
+                color: "common.black",
+                backgroundColor: "transparent",
+                border: "none",
+                boxShadow: "none",
+                textShadow: "none",
+                "&:hover": { backgroundColor: "action.hover", color: "common.black", border: "none" },
+              }}
             >
               Cancel
             </Button>
           </Box>
 
           {message && (
-            <Alert severity={messageType} sx={{ mt: 3 }}>
+            <Alert severity={messageType} sx={{ mt: 3 }} onClose={() => setMessage("")}>
               {message}
             </Alert>
           )}
