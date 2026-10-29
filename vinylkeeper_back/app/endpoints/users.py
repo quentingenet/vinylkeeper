@@ -106,9 +106,12 @@ async def reset_password(
 @handle_app_exceptions
 async def refresh_token(
     response: Response,
-    user: User = Depends(get_refresh_user)
+    user: User = Depends(get_refresh_user),
+    user_service: UserService = Depends(get_user_service)
 ) -> TokenRefreshResponse:
     set_session_cookies(response, user)
+    # A visit too: the user is back without the login form
+    await user_service.mark_seen(user)
     return TokenRefreshResponse(message="Tokens refreshed", isLoggedIn=True)
 
 

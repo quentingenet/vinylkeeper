@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import select, update, func, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.user_model import User
@@ -98,6 +99,19 @@ class UserRepository(TransactionalMixin):
                 message="Failed to update user last login",
                 details={}
             )
+
+    async def touch_last_seen(self, user_id: int, min_interval: timedelta) -> bool:
+        """
+        Set last_seen_at to now unless it was set less than min_interval ago (no commit).
+        One conditional UPDATE: a restored session costs no write most of the time.
+        """
+        now = datetime.now(timezone.utc)
+        result = await self.db.execute(
+            update(User)
+            .where(User.id == user_id, or_(User.last_seen_at.is_(None), User.last_seen_at < now - min_interval))
+            .values(last_seen_at=now)
+        )
+        return result.rowcount > 0
 
     async def update_user_password(self, user_id: int, hashed_password: str, token_version: int) -> bool:
         """Update user's password and token_version without committing (transaction managed by service)."""

@@ -246,3 +246,25 @@ class TestEmailCase:
         with pytest.raises(IntegrityError):
             async with real_session.begin_nested():
                 await make_test_user(real_session, email=stored.upper())
+
+
+class TestLastSeen:
+    """last_seen_at: written at most once an hour, in one conditional UPDATE."""
+
+    async def test_written_when_unset_then_not_again_within_the_hour(self, real_session):
+        from datetime import timedelta
+        user = await make_test_user(real_session)
+        repo = UserRepository(real_session)
+
+        assert await repo.touch_last_seen(user.id, timedelta(hours=1)) is True
+        assert await repo.touch_last_seen(user.id, timedelta(hours=1)) is False
+
+    async def test_written_again_once_the_hour_is_past(self, real_session):
+        from datetime import datetime, timedelta, timezone
+        from app.models.user_model import User
+        user = await make_test_user(real_session, last_seen_at=datetime.now(timezone.utc) - timedelta(hours=2))
+        repo = UserRepository(real_session)
+
+        assert await repo.touch_last_seen(user.id, timedelta(hours=1)) is True
+        seen = (await real_session.execute(select(User.last_seen_at).where(User.id == user.id))).scalar_one()
+        assert seen > datetime.now(timezone.utc) - timedelta(minutes=1)

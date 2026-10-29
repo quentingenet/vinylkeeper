@@ -500,3 +500,27 @@ class TestEmailCase:
         with patch("app.services.user_service.verify_password_async", new_callable=AsyncMock, return_value=True):
             with pytest.raises(ValidationError, match="already your email"):
                 await service.request_email_change(regular_user, "john@example.com", "pwd")
+
+
+class TestLastSeen:
+    async def test_login_sets_last_seen_with_last_login(self, regular_user):
+        service, *_ = make_service(regular_user)
+
+        await service.authenticate("test@example.com", "correct_password")
+
+        assert regular_user.last_seen_at == regular_user.last_login
+
+    async def test_a_restored_session_touches_last_seen_at_most_once_an_hour(self, regular_user):
+        from datetime import timedelta
+        service, repo, _ = make_service(regular_user)
+        repo.touch_last_seen = AsyncMock(return_value=True)
+
+        await service.mark_seen(regular_user)
+
+        repo.touch_last_seen.assert_awaited_once_with(regular_user.id, timedelta(hours=1))
+
+    async def test_a_failed_write_never_fails_the_refresh(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        repo.touch_last_seen = AsyncMock(side_effect=RuntimeError("db down"))
+
+        await service.mark_seen(regular_user)  # no exception: the user stays logged in

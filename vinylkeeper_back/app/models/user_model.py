@@ -71,6 +71,12 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True
     )
+    # Last time the user was there: login, sign up, or a session restored without the login form
+    # (refresh token). last_login only counts the login form. Written at most once an hour.
+    last_seen_at = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from app.repositories.user_repository import UserRepository
 from app.core.security import verify_password_async, hash_password_async
 from sqlalchemy.exc import IntegrityError
@@ -40,6 +40,10 @@ from app.core.logging import logger
 from app.core.enums import RoleEnum
 
 
+# last_seen_at is a day-level information: an hour of precision spares a write on every refresh
+LAST_SEEN_INTERVAL = timedelta(hours=1)
+
+
 class UserService:
     def __init__(self, repository: UserRepository, collection_service: CollectionService):
         self.repository = repository
@@ -56,10 +60,23 @@ class UserService:
 
         user.number_of_connections += 1
         user.last_login = datetime.now(timezone.utc)
+        user.last_seen_at = user.last_login
 
         async with transaction_context(self.repository.db):
             await self.repository.update_user_last_login(user)
         return user
+
+    async def mark_seen(self, user: User) -> None:
+        """
+        The user is back without the login form (session restored by the refresh token).
+        Written at most once per LAST_SEEN_INTERVAL: the frontend refreshes every 25 minutes.
+        Never raises: a statistic must not fail the refresh, which would log the user out.
+        """
+        try:
+            async with transaction_context(self.repository.db):
+                await self.repository.touch_last_seen(user.id, LAST_SEEN_INTERVAL)
+        except Exception as e:
+            logger.warning(f"last_seen_at not updated for user {user.id}: {str(e)}")
 
     async def get_user_by_id(self, user_id: int) -> User:
         """Get a user by ID"""
@@ -108,6 +125,7 @@ class UserService:
 
             created_user.number_of_connections = 1
             created_user.last_login = datetime.now(timezone.utc)
+            created_user.last_seen_at = created_user.last_login
 
             return created_user
 

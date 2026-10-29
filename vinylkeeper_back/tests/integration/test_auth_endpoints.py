@@ -177,6 +177,9 @@ class TestRefreshToken:
         refresh_token = create_token(str(mock_user.user_uuid), TokenType.REFRESH)
         client.cookies.set("refresh_token", refresh_token)
 
+        mock_service = AsyncMock()
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
         with patch_user_lookup(mock_user):
             resp = await client.post("/api/users/refresh-token")
 
@@ -184,6 +187,8 @@ class TestRefreshToken:
         assert resp.json()["isLoggedIn"] is True
         assert "access_token" in resp.cookies
         assert "refresh_token" in resp.cookies
+        # A restored session is a visit: last_seen_at
+        mock_service.mark_seen.assert_awaited_once_with(mock_user)
 
     async def test_missing_cookie_returns_401(self, client):
         resp = await client.post("/api/users/refresh-token")
