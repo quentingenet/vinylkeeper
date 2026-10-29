@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { usePageMeta } from "@hooks/usePageMeta";
 
 import Footer from "@components/Footer/Footer";
 import { Typography } from "@mui/material";
@@ -10,6 +11,8 @@ import ResetPasswordForm from "@components/ResetPassword/ResetPasswordForm";
 
 export default function ResetPassword() {
   const { isMobile } = useDetectMobile();
+  // Opened from an email link: nothing for search engines
+  usePageMeta({ title: "Reset your password | Vinyl Keeper", noIndex: true });
 
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
   const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Path, Query, Body
-from typing import List
+from typing import List, Optional
 from app.schemas.place_schema import (
     PlaceCreate,
     PlaceUpdate,
@@ -12,7 +12,7 @@ from app.schemas.place_schema import (
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
 from app.services.atlas_service import AtlasService
 from app.deps.deps import get_atlas_service
-from app.utils.auth_utils.auth import get_current_user
+from app.utils.auth_utils.auth import get_current_user, get_optional_user
 from app.models.user_model import User
 from app.utils.endpoint_utils import handle_app_exceptions
 
@@ -46,10 +46,10 @@ async def get_places(
 @router.get("/map", status_code=status.HTTP_200_OK, response_model=List[PlaceMapResponse])
 @handle_app_exceptions
 async def get_map_places(
-    user: User = Depends(get_current_user),
+    user: Optional[User] = Depends(get_optional_user),
     service: AtlasService = Depends(get_atlas_service)
 ):
-    """Get all moderated places with coordinates for map markers (ultra-lightweight response)."""
+    """Moderated spots with coordinates, for the map markers. Open to visitors: the Atlas is public, read only."""
     places = await service.get_map_places()
     return places
 
@@ -59,10 +59,10 @@ async def get_map_places(
 async def get_places_by_location(
     country: str = Query(..., min_length=1, description="Country name"),
     city: str = Query(..., min_length=1, description="City name"),
-    user: User = Depends(get_current_user),
+    user: Optional[User] = Depends(get_optional_user),
     service: AtlasService = Depends(get_atlas_service)
 ):
-    """Get all moderated places in the given country and city (for map popup)."""
+    """Moderated spots of a city, for the map popup. Open to visitors: is_liked is false without a session."""
     places = await service.get_places_by_location(country, city, user)
     return places
 

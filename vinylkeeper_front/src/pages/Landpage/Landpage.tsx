@@ -1,4 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import { AUTH_PARAM, EGlobalUrls } from "@utils/GlobalUrls";
+import { usePageMeta } from "@hooks/usePageMeta";
 import styles from "../../styles/pages/Landpage.module.scss";
 import useDetectMobile from "@hooks/useDetectMobile";
 import Login from "@components/Login/Login";
@@ -12,10 +15,23 @@ import { previewSlides } from "@components/Landpage/previewSlides";
 
 export default function Landpage() {
   const { isMobile } = useDetectMobile();
+  // Without a session every unknown or private URL shows this page: all of them point to "/"
+  usePageMeta({
+    title: "Vinyl Keeper - Catalog and share your vinyl collection",
+    description: "Vinyl Keeper is a free, open-source app to catalog your vinyl collection, discover new records, and share digging spots on an interactive map.",
+    canonicalPath: EGlobalUrls.ROOT,
+  });
 
-  const [login, setLogin] = useState<boolean>(false);
-  const [register, setRegister] = useState<boolean>(false);
-  const [open, setOpen] = useState<boolean>(false);
+  // "/?auth=login" or "/?auth=register" (links of the public Atlas) open that form at once
+  const [searchParams, setSearchParams] = useSearchParams();
+  const authParam = searchParams.get(AUTH_PARAM);
+  const [login, setLogin] = useState<boolean>(authParam === "login");
+  const [register, setRegister] = useState<boolean>(authParam === "register");
+  const [open, setOpen] = useState<boolean>(authParam === "login" || authParam === "register");
+
+  useEffect(() => {
+    if (authParam !== null) setSearchParams({}, { replace: true });
+  }, [authParam, setSearchParams]);
   const [openForgotPassword, setOpenForgotPassword] = useState<boolean>(false);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
   const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);
@@ -66,16 +82,29 @@ export default function Landpage() {
               <div className={styles.buttonContainer}>
                 <Button onClick={handleLoginOpen}>Enter</Button>
               </div>
-              <Link
-                component="button"
-                type="button"
-                underline="none"
-                onClick={() => setOpenPreview(true)}
-                className={`${styles.textTypo} ${styles.previewLink}`}
-                sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
-              >
-                Take a look inside&nbsp;?
-              </Link>
+              {/* Grouped and shadowed: readable over the bright parts of the video */}
+              <div className={styles.secondaryLinks}>
+                <Link
+                  component="button"
+                  type="button"
+                  underline="none"
+                  onClick={() => setOpenPreview(true)}
+                  className={`${styles.textTypo} ${styles.previewLink}`}
+                  sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
+                >
+                  Take a look inside&nbsp;?
+                </Link>
+                <span className={styles.orSeparator}>or</span>
+                <Link
+                  component={RouterLink}
+                  to={EGlobalUrls.ATLAS}
+                  underline="none"
+                  className={`${styles.textTypo} ${styles.previewLink}`}
+                  sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
+                >
+                  just explore the Vinyl Atlas
+                </Link>
+              </div>
             </>
           ) : (
             <div className={styles.actionContainer}>

@@ -7,11 +7,12 @@ import { userApiService } from "@services/UserApiService";
 import { useUserContext } from "@contexts/UserContext";
 import { queryKeys } from "@utils/queryKeys";
 import VinylSpinner from "@components/UI/VinylSpinner";
-import { useDocumentTitle } from "@hooks/useDocumentTitle";
+import { usePageMeta } from "@hooks/usePageMeta";
 
 /** Opened from the link of the registration or email change email, logged in or not. */
 export default function ConfirmEmail() {
-  useDocumentTitle("Confirm your email | Vinyl Keeper");
+  // Opened from an email link: nothing for search engines
+  usePageMeta({ title: "Confirm your email | Vinyl Keeper", noIndex: true });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isUserLoggedIn } = useUserContext();

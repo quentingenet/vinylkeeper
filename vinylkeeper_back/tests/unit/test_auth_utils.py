@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import jwt
 
 from app.utils.auth_utils.auth import (
+    get_optional_user,
     ALGORITHM,
     PRIVATE_KEY,
     TokenType,
@@ -259,3 +260,24 @@ class TestGetCurrentUser:
         request = make_request({"access_token": token})
         with pytest.raises(UnauthorizedError, match="Invalid token type"):
             await get_current_user(request, response=MagicMock(), db=AsyncMock())
+
+
+class TestGetOptionalUser:
+    """Pages open to visitors (the Vinyl Atlas): no session is a visitor, not an error."""
+
+    async def test_no_session_is_a_visitor(self):
+
+        request = MagicMock()
+        request.cookies = {}
+        db = AsyncMock()
+
+        assert await get_optional_user(request, MagicMock(), db) is None
+        db.execute.assert_not_called()
+
+    async def test_an_expired_session_is_still_refused(self):
+
+        request = MagicMock()
+        request.cookies = {"access_token": "not-a-valid-token"}
+
+        with pytest.raises(UnauthorizedError):
+            await get_optional_user(request, MagicMock(), AsyncMock())

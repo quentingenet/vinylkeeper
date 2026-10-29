@@ -15,6 +15,7 @@ const CollectionsPage = lazy(() => import("@pages/Collections/CollectionsPage"))
 const OpenAddRecordRoute = lazy(() => import("@components/AddRecord/OpenAddRecordRoute"));
 const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
 const Atlas = lazy(() => import("@pages/Atlas/Atlas"));
+const PublicAtlas = lazy(() => import("@pages/Atlas/PublicAtlas"));
 const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
 const ConfirmEmail = lazy(() => import("@pages/ConfirmEmail/ConfirmEmail"));
@@ -136,6 +137,12 @@ function App() {
       ) : (
         <Routes>
           <Route path={EGlobalUrls.ROOT} element={<Landpage />} />
+          {/* The only page of the app open to visitors, read only */}
+          <Route
+            path={EGlobalUrls.ATLAS}
+            element={<PublicAtlas />}
+          />
+          <Route path={EGlobalUrls.PLACES_LEGACY} element={<Navigate to={EGlobalUrls.ATLAS} replace />} />
           <Route
             path={EGlobalUrls.RESET_PASSWORD}
             element={<ResetPassword />}

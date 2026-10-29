@@ -2,6 +2,7 @@ import { logger } from "@utils/logger";
 import { useState } from "react";
 import AtlasMap from "@components/Atlas/AtlasMap";
 import AtlasSpotAddModal from "@components/Atlas/AtlasSpotAddModal";
+import JoinVinylKeeperDialog from "@components/Atlas/JoinVinylKeeperDialog";
 import { Box, Typography } from "@mui/material";
 import {
   atlasApiService,
@@ -14,8 +15,15 @@ import { queryKeys } from "@utils/queryKeys";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import { colors } from "@styles/colors";
 
-export default function Atlas() {
+interface AtlasProps {
+  /** Visitor without an account: read only, liking or suggesting a spot invites to join */
+  isPublic?: boolean;
+}
+
+export default function Atlas({ isPublic = false }: AtlasProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const openJoin = () => setIsJoinOpen(true);
   const { isMobile } = useDetectMobile();
   const {
     data: mapPlaces = [],
@@ -58,7 +66,8 @@ export default function Atlas() {
       sx={{
         backgroundColor: colors.raised,
         color: colors.textMuted,
-        minHeight: "100vh",
+        // Public: under the bar of PublicAtlas, the page fills what is left of the screen, no more
+        ...(isPublic ? { flex: 1, pb: 5 } : { minHeight: "100vh" }),
         position: "relative",
       }}
     >
@@ -69,24 +78,31 @@ export default function Atlas() {
             component="div"
             sx={{ textAlign: "center", fontWeight: "bold", mb: 3 }}
           >
-            📍 Browse, add and share the best vinyl spots around the world with the community.
+            {isPublic
+              ? "📍 Browse the best vinyl spots around the world, shared by the Vinyl Keeper community."
+              : "📍 Browse, add and share the best vinyl spots around the world with the community."}
           </Typography>
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center" }}>
           <AtlasMap
             mapPlaces={mapPlaces}
-            onAddPlace={() => setIsModalOpen(true)}
+            onAddPlace={isPublic ? openJoin : () => setIsModalOpen(true)}
+            onRequireAccount={isPublic ? openJoin : undefined}
           />
         </Box>
       </Box>
 
-      <AtlasSpotAddModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddPlace}
-        isMobile={isMobile}
-      />
+      {isPublic ? (
+        <JoinVinylKeeperDialog open={isJoinOpen} onClose={() => setIsJoinOpen(false)} />
+      ) : (
+        <AtlasSpotAddModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddPlace}
+          isMobile={isMobile}
+        />
+      )}
     </Box>
   );
 }

@@ -169,13 +169,15 @@ class AtlasService:
                 details={}
             )
 
-    async def get_places_by_location(self, country: str, city: str, user: User) -> List[PublicPlaceResponse]:
-        """Get all moderated places in the given country and city (for map popup). User resolved from token (uuid)."""
+    async def get_places_by_location(
+        self, country: str, city: str, user: Optional[User]
+    ) -> List[PublicPlaceResponse]:
+        """Moderated spots of a city (map popup). user None: a visitor, nothing is liked."""
         try:
             places = await self.repository.get_places_by_location(country, city)
             if not places:
                 return []
-            items, _dropped = await self._build_public_place_responses(places, user.id)
+            items, _dropped = await self._build_public_place_responses(places, user.id if user else None)
             return items
         except AppException:
             raise

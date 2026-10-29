@@ -6,7 +6,7 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.deps.deps import get_atlas_service
-from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
+from app.utils.auth_utils.auth import get_current_user, get_optional_user, create_token, TokenType
 from app.core.exceptions import (
     ForbiddenError,
     ResourceNotFoundError,
@@ -112,6 +112,7 @@ async def place_client(mock_user, mock_place_service):
         return mock_user
 
     app.dependency_overrides[get_current_user] = override_current_user
+    app.dependency_overrides[get_optional_user] = override_current_user
     app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
 
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
@@ -209,9 +210,48 @@ class TestGetMapPlaces:
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
 
-    async def test_no_auth_returns_401(self, client):
+    async def test_a_visitor_sees_the_map(self, client, mock_place_service):
+        """The Atlas is public, read only."""
+        app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
+        mock_place_service.get_map_places = AsyncMock(return_value=[])
+
         resp = await client.get("/api/atlas/map")
+
+        assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# The public Atlas is read only: a visitor reads spots, never writes
+# ---------------------------------------------------------------------------
+
+class TestVisitorAccess:
+    async def test_a_visitor_sees_the_spots_of_a_city_liked_by_nobody(self, client, mock_place_service):
+        app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
+        mock_place_service.get_places_by_location = AsyncMock(return_value=[])
+
+        resp = await client.get("/api/atlas/by-location", params={"country": "France", "city": "Lyon"})
+
+        assert resp.status_code == 200
+        # No session: the service is asked as a visitor
+        assert mock_place_service.get_places_by_location.await_args.args[2] is None
+
+    @pytest.mark.parametrize("method, path", [
+        ("post", "/api/atlas/"),
+        ("post", "/api/atlas/1/like"),
+        ("delete", "/api/atlas/1/like"),
+        ("patch", "/api/atlas/1"),
+        ("delete", "/api/atlas/1"),
+        ("get", "/api/atlas/"),
+        ("get", "/api/atlas/1"),
+        ("get", "/api/atlas/search?q=lyon"),
+    ])
+    async def test_everything_else_needs_a_session(self, client, mock_place_service, method, path):
+        app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
+
+        resp = await getattr(client, method)(path, **({"json": {}} if method in ("post", "patch") else {}))
+
         assert resp.status_code == 401
+        mock_place_service.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

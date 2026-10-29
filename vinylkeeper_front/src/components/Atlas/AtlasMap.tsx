@@ -47,9 +47,11 @@ const vinylIcon = divIcon({
 interface AtlasMapProps {
   mapPlaces: PlaceMapResponse[];
   onAddPlace?: () => void;
+  /** Public Atlas: a like asks to join instead (visitors have no account) */
+  onRequireAccount?: () => void;
 }
 
-const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace }) => {
+const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAccount }) => {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
   const defaultZoom = 5;
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -297,7 +299,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace }) => {
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails sx={{ overflow: "hidden" }}>
-                      <PlaceDetailsContent place={place} />
+                      <PlaceDetailsContent place={place} onRequireAccount={onRequireAccount} />
                     </AccordionDetails>
                   </Accordion>
                 ))}
@@ -317,9 +319,10 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace }) => {
 // Separate component for place details with like functionality
 interface PlaceDetailsContentProps {
   place: Place;
+  onRequireAccount?: () => void;
 }
 
-const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
+const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequireAccount }) => {
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
 
@@ -334,6 +337,10 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place }) => {
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (onRequireAccount) {
+      onRequireAccount();
+      return;
+    }
     if (isLiking || isUnliking || likeCooldown) return;
     setLikeCooldown(true);
     setTimeout(() => setLikeCooldown(false), 1000);

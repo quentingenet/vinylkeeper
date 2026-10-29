@@ -256,6 +256,21 @@ async def get_current_user(
     return check_user_session(user, payload)
 
 
+async def get_optional_user(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """
+    The current user on a page open to visitors (read-only, the Vinyl Atlas): None without a
+    session. A session that is there but expired is still refused (401), so the frontend
+    refreshes it instead of showing a logged-in user the visitor view.
+    """
+    if not request.cookies.get("access_token"):
+        return None
+    return await get_current_user(request, response, db)
+
+
 def set_token_cookie(
     response: Response,
     token: str,

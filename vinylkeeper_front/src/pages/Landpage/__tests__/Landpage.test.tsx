@@ -16,9 +16,9 @@ vi.mock("@components/Landpage/Background", () => ({ default: () => null }));
 
 afterEach(cleanup);
 
-const renderLandpage = () =>
+const renderLandpage = (url = "/") =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <Landpage />
     </MemoryRouter>
   );
@@ -59,5 +59,20 @@ describe("Landpage", () => {
 
     expect(screen.queryByRole("dialog", { name: "A look inside VinylKeeper" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+  });
+
+  it("opens the sign up form from the link of the public Atlas", () => {
+    renderLandpage("/?auth=register");
+    expect(screen.getByRole("button", { name: "Join now" })).toBeInTheDocument();
+  });
+
+  it("opens the login form from the link of the public Atlas", () => {
+    renderLandpage("/?auth=login");
+    expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+  });
+
+  it("offers to just explore the Vinyl Atlas", () => {
+    renderLandpage();
+    expect(screen.getByRole("link", { name: "just explore the Vinyl Atlas" })).toHaveAttribute("href", "/atlas");
   });
 });

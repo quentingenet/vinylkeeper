@@ -42,3 +42,8 @@ export const COMMUNITY_SORT_PARAM = "sort";
 
 /** Collections page opened on the Community tab (replaces the former /explore page) */
 export const COMMUNITY_COLLECTIONS_URL = `${EGlobalUrls.COLLECTIONS}?${COLLECTIONS_TAB_PARAM}=${COMMUNITY_TAB_VALUE}`;
+
+// The home page opens its login or sign up form from this parameter (links of the public Atlas)
+export const AUTH_PARAM = "auth";
+export const LOGIN_URL = `${EGlobalUrls.ROOT}?${AUTH_PARAM}=login`;
+export const REGISTER_URL = `${EGlobalUrls.ROOT}?${AUTH_PARAM}=register`;

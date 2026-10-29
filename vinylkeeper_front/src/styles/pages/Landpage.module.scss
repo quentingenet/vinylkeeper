@@ -78,6 +78,35 @@
                 opacity: 1;
             }
         }
+
+        // "Take a look inside ?", "or", "just explore the Vinyl Atlas": one block, close together,
+        // with a dark shadow so they stay readable over the bright parts of the video
+        .secondaryLinks {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 1.5rem;
+
+            .textTypo.previewLink,
+            .orSeparator {
+                margin: 0;
+                text-shadow:
+                    0 1px 3px rgba($text-color-dark, 0.9),
+                    0 0 12px rgba($text-color-dark, 0.7);
+            }
+
+            .textTypo.previewLink {
+                opacity: 0.95;
+            }
+
+            .orSeparator {
+                font-family: Oswald-ExtraLight, sans-serif;
+                font-size: 1rem;
+                color: $color-text-light;
+                opacity: 0.85;
+            }
+        }
     }
 
     .buttonContainer {

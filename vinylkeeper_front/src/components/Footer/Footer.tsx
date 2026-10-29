@@ -20,7 +20,8 @@ export default function Footer(props: FooterProps) {
   } = props;
 
   return (
-    <div className={styles.footerContainer}>
+    // mui-fixed: a fixed element gets the scrollbar compensation of the popups, so it does not jump
+    <div className={`${styles.footerContainer} mui-fixed`}>
       <span onClick={() => setOpenTermsModal(true)}>
         Terms and conditions&nbsp;
       </span>
