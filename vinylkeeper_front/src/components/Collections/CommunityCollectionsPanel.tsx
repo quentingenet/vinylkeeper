@@ -17,20 +17,30 @@ import CollectionItem from "@components/Collections/CollectionItem";
 import CollectionGrid from "@components/Collections/CollectionGrid";
 import CollectionsPagination from "@components/Collections/CollectionsPagination";
 import LoadingCenter from "@components/UI/LoadingCenter";
-import { useState } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
+import { COLLECTIONS_PAGE_PARAM, COMMUNITY_SORT_PARAM } from "@utils/GlobalUrls";
+import { useUrlPage } from "@hooks/useUrlPage";
 
 type SortOption = "updated_at" | "likes_count" | "created_at";
 
+const SORT_OPTIONS: readonly SortOption[] = ["likes_count", "updated_at", "created_at"];
+const DEFAULT_SORT: SortOption = "likes_count";
+
+const isSortOption = (value: string | null): value is SortOption =>
+  SORT_OPTIONS.includes(value as SortOption);
+
 export default function CommunityCollectionsPanel() {
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<SortOption>("likes_count");
+  const [page, setPage] = useUrlPage(COLLECTIONS_PAGE_PARAM);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sortParam = searchParams.get(COMMUNITY_SORT_PARAM);
+  const sortBy: SortOption = isSortOption(sortParam) ? sortParam : DEFAULT_SORT;
   const itemsPerPage = ITEMS_PER_PAGE;
   const { isMobile } = useDetectMobile();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const {
     data: publicCollectionsData,
@@ -50,8 +60,21 @@ export default function CommunityCollectionsPanel() {
   const totalPages = publicCollectionsData?.total_pages || 0;
 
   const handleSortChange = (event: SelectChangeEvent<SortOption>) => {
-    setSortBy(event.target.value as SortOption);
-    setPage(1);
+    const nextSort = event.target.value as SortOption;
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (nextSort === DEFAULT_SORT) {
+          next.delete(COMMUNITY_SORT_PARAM);
+        } else {
+          next.set(COMMUNITY_SORT_PARAM, nextSort);
+        }
+        // A new sort starts again at the first page
+        next.delete(COLLECTIONS_PAGE_PARAM);
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   if (isLoading) {
@@ -123,7 +146,7 @@ export default function CommunityCollectionsPanel() {
                 handleOpenModalCollection={() => {}}
                 onCollectionClick={(collection) => {
                   void navigate(`/collections/${collection.id}`, {
-                    state: { from: "explore" },
+                    state: { backTo: `${location.pathname}${location.search}` },
                   });
                 }}
                 isOwner={false}

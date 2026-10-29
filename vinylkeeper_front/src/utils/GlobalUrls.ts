@@ -34,6 +34,9 @@ export enum EGlobalUrls {
 
 export const COLLECTIONS_TAB_PARAM = "tab";
 export const COMMUNITY_TAB_VALUE = "community";
+// Page and sort of the collections lists: in the URL, so coming back to the list keeps them
+export const COLLECTIONS_PAGE_PARAM = "page";
+export const COMMUNITY_SORT_PARAM = "sort";
 
 /** Collections page opened on the Community tab (replaces the former /explore page) */
 export const COMMUNITY_COLLECTIONS_URL = `${EGlobalUrls.COLLECTIONS}?${COLLECTIONS_TAB_PARAM}=${COMMUNITY_TAB_VALUE}`;

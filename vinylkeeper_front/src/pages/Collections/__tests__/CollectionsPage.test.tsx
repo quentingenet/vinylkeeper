@@ -80,6 +80,15 @@ describe("CollectionsPage", () => {
     expect(screen.getByTestId("my-collections-panel")).toBeInTheDocument();
   });
 
+  it("starts the other tab at its first page and default sort", async () => {
+    const user = userEvent.setup();
+    renderAt("/collections?tab=community&page=3&sort=created_at");
+
+    await user.click(screen.getByRole("tab", { name: "My collections" }));
+
+    expect(screen.getByTestId("location").textContent).toBe("/collections");
+  });
+
   it("links each tab to the rendered panel for accessibility", () => {
     renderAt("/collections?tab=community");
 

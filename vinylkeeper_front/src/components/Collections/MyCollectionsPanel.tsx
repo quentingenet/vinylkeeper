@@ -13,9 +13,10 @@ import {
 import ModalCollection from "@components/Collections/ModalCollection";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { useCollections } from "@hooks/useCollections";
-import { useNavigate } from "react-router-dom";
-import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useLocation, useNavigate } from "react-router-dom";
+import { EGlobalUrls, COLLECTIONS_PAGE_PARAM } from "@utils/GlobalUrls";
 import { useDebounce } from "@hooks/useDebounce";
+import { useUrlPage } from "@hooks/useUrlPage";
 
 export default function MyCollectionsPanel() {
   const [modalState, setModalState] = useState({
@@ -24,10 +25,12 @@ export default function MyCollectionsPanel() {
     collection: undefined as CollectionResponse | undefined,
     isPublic: false,
   });
-  const [page, setPage] = useState(1);
-  const [debouncedPage, setDebouncedPage] = useState(1);
+  const [page, setPage] = useUrlPage(COLLECTIONS_PAGE_PARAM);
+  // Starts at the page of the URL: no request for page 1 before it
+  const [debouncedPage, setDebouncedPage] = useState(page);
   const itemsPerPage = ITEMS_PER_PAGE;
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Debounce page changes to avoid too many requests
   useDebounce(
@@ -68,14 +71,15 @@ export default function MyCollectionsPanel() {
     collection: CollectionResponse | CollectionListItemResponse
   ) => {
     void navigate(
-      EGlobalUrls.COLLECTION_DETAILS.replace(":id", collection.id.toString())
+      EGlobalUrls.COLLECTION_DETAILS.replace(":id", collection.id.toString()),
+      { state: { backTo: `${location.pathname}${location.search}` } }
     );
   };
 
   // Memoize pagination change handler to prevent unnecessary re-renders
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
-  }, []);
+  }, [setPage]);
 
   if (isError) {
     return (

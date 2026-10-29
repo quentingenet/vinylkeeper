@@ -41,6 +41,7 @@ import { queryKeys } from "@utils/queryKeys";
 import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
 import CollectionTabs from "@components/Collections/CollectionTabs";
 import CollectionExportMenu from "@components/Collections/CollectionExportMenu";
+import BackToCollectionsButton from "@components/Collections/BackToCollectionsButton";
 import CollectionItemGrid from "@components/Collections/CollectionItemGrid";
 import WishlistTabContent from "@components/Collections/WishlistTabContent";
 import LoadingCenter from "@components/UI/LoadingCenter";
@@ -475,6 +476,7 @@ export default function CollectionDetails() {
         justifyContent="flex-start"
         alignItems="flex-start"
       >
+        <BackToCollectionsButton isOwner={isOwner} />
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography
             variant="h4"

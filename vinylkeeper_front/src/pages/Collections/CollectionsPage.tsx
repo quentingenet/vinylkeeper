@@ -8,6 +8,8 @@ import { primaryTabsSx } from "@components/UI/tabsStyles";
 import {
   COLLECTIONS_TAB_PARAM,
   COMMUNITY_TAB_VALUE,
+  COLLECTIONS_PAGE_PARAM,
+  COMMUNITY_SORT_PARAM,
 } from "@utils/GlobalUrls";
 
 type CollectionsTab = "mine" | "community";
@@ -44,6 +46,9 @@ export default function CollectionsPage() {
     } else {
       nextParams.delete(COLLECTIONS_TAB_PARAM);
     }
+    // The page and sort belong to the tab left
+    nextParams.delete(COLLECTIONS_PAGE_PARAM);
+    nextParams.delete(COMMUNITY_SORT_PARAM);
     setSearchParams(nextParams);
   };
 

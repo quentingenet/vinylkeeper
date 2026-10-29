@@ -12,6 +12,15 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { collectionApiService } from "@services/CollectionApiService";
 import { triggerBrowserDownload } from "@utils/DownloadUtils";
+import useDetectMobile from "@hooks/useDetectMobile";
+
+// Desktop: the size of the texts around the menu ("Created on", the buttons), in the font
+// of the buttons. The desktop theme sizes every ListItemText for the navigation bar (1.6rem).
+const desktopMenuTextSx = {
+  fontSize: "0.875rem",
+  fontFamily: "Oswald",
+  lineHeight: 1.6,
+};
 
 interface CollectionExportMenuProps {
   collectionId: number;
@@ -21,6 +30,7 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeExportKey, setActiveExportKey] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const { isMobile } = useDetectMobile();
 
   const finishExport = () => {
     window.setTimeout(() => {
@@ -127,7 +137,7 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
           paper: {
             sx: {
               "& .MuiMenuItem-root": { py: 0.25, minHeight: 32 },
-              "& .MuiTypography-root": { fontSize: "0.95rem" },
+              "& .MuiTypography-root": isMobile ? { fontSize: "0.95rem" } : desktopMenuTextSx,
             },
           },
         }}
@@ -140,7 +150,12 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
                 <Typography variant="caption">Exporting…</Typography>
               </Box>
             ) : (
-              <ListItemText primary={label} primaryTypographyProps={{ variant: "caption" }} />
+              <ListItemText
+                primary={label}
+                primaryTypographyProps={{ variant: "caption" }}
+                // On the component itself: wins over the ListItemText size of the theme
+                sx={isMobile ? undefined : { "& .MuiListItemText-primary": desktopMenuTextSx }}
+              />
             )}
           </MenuItem>
         ))}
