@@ -84,8 +84,27 @@ flowchart LR
 
 - **Backend**: layered architecture (endpoints, services, repositories) with dependency injection through FastAPI `Depends`, async SQLAlchemy 2 with explicit loading (`lazy="raise"`), Alembic migrations.
 - **Frontend**: React 19, TypeScript in strict mode, TanStack Query, MUI, custom hooks for data logic.
-- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint.
-- **Deployment**: Docker Compose on a Linux VPS, migrations applied on container start.
+- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint, all run by GitHub Actions on every push.
+- **Deployment**: continuous deployment of the API to a Linux VPS with Docker Compose, migrations applied on container start; the web app is deployed by Netlify.
+
+### Continuous integration and deployment
+
+```mermaid
+flowchart LR
+    Push["git push"] --> CI
+    subgraph CI["GitHub Actions"]
+        Back["API<br/>flake8, pytest"]
+        Front["Web app<br/>ESLint, tsc, Vitest"]
+    end
+    Back -- "green, on main,<br/>API changed" --> Deploy["SSH, forced command"]
+    Deploy --> VPS["VPS<br/>backup, pull, rebuild,<br/>migrations, health check"]
+    Push --> Netlify["Netlify<br/>web app"]
+```
+
+- **Every push and pull request** runs the backend and frontend suites in parallel ([workflow](.github/workflows/ci.yml)). A failing API suite blocks the API deployment: production keeps the last version that passed.
+- **The API deploys itself** when `main` changes under `vinylkeeper_back/`: a database backup first, then `git pull`, a Docker rebuild with the Alembic migrations, and a health check that fails the run if the API does not answer.
+- **Least privilege**: GitHub holds an SSH key restricted by a forced command on the server. Whatever it asks, it can only run the deployment script: no shell, no tunnel. The server is pinned by its host key, and the script lives outside the repository, so no commit can change what the deployment key is allowed to run.
+- **One deployment at a time**, and a push that only touches the web app leaves the API running.
 
 ## Getting started
 
