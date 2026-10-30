@@ -29,7 +29,7 @@ cryptography = "^50.0.2"
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
 black = "^26.10.1"
-isort = "^6.0.0"
+isort = ">=6,<10"
 flake8 = "^7.0.0"
 mypy = "^1.13.0"
 autopep8 = "^2.3.2"
