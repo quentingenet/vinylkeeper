@@ -79,7 +79,8 @@ export default function BreakdownBarChart({ entries, horizontal = false, onSelec
   };
 
   return (
-    <Box sx={{ position: "relative", width: "100%", height: horizontal ? entries.length * BAR_HEIGHT + 40 : VERTICAL_HEIGHT }}>
+    // minWidth 0: the canvas follows the card, never the other way round
+    <Box sx={{ position: "relative", width: "100%", minWidth: 0, height: horizontal ? entries.length * BAR_HEIGHT + 40 : VERTICAL_HEIGHT }}>
       <Bar data={data} options={options} aria-label={ariaLabel} role="img" />
     </Box>
   );

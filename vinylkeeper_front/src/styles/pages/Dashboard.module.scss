@@ -1,17 +1,18 @@
 .dashboard {
     display: grid;
-    // Three stat tiles in a row, two then one across on narrow screens
-    grid-template-columns: repeat(3, 1fr);
+    // Three stat tiles in a row, two then one across on narrow screens.
+    // minmax(0, 1fr): a responsive chart.js canvas would otherwise widen its column, then itself, endlessly
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     justify-items: center;
     align-items: flex-start;
     box-sizing: border-box;
 
     @media (max-width: 900px) {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     @media (max-width: 600px) {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 
@@ -60,6 +61,7 @@
     }
 
     .rowCenter {
+        min-width: 0;
         grid-column: 1 / -1;
         display: flex;
         justify-content: center;
@@ -74,6 +76,7 @@
     }
 
     .chart {
+        min-width: 0;
         width: 100%;
         max-width: 1000px;
         margin: 0 auto;

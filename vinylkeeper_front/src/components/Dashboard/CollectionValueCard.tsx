@@ -14,7 +14,8 @@ import {
   Typography,
 } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
-import { formatMoney, formatWhen, refreshButtonState } from "@components/Dashboard/collectionValueLabels";
+import MoneyCounter from "@components/Dashboard/MoneyCounter";
+import { formatWhen, refreshButtonState } from "@components/Dashboard/collectionValueLabels";
 import { dashboardApiService } from "@services/DashboardApiService";
 import { queryKeys } from "@utils/queryKeys";
 import { isApiError } from "@utils/apiError";
@@ -137,7 +138,7 @@ export default function CollectionValueCard() {
                   {share.label}
                 </Typography>
                 <Typography variant="h4" sx={{ color: "primary.main", fontWeight: "bold" }}>
-                  {formatMoney(share.amount, amounts.currency)}
+                  <MoneyCounter amount={share.amount} currency={amounts.currency} />
                 </Typography>
               </Box>
             ))}
