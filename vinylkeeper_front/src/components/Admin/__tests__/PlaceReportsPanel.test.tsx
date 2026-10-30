@@ -68,7 +68,9 @@ describe("PlaceReportsPanel", () => {
     const dialog = screen.getByRole("dialog", { name: "Edit spot" });
     const website = within(dialog).getByLabelText("Website");
     await userEvent.clear(website);
-    await userEvent.type(website, "https://new.example.com");
+    // Pasted rather than typed key by key: fast and steady whatever the machine load
+    await userEvent.click(website);
+    await userEvent.paste("https://new.example.com");
     await userEvent.click(within(dialog).getByRole("button", { name: "Save and resolve" }));
 
     expect(admin.updatePlace).toHaveBeenCalledWith(3, { source_url: "https://new.example.com" });
