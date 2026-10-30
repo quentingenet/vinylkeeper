@@ -101,3 +101,16 @@ describe("Layout navigation for Spinning now", () => {
     expect(getMenuButton(drawer, "Spinning now")).toHaveClass("Mui-selected");
   });
 });
+
+describe("Layout footer", () => {
+  it("credits Discogs on every page, with a followed link to discogs.com", () => {
+    mobileState.isMobile = false;
+    renderLayoutAt("/collections");
+
+    const footer = screen.getByRole("contentinfo");
+    expect(within(footer).getByText(/Data provided by/)).toBeInTheDocument();
+    const link = within(footer).getByRole("link", { name: "Discogs" });
+    expect(link).toHaveAttribute("href", "https://www.discogs.com");
+    expect(link.getAttribute("rel")).not.toContain("nofollow");
+  });
+});

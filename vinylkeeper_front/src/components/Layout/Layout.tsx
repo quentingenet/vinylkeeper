@@ -9,6 +9,8 @@ import { usePageTitle } from "@hooks/usePageTitle";
 import AddRecordProvider from "@components/AddRecord/AddRecordProvider";
 import AddRecordFab from "@components/AddRecord/AddRecordFab";
 import { colors } from "@styles/colors";
+import DiscogsAttribution from "@components/UI/DiscogsAttribution";
+import { DISCOGS_HOME_URL } from "@utils/discogsLinks";
 
 /**
  * Layout component that provides the main structure for the application
@@ -111,14 +113,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </Box>
 
-        <Box
-          sx={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        ></Box>
+        {/* Discogs' terms: the covers and record data of every page come from Discogs. The record
+            details, search and import popups also link the exact Discogs page. */}
+        <Box component="footer" sx={{ width: "100%", textAlign: "center", pt: 3, pb: 1.5, opacity: 0.6 }}>
+          <DiscogsAttribution href={DISCOGS_HOME_URL} />
+        </Box>
       </Box>
       <AddRecordFab />
     </Box>

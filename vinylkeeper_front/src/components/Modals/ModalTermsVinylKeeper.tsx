@@ -57,11 +57,20 @@ const SECTIONS: TermsSection[] = [
     ],
   },
   {
-    title: "4. Your content and what others see",
+    title: "4. Your account, your content and what others see",
     paragraphs: [
-      "4.1. You are responsible for what you add: collection names, records, Atlas spots, reports and their comments.",
-      "4.2. Collections you make public, and your username, are visible to the other members. The Vinyl Atlas, its spots included, is visible to everyone, visitors without an account too.",
-      "4.3. The administrator may correct or remove an Atlas spot that is wrong, closed or inappropriate.",
+      "4.1. You agree to provide accurate information when signing up, to keep your credentials confidential and to keep a single account. Report any use of your account you did not authorize to the contact address above.",
+      "4.2. You are responsible for what you add: collection names, records, Atlas spots, reports and their comments. You may not post illegal, offensive, defamatory or misleading content, nor content that infringes the rights of others, intellectual property included.",
+      "4.3. Atlas spots: only public places and businesses (record shops, bars, venues, fairs...) may be suggested. Never post the address of a private individual.",
+      "4.4. Collections you make public, and your username, are visible to the other members. The Vinyl Atlas, its spots included, is visible to everyone, visitors without an account too.",
+      "4.5. You grant Vinyl Keeper a free, non-exclusive, worldwide license to host, store and display the content you publish, solely to operate the service. The GPLv3 covers the code of the Application, not your content.",
+      "4.6. You may not scrape the Application, abuse its API or interfere with its operation.",
+      <>
+        4.7. Illegal or inappropriate content can be reported
+        to <Link {...readableLink} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</Link>, saying which content and
+        why. Members can also report a wrong Atlas spot from the Application. The administrator may correct or remove
+        content, and suspend or delete an account that breaches these Terms, without prior notice.
+      </>,
     ],
   },
   {
@@ -96,7 +105,7 @@ const SECTIONS: TermsSection[] = [
     ],
   },
   {
-    title: "8. Discogs attribution and disclaimer",
+    title: "8. Discogs and other services",
     paragraphs: [
       "8.1. Vinyl Keeper uses the Discogs API to search records, complete their details, estimate collection values and import Discogs collections.",
       `8.2. ${DISCOGS_DISCLAIMER}`,
@@ -104,11 +113,15 @@ const SECTIONS: TermsSection[] = [
         8.3. Data provided by <ExternalLink href="https://www.discogs.com">Discogs</ExternalLink>. All rights to
         Discogs trademarks and content remain with their respective owners.
       </>,
+      "8.4. The listening links (Spotify, Deezer, YouTube Music) only open a search on these services, which then apply their own terms.",
     ],
   },
   {
     title: "9. Changes to the Terms",
-    paragraphs: ["9.1. The developer may change these Terms at any time. The date above shows the latest version."],
+    paragraphs: [
+      "9.1. The developer may change these Terms. The date above shows the latest version, and significant changes are announced in the Application or by email.",
+      "9.2. Using the Application after a change means accepting the new Terms.",
+    ],
   },
   {
     title: "10. Applicable law and jurisdiction",

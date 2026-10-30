@@ -63,7 +63,6 @@ describe("CollectionValueCard", () => {
     expect(screen.getByText(formatMoney(4720, "EUR"))).toBeInTheDocument();
     expect(screen.getByText(/Estimated on 812 of 830 records\. Last estimate on/)).toBeInTheDocument();
     expect(screen.getByText(/closer the estimate\. 18 pressings are not confirmed yet\./)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Discogs" })).toHaveAttribute("href", "https://www.discogs.com");
     expect(api.getValue).toHaveBeenCalledWith("largest");
   });
 

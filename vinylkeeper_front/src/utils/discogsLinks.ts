@@ -2,6 +2,8 @@
 const DISCOGS_URL = "https://www.discogs.com";
 
 /** Word for word the notice of the Discogs API Terms of Use (May 2025), which may live in the terms */
+export const DISCOGS_HOME_URL = "https://www.discogs.com";
+
 export const DISCOGS_DISCLAIMER =
   "This application uses Discogs’ API but is not affiliated with, sponsored or endorsed by Discogs. " +
   "‘Discogs’ is a trademark of Zink Media, LLC.";

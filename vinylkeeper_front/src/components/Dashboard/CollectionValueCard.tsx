@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Link,
   MenuItem,
   Paper,
   TextField,
@@ -197,12 +196,7 @@ export default function CollectionValueCard() {
       <Typography variant="caption" component="p" sx={{ color: "text.secondary", mt: 2 }}>
         Discogs suggested prices: Very Good for low, Very Good Plus for average, Near Mint for high.
         {amounts.currency !== "EUR" && value.usd_rate && value.rate_date &&
-          ` Converted from euros at the ECB rate of ${value.rate_date} (1 EUR = ${value.usd_rate} USD).`}{" "}
-        Data provided by{" "}
-        <Link href="https://www.discogs.com" target="_blank" rel="noopener noreferrer">
-          Discogs
-        </Link>
-        .
+          ` Converted from euros at the ECB rate of ${value.rate_date} (1 EUR = ${value.usd_rate} USD).`}
       </Typography>
     </Paper>
   );
