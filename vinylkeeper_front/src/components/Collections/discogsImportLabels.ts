@@ -9,9 +9,6 @@ export const IMPORT_CONDITIONS = [
   "By default the records go into a new collection: deleting it undoes the import. Importing into an existing collection saves a copy of it first.",
 ];
 
-/** Shown where Discogs data is imported, after the attribution and its link */
-export const DISCOGS_INDEPENDENCE = "VinylKeeper is an independent application and is not affiliated with Discogs.";
-
 /** What the user reads when Discogs sends them back to the app (?discogs=...) */
 export function connectionOutcomeMessage(outcome: string | null): { severity: "success" | "warning"; text: string } | null {
   switch (outcome) {

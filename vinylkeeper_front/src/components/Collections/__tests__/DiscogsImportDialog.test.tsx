@@ -4,7 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import DiscogsImportDialog, { RESULT_DURATION_MS } from "@components/Collections/DiscogsImportDialog";
-import { DISCOGS_INDEPENDENCE, IMPORT_CONDITIONS } from "@components/Collections/discogsImportLabels";
+import { IMPORT_CONDITIONS } from "@components/Collections/discogsImportLabels";
+import { DISCOGS_DISCLAIMER } from "@utils/discogsLinks";
 import type { DiscogsImport } from "@models/IDiscogsImport";
 
 const api = vi.hoisted(() => ({
@@ -205,10 +206,10 @@ describe("DiscogsImportDialog", () => {
     expect(await screen.findByText("Your Discogs account is connected. Choose what to import.")).toBeInTheDocument();
   });
 
-  it("credits Discogs and says VinylKeeper is independent", async () => {
+  it("credits Discogs, with its official disclaimer", async () => {
     renderDialog();
 
-    expect(await screen.findByText(DISCOGS_INDEPENDENCE)).toBeInTheDocument();
+    expect(await screen.findByText(DISCOGS_DISCLAIMER)).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "Discogs" })).toHaveAttribute(
       "href", "https://www.discogs.com/user/kent/collection");
   });

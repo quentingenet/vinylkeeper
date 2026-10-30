@@ -39,7 +39,6 @@ import {
 import { queryKeys } from "@utils/queryKeys";
 import { isApiError, type ApiError } from "@utils/apiError";
 import {
-  DISCOGS_INDEPENDENCE,
   IMPORT_CONDITIONS,
   connectionOutcomeMessage,
   importProgress,
@@ -399,9 +398,6 @@ export default function DiscogsImportDialog({
                 lead="Collection data provided by"
                 href={connectedAs ? discogsCollectionUrl(connectedAs) : "https://www.discogs.com"}
               />
-              <Typography variant="caption" color="text.secondary" component="p">
-                {DISCOGS_INDEPENDENCE}
-              </Typography>
               <Typography variant="caption" color="text.secondary" component="p">
                 {DISCOGS_DISCLAIMER}
               </Typography>
