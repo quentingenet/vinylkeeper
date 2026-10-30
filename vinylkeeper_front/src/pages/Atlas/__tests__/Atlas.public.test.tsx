@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -48,6 +48,20 @@ describe("Atlas", () => {
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/?auth=login");
     expect(screen.queryByTestId("add-spot-form")).not.toBeInTheDocument();
     expect(api.createPlace).not.toHaveBeenCalled();
+  });
+
+  it("offers a visitor the tour of the app, whose Enter leads to the login", async () => {
+    renderAtlas(true);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Like" }));
+
+    await user.click(screen.getByRole("button", { name: "Take a look inside?" }));
+    const tour = await screen.findByRole("dialog", { name: "A look inside VinylKeeper" });
+    expect(within(tour).getByRole("img", { name: "Dashboard" })).toBeInTheDocument();
+
+    await user.click(within(tour).getByRole("button", { name: "Close preview" }));
+    // Back to the join popup
+    expect(screen.getByRole("dialog", { name: /Join Vinyl Keeper/ })).toBeInTheDocument();
   });
 
   it("lets a member add a spot", async () => {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Button, IconButton, Typography } from "@mui/material";
+import { Box, Button, IconButton, Typography, keyframes } from "@mui/material";
 import { ChevronLeft, ChevronRight, Close } from "@mui/icons-material";
 import {
   ImageContainer,
@@ -14,6 +14,8 @@ import {
 } from "@components/Modals/carouselModalStyles";
 import type { PreviewSlide } from "@components/Landpage/previewSlides";
 import { growItem } from "@utils/Animations";
+import { usePreloadedImages } from "@hooks/usePreloadedImages";
+import VinylSpinner from "@components/UI/VinylSpinner";
 import { colors } from "@styles/colors";
 
 interface PreviewModalProps {
@@ -21,7 +23,15 @@ interface PreviewModalProps {
   slides: PreviewSlide[];
   onClose: () => void;
   onEnter: () => void;
+  /** Load the screenshots before the tour opens, for instance as soon as the join popup shows */
+  preload?: boolean;
 }
+
+// Each screenshot shows up softly, at opening and at every slide change
+const screenshotFadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
 
 // Visible title is the brand only; screen readers get the full purpose
 const DIALOG_LABEL = "A look inside VinylKeeper";
@@ -33,8 +43,10 @@ const navButtonSx = {
   "&.Mui-disabled": { color: "rgba(255, 255, 255, 0.3)" },
 } as const;
 
-export default function PreviewModal({ open, slides, onClose, onEnter }: PreviewModalProps) {
+export default function PreviewModal({ open, slides, onClose, onEnter, preload = false }: PreviewModalProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  // Every screenshot at once: the tour opens whole, and changing slides never waits for an image
+  const screenshotsReady = usePreloadedImages(slides.map((item) => item.image), open || preload);
   const lastIndex = slides.length - 1;
   const slide = slides[activeIndex];
 
@@ -59,6 +71,15 @@ export default function PreviewModal({ open, slides, onClose, onEnter }: Preview
 
   return (
     <StyledModal open={open} onClose={handleClose}>
+      {!screenshotsReady ? (
+        <Box
+          role="status"
+          aria-label="Loading"
+          sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
+        >
+          <VinylSpinner size={64} />
+        </Box>
+      ) : (
       <ModalContent
         role="dialog"
         aria-modal="true"
@@ -91,7 +112,15 @@ export default function PreviewModal({ open, slides, onClose, onEnter }: Preview
         </Typography>
 
         <ImageContainer sx={{ height: "auto", aspectRatio: SCREENSHOT_ASPECT_RATIO, flexShrink: 0 }}>
-          <ModalImage src={slide.image} alt={slide.title} />
+          <ModalImage
+            key={slide.image}
+            src={slide.image}
+            alt={slide.title}
+            sx={{
+              animation: `${screenshotFadeIn} 0.4s ease-out`,
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          />
         </ImageContainer>
 
         <TextContainer>
@@ -147,6 +176,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter }: Preview
           </IconButton>
         </Box>
       </ModalContent>
+      )}
     </StyledModal>
   );
 }

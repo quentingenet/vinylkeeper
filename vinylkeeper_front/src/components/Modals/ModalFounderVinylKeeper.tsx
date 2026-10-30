@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Modal, Box, Typography, Button, Fade, Stack, keyframes } from "@mui/material";
 import useDetectMobile from "@hooks/useDetectMobile";
+import { usePreloadedImages } from "@hooks/usePreloadedImages";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import founderImg from "@assets/quentin_genet_vinyl_keeper.webp";
 import { colors } from "@styles/colors";
@@ -25,25 +26,9 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
   setOpenFounderModal,
 }) => {
   const { isMobile } = useDetectMobile();
-  const [imageReady, setImageReady] = useState(false);
-
-  // Loaded and decoded as soon as the footer shows, before anyone opens the popup: by then
-  // the photo is usually ready, and the popup appears whole instead of growing when it lands
-  useEffect(() => {
-    let cancelled = false;
-    const image = new Image();
-    image.src = founderImg;
-    const ready = () => {
-      if (!cancelled) setImageReady(true);
-    };
-    // A failed load still opens the popup, without its photo rather than never.
-    // Browsers without decode() (and the test DOM) open it at once.
-    if (typeof image.decode === "function") image.decode().then(ready, ready);
-    else ready();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Loaded as soon as the footer shows, before anyone opens the popup: by then the photo is
+  // usually ready, and the popup appears whole instead of growing when it lands
+  const imageReady = usePreloadedImages([founderImg]);
 
   return (
     <Modal

@@ -9,9 +9,7 @@ import Register from "@components/Register/Register";
 import Footer from "@components/Footer/Footer";
 import { Button, Link, Typography, Snackbar, Alert } from "@mui/material";
 import Background from "@components/Landpage/Background";
-import PreviewModal from "@components/Landpage/PreviewModal";
 import { growItem } from "@utils/Animations";
-import { previewSlides } from "@components/Landpage/previewSlides";
 
 export default function Landpage() {
   const { isMobile } = useDetectMobile();
@@ -35,7 +33,6 @@ export default function Landpage() {
   const [openForgotPassword, setOpenForgotPassword] = useState<boolean>(false);
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
   const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);
-  const [openPreview, setOpenPreview] = useState<boolean>(false);
   const [errorSnackbar, setErrorSnackbar] = useState({
     open: false,
     message: "",
@@ -45,11 +42,6 @@ export default function Landpage() {
     setLogin(true);
     setOpen(true);
   }, []);
-
-  const handleEnterFromPreview = useCallback(() => {
-    setOpenPreview(false);
-    handleLoginOpen();
-  }, [handleLoginOpen]);
 
   const handleErrorSnackbarClose = () => {
     setErrorSnackbar({
@@ -82,18 +74,9 @@ export default function Landpage() {
               <div className={styles.buttonContainer}>
                 <Button onClick={handleLoginOpen}>Enter</Button>
               </div>
-              {/* Grouped and shadowed: readable over the bright parts of the video */}
+              {/* Shadowed: readable over the bright parts of the video. The tour of the app
+                  ("Take a look inside?") lives in the join popup of the public Atlas */}
               <div className={styles.secondaryLinks}>
-                <Link
-                  component="button"
-                  type="button"
-                  underline="none"
-                  onClick={() => setOpenPreview(true)}
-                  className={`${styles.textTypo} ${styles.previewLink}`}
-                  sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
-                >
-                  Take a look inside&nbsp;?
-                </Link>
                 <span className={styles.orSeparator}>or</span>
                 <Link
                   component={RouterLink}
@@ -133,13 +116,6 @@ export default function Landpage() {
           )}
         </div>
       </div>
-
-      <PreviewModal
-        open={openPreview}
-        slides={previewSlides}
-        onClose={() => setOpenPreview(false)}
-        onEnter={handleEnterFromPreview}
-      />
 
       <Footer
         setOpenTermsModal={setOpenTermsModal}

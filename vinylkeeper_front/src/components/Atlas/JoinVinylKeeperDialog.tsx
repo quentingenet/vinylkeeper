@@ -1,4 +1,5 @@
-import { Link as RouterLink } from "react-router-dom";
+import { useState } from "react";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -7,6 +8,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Link,
   List,
   ListItem,
   ListItemIcon,
@@ -15,10 +17,14 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { LOGIN_URL, REGISTER_URL } from "@utils/GlobalUrls";
+import { growItem } from "@utils/Animations";
+import PreviewModal from "@components/Landpage/PreviewModal";
+import { previewSlides } from "@components/Landpage/previewSlides";
 
 const MEMBER_FEATURES = [
   "Catalog your records, their copies and pressings",
   "Import your Discogs collection in 30 seconds",
+  "Estimate what your collection is worth",
   "Pick tonight's record with Spinning now",
   "Keep a wishlist and share your collections",
 ];
@@ -30,7 +36,11 @@ interface JoinVinylKeeperDialogProps {
 
 /** Shown to a visitor of the public Atlas who tries to like a spot or suggest one. */
 export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeperDialogProps) {
+  const [openPreview, setOpenPreview] = useState(false);
+  const navigate = useNavigate();
+
   return (
+    <>
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs" aria-labelledby="join-vinyl-keeper-title">
       <DialogTitle
         id="join-vinyl-keeper-title"
@@ -55,6 +65,27 @@ export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeper
             </ListItem>
           ))}
         </List>
+        {/* A tour of the app before signing up: the screens of a member */}
+        <Link
+          component="button"
+          type="button"
+          underline="none"
+          variant="body2"
+          onClick={() => setOpenPreview(true)}
+          sx={{
+            mt: 1.5,
+            display: "inline-block",
+            // A link styled as a button keeps the browser font otherwise
+            fontFamily: "inherit",
+            fontWeight: 600,
+            color: "primary.main",
+            // Always pulsing: it invites the visitor to open the tour
+            animation: `${growItem} 2s ease-in-out infinite`,
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          }}
+        >
+          Take a look inside?
+        </Link>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Box display="flex" gap={1}>
@@ -67,5 +98,14 @@ export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeper
         </Box>
       </DialogActions>
     </Dialog>
+    {/* Over the join popup: closing the tour comes back to it, its last step leads to the login */}
+    <PreviewModal
+      open={openPreview}
+      slides={previewSlides}
+      onClose={() => setOpenPreview(false)}
+      onEnter={() => void navigate(LOGIN_URL)}
+      preload={open}
+    />
+    </>
   );
 }

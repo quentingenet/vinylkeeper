@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Landpage from "@pages/Landpage/Landpage";
@@ -48,17 +48,11 @@ describe("Landpage", () => {
     expect(screen.queryByRole("button", { name: "Join now" })).not.toBeInTheDocument();
   });
 
-  it("opens the preview, and its Enter button leads to the login form", async () => {
-    const user = userEvent.setup();
+  it("keeps the landing light: the tour of the app lives in the Atlas join popup", () => {
     renderLandpage();
 
-    await user.click(screen.getByRole("button", { name: /Take a look inside/ }));
-    const preview = screen.getByRole("dialog", { name: "A look inside VinylKeeper" });
-
-    await user.click(within(preview).getByRole("button", { name: "Enter" }));
-
-    expect(screen.queryByRole("dialog", { name: "A look inside VinylKeeper" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Take a look inside/ })).not.toBeInTheDocument();
+    expect(screen.getByText("or")).toBeInTheDocument();
   });
 
   it("opens the sign up form from the link of the public Atlas", () => {
