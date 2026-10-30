@@ -1,0 +1,45 @@
+# Weekly dependency updates, as pull requests tested by the CI workflow before any merge.
+# Minor and patch updates come grouped in one pull request per ecosystem; major updates,
+# which may break something, come one by one.
+version: 2
+updates:
+  - package-ecosystem: pip # reads pyproject.toml and poetry.lock
+    directory: /vinylkeeper_back
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    groups:
+      api-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "chore(api)"
+
+  - package-ecosystem: npm
+    directory: /vinylkeeper_front
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    groups:
+      web-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "chore(web)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(ci)"
