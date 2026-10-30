@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status, Path, Query
+from typing import Literal
+
+from fastapi import APIRouter, Body, Depends, status, Path, Query
 
 from app.schemas.moderation_request_schema import (
     ModerationRequestResponse,
@@ -8,8 +10,17 @@ from app.schemas.moderation_request_schema import (
     MODERATION_DEFAULT_LIMIT,
     MODERATION_MAX_LIMIT,
 )
+from app.schemas.place_report_schema import (
+    PLACE_REPORTS_DEFAULT_LIMIT,
+    PLACE_REPORTS_MAX_LIMIT,
+    PlaceReportListResponse,
+    PlaceReportResponse,
+    ReportedPlace,
+)
+from app.schemas.place_schema import PlaceUpdate
 from app.services.moderation_service import ModerationService
-from app.deps.deps import get_moderation_service, require_admin
+from app.services.place_report_service import PlaceReportService
+from app.deps.deps import get_moderation_service, get_place_report_service, require_admin
 from app.models.user_model import User
 from app.utils.endpoint_utils import handle_app_exceptions
 
@@ -101,3 +112,61 @@ async def get_moderation_stats(
     """Get moderation statistics (admin only)"""
     stats = await service.get_moderation_stats()
     return stats
+
+
+@router.get("/place-reports", response_model=PlaceReportListResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def get_place_reports(
+    report_status: Literal["open", "resolved", "dismissed", "all"] = Query("open", alias="status"),
+    page: int = Query(1, gt=0),
+    limit: int = Query(PLACE_REPORTS_DEFAULT_LIMIT, gt=0, le=PLACE_REPORTS_MAX_LIMIT),
+    user: User = Depends(require_admin),
+    service: PlaceReportService = Depends(get_place_report_service),
+):
+    """Reports of wrong information on Atlas spots, open ones first (admin only)"""
+    return await service.list_reports(None if report_status == "all" else report_status, page, limit)
+
+
+@router.post("/place-reports/{report_id}/resolve", response_model=PlaceReportResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def resolve_place_report(
+    report_id: int = Path(..., gt=0),
+    user: User = Depends(require_admin),
+    service: PlaceReportService = Depends(get_place_report_service),
+):
+    """The spot was fixed: every open report of it is resolved (admin only)"""
+    return await service.resolve(report_id, user)
+
+
+@router.post("/place-reports/{report_id}/dismiss", response_model=PlaceReportResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def dismiss_place_report(
+    report_id: int = Path(..., gt=0),
+    user: User = Depends(require_admin),
+    service: PlaceReportService = Depends(get_place_report_service),
+):
+    """Nothing was wrong: only this report is closed (admin only)"""
+    return await service.dismiss(report_id, user)
+
+
+@router.patch("/places/{place_id}", response_model=ReportedPlace, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def update_place_as_admin(
+    place_id: int = Path(..., gt=0),
+    data: PlaceUpdate = Body(...),
+    user: User = Depends(require_admin),
+    service: PlaceReportService = Depends(get_place_report_service),
+):
+    """Correct any field of a spot, published at once without moderation (admin only)"""
+    return await service.update_place(user, place_id, data)
+
+
+@router.delete("/places/{place_id}", status_code=status.HTTP_204_NO_CONTENT)
+@handle_app_exceptions
+async def remove_place_as_admin(
+    place_id: int = Path(..., gt=0),
+    user: User = Depends(require_admin),
+    service: PlaceReportService = Depends(get_place_report_service),
+):
+    """Take a permanently closed spot off the map; its open reports are resolved (admin only)"""
+    await service.remove_place(user, place_id)

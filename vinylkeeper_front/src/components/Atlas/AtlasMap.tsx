@@ -15,6 +15,7 @@ import {
   AccordionDetails,
   Fab,
   Link,
+  Button,
 } from "@mui/material";
 import {
   Favorite,
@@ -23,11 +24,13 @@ import {
   ExpandMore,
   Add,
   Language,
+  OutlinedFlag,
 } from "@mui/icons-material";
 import { growItem } from "@utils/Animations";
 import { usePlaceLike } from "@hooks/usePlaceLike";
 import { safeWebsiteUrl, websiteLabel } from "@utils/website";
 import AtlasSpotsByCountry from "@components/Atlas/AtlasSpotsByCountry";
+import ReportSpotDialog from "@components/Atlas/ReportSpotDialog";
 import { useQuery } from "@tanstack/react-query";
 import {
   atlasApiService,
@@ -334,6 +337,7 @@ interface PlaceDetailsContentProps {
 const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequireAccount }) => {
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // is_liked and likes_count are driven by the React Query cache (optimistic update in usePlaceLike)
   const { like, unlike, isLiking, isUnliking } = usePlaceLike(place.id);
@@ -464,6 +468,22 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
           </Typography>
         )}
       </Box>
+
+      <Button
+        size="small"
+        startIcon={<OutlinedFlag />}
+        // Visitors are asked to join: reports come from members only
+        onClick={() => (onRequireAccount ? onRequireAccount() : setReportOpen(true))}
+        sx={{ alignSelf: "flex-start", color: "text.secondary", textTransform: "none" }}
+      >
+        Report wrong information
+      </Button>
+      <ReportSpotDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        placeId={place.id}
+        placeName={place.name}
+      />
     </Box>
   );
 };

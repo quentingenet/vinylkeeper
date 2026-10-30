@@ -40,10 +40,14 @@ PRODUCTION_INDEXES = {
     "ix_discogs_imports_user_id_id": "ON discogs_imports (user_id, id)",
     # Migration d8f3a6c1e5b7: re-evaluations of a user in the last 24 hours (one at most)
     "ix_value_refreshes_user_id_created_at": "ON value_refreshes (user_id, created_at)",
+    # Migration e2b9f4c7a1d6: one open report per member and Atlas spot
+    "uq_place_reports_open_per_user": "ON place_reports (place_id, user_id) WHERE status = 'open'",
     # Migration f1c8a3b7d2e4: one save per collection
     "ix_collections_saved_from_collection_id": "ON collections (saved_from_collection_id)",
 }
-UNIQUE_PRODUCTION_INDEXES = {"ix_users_email_lower", "ix_collections_saved_from_collection_id"}
+UNIQUE_PRODUCTION_INDEXES = {
+    "ix_users_email_lower", "ix_collections_saved_from_collection_id", "uq_place_reports_open_per_user",
+}
 
 
 def _declared_indexes():

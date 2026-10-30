@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import Atlas from "@pages/Atlas/Atlas";
 
-const api = vi.hoisted(() => ({ getPlacesMap: vi.fn(), getPlacesByLocation: vi.fn() }));
+const api = vi.hoisted(() => ({ getPlacesMap: vi.fn(), getPlacesByLocation: vi.fn(), reportPlace: vi.fn() }));
 
 vi.mock("@services/AtlasApiService", () => ({ atlasApiService: api }));
 vi.mock("@hooks/useDetectMobile", () => ({ default: () => ({ isMobile: false }) }));
@@ -72,5 +72,43 @@ describe("A spot of the Atlas", () => {
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer nofollow ugc");
     expect(screen.getAllByRole("link")).toHaveLength(1); // Le Bon Son has no website
+  });
+});
+
+describe("Reporting a spot", () => {
+  const openSofaRecords = async (isPublic: boolean) => {
+    api.getPlacesMap.mockResolvedValue([
+      { id: 1, latitude: 45.76, longitude: 4.84, city: "Lyon", country: "France", name: "Sofa Records", place_type: "Record shop" },
+    ]);
+    api.getPlacesByLocation.mockResolvedValue([
+      { id: 1, name: "Sofa Records", address: "1 rue X", city: "Lyon", country: "France", description: "Soul",
+        source_url: null, place_type: { id: 1, name: "Record shop" }, likes_count: 0, is_liked: false },
+    ]);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <Atlas isPublic={isPublic} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /France/ }));
+    await user.click(screen.getByRole("button", { name: /Lyon/ }));
+    await user.click(await screen.findByText(/Sofa Records/, { selector: "h6" }));
+    await user.click(await screen.findByRole("button", { name: "Report wrong information" }));
+    return user;
+  };
+
+  it("opens the report form for a member", async () => {
+    await openSofaRecords(false);
+
+    expect(await screen.findByText("What is wrong about Sofa Records?")).toBeInTheDocument();
+  });
+
+  it("asks a visitor to join instead", async () => {
+    await openSofaRecords(true);
+
+    expect(await screen.findByRole("dialog", { name: /Join Vinyl Keeper/ })).toBeInTheDocument();
+    expect(screen.queryByText("What is wrong about Sofa Records?")).not.toBeInTheDocument();
   });
 });

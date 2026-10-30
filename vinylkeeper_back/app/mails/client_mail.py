@@ -7,6 +7,7 @@ from app.mails.templates_mails.new_user import new_user_register_template
 from app.mails.templates_mails.reset_password import reset_password_template
 from app.mails.templates_mails.contact_message import contact_message_template
 from app.mails.templates_mails.new_atlas_spot import new_atlas_spot_template
+from app.mails.templates_mails.place_report import place_report_template
 from app.mails.templates_mails.email_confirmation import (
     welcome_template,
     email_confirmation_template,
@@ -24,6 +25,7 @@ class MailSubject(Enum):
     NewUserRegistered = "New user registered"
     ContactMessage = "Contact message from VinylKeeper user"
     NewAtlasSpot = "New Atlas spot requires moderation"
+    AtlasSpotReported = "Atlas spot reported as wrong"
     Welcome = "Welcome to Vinyl Keeper, please confirm your email"
     EmailConfirmation = "Confirm your email address"
     EmailChangeConfirmation = "Confirm your new email address"
@@ -51,6 +53,7 @@ def get_template(subject: MailSubject, **kwargs) -> str:
         MailSubject.PasswordReset: reset_password_template,
         MailSubject.ContactMessage: contact_message_template,
         MailSubject.NewAtlasSpot: new_atlas_spot_template,
+        MailSubject.AtlasSpotReported: place_report_template,
         MailSubject.Welcome: welcome_template,
         MailSubject.EmailConfirmation: email_confirmation_template,
         MailSubject.EmailChangeConfirmation: email_change_confirmation_template,

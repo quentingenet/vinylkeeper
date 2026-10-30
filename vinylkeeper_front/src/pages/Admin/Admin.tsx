@@ -24,7 +24,8 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { useModerationActions } from "@hooks/useModerationActions";
 import ModerationStatsCards from "@components/Admin/ModerationStatsCards";
 import ModerationDetailDialog from "@components/Admin/ModerationDetailDialog";
-import { getStatusChip, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
+import PlaceReportsPanel from "@components/Admin/PlaceReportsPanel";
+import { ADMIN_LIVE_QUERY, getStatusChip, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
 import { colors } from "@styles/colors";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
@@ -58,7 +59,7 @@ const Admin: React.FC = () => {
     queryKey: queryKeys.moderation.list(allPage + 1, allRowsPerPage),
     queryFn: () => adminApiService.getModerationRequests(allPage + 1, allRowsPerPage),
     enabled: isAdmin,
-    staleTime: 0,
+    ...ADMIN_LIVE_QUERY,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -66,7 +67,7 @@ const Admin: React.FC = () => {
     queryKey: queryKeys.moderation.pendingList(pendingPage + 1, pendingRowsPerPage),
     queryFn: () => adminApiService.getPendingModerationRequests(pendingPage + 1, pendingRowsPerPage),
     enabled: isAdmin,
-    staleTime: 0,
+    ...ADMIN_LIVE_QUERY,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -74,7 +75,7 @@ const Admin: React.FC = () => {
     queryKey: queryKeys.moderation.stats(),
     queryFn: () => adminApiService.getModerationStats(),
     enabled: isAdmin,
-    staleTime: 0,
+    ...ADMIN_LIVE_QUERY,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -129,6 +130,8 @@ const Admin: React.FC = () => {
       {moderationActionError && (
         <Alert severity="error" sx={{ mb: 3 }}>{moderationActionError}</Alert>
       )}
+
+      <PlaceReportsPanel />
 
       {/* Pending Requests */}
       <Typography variant="h5" sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>

@@ -17,6 +17,7 @@ from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.atlas_repository import AtlasRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.spinning_now_repository import SpinningNowRepository
+from app.repositories.place_report_repository import PlaceReportRepository
 from app.repositories.discogs_import_repository import DiscogsImportRepository
 
 # Services
@@ -31,6 +32,7 @@ from app.services.moderation_service import ModerationService
 from app.services.export_service import ExportService
 from app.services.wishlist_export_service import WishlistExportService
 from app.services.spinning_now_service import SpinningNowService
+from app.services.place_report_service import PlaceReportService
 
 # Database
 from app.db.session import get_db
@@ -91,6 +93,10 @@ def get_spinning_now_repository(db: AsyncSession = Depends(get_db)) -> SpinningN
 
 def get_atlas_repository(db: AsyncSession = Depends(get_db)) -> AtlasRepository:
     return AtlasRepository(db)
+
+
+def get_place_report_service(db: AsyncSession = Depends(get_db)) -> PlaceReportService:
+    return PlaceReportService(PlaceReportRepository(db), AtlasRepository(db))
 
 
 def get_moderation_request_repository(db: AsyncSession = Depends(get_db)) -> ModerationRequestRepository:

@@ -55,6 +55,53 @@ export interface ModerationStats {
   rejected: number;
 }
 
+export type PlaceReportIssue = "name" | "description" | "address" | "website" | "type" | "closed";
+export type PlaceReportStatus = "open" | "resolved" | "dismissed";
+
+/** Every field of a spot an admin can correct, as it is now */
+export interface ReportedPlace {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  description: string | null;
+  source_url: string | null;
+  place_type_id: number;
+  place_type: string | null;
+  is_valid: boolean;
+  is_moderated: boolean;
+}
+
+export interface PlaceReport {
+  id: number;
+  place: ReportedPlace;
+  issues: PlaceReportIssue[];
+  comment: string | null;
+  status: PlaceReportStatus;
+  reporter: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface PlaceReportList {
+  items: PlaceReport[];
+  total: number;
+  page: number;
+  limit: number;
+  open_count: number;
+}
+
+export interface AdminPlaceUpdate {
+  name?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  description?: string | null;
+  source_url?: string | null;
+  place_type_id?: number;
+}
+
 class AdminApiService extends BaseApiService {
   async getModerationRequests(
     page = 1,
@@ -98,6 +145,31 @@ class AdminApiService extends BaseApiService {
 
   async getModerationStats(): Promise<ModerationStats> {
     return this.get<ModerationStats>("/vk-admin/moderation-stats");
+  }
+
+  /** Reports of wrong information on Atlas spots, open ones first */
+  async getPlaceReports(status: PlaceReportStatus | "all", page = 1, limit = 20): Promise<PlaceReportList> {
+    return this.get<PlaceReportList>(`/vk-admin/place-reports?status=${status}&page=${page}&limit=${limit}`);
+  }
+
+  /** The spot was fixed: every open report of it is resolved */
+  async resolvePlaceReport(reportId: number): Promise<PlaceReport> {
+    return this.post<PlaceReport>(`/vk-admin/place-reports/${reportId}/resolve`);
+  }
+
+  /** Nothing was wrong: only this report is closed */
+  async dismissPlaceReport(reportId: number): Promise<PlaceReport> {
+    return this.post<PlaceReport>(`/vk-admin/place-reports/${reportId}/dismiss`);
+  }
+
+  /** Published at once, without moderation */
+  async updatePlace(placeId: number, data: AdminPlaceUpdate): Promise<ReportedPlace> {
+    return this.patch<ReportedPlace>(`/vk-admin/places/${placeId}`, data);
+  }
+
+  /** A permanently closed spot leaves the map; its open reports are resolved */
+  async removePlace(placeId: number): Promise<void> {
+    return this.delete<void>(`/vk-admin/places/${placeId}`);
   }
 }
 

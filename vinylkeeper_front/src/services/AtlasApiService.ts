@@ -110,6 +110,11 @@ class AtlasApiService extends BaseApiService {
     return this.patch<PlaceMutationResponse>(`/atlas/${id}`, data);
   }
 
+  /** Members only: the admins get an email and fix the spot from the admin panel */
+  async reportPlace(id: number, issues: string[], comment: string): Promise<{ message: string }> {
+    return this.post<{ message: string }>(`/atlas/${id}/reports`, { issues, comment: comment.trim() || null });
+  }
+
   async deletePlace(id: number): Promise<void> {
     return this.delete<void>(`/atlas/${id}`);
   }

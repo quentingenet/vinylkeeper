@@ -30,3 +30,13 @@ export const tablePaginationSx = {
   "& .MuiTablePagination-actions button.Mui-disabled": { color: colors.grey700 },
   "& .MuiSelect-select": { color: colors.textLight },
 };
+
+/**
+ * Admin lists follow what members do without a page reload: read again when shown, when the tab
+ * comes back, and every 30 s while it is visible (never in a background tab).
+ */
+export const ADMIN_LIVE_QUERY = {
+  staleTime: 0,
+  refetchOnWindowFocus: true,
+  refetchInterval: 30_000,
+} as const;

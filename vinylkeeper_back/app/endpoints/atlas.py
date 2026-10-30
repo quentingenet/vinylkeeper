@@ -10,8 +10,10 @@ from app.schemas.place_schema import (
     PlaceMutationResponse,
 )
 from app.schemas.place_like_schema import PlaceLikeStatusResponse
+from app.schemas.place_report_schema import PlaceReportCreate, PlaceReportCreatedResponse
 from app.services.atlas_service import AtlasService
-from app.deps.deps import get_atlas_service
+from app.services.place_report_service import PlaceReportService
+from app.deps.deps import get_atlas_service, get_place_report_service
 from app.utils.auth_utils.auth import get_current_user, get_optional_user
 from app.models.user_model import User
 from app.utils.endpoint_utils import handle_app_exceptions
@@ -187,3 +189,16 @@ async def unlike_place(
         likes_count=result["likes_count"],
         message=result["message"]
     )
+
+
+@router.post("/{place_id}/reports", status_code=status.HTTP_201_CREATED, response_model=PlaceReportCreatedResponse)
+@handle_app_exceptions
+async def report_place(
+    place_id: int = Path(..., gt=0, title="Place ID"),
+    data: PlaceReportCreate = Body(...),
+    user: User = Depends(get_current_user),
+    service: PlaceReportService = Depends(get_place_report_service),
+):
+    """Report wrong information on a spot (members only): the admins fix it from the admin panel."""
+    await service.report_place(user, place_id, data)
+    return PlaceReportCreatedResponse(message="Thanks, an admin will check this spot.")
