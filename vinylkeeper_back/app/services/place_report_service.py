@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.config_env import settings
 from app.core.exceptions import QuotaExceededError, ResourceNotFoundError, ValidationError, ErrorCode
-from app.core.logging import logger
+from app.core.logging import log_activity, logger
 from app.core.transaction import transaction_context
 from app.mails.client_mail import MailSubject, send_mail
 from app.models.place_model import Place
@@ -69,7 +69,7 @@ class PlaceReportService:
         except IntegrityError:
             # The same member reporting twice at once: the unique open report wins
             raise self._already_reported()
-        logger.info(f"Atlas: {user.username} reported spot {place_id} ({', '.join(data.issues)})")
+        log_activity(user.username, f"reported Atlas spot #{place_id} {place.name!r} ({', '.join(data.issues)})")
         await self._notify_admin(place, user, data)
 
     @staticmethod
@@ -151,7 +151,7 @@ class PlaceReportService:
             changes["latitude"], changes["longitude"] = coordinates
         async with transaction_context(self.atlas_repository.db):
             await self.atlas_repository.update_place(place_id, changes)
-        logger.info(f"Atlas: admin {admin.username} updated spot {place_id} ({', '.join(sorted(changes))})")
+        log_activity(f"admin {admin.username}", f"corrected Atlas spot #{place_id} ({', '.join(sorted(changes))})")
         self.atlas_repository.db.expire_all()
         return reported_place(await self.atlas_repository.get_place_by_id(place_id))
 
@@ -160,4 +160,4 @@ class PlaceReportService:
         async with transaction_context(self.atlas_repository.db):
             await self.atlas_repository.delete_place(place_id)
             await self.repository.close_open_for_place(place_id, admin.id)
-        logger.info(f"Atlas: admin {admin.username} removed spot {place_id} from the map")
+        log_activity(f"admin {admin.username}", f"removed Atlas spot #{place_id} from the map")

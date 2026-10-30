@@ -10,6 +10,7 @@ import pytest
 from app.core.exceptions import ForbiddenError
 from app.deps.deps import get_external_reference_service, get_wishlist_service
 from app.main import app
+from app.schemas.external_reference_schema import AddToCollectionResponse, AddToWishlistResponse
 
 NOW = datetime(2026, 10, 28, tzinfo=timezone.utc)
 
@@ -24,24 +25,24 @@ def add_payload(entity_type: str = "album", source: str = "discogs") -> dict:
     }
 
 
-def collection_response(entity_type: str = "album") -> dict:
-    return {
+def collection_response(entity_type: str = "album") -> AddToCollectionResponse:
+    return AddToCollectionResponse(**{
         "item": {
             "id": 1, "external_id": "380980", "entity_type": entity_type, "title": "Highway To Hell",
             "image_url": "https://i.discogs.com/x.jpg", "source": "discogs", "created_at": NOW,
         },
         "is_new": True, "message": "Added", "entity_type": entity_type, "collection_name": "Mine",
-    }
+    })
 
 
-def wishlist_response() -> dict:
-    return {
+def wishlist_response() -> AddToWishlistResponse:
+    return AddToWishlistResponse(**{
         "item": {
             "id": 1, "external_id": "380980", "title": "Highway To Hell",
             "image_url": "https://i.discogs.com/x.jpg", "created_at": NOW,
         },
         "is_new": True, "message": "Added", "entity_type": "album",
-    }
+    })
 
 
 @pytest.fixture

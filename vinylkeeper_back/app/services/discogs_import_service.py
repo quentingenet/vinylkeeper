@@ -215,7 +215,8 @@ class DiscogsImportService:
         job = await self.repository.create_import(
             user_id, collection_id, discogs_username, created_collection, saved_copy, include_wantlist)
         await self.repository.db.commit()
-        logger.info(f"{describe_import(job, *await self.repository.import_labels(user_id, collection_id))}: queued")
+        labels = await self.repository.import_labels(user_id, collection_id)
+        logger.info(f"Activity: {describe_import(job, *labels)}: queued")
         return job
 
     async def latest_import(self, user_id: int) -> tuple[Optional[DiscogsImport], bool]:
@@ -236,7 +237,7 @@ class DiscogsImportService:
         await db.commit()
         # Read now: a failed import may remove its collection, the logs keep its name
         description = describe_import(job, *await self.repository.import_labels(job.user_id, job.collection_id))
-        logger.info(f"{description}: started")
+        logger.info(f"Activity: {description}: started")
         try:
             if job.collection_id is None:
                 raise DiscogsImportError("The collection of this import was deleted.", "collection_deleted")
@@ -266,14 +267,14 @@ class DiscogsImportService:
         await db.commit()
         if job.status == "done":
             logger.info(
-                f"{description}: done, {job.vinyl_found} vinyls found, {job.added} added "
+                f"Activity: {description}: done, {job.vinyl_found} vinyls found, {job.added} added "
                 f"({job.copies_added} copies), {job.already_in_collection} already there, "
                 f"{job.other_pressings} other pressings, {job.in_other_collections} in other collections, "
                 f"{job.other_formats} other formats skipped"
             )
             if job.include_wantlist:
                 logger.info(
-                    f"{description}: wantlist "
+                    f"Activity: {description}: wantlist "
                     + (f"not imported, {job.wantlist_error}" if job.wantlist_error else
                        f"{job.wantlist_vinyl_found} vinyls found, {job.wantlist_added} added to the wishlist, "
                        f"{job.wantlist_already_in_wishlist} already there, {job.wantlist_owned} owned, "

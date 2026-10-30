@@ -36,7 +36,7 @@ from app.services.collection_service import CollectionService
 from app.schemas.collection_schema import CollectionCreate
 from app.core.transaction import transaction_context
 from app.core.config_env import settings
-from app.core.logging import logger
+from app.core.logging import log_activity, logger
 from app.core.enums import RoleEnum
 
 
@@ -74,7 +74,10 @@ class UserService:
         """
         try:
             async with transaction_context(self.repository.db):
-                await self.repository.touch_last_seen(user.id, LAST_SEEN_INTERVAL)
+                written = await self.repository.touch_last_seen(user.id, LAST_SEEN_INTERVAL)
+            if written:
+                # Same pace as last_seen_at: once an hour at most, not on every token refresh
+                log_activity(user.username, "came back (session restored)")
         except Exception as e:
             logger.warning(f"last_seen_at not updated for user {user.id}: {str(e)}")
 
@@ -194,6 +197,7 @@ class UserService:
                 error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                 message="The confirmation email could not be sent, please try again later",
             )
+        log_activity(user.username, "asked to change their email address")
         await self._send_safely(
             user.email, MailSubject.EmailChangeNotice, f"email change notice of user {user.username}",
             username=user.username, new_email=new_email,
@@ -217,6 +221,7 @@ class UserService:
             if not user.is_email_confirmed:
                 async with transaction_context(self.repository.db):
                     await self.repository.confirm_email(user.id, email)
+                log_activity(user.username, "confirmed their email address")
             return email
 
         # Email change: already applied (link opened twice) is a success
@@ -233,7 +238,7 @@ class UserService:
         except IntegrityError:
             # Taken by another account between the check and the update
             raise DuplicateEmailError(email)
-        logger.info(f"Email changed for user {user.username}")
+        log_activity(user.username, "changed their email address")
         return email
 
     @staticmethod
@@ -263,7 +268,7 @@ class UserService:
         if not email_sent:
             logger.error(f"Failed to send password reset email for user {user.username}")
         else:
-            logger.info(f"Password reset email sent for user {user.username}")
+            log_activity(user.username, "asked for a password reset link")
 
     async def reset_password(self, token: str, new_password: str) -> None:
         """Reset user password, then revoke every session and this reset link"""
@@ -276,6 +281,7 @@ class UserService:
             raise InvalidResetTokenError()
 
         await self._update_password(user, new_password)
+        log_activity(user.username, "reset their password with the emailed link")
 
     async def change_password(self, user: User, current_password: str, new_password: str) -> None:
         """Change user password and revoke every session (the caller issues new tokens)"""
@@ -369,7 +375,7 @@ class UserService:
             message=message_data.message,
             sent_at=sent_at.strftime("%Y-%m-%d %H:%M:%S UTC")
         )
-        logger.info(f"Contact message sent to admin from user {user.username}")
+        log_activity(user.username, "sent a contact message")
         return ContactMessageResponse(
             message="Contact message sent successfully",
             sent_at=sent_at

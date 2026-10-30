@@ -16,6 +16,7 @@ from app.services.place_report_service import PlaceReportService
 from app.deps.deps import get_atlas_service, get_place_report_service
 from app.utils.auth_utils.auth import get_current_user, get_optional_user
 from app.models.user_model import User
+from app.core.logging import log_activity
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
@@ -30,6 +31,7 @@ async def create_place(
 ):
     """Create a new place"""
     place = await service.create_place(data, user)
+    log_activity(user.username, f"suggested Atlas spot #{place.id} {place.name!r} ({place.city}, {place.country})")
     return PlaceMutationResponse(message="Spot added to the Atlas", place=place)
 
 
@@ -143,6 +145,8 @@ async def update_place(
 ):
     """Update a place"""
     updated_place = await service.update_place(user, place_id, data)
+    edited = ", ".join(sorted(data.model_dump(exclude_unset=True)))
+    log_activity(user.username, f"edited their Atlas spot #{place_id} ({edited})")
     return PlaceMutationResponse(message="Spot updated", place=updated_place)
 
 
@@ -155,6 +159,7 @@ async def delete_place(
 ):
     """Delete a place"""
     await service.delete_place(user, place_id)
+    log_activity(user.username, f"deleted their Atlas spot #{place_id}")
 
 
 @router.post("/{place_id}/like", response_model=PlaceLikeStatusResponse, status_code=status.HTTP_200_OK)
@@ -166,6 +171,7 @@ async def like_place(
 ):
     """Like a place"""
     result = await service.like_place(user, place_id)
+    log_activity(user.username, f"liked Atlas spot #{place_id} ({result['likes_count']} likes)")
     return PlaceLikeStatusResponse(
         place_id=place_id,
         is_liked=True,

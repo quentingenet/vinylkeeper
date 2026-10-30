@@ -23,7 +23,7 @@ from app.services.export_service import ExportService
 from app.schemas.collection_album_schema import CollectionAlbumCopyData
 from app.utils.endpoint_utils import handle_app_exceptions
 from app.core.exceptions import ValidationError
-from app.core.logging import logger
+from app.core.logging import log_activity
 
 router = APIRouter()
 
@@ -36,7 +36,8 @@ async def create_collection(
     service: CollectionService = Depends(get_collection_service)
 ):
     collection = await service.create_collection(data, user.id)
-    logger.info(f"Collection created: {collection.id} by user {user.username}")
+    visibility = "public" if collection.is_public else "private"
+    log_activity(user.username, f"created collection #{collection.id} {collection.name!r} ({visibility})")
     return CollectionCreateResponse(
         message="Collection created successfully",
         collection_id=collection.id
@@ -131,6 +132,10 @@ async def update_collection(
             error_code=4000,
             message="Failed to update collection"
         )
+    changes = data.model_dump(exclude_unset=True)
+    if "is_public" in changes:
+        visibility = "public" if changes["is_public"] else "private"
+        log_activity(user.username, f"made collection #{collection_id} {visibility}")
     return MessageResponse(message="Collection updated successfully")
 
 
@@ -142,6 +147,7 @@ async def delete_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.delete_collection(user.id, collection_id)
+    log_activity(user.username, f"deleted collection #{collection_id}")
     return MessageResponse(message="Collection deleted successfully")
 
 
@@ -154,7 +160,7 @@ async def save_collection_copy(
 ):
     """A private copy of the collection, records, copies and conditions included."""
     copy = await service.save_copy(user.id, collection_id)
-    logger.info(f"Collection {collection_id} saved as a copy by user {user.username}")
+    log_activity(user.username, f"saved a copy of collection #{collection_id} as #{copy.id}")
     return CollectionCopyResponse(message="Collection saved", collection_id=copy.id, name=copy.name)
 
 
@@ -207,7 +213,7 @@ async def remove_album_from_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.remove_album_from_collection(user.id, collection_id, album_id)
-    logger.info(f"Album {album_id} removed from collection {collection_id} by user {user.username}")
+    log_activity(user.username, f"removed album #{album_id} from collection #{collection_id}")
 
 
 @router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -219,7 +225,7 @@ async def remove_artist_from_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     await service.remove_artist_from_collection(user.id, collection_id, artist_id)
-    logger.info(f"Artist {artist_id} removed from collection {collection_id} by user {user.username}")
+    log_activity(user.username, f"removed artist #{artist_id} from collection #{collection_id}")
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
@@ -230,7 +236,7 @@ async def like_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     result = await service.like_collection(user.id, collection_id)
-    logger.info(f"Collection {collection_id} liked by user {user.username}, likes: {result['likes_count']}")
+    log_activity(user.username, f"liked collection #{collection_id} ({result['likes_count']} likes)")
     return LikeStatusResponse(
         collection_id=collection_id,
         liked=True,
@@ -246,7 +252,6 @@ async def unlike_collection(
     service: CollectionService = Depends(get_collection_service),
 ):
     result = await service.unlike_collection(user.id, collection_id)
-    logger.info(f"Collection {collection_id} unliked by user {user.username}, likes: {result['likes_count']}")
     return LikeStatusResponse(
         collection_id=collection_id,
         liked=False,

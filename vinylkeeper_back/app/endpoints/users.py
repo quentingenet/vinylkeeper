@@ -26,7 +26,7 @@ from app.utils.auth_utils.auth import (
 )
 from app.core.config_env import settings
 from app.deps.deps import get_user_service
-from app.core.logging import logger
+from app.core.logging import log_activity
 from app.utils.auth_utils.auth import TokenType, get_current_user, get_refresh_user
 from app.models.user_model import User
 from app.core.exceptions import (
@@ -62,7 +62,7 @@ async def login(
         raise TermsNotAcceptedError()
 
     set_session_cookies(response, user)
-    logger.info(f"User logged in: {user.username}")
+    log_activity(user.username, "logged in")
     return LoginResponse(isLoggedIn=True)
 
 
@@ -76,7 +76,7 @@ async def register(
 ) -> RegisterResponse:
     user = await user_service.create_user(new_user)
     set_session_cookies(response, user)
-    logger.info(f"New user registered: {user.username}")
+    log_activity(user.username, "signed up")
     # After the response: a slow or failing SMTP never delays nor fails the registration
     background_tasks.add_task(user_service.send_welcome_email, user)
     await user_service.send_new_user_registered_email(user)
@@ -171,6 +171,7 @@ async def change_my_password(
         password_data.current_password,
         password_data.new_password
     )
+    log_activity(current_user.username, "changed their password")
     # Other sessions are revoked; this one gets tokens for the new token_version
     set_session_cookies(response, current_user)
     return MessageResponse(message="Password changed successfully")
@@ -218,7 +219,7 @@ async def delete_my_account(
 ):
     """Delete current user account"""
     success = await user_service.delete_user(current_user)
-    logger.info(f"User deleted: {current_user.username}")
+    log_activity(current_user.username, "deleted their account")
     if not success:
         raise UserNotFoundError(str(current_user.user_uuid))
 

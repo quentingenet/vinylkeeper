@@ -3,6 +3,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, Path, Response
 from fastapi import status as http_status
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
+from app.core.logging import log_activity
 from app.services.external_reference_service import ExternalReferenceService
 from app.services.wishlist_service import WishlistService
 from app.services.user_service import UserService
@@ -61,6 +62,9 @@ async def add_to_wishlist(
 ):
     """Add an item to user's wishlist"""
     wishlist_item = await service.add_to_wishlist(current_user.id, request)
+    if wishlist_item.is_new:
+        log_activity(current_user.username,
+                     f"added {request.entity_type.value} {request.title!r} to their wishlist")
     schedule_album_enrichment(background_tasks, request)
     return wishlist_item
 
@@ -89,6 +93,9 @@ async def move_wishlist_item_to_collection(
     """A wanted record the user got, or an artist: into one of their collections, out of their wishlist."""
     result = await service.move_wishlist_item_to_collection(
         current_user.id, wishlist_id, data.collection_id, data.pressing_confirmed)
+    log_activity(current_user.username,
+                 f"got {result.entity_type} {result.external_id} from their wishlist, "
+                 f"now in collection {result.collection_name!r} (#{result.collection_id})")
     if result.entity_type == EntityTypeEnum.ALBUM.value:
         # Its Discogs metadata, if the album still waits for it
         background_tasks.add_task(enrich_album_in_background, result.external_id)
@@ -107,6 +114,10 @@ async def add_to_collection(
     """Add an item to user's collection"""
     collection_item = await service.add_to_collection(
         current_user.id, collection_id, request)
+    what = "added" if collection_item.is_new else "added another copy of"
+    log_activity(current_user.username,
+                 f"{what} {request.entity_type.value} {request.title!r} "
+                 f"to collection {collection_item.collection_name!r} (#{collection_id})")
     schedule_album_enrichment(background_tasks, request)
     return collection_item
 
@@ -161,6 +172,8 @@ async def remove_from_collection(
         )
 
     await service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
+    log_activity(current_user.username,
+                 f"removed {entity_type_enum.value} {external_id} from collection #{collection_id}")
     return Response(status_code=http_status.HTTP_204_NO_CONTENT)
 
 

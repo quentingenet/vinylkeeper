@@ -97,6 +97,15 @@ dictConfig(log_config)
 logger = logging.getLogger("app")
 
 
+def log_activity(who: str, what: str) -> None:
+    """
+    One line per user action, all starting with "Activity:" so the live logs can be filtered
+    on what happens on the site. Usernames only: no email address, no password, no token.
+    stacklevel=2: the line shows the file and line of the action, not of this helper.
+    """
+    logger.info(f"Activity: {who} {what}", stacklevel=2)
+
+
 def extract_file_info(tb) -> str:
     """Extract a short file:line string from a traceback, rooted at /app."""
     if tb:

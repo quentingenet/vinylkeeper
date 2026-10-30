@@ -23,8 +23,14 @@ from app.services.place_report_service import PlaceReportService
 from app.deps.deps import get_moderation_service, get_place_report_service, require_admin
 from app.models.user_model import User
 from app.utils.endpoint_utils import handle_app_exceptions
+from app.core.logging import log_activity
 
 router = APIRouter()
+
+
+def _spot(request: ModerationRequestResponse) -> str:
+    """'#12 'Sofa Records'' for the activity log, the id alone when the place is not loaded."""
+    return f"#{request.place_id} {request.place.name!r}" if request.place else f"#{request.place_id}"
 
 
 @router.get("/moderation-requests", response_model=ModerationRequestListResponse, status_code=status.HTTP_200_OK)
@@ -84,6 +90,7 @@ async def approve_moderation_request(
 ):
     """Approve a moderation request (admin only)"""
     approved_request = await service.approve_moderation_request(request_id, user.id)
+    log_activity(f"admin {user.username}", f"approved Atlas spot {_spot(approved_request)} (now on the map)")
     return approved_request
 
 
@@ -100,6 +107,7 @@ async def reject_moderation_request(
 ):
     """Reject a moderation request (admin only)"""
     rejected_request = await service.reject_moderation_request(request_id, user.id)
+    log_activity(f"admin {user.username}", f"rejected Atlas spot {_spot(rejected_request)}")
     return rejected_request
 
 
@@ -135,7 +143,10 @@ async def resolve_place_report(
     service: PlaceReportService = Depends(get_place_report_service),
 ):
     """The spot was fixed: every open report of it is resolved (admin only)"""
-    return await service.resolve(report_id, user)
+    report = await service.resolve(report_id, user)
+    log_activity(f"admin {user.username}",
+                 f"resolved the reports of Atlas spot #{report.place.id} {report.place.name!r}")
+    return report
 
 
 @router.post("/place-reports/{report_id}/dismiss", response_model=PlaceReportResponse, status_code=status.HTTP_200_OK)
@@ -146,7 +157,9 @@ async def dismiss_place_report(
     service: PlaceReportService = Depends(get_place_report_service),
 ):
     """Nothing was wrong: only this report is closed (admin only)"""
-    return await service.dismiss(report_id, user)
+    report = await service.dismiss(report_id, user)
+    log_activity(f"admin {user.username}", f"dismissed report #{report_id} on Atlas spot #{report.place.id}")
+    return report
 
 
 @router.patch("/places/{place_id}", response_model=ReportedPlace, status_code=status.HTTP_200_OK)
