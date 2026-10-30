@@ -10,9 +10,9 @@ function toggle<T>(values: T[], value: T): T[] {
   return values.includes(value) ? values.filter((v) => v !== value) : [...values, value];
 }
 
-/** Filters, random results and "Surprise me" for the Spinning now page. */
-export function useSpinningNow() {
-  const [filters, setFilters] = useState<SpinningNowFilters>(NO_FILTERS);
+/** Filters, random results and "Surprise me" for the Spinning now page, optionally opened with some filters. */
+export function useSpinningNow(initialFilters?: Partial<SpinningNowFilters>) {
+  const [filters, setFilters] = useState<SpinningNowFilters>(() => ({ ...NO_FILTERS, ...initialFilters }));
 
   const optionsQuery = useQuery({
     queryKey: queryKeys.spinningNow.options(),

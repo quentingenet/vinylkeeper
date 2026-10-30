@@ -18,7 +18,7 @@ from app.repositories.collection_repository import CollectionRepository
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.atlas_repository import AtlasRepository
 from app.models.reference_data.place_types import PlaceType
-from sqlalchemy import select
+from sqlalchemy import select, text
 from app.models.collection_album import CollectionAlbum
 from app.models.collection_model import Collection
 
@@ -183,3 +183,72 @@ class TestMyAlbumsCountsWorks:
         stats = await DashboardRepository(real_session).get_user_stats_batch(user_id)
 
         assert stats["albums_total"] == 3
+
+
+async def make_pressing(session, **values) -> Album:
+    """A Discogs album of its own work (no master): eras and genres count it alone."""
+    discogs_id = (await session.execute(
+        text("SELECT id FROM external_sources WHERE name = 'discogs'"))).scalar_one()
+    album = Album(external_album_id=str(uuid.uuid4().int)[:12], external_source_id=discogs_id,
+                  title="itest - pressing", **values)
+    session.add(album)
+    await session.flush()
+    return album
+
+
+class TestCollectionBreakdown:
+    async def test_pressings_by_year_country_and_format(self, real_session):
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        original = await make_pressing(real_session, release_year=1959, original_year=1959, country="US",
+                                       formats=["LP", "Album", "Mono"], genres=["Jazz"])
+        reissue = await make_pressing(real_session, release_year=2015, original_year=1959, country="Europe",
+                                      formats=["LP", "Reissue"], genres=["Jazz"])
+        unknown = await make_pressing(real_session, country="US", formats=["7\""], genres=["Rock"])
+        for album in (original, reissue, unknown):
+            await put_album_in_collection(real_session, collection.id, album.id)
+        repo = DashboardRepository(real_session)
+
+        counts = await repo.pressing_counts(user.id)
+        countries = await repo.pressing_countries(user.id)
+        formats = dict(await repo.pressing_formats(user.id))
+
+        assert (counts.originals, counts.reissues, counts.total) == (1, 1, 3)
+        assert [tuple(row) for row in countries] == [("US", 2), ("Europe", 1)]
+        assert formats == {"LP": 2, "Mono": 1, "Reissue": 1, "7\"": 1}  # "Album" tells nothing
+
+    async def test_a_pressing_in_two_collections_counts_once_and_one_collection_can_be_picked(self, real_session):
+        user = await make_test_user(real_session)
+        first = await make_test_collection(real_session, owner_id=user.id)
+        second = await make_test_collection(real_session, owner_id=user.id)
+        shared = await make_pressing(real_session, country="UK")
+        only_second = await make_pressing(real_session, country="UK")
+        await put_album_in_collection(real_session, first.id, shared.id)
+        await put_album_in_collection(real_session, second.id, shared.id)
+        await put_album_in_collection(real_session, second.id, only_second.id)
+        repo = DashboardRepository(real_session)
+
+        assert (await repo.pressing_counts(user.id)).total == 2
+        assert (await repo.pressing_counts(user.id, [first.id])).total == 1
+
+    async def test_collections_to_pick_leave_out_saved_copies_and_empty_ones(self, real_session):
+        user = await make_test_user(real_session)
+        kept = await make_test_collection(real_session, owner_id=user.id)
+        await make_test_collection(real_session, owner_id=user.id)  # empty
+        saved = await make_test_collection(real_session, owner_id=user.id)
+        saved.saved_from_collection_id = kept.id
+        album = await make_pressing(real_session)
+        await put_album_in_collection(real_session, kept.id, album.id)
+        await put_album_in_collection(real_session, saved.id, album.id)
+        await real_session.flush()
+
+        collections = await DashboardRepository(real_session).stats_collections(user.id)
+
+        assert [row.id for row in collections] == [kept.id]
+
+    async def test_someone_elses_pressings_are_not_counted(self, real_session):
+        user, other = await make_test_user(real_session), await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=other.id)
+        await put_album_in_collection(real_session, collection.id, (await make_pressing(real_session)).id)
+
+        assert (await DashboardRepository(real_session).pressing_counts(user.id)).total == 0

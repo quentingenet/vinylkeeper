@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Box, Button, Link, Paper, Typography } from "@mui/material";
 import { Casino as CasinoIcon, Shuffle as ShuffleIcon } from "@mui/icons-material";
 import LoadingCenter from "@components/UI/LoadingCenter";
@@ -11,11 +12,14 @@ import { useSpinningNow } from "@hooks/useSpinningNow";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { spinningNowAlbumToPlaybackItem } from "@utils/toPlaybackItem";
 import { useAddRecord } from "@contexts/AddRecordContext";
-import type { SpinningNowAlbum } from "@models/ISpinningNow";
+import type { SpinningNowAlbum, SpinningNowFilters } from "@models/ISpinningNow";
 
 const PAGE_MAX_WIDTH = 1200;
 
 export default function SpinningNow() {
+  // The Dashboard stats open this page on the era, genre or mood that was clicked
+  const location = useLocation();
+  const initialFilters = (location.state as { filters?: Partial<SpinningNowFilters> } | null)?.filters;
   const {
     filters,
     hasFilters,
@@ -28,7 +32,7 @@ export default function SpinningNow() {
     toggleGenre,
     toggleCollection,
     clearFilters,
-  } = useSpinningNow();
+  } = useSpinningNow(initialFilters);
   const { isMobile } = useDetectMobile();
   const { openAddRecord } = useAddRecord();
   const [playbackItem, setPlaybackItem] = useState<PlaybackItem | null>(null);

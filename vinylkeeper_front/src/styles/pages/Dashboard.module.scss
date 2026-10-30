@@ -1,6 +1,7 @@
 .dashboard {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    // Three stat tiles in a row, two then one across on narrow screens
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     justify-items: center;
     align-items: flex-start;
@@ -24,6 +25,12 @@
         min-width: 120px;
         display: flex;
         justify-content: center;
+
+        @media (max-width: 900px) {
+            &:nth-child(3) {
+                grid-column: 1 / -1;
+            }
+        }
     }
 
     .card {

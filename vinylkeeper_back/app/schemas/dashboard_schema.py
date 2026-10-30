@@ -40,3 +40,37 @@ class DashboardStatsResponse(BaseModel):
         None, description="Latest artist added to any collection")
     recent_albums: List[LatestAddition] = Field(
         default_factory=list, description="Recent albums for mosaic display (3-5 items)")
+
+
+class BreakdownEntry(BaseModel):
+    label: str
+    count: int
+
+
+class EraEntry(BaseModel):
+    decade: int = Field(..., description="First year of the decade, e.g. 1970")
+    count: int
+
+
+class StatsCollection(BaseModel):
+    id: int
+    name: str
+
+
+class PressingsBreakdown(BaseModel):
+    originals: int = Field(..., description="Pressed the year of the work, or earlier")
+    reissues: int
+    unknown: int = Field(..., description="Pressing or original year not known")
+    countries: List[BreakdownEntry] = Field(default_factory=list, description="Most frequent first")
+    formats: List[BreakdownEntry] = Field(default_factory=list, description="Most frequent first")
+
+
+class CollectionBreakdownResponse(BaseModel):
+    """The records of the user, or of one of their collections, by era, genre, mood and pressing."""
+    collection_id: Optional[int] = None
+    collections: List[StatsCollection] = Field(default_factory=list, description="Collections to pick from")
+    albums_total: int = Field(..., description="Records (works): the pressings of a record count once")
+    eras: List[EraEntry] = Field(default_factory=list)
+    genres: List[BreakdownEntry] = Field(default_factory=list)
+    moods: List[BreakdownEntry] = Field(default_factory=list)
+    pressings: PressingsBreakdown

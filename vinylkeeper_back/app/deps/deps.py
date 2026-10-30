@@ -154,8 +154,9 @@ def get_user_service(
 def get_dashboard_service(
     dashboard_repository: DashboardRepository = Depends(
         get_dashboard_repository),
+    spinning_now_repository: SpinningNowRepository = Depends(get_spinning_now_repository),
 ) -> DashboardService:
-    return DashboardService(dashboard_repository)
+    return DashboardService(dashboard_repository, spinning_now_repository)
 
 
 def get_moderation_service(

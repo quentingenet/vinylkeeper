@@ -195,3 +195,18 @@ describe("SpinningNow page", () => {
     expect(await screen.findByText("Spinning now is unavailable right now. Please try again later.")).toBeInTheDocument();
   });
 });
+
+describe("SpinningNow opened from the Dashboard stats", () => {
+  it("starts with the filters it was given", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={[{ pathname: "/spinning-now", state: { filters: { eras: [1970] } } }]}>
+          <SpinningNow />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(api.pick).toHaveBeenCalled());
+    expect(api.pick.mock.calls[0][0]).toEqual({ moods: [], eras: [1970], genres: [], collections: [] });
+  });
+});

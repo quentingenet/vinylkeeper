@@ -22,3 +22,32 @@ export interface IDashboardStats {
   latest_artist?: LatestAddition;
   recent_albums?: LatestAddition[];
 }
+
+export interface BreakdownEntry {
+  label: string;
+  count: number;
+}
+
+export interface EraEntry {
+  decade: number;
+  count: number;
+}
+
+export interface PressingsBreakdown {
+  originals: number;
+  reissues: number;
+  unknown: number;
+  countries: BreakdownEntry[];
+  formats: BreakdownEntry[];
+}
+
+/** The records of the user, or of one of their collections, by era, genre, mood and pressing */
+export interface CollectionBreakdown {
+  collection_id: number | null;
+  collections: { id: number; name: string }[];
+  albums_total: number;
+  eras: EraEntry[];
+  genres: BreakdownEntry[];
+  moods: BreakdownEntry[];
+  pressings: PressingsBreakdown;
+}

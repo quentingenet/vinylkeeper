@@ -1,6 +1,6 @@
-from typing import List, Optional
+from typing import Any, List, Optional, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, distinct, func, select, tuple_
+from sqlalchemy import and_, case, distinct, func, select, tuple_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 from app.models.album_model import Album
@@ -258,3 +258,79 @@ class DashboardRepository:
                 message="Failed to get public collections count",
                 details={}
             )
+
+    # Format descriptions that tell nothing about a pressing
+    NOISE_FORMATS = ("Album", "All Media")
+    TOP_PRESSING_VALUES = 8
+
+    async def _rows(self, query, operation: str) -> list[Any]:
+        try:
+            return list((await self.db.execute(query)).all())
+        except SQLAlchemyError as e:
+            logger.error(f"Dashboard: failed to {operation}: {str(e)}", exc_info=True)
+            raise ServerError(error_code=5000, message=f"Failed to {operation}", details={})
+
+    async def stats_collections(self, user_id: int) -> list[Any]:
+        """(id, name) of the user's collections that hold albums, their saved copies left out."""
+        query = (
+            select(Collection.id, Collection.name)
+            .where(Collection.owner_id == user_id, Collection.saved_from_collection_id.is_(None),
+                   Collection.id.in_(select(CollectionAlbum.collection_id)))
+            .order_by(Collection.name)
+        )
+        return await self._rows(query, "list collections for stats")
+
+    @staticmethod
+    def _user_pressings(user_id: int, collection_ids: Sequence[int] = ()):
+        """Every pressing the user keeps once, however many collections hold it."""
+        query = (
+            select(CollectionAlbum.album_id)
+            .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .where(Collection.owner_id == user_id)
+            .distinct()
+        )
+        if collection_ids:
+            query = query.where(Collection.id.in_(collection_ids))
+        return query.subquery()
+
+    async def pressing_counts(self, user_id: int, collection_ids: Sequence[int] = ()) -> Any:
+        """(originals, reissues, total): an original is pressed the year of its work, or earlier."""
+        pressings = self._user_pressings(user_id, collection_ids)
+        years_known = and_(Album.original_year.is_not(None), Album.release_year.is_not(None))
+        query = (
+            select(
+                func.count().filter(years_known, Album.release_year <= Album.original_year).label("originals"),
+                func.count().filter(years_known, Album.release_year > Album.original_year).label("reissues"),
+                func.count().label("total"),
+            )
+            .select_from(pressings)
+            .join(Album, Album.id == pressings.c.album_id)
+        )
+        return (await self._rows(query, "count pressings"))[0]
+
+    async def pressing_countries(self, user_id: int, collection_ids: Sequence[int] = ()) -> list[Any]:
+        pressings = self._user_pressings(user_id, collection_ids)
+        query = (
+            select(Album.country, func.count().label("count"))
+            .select_from(pressings)
+            .join(Album, Album.id == pressings.c.album_id)
+            .where(Album.country.is_not(None))
+            .group_by(Album.country)
+            .order_by(func.count().desc(), Album.country)
+            .limit(self.TOP_PRESSING_VALUES)
+        )
+        return await self._rows(query, "count pressing countries")
+
+    async def pressing_formats(self, user_id: int, collection_ids: Sequence[int] = ()) -> list[Any]:
+        pressings = self._user_pressings(user_id, collection_ids)
+        fmt = func.unnest(Album.formats).table_valued("value").render_derived(name="fmt")
+        query = (
+            select(fmt.c.value, func.count().label("count"))
+            .select_from(pressings)
+            .join(Album, Album.id == pressings.c.album_id)
+            .join(fmt, fmt.c.value.not_in(self.NOISE_FORMATS))
+            .group_by(fmt.c.value)
+            .order_by(func.count().desc(), fmt.c.value)
+            .limit(self.TOP_PRESSING_VALUES)
+        )
+        return await self._rows(query, "count pressing formats")

@@ -32,6 +32,36 @@ describe("MediaCard", () => {
       const matches = screen.getAllByText("Discovery");
       expect(matches).toHaveLength(2);
     });
+
+    it("splits on the first separator only, the album title keeps its own dashes", () => {
+      render(
+        <MediaCard item={{ title: "Trust - Live - Paris By Night" }} itemType="album" onPlay={vi.fn()} />
+      );
+
+      expect(screen.getByText("Trust")).toBeInTheDocument();
+      expect(screen.getByText("Live - Paris By Night")).toBeInTheDocument();
+    });
+
+    it("leaves long names whole for the CSS ellipsis and keeps the full title on hover", () => {
+      const title = "Wolfgang Amadeus Mozart - Die Zauberflöte";
+      render(<MediaCard item={{ title }} itemType="album" onPlay={vi.fn()} />);
+
+      expect(screen.getByText("Wolfgang Amadeus Mozart")).toBeInTheDocument();
+      expect(screen.getByTitle(title)).toBeInTheDocument();
+    });
+
+    it("splits a wanted album like a collection album", () => {
+      render(
+        <MediaCard
+          item={{ title: "Simon & Garfunkel - Bridge Over Troubled Water", entity_type: "album" }}
+          itemType="wishlist"
+          onPlay={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText("Simon & Garfunkel")).toBeInTheDocument();
+      expect(screen.getByText("Bridge Over Troubled Water")).toBeInTheDocument();
+    });
   });
 
   describe("artist rendering", () => {

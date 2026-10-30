@@ -13,7 +13,6 @@ import { ARTIST_TO_COLLECTION_TOOLTIP, GOT_IT_TOOLTIP } from "@components/Collec
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { Album } from "@mui/icons-material";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
-import { truncateText } from "@utils/GlobalUtils";
 import styles from "../../styles/pages/Collection.module.scss";
 import { colors } from "@styles/colors";
 
@@ -57,15 +56,13 @@ export default function MediaCard({
   onGotIt,
   imageSize = { w: 300, h: 300, q: 75 },
 }: MediaCardProps) {
-  const titleLine1 =
-    itemType === "album"
-      ? truncateText(item.title?.split(" - ")[0] || "", 20)
-      : truncateText(item.title || "", 20);
-
-  const titleLine2 =
-    itemType === "album"
-      ? truncateText(item.title?.split(" - ")[1] || item.title || "", 20)
-      : null;
+  const title = item.title || "";
+  // Albums are stored as "Artist - Title": artist on the first line, the rest on the second.
+  // Only the first separator splits, titles keep their own dashes ("Trust - Live - Paris By Night").
+  const isAlbum = itemType === "album" || (itemType === "wishlist" && item.entity_type === "album");
+  const separator = title.indexOf(" - ");
+  const titleLine1 = isAlbum && separator > 0 ? title.slice(0, separator) : title;
+  const titleLine2 = isAlbum ? (separator > 0 ? title.slice(separator + 3) : title) : null;
 
   // Copies in a collection, or wanted pressings in the wishlist
   const badgeCount = item.copies_count ?? item.pressings_count ?? 1;
@@ -190,13 +187,23 @@ export default function MediaCard({
         </Box>
       )}
 
+      {/* The 100px under the cover: an album takes one line for its artist and one for its title,
+          an artist up to two lines for its name; the browser cuts what is longer with an ellipsis */}
       <CardContent
+        title={title}
         sx={{
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          height: "80px",
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          // The padding stays inside the card width, or the centered content overflows both sides
+          boxSizing: "border-box",
+          px: 2.5,
+          py: 1.25,
+          "&:last-child": { pb: 1.25 },
           gap: 0.5,
         }}
       >
@@ -206,14 +213,13 @@ export default function MediaCard({
             textAlign: "center",
             color: "primary.main",
             fontWeight: "bold",
+            lineHeight: 1.2,
+            width: "100%",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            lineHeight: 1.2,
-            height: "2.4em",
-            width: "100%",
+            ...(titleLine2 !== null
+              ? { whiteSpace: "nowrap" }
+              : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }),
           }}
         >
           {titleLine1}
@@ -224,14 +230,11 @@ export default function MediaCard({
             sx={{
               fontSize: "1rem",
               textAlign: "center",
+              lineHeight: 1.2,
+              width: "100%",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              lineHeight: 1.2,
-              height: "2.4em",
-              width: "100%",
+              whiteSpace: "nowrap",
             }}
           >
             {titleLine2}

@@ -1,12 +1,21 @@
 import time
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.repositories.dashboard_repository import DashboardRepository
+from app.repositories.spinning_now_repository import SpinningNowRepository
 from app.models.user_model import User
-from app.schemas.dashboard_schema import DashboardStatsResponse, LatestAddition
-from app.core.exceptions import AppException, ServerError
+from app.schemas.dashboard_schema import (
+    BreakdownEntry,
+    CollectionBreakdownResponse,
+    DashboardStatsResponse,
+    EraEntry,
+    LatestAddition,
+    PressingsBreakdown,
+    StatsCollection,
+)
+from app.core.exceptions import AppException, ResourceNotFoundError, ServerError
 from app.core.logging import logger
 
 _CACHE_TTL = 30.0
@@ -14,8 +23,41 @@ _cache: dict[int, tuple[Any, float]] = {}
 
 
 class DashboardService:
-    def __init__(self, dashboard_repository: DashboardRepository):
+    def __init__(self, dashboard_repository: DashboardRepository,
+                 spinning_now_repository: Optional[SpinningNowRepository] = None):
         self.dashboard_repository = dashboard_repository
+        # Eras, genres and moods are counted like Spinning now, where they lead
+        self.spinning_now_repository = spinning_now_repository or SpinningNowRepository(dashboard_repository.db)
+
+    async def get_breakdown(self, user: User, collection_id: Optional[int] = None) -> CollectionBreakdownResponse:
+        """The records of the user, or of one of their collections, by era, genre, mood and pressing."""
+        collections = [StatsCollection(id=collection_id, name=name)
+                       for collection_id, name in await self.dashboard_repository.stats_collections(user.id)]
+        if collection_id is not None and collection_id not in {c.id for c in collections}:
+            # Someone else's collection, a saved copy or an empty one: nothing to tell about it
+            raise ResourceNotFoundError("Collection", collection_id)
+        scope = [collection_id] if collection_id is not None else []
+        spinning, dashboard = self.spinning_now_repository, self.dashboard_repository
+        counts = await dashboard.pressing_counts(user.id, scope)
+        return CollectionBreakdownResponse(
+            collection_id=collection_id,
+            collections=collections,
+            albums_total=await spinning.count_albums(user.id, scope),
+            eras=[EraEntry(decade=decade, count=count) for decade, count in await spinning.era_options(user.id, scope)],
+            genres=[BreakdownEntry(label=name, count=count)
+                    for name, count in await spinning.genre_options(user.id, scope)],
+            moods=[BreakdownEntry(label=name, count=count)
+                   for name, _description, count in await spinning.mood_options(user.id, scope)],
+            pressings=PressingsBreakdown(
+                originals=counts.originals,
+                reissues=counts.reissues,
+                unknown=counts.total - counts.originals - counts.reissues,
+                countries=[BreakdownEntry(label=label, count=count)
+                           for label, count in await dashboard.pressing_countries(user.id, scope)],
+                formats=[BreakdownEntry(label=label, count=count)
+                         for label, count in await dashboard.pressing_formats(user.id, scope)],
+            ),
+        )
 
     async def get_dashboard_stats(self, user: User) -> DashboardStatsResponse:
         cached = _cache.get(user.id)

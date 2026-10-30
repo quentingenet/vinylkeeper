@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 import app.services.dashboard_service as dashboard_service_module
+from app.core.exceptions import ResourceNotFoundError
 from app.services.dashboard_service import DashboardService
 
 
@@ -67,3 +68,51 @@ class TestDashboardCache:
         await service.get_dashboard_stats(make_user(user_id=2))
 
         assert repo.get_user_stats_batch.await_count == 2
+
+
+def make_breakdown_service(collections=((7, "Jazz"),)):
+    repo = AsyncMock()
+    repo.stats_collections = AsyncMock(return_value=list(collections))
+    repo.pressing_counts = AsyncMock(return_value=SimpleNamespace(originals=3, reissues=2, total=6))
+    repo.pressing_countries = AsyncMock(return_value=[("US", 4)])
+    repo.pressing_formats = AsyncMock(return_value=[("LP", 6), ("Mono", 1)])
+    spinning = AsyncMock()
+    spinning.count_albums = AsyncMock(return_value=5)
+    spinning.era_options = AsyncMock(return_value=[(1950, 2), (1960, 3)])
+    spinning.genre_options = AsyncMock(return_value=[("Jazz", 5)])
+    spinning.mood_options = AsyncMock(return_value=[("romantic", "Slow and tender", 2)])
+    return DashboardService(repo, spinning), repo, spinning
+
+
+class TestCollectionBreakdown:
+    async def test_every_breakdown_of_all_collections(self):
+        service, repo, spinning = make_breakdown_service()
+
+        result = await service.get_breakdown(make_user())
+
+        assert result.collection_id is None
+        assert [(c.id, c.name) for c in result.collections] == [(7, "Jazz")]
+        assert result.albums_total == 5
+        assert [(e.decade, e.count) for e in result.eras] == [(1950, 2), (1960, 3)]
+        assert [(g.label, g.count) for g in result.genres] == [("Jazz", 5)]
+        assert [(m.label, m.count) for m in result.moods] == [("romantic", 2)]
+        assert (result.pressings.originals, result.pressings.reissues, result.pressings.unknown) == (3, 2, 1)
+        assert [(f.label, f.count) for f in result.pressings.formats] == [("LP", 6), ("Mono", 1)]
+        spinning.era_options.assert_awaited_once_with(1, [])
+
+    async def test_one_collection_limits_every_count(self):
+        service, repo, spinning = make_breakdown_service()
+
+        result = await service.get_breakdown(make_user(), collection_id=7)
+
+        assert result.collection_id == 7
+        for method in (spinning.count_albums, spinning.genre_options, spinning.mood_options,
+                       repo.pressing_counts, repo.pressing_countries, repo.pressing_formats):
+            assert method.await_args.args == (1, [7])
+
+    async def test_a_collection_that_is_not_one_of_the_users_is_not_found(self):
+        service, repo, _ = make_breakdown_service()
+
+        with pytest.raises(ResourceNotFoundError):
+            await service.get_breakdown(make_user(), collection_id=99)
+        repo.pressing_counts.assert_not_called()

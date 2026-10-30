@@ -67,12 +67,12 @@ class SpinningNowRepository:
             query = query.where(Collection.id.in_(collection_ids))
         return query.subquery()
 
-    async def count_albums(self, user_id: int) -> int:
-        query = select(func.count()).select_from(self._user_albums(user_id))
+    async def count_albums(self, user_id: int, collection_ids: Sequence[int] = ()) -> int:
+        query = select(func.count()).select_from(self._user_albums(user_id, collection_ids))
         return (await self._rows(query, "count albums"))[0][0]
 
-    async def mood_options(self, user_id: int) -> list[Any]:
-        user_albums = self._user_albums(user_id)
+    async def mood_options(self, user_id: int, collection_ids: Sequence[int] = ()) -> list[Any]:
+        user_albums = self._user_albums(user_id, collection_ids)
         query = (
             select(Mood.name, Mood.description, func.count().label("albums_count"))
             .select_from(user_albums)
@@ -83,8 +83,8 @@ class SpinningNowRepository:
         )
         return await self._rows(query, "list mood options")
 
-    async def era_options(self, user_id: int) -> list[Any]:
-        user_albums = self._user_albums(user_id)
+    async def era_options(self, user_id: int, collection_ids: Sequence[int] = ()) -> list[Any]:
+        user_albums = self._user_albums(user_id, collection_ids)
         decade = self._decade().label("decade")
         query = (
             select(decade, func.count().label("albums_count"))
@@ -96,8 +96,8 @@ class SpinningNowRepository:
         )
         return await self._rows(query, "list era options")
 
-    async def genre_options(self, user_id: int) -> list[Any]:
-        user_albums = self._user_albums(user_id)
+    async def genre_options(self, user_id: int, collection_ids: Sequence[int] = ()) -> list[Any]:
+        user_albums = self._user_albums(user_id, collection_ids)
         genre = func.unnest(Album.genres).table_valued("value").render_derived(name="genre")
         query = (
             select(genre.c.value, func.count().label("albums_count"))
