@@ -1,5 +1,14 @@
 export type DiscogsImportStatus = "queued" | "running" | "done" | "failed";
 
+/** The Discogs account connected with OAuth: imports read it, never a typed username */
+export interface DiscogsConnection {
+  /** False while connecting a Discogs account is not configured on the server */
+  available: boolean;
+  connected: boolean;
+  discogs_username: string | null;
+  connected_at: string | null;
+}
+
 export interface DiscogsImportPreview {
   discogs_username: string;
   /** Items of the Discogs collection, every format */
@@ -54,7 +63,6 @@ export interface DiscogsImport {
 }
 
 // Same rule as the API: letters, digits, dots, hyphens and underscores
-export const DISCOGS_USERNAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/;
 
 export const isImportActive = (job: DiscogsImport | null | undefined): boolean =>
   job?.status === "queued" || job?.status === "running";

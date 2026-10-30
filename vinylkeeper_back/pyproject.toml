@@ -24,6 +24,7 @@ psycopg2-binary = "^2.9.6"
 pillow = "^13.0.0"
 odfpy = "^1.4.1"
 pyjwt = {version = "^2.10", extras = ["crypto"]}
+cryptography = "^50.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Box,
@@ -19,26 +19,29 @@ import {
   ListItemIcon,
   MenuItem,
   Select,
-  TextField,
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import DiscogsAttribution from "@components/UI/DiscogsAttribution";
+import { DISCOGS_DISCLAIMER, discogsCollectionUrl } from "@utils/discogsLinks";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
 import { collectionApiService, type PaginatedCollectionListResponse } from "@services/CollectionApiService";
 import { discogsImportApiService } from "@services/DiscogsImportApiService";
 import {
-  DISCOGS_USERNAME_PATTERN,
   isImportActive,
+  type DiscogsConnection,
   type DiscogsImport,
   type DiscogsImportPreview,
 } from "@models/IDiscogsImport";
 import { queryKeys } from "@utils/queryKeys";
 import { isApiError, type ApiError } from "@utils/apiError";
 import {
+  DISCOGS_INDEPENDENCE,
   IMPORT_CONDITIONS,
+  connectionOutcomeMessage,
   importProgress,
   plural,
   existingSaveWarning,
@@ -88,9 +91,11 @@ interface DiscogsImportDialogProps {
    * collectionId null: a new collection is created; saveCopy: an existing one is saved first;
    * includeWantlist: the wantlist then goes into the wishlist
    */
-  onStart: (discogsUsername: string, collectionId: number | null, saveCopy: boolean, includeWantlist: boolean) => void;
+  onStart: (collectionId: number | null, saveCopy: boolean, includeWantlist: boolean) => void;
   isStarting: boolean;
   startError: ApiError | null;
+  /** How the Discogs authorization ended, when Discogs just sent the user back (?discogs=...) */
+  connectionOutcome?: string | null;
 }
 
 export default function DiscogsImportDialog({
@@ -100,11 +105,13 @@ export default function DiscogsImportDialog({
   onStart,
   isStarting,
   startError,
+  connectionOutcome = null,
 }: DiscogsImportDialogProps) {
   const { isMobile } = useDetectMobile();
   const { currentUser } = useUserContext();
   const [dismissedId, setDismissedId] = useState<number | null>(() => readDismissedId(currentUser?.user_uuid));
-  const [username, setUsername] = useState("");
+  const queryClient = useQueryClient();
+  const [disconnected, setDisconnected] = useState(false);
   const [target, setTarget] = useState<number | typeof NEW_COLLECTION>(NEW_COLLECTION);
   // Safe by default: importing into an existing collection saves a copy of it first
   const [saveCopy, setSaveCopy] = useState(true);
@@ -120,9 +127,38 @@ export default function DiscogsImportDialog({
   });
   const collections = useMemo(() => collectionsData?.items ?? [], [collectionsData]);
 
-  const preview = useMutation<DiscogsImportPreview, ApiError, string>({
-    mutationFn: (name) => discogsImportApiService.preview(name),
+  const connection = useQuery<DiscogsConnection, ApiError>({
+    queryKey: queryKeys.discogsImport.connection(currentUser?.user_uuid),
+    queryFn: () => discogsImportApiService.connection(),
+    enabled: open && !!currentUser?.user_uuid,
+    staleTime: 0,
   });
+  const connectedAs = connection.data?.connected ? connection.data.discogs_username : null;
+
+  // Read as soon as the account is connected: no username to type, nothing to check by hand
+  const preview = useQuery<DiscogsImportPreview, ApiError>({
+    queryKey: queryKeys.discogsImport.preview(currentUser?.user_uuid),
+    queryFn: () => discogsImportApiService.preview(),
+    enabled: open && !!connectedAs,
+    staleTime: 0,
+    retry: false,
+  });
+
+  const connect = useMutation<string, ApiError>({
+    mutationFn: () => discogsImportApiService.connect(),
+    // Discogs asks the user to authorize VinylKeeper, then sends them back to the collections
+    onSuccess: (authorizeUrl) => window.location.assign(authorizeUrl),
+  });
+
+  const disconnect = useMutation<void, ApiError>({
+    mutationFn: () => discogsImportApiService.disconnect(),
+    onSuccess: () => {
+      setDisconnected(true);
+      queryClient.removeQueries({ queryKey: queryKeys.discogsImport.preview(currentUser?.user_uuid) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.discogsImport.connection(currentUser?.user_uuid) });
+    },
+  });
+  const outcome = connectionOutcomeMessage(connectionOutcome);
 
   const finishedImport =
     latestImport && (latestImport.status === "done" || latestImport.status === "failed") && latestImport.id !== dismissedId
@@ -142,9 +178,6 @@ export default function DiscogsImportDialog({
     return () => window.clearTimeout(timer);
   }, [open, finishedImportId, dismissResult]);
 
-  const trimmed = username.trim();
-  const isUsernameValid = DISCOGS_USERNAME_PATTERN.test(trimmed);
-  const previewMatches = preview.data?.discogs_username === trimmed;
   const active = isImportActive(latestImport);
   const targetCollection = collections.find((collection) => collection.id === target);
   const targetName = targetCollection?.name ?? "";
@@ -153,16 +186,7 @@ export default function DiscogsImportDialog({
   const targetIsSave = targetCollection?.saved_from_collection_id != null;
   // Ticked and still importable (a new preview may find it private or empty)
   const wantlistIncluded = includeWantlist && !!preview.data && canImportWantlist(preview.data);
-  const canImport = previewMatches && (preview.data?.items_total ?? 0) > 0 && !isStarting;
-
-  const handleUsernameChange = (value: string) => {
-    setUsername(value);
-    if (preview.data || preview.error) preview.reset();
-  };
-
-  const checkCollection = () => {
-    if (isUsernameValid) preview.mutate(trimmed);
-  };
+  const canImport = !!connectedAs && (preview.data?.items_total ?? 0) > 0 && !isStarting;
 
   const errorMessage = (error: ApiError | null) =>
     error && isApiError(error) ? error.message : "Something went wrong. Try again.";
@@ -173,7 +197,7 @@ export default function DiscogsImportDialog({
         id="discogs-import-title"
         sx={{ color: "primary.main", display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
-        Import from Discogs
+        {connectedAs ? "Import from Discogs" : "Connect your Discogs account"}
         <IconButton aria-label="Close" onClick={onClose} sx={{ color: "text.primary" }}>
           <CloseIcon />
         </IconButton>
@@ -206,35 +230,62 @@ export default function DiscogsImportDialog({
               ))}
             </List>
 
-            <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <TextField
-                size="small"
-                label="Discogs username"
-                value={username}
-                onChange={(e) => handleUsernameChange(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && checkCollection()}
-                error={trimmed !== "" && !isUsernameValid}
-                helperText={trimmed !== "" && !isUsernameValid ? "Letters, digits, dots, hyphens and underscores only" : " "}
-                sx={{ flexGrow: 1, minWidth: 220 }}
-                autoFocus
-              />
-              <Button
-                variant="outlined"
-                onClick={checkCollection}
-                disabled={!isUsernameValid || preview.isPending}
-                sx={{ minHeight: 40 }}
-              >
-                {preview.isPending ? <VinylSpinner size={20} /> : "Check"}
-              </Button>
-            </Box>
+            {outcome && (
+              <Alert severity={outcome.severity} sx={{ mb: 2 }}>
+                {outcome.text}
+              </Alert>
+            )}
 
-            {preview.error && (
+            {connection.isLoading ? (
+              <Box display="flex" justifyContent="center" sx={{ py: 2 }}>
+                <VinylSpinner size={32} />
+              </Box>
+            ) : connection.isError || !connection.data?.available ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Connecting a Discogs account is not available right now. Try again later.
+              </Alert>
+            ) : !connectedAs ? (
+              <Box sx={{ mb: 2 }}>
+                {disconnected && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Your Discogs account is disconnected: VinylKeeper no longer keeps its access. You can also remove
+                    VinylKeeper from the applications of your Discogs account settings.
+                  </Alert>
+                )}
+                <Button variant="contained" onClick={() => connect.mutate()} disabled={connect.isPending}>
+                  {connect.isPending ? <VinylSpinner size={20} /> : "Connect with Discogs"}
+                </Button>
+                {connect.error && (
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    {errorMessage(connect.error)}
+                  </Alert>
+                )}
+              </Box>
+            ) : (
+              <Box
+                sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 2, flexWrap: "wrap" }}
+              >
+                <Typography variant="body2">
+                  Connected to Discogs as <strong>{connectedAs}</strong>
+                </Typography>
+                <Button size="small" onClick={() => disconnect.mutate()} disabled={disconnect.isPending}>
+                  Disconnect
+                </Button>
+              </Box>
+            )}
+
+            {connectedAs && preview.isLoading && (
+              <Box display="flex" justifyContent="center" sx={{ py: 2 }}>
+                <VinylSpinner size={32} />
+              </Box>
+            )}
+            {connectedAs && preview.error && (
               <Alert severity="warning" sx={{ mb: 2 }}>
                 {errorMessage(preview.error)}
               </Alert>
             )}
 
-            {previewMatches && preview.data && (
+            {connectedAs && preview.data && (
               <>
                 <Alert severity={preview.data.items_total > 0 ? "success" : "info"} sx={{ mb: 2 }}>
                   {previewMessage(preview.data, includeWantlist)}
@@ -250,7 +301,7 @@ export default function DiscogsImportDialog({
                         setTarget(e.target.value === NEW_COLLECTION ? NEW_COLLECTION : Number(e.target.value))
                       }
                     >
-                      <MenuItem value={NEW_COLLECTION}>New collection: Discogs import ({trimmed})</MenuItem>
+                      <MenuItem value={NEW_COLLECTION}>New collection: Discogs import ({connectedAs})</MenuItem>
                       {collections.map((collection) => (
                         <MenuItem key={collection.id} value={collection.id}>
                           {collection.name}
@@ -314,8 +365,8 @@ export default function DiscogsImportDialog({
                     )}
                     {includeWantlist && canImportWantlist(preview.data) && (
                       <Typography variant="caption" color="text.secondary" component="p">
-                        Your wantlist must be public. Only vinyl records are added; a pressing you already own is
-                        skipped, another pressing of a record you own is added and pointed out.
+                        Only vinyl records are added; a pressing you already own is skipped, another pressing of a
+                        record you own is added and pointed out.
                       </Typography>
                     )}
                   </Box>
@@ -335,13 +386,25 @@ export default function DiscogsImportDialog({
                 disabled={!canImport}
                 onClick={() =>
                   target === NEW_COLLECTION
-                    ? onStart(trimmed, null, false, wantlistIncluded)
+                    ? onStart(null, false, wantlistIncluded)
                     // With a save already there, the API keeps it as the copy of the import
-                    : onStart(trimmed, target, !targetIsSave && (saveCopy || targetSaveName !== null), wantlistIncluded)
+                    : onStart(target, !targetIsSave && (saveCopy || targetSaveName !== null), wantlistIncluded)
                 }
               >
                 {isStarting ? <VinylSpinner size={20} /> : "Import"}
               </Button>
+            </Box>
+            <Box sx={{ pb: 1 }}>
+              <DiscogsAttribution
+                lead="Collection data provided by"
+                href={connectedAs ? discogsCollectionUrl(connectedAs) : "https://www.discogs.com"}
+              />
+              <Typography variant="caption" color="text.secondary" component="p">
+                {DISCOGS_INDEPENDENCE}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" component="p">
+                {DISCOGS_DISCLAIMER}
+              </Typography>
             </Box>
           </>
         )}

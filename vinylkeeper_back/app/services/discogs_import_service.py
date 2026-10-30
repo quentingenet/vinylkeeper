@@ -23,6 +23,7 @@ from app.core.logging import logger
 from app.db.session import AsyncSessionLocal, engine
 from app.models.discogs_import_model import DiscogsImport
 from app.repositories.collection_repository import CollectionRepository
+from app.repositories.discogs_connection_repository import DiscogsConnectionRepository
 from app.repositories.discogs_import_repository import DiscogsImportRepository
 from app.repositories.mood_assignment_repository import MoodAssignmentRepository
 from app.services.album_enrichment_service import (
@@ -33,6 +34,7 @@ from app.services.album_enrichment_service import (
     parse_release,
 )
 from app.services.collection_service import save_collection_copy
+from app.services.discogs_oauth_service import DiscogsOAuthService
 from app.services.mood_assignment_service import MoodAssignmentService
 from app.utils.discogs_release import is_discogs_image
 
@@ -241,6 +243,9 @@ class DiscogsImportService:
         try:
             if job.collection_id is None:
                 raise DiscogsImportError("The collection of this import was deleted.", "collection_deleted")
+            if self.client is None:
+                raise DiscogsImportError(
+                    "Your Discogs account is no longer connected. Connect it again, then import.", "not_connected")
             # Before anything is written: the works already there tell "another pressing" apart
             masters_before = await self.repository.masters_in_collection(job.collection_id)
             items = await self._fetch_collection(job)
@@ -472,18 +477,32 @@ async def _run_queued_imports_once() -> bool:
             return False
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0)) as http_client:
-                client = DiscogsClient(http_client, min_interval=IMPORT_MIN_INTERVAL_SECONDS)
                 async with AsyncSessionLocal() as db:
                     repository = DiscogsImportRepository(db)
-                    service = DiscogsImportService(repository, client)
+                    service = DiscogsImportService(repository)
+                    connections = DiscogsOAuthService(DiscogsConnectionRepository(db), http_client)
                     # Holding the lock: nothing else runs an import, a "running" one was left by a stopped worker
                     if await repository.requeue_running_imports():
                         await db.commit()
                     while job := await repository.next_queued_import():
+                        service.client = await import_client(connections, http_client, job)
                         await service.run_import(job)
         finally:
             await lock_connection.execute(select(func.pg_advisory_unlock(IMPORT_LOCK_KEY)))
         return True
+
+
+async def import_client(
+    connections: "DiscogsOAuthService", http_client: httpx.AsyncClient, job: DiscogsImport
+) -> Optional[DiscogsClient]:
+    """
+    A client signing as the Discogs account connected by the importing user, or None when it was
+    disconnected, or replaced by another account, since the import was queued.
+    """
+    connection = await connections.authorization_for(job.user_id)
+    if connection is None or connection[0] != job.discogs_username:
+        return None
+    return DiscogsClient(http_client, min_interval=IMPORT_MIN_INTERVAL_SECONDS, authorization=connection[1])
 
 
 def raise_for_preview(error: DiscogsImportError) -> None:

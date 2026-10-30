@@ -1,14 +1,32 @@
 import type { DiscogsImport, DiscogsImportPreview } from "@models/IDiscogsImport";
 
 export const IMPORT_CONDITIONS = [
-  "You need a Discogs account.",
-  "Your Discogs collection must be public: in Discogs, open Settings, then Privacy, and make your collection visible to everyone.",
+  "Connect your Discogs account: Discogs asks you to authorize VinylKeeper, which then reads your collection and your wantlist, nothing else. Private collections work too.",
   "Only vinyl records are imported: CDs, cassettes and other formats are skipped.",
   "Imported records have a pressing to confirm: check the pressing of each record in your collection. Country and condition are not imported.",
-  "Your Discogs wantlist goes into your wishlist only if you tick the box below, and it must be public too.",
+  "Your Discogs wantlist goes into your wishlist only if you tick the box below.",
   "Records already in the collection are not added twice.",
   "By default the records go into a new collection: deleting it undoes the import. Importing into an existing collection saves a copy of it first.",
 ];
+
+/** Shown where Discogs data is imported, after the attribution and its link */
+export const DISCOGS_INDEPENDENCE = "VinylKeeper is an independent application and is not affiliated with Discogs.";
+
+/** What the user reads when Discogs sends them back to the app (?discogs=...) */
+export function connectionOutcomeMessage(outcome: string | null): { severity: "success" | "warning"; text: string } | null {
+  switch (outcome) {
+    case null:
+      return null;
+    case "connected":
+      return { severity: "success", text: "Your Discogs account is connected. Choose what to import." };
+    case "denied":
+      return { severity: "warning", text: "The connection to Discogs was cancelled." };
+    case "expired":
+      return { severity: "warning", text: "The connection took too long. Connect your Discogs account again." };
+    default:
+      return { severity: "warning", text: "Discogs could not connect your account. Try again in a few minutes." };
+  }
+}
 
 /** What the progress bar shows: a label, and a value from 0 to 100 (null while unknown). */
 export function importProgress(job: DiscogsImport): { label: string; value: number | null } {
@@ -110,20 +128,20 @@ export const canImportWantlist = (preview: DiscogsImportPreview): boolean =>
 
 /** What the preview says, the wantlist included when it is imported too. */
 export function previewMessage(preview: DiscogsImportPreview, includeWantlist: boolean): string {
-  if (preview.items_total === 0) return "This Discogs collection is empty.";
+  if (preview.items_total === 0) return "Your Discogs collection is empty.";
   const wantlist = includeWantlist && canImportWantlist(preview)
     ? ` and ${preview.wantlist_items_total} in its wantlist`
     : "";
   const found = wantlist
-    ? `${plural(preview.items_total, "item")} in this Discogs collection${wantlist}.`
-    : `${plural(preview.items_total, "item")} found in this Discogs collection.`;
+    ? `${plural(preview.items_total, "item")} in your Discogs collection${wantlist}.`
+    : `${plural(preview.items_total, "item")} found in your Discogs collection.`;
   return `${found} Only the vinyl records will be imported.`;
 }
 
 /** Why the wantlist cannot be imported along, null when it can. */
 export function wantlistUnavailableReason(preview: DiscogsImportPreview): string | null {
   if (canImportWantlist(preview)) return null;
-  if (preview.wantlist_private) return "Your Discogs wantlist is private: make it public to import it.";
+  if (preview.wantlist_private) return "Your Discogs wantlist could not be read.";
   if (preview.wantlist_items_total === 0) return "Your Discogs wantlist is empty.";
   return "Your Discogs wantlist could not be read right now. Try again in a few minutes.";
 }

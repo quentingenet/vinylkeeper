@@ -15,6 +15,7 @@ from .tag_mood_rule_model import TagMoodRule
 from .discogs_import_model import DiscogsImport
 from .album_price_model import AlbumPrice, AlbumPriceRequest, ExchangeRate, ValueRefresh
 from .place_report_model import PlaceReport
+from .discogs_connection_model import DiscogsConnection, DiscogsOAuthRequest
 
 from .reference_data.external_sources import ExternalSource
 from .reference_data.entity_types import EntityType
@@ -54,4 +55,6 @@ __all__ = [
     "ExchangeRate",
     "ValueRefresh",
     "PlaceReport",
+    "DiscogsConnection",
+    "DiscogsOAuthRequest",
 ]

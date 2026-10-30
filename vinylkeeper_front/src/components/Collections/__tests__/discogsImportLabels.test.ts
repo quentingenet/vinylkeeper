@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   importProgress,
+  connectionOutcomeMessage,
   previewMessage,
   wantlistUnavailableReason,
   wantlistSummary,
@@ -141,17 +142,27 @@ describe("preview", () => {
 
   it("counts the wantlist only when it is imported too", () => {
     expect(previewMessage(preview(12), false)).toBe(
-      "7 items found in this Discogs collection. Only the vinyl records will be imported.");
+      "7 items found in your Discogs collection. Only the vinyl records will be imported.");
     expect(previewMessage(preview(12), true)).toBe(
-      "7 items in this Discogs collection and 12 in its wantlist. Only the vinyl records will be imported.");
+      "7 items in your Discogs collection and 12 in its wantlist. Only the vinyl records will be imported.");
     expect(previewMessage(preview(null, true), true)).toBe(
-      "7 items found in this Discogs collection. Only the vinyl records will be imported.");
+      "7 items found in your Discogs collection. Only the vinyl records will be imported.");
   });
 
   it("says why the wantlist cannot be imported", () => {
     expect(wantlistUnavailableReason(preview(12))).toBeNull();
-    expect(wantlistUnavailableReason(preview(null, true))).toMatch(/private/);
+    expect(wantlistUnavailableReason(preview(null, true))).toMatch(/could not be read/);
     expect(wantlistUnavailableReason(preview(0))).toBe("Your Discogs wantlist is empty.");
     expect(wantlistUnavailableReason(preview(null))).toMatch(/could not be read/);
+  });
+});
+
+describe("connectionOutcomeMessage", () => {
+  it("says how the Discogs authorization ended", () => {
+    expect(connectionOutcomeMessage(null)).toBeNull();
+    expect(connectionOutcomeMessage("connected")?.severity).toBe("success");
+    expect(connectionOutcomeMessage("denied")?.text).toMatch(/cancelled/);
+    expect(connectionOutcomeMessage("expired")?.text).toMatch(/again/);
+    expect(connectionOutcomeMessage("refused")?.text).toMatch(/could not connect/);
   });
 });

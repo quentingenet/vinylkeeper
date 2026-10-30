@@ -9,7 +9,7 @@ import CollectionItem from "@components/Collections/CollectionItem";
 import CollectionGrid from "@components/Collections/CollectionGrid";
 import CollectionsPagination from "@components/Collections/CollectionsPagination";
 import LoadingCenter from "@components/UI/LoadingCenter";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   CollectionResponse,
   CollectionListItemResponse,
@@ -17,7 +17,7 @@ import {
 import ModalCollection from "@components/Collections/ModalCollection";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { useCollections } from "@hooks/useCollections";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EGlobalUrls, COLLECTIONS_PAGE_PARAM } from "@utils/GlobalUrls";
 import { useDebounce } from "@hooks/useDebounce";
 import { useUrlPage } from "@hooks/useUrlPage";
@@ -35,7 +35,20 @@ export default function MyCollectionsPanel() {
   const itemsPerPage = ITEMS_PER_PAGE;
   const navigate = useNavigate();
   const location = useLocation();
-  const [isImportOpen, setIsImportOpen] = useState(false);
+  // Discogs sends the user back here after the authorization (?discogs=connected, denied...):
+  // the import dialog opens again with what happened, and the parameter leaves the URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const discogsReturn = searchParams.get("discogs");
+  const [connectionOutcome, setConnectionOutcome] = useState<string | null>(discogsReturn);
+  const [isImportOpen, setIsImportOpen] = useState(discogsReturn !== null);
+  useEffect(() => {
+    if (discogsReturn === null) return;
+    setConnectionOutcome(discogsReturn);
+    setIsImportOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("discogs");
+    setSearchParams(next, { replace: true });
+  }, [discogsReturn, searchParams, setSearchParams]);
   const { latestImport, startImport } = useDiscogsImport();
 
   // Debounce page changes to avoid too many requests
@@ -158,11 +171,15 @@ export default function MyCollectionsPanel() {
       </Box>
       <DiscogsImportDialog
         open={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
+        onClose={() => {
+          setIsImportOpen(false);
+          setConnectionOutcome(null);
+        }}
         latestImport={latestImport}
-        onStart={(discogsUsername, collectionId, saveCopy, includeWantlist) =>
-          startImport.mutate({ discogsUsername, collectionId, saveCopy, includeWantlist })
+        onStart={(collectionId, saveCopy, includeWantlist) =>
+          startImport.mutate({ collectionId, saveCopy, includeWantlist })
         }
+        connectionOutcome={connectionOutcome}
         isStarting={startImport.isPending}
         startError={startImport.error}
       />

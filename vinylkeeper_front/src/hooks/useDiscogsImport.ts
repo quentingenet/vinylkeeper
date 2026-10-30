@@ -46,9 +46,9 @@ export function useDiscogsImport() {
     }
   }, [latestImport, queryClient]);
 
-  const startImport = useMutation<DiscogsImport, ApiError, { discogsUsername: string; collectionId: number | null; saveCopy: boolean; includeWantlist: boolean }>({
-    mutationFn: ({ discogsUsername, collectionId, saveCopy, includeWantlist }) =>
-      discogsImportApiService.start(discogsUsername, collectionId, saveCopy, includeWantlist),
+  const startImport = useMutation<DiscogsImport, ApiError, { collectionId: number | null; saveCopy: boolean; includeWantlist: boolean }>({
+    mutationFn: ({ collectionId, saveCopy, includeWantlist }) =>
+      discogsImportApiService.start(collectionId, saveCopy, includeWantlist),
     onSuccess: (job) => {
       queryClient.setQueryData(queryKey, job);
       // A new collection may have been created for the records

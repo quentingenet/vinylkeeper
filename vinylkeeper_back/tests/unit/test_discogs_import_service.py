@@ -144,6 +144,16 @@ def wants_page(items, page_number, pages, total):
 
 
 class TestRunImport:
+    async def test_a_disconnected_discogs_account_fails_the_import_clearly(self):
+        service, _ = make_service(pages=[])
+        service.client = None  # the user disconnected Discogs, or connected another account, since queuing
+        job = make_job()
+
+        await service.run_import(job)
+
+        assert job.status == "failed"
+        assert "no longer connected" in job.error_message
+
     async def test_every_page_is_fetched_then_written(self, monkeypatch):
         service, client = make_service(pages=[
             page([item(1), item(2, formats=("CD",))], 1, 2, 3),

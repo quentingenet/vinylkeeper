@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     # external API
     DISCOGS_API_URL: str
     DISCOGS_API_KEY: str
+    # "Connect with Discogs" (OAuth 1.0a): the application registered on Discogs, the key that
+    # encrypts the users' tokens (Fernet), and where Discogs sends the user back. Empty: the
+    # connection is disabled, the rest of the app works.
+    DISCOGS_CONSUMER_KEY: str = ""
+    DISCOGS_CONSUMER_SECRET: str = ""
+    DISCOGS_TOKEN_KEY: str = ""
+    DISCOGS_OAUTH_CALLBACK_URL: str = ""
     # Background Discogs enrichment of newly created albums (disabled in tests)
     ALBUM_ENRICHMENT_ENABLED: bool = True
 

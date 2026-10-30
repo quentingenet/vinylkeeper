@@ -3,15 +3,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# Discogs usernames: letters, digits, dots, hyphens and underscores
-DISCOGS_USERNAME_PATTERN = r"^[A-Za-z0-9._-]{1,100}$"
-
 
 class DiscogsImportCreate(BaseModel):
-    """Import the public Discogs collection of discogs_username into one collection of the user."""
+    """Import the collection of the Discogs account the user connected into one of their collections."""
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    discogs_username: str = Field(..., pattern=DISCOGS_USERNAME_PATTERN, description="Discogs username")
     collection_id: Optional[int] = Field(
         None, gt=0,
         description="Collection of the user receiving the records; none: a new collection is created for them",
@@ -20,7 +16,7 @@ class DiscogsImportCreate(BaseModel):
         False, description="Save a copy of the receiving collection first (ignored for a new collection)"
     )
     include_wantlist: bool = Field(
-        False, description="Then import the public wantlist into the wishlist, in the same import"
+        False, description="Then import the wantlist into the wishlist, in the same import"
     )
 
 
@@ -67,3 +63,15 @@ class DiscogsImportResponse(BaseModel):
     error_message: Optional[str] = None
     created_at: datetime
     finished_at: Optional[datetime] = None
+
+
+class DiscogsConnectionStatus(BaseModel):
+    """The Discogs account the user connected, if any."""
+    available: bool = Field(..., description="False while connecting a Discogs account is not configured")
+    connected: bool
+    discogs_username: Optional[str] = None
+    connected_at: Optional[datetime] = None
+
+
+class DiscogsAuthorizeResponse(BaseModel):
+    authorize_url: str = Field(..., description="Discogs page where the user authorizes VinylKeeper")

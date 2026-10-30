@@ -21,7 +21,7 @@ export function useMusicSearch() {
     queryFn: async ({ queryKey: [, query, is_artist, page] }) => {
       const results = await searchApiService.searchMusicPage({ query, is_artist, page });
       // Kept with the data: previous results stay on screen while a search of the other type loads
-      return { ...results, items: results.items.map(withTitle), isArtist: is_artist };
+      return { ...results, items: results.items.map(withTitle), isArtist: is_artist, query };
     },
     enabled: request !== null,
     // Same as before pagination: a failed search is reported, not silently retried

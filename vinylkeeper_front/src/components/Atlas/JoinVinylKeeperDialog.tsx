@@ -23,7 +23,7 @@ import { previewSlides } from "@components/Landpage/previewSlides";
 
 const MEMBER_FEATURES = [
   "Catalog your records, their copies and pressings",
-  "Import your Discogs collection in 30 seconds",
+  "Connect your Discogs account to import your collection",
   "Estimate what your collection is worth",
   "Pick tonight's record with Spinning now",
   "Keep a wishlist and share your collections",

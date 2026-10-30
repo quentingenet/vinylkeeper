@@ -7,7 +7,7 @@ stored, so features built on it never call Discogs at request time.
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import httpx
 
@@ -45,6 +45,7 @@ class DiscogsClient:
         http_client: httpx.AsyncClient,
         max_attempts: int = len(RATE_LIMIT_BACKOFF_SECONDS),
         min_interval: float = DISCOGS_MIN_INTERVAL_SECONDS,
+        authorization: Optional[Callable[[], str]] = None,
     ):
         self.http_client = http_client
         self.max_attempts = max_attempts
@@ -54,6 +55,8 @@ class DiscogsClient:
             "Authorization": f"Discogs token={settings.DISCOGS_API_KEY}",
             "User-Agent": settings.USER_AGENT,
         }
+        # A user's OAuth credentials instead of the application token: a fresh header per request
+        self.authorization = authorization
 
     async def _throttle(self) -> None:
         wait = self.min_interval - (time.monotonic() - self._last_request_at)
@@ -67,7 +70,9 @@ class DiscogsClient:
         for attempt in range(self.max_attempts):
             await self._throttle()
             try:
-                response = await self.http_client.get(url, headers=self.headers)
+                headers = self.headers if self.authorization is None else {
+                    **self.headers, "Authorization": self.authorization()}
+                response = await self.http_client.get(url, headers=headers)
             except httpx.HTTPError as e:
                 raise DiscogsUnavailableError(f"Network error on {path}: {e}") from e
 

@@ -24,6 +24,8 @@ import RecordResultRow from "@components/AddRecord/RecordResultRow";
 import type { AddRecordOptions } from "@contexts/AddRecordContext";
 import { useMusicSearch } from "@hooks/useMusicSearch";
 import useDetectMobile from "@hooks/useDetectMobile";
+import DiscogsAttribution from "@components/UI/DiscogsAttribution";
+import { discogsSearchUrl } from "@utils/discogsLinks";
 import type { DiscogsData } from "@models/IRequestProxy";
 
 const toPlaybackItem = (item: DiscogsData, isArtist: boolean): PlaybackItem => ({
@@ -121,9 +123,10 @@ export default function AddRecordDialog({ options, onClose }: AddRecordDialogPro
             }}
           />
         </Box>
-        <Typography variant="caption" color="text.secondary">
-          Data sourced from Discogs.
-        </Typography>
+        {/* Discogs' terms: an attribution with a link to the Discogs page of the data shown */}
+        <DiscogsAttribution
+          href={results ? discogsSearchUrl(results.query, results.isArtist) : "https://www.discogs.com"}
+        />
 
         {results && results.items.length === 0 && (
           <Typography color="text.secondary" sx={{ textAlign: "center", py: 4 }}>

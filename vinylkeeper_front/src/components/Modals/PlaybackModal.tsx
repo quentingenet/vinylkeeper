@@ -25,6 +25,8 @@ import OwnedPressingsSection from "@components/Modals/OwnedPressingsSection";
 import WishlistPressings from "@components/Modals/WishlistPressings";
 import type { WishlistPressing } from "@models/IExternalReference";
 import type { CollectionAlbumResponse } from "@models/Collection";
+import DiscogsAttribution from "@components/UI/DiscogsAttribution";
+import { discogsPageUrl } from "@utils/discogsLinks";
 import { colors } from "@styles/colors";
 
 export interface PlaybackItem {
@@ -306,6 +308,11 @@ export default function PlaybackModal({
                       : "Biography not available"}
                   </Typography>
                 ) : null}
+
+                {/* Discogs' terms: the details above come from this Discogs page */}
+                <Box sx={{ mt: 2, textAlign: "center" }}>
+                  <DiscogsAttribution href={discogsPageUrl(item.itemType, item.id)} />
+                </Box>
               </>
             )}
           </Box>

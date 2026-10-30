@@ -1,18 +1,126 @@
+import type { ReactNode } from "react";
 import { Box, Modal, Typography, Button, Link } from "@mui/material";
 import { colors } from "@styles/colors";
+import { DISCOGS_DISCLAIMER } from "@utils/discogsLinks";
 
 // The popup has a light background: its links take the color of the text around them (black),
 // underlined, whatever the theme of the page opening it (the gold primary is unreadable on it)
 const readableLink = { color: "inherit", underline: "always", sx: { fontWeight: 600 } } as const;
+
+export const TERMS_LAST_UPDATED = "30/10/2026";
+const CONTACT_EMAIL = "vinylkeeper@quentingenet.fr";
+
+const ExternalLink = ({ href, children }: { href: string; children: ReactNode }) => (
+  <Link {...readableLink} href={href} target="_blank" rel="noopener noreferrer">
+    {children}
+  </Link>
+);
+
+interface TermsSection {
+  title: string;
+  paragraphs: ReactNode[];
+}
+
+const SECTIONS: TermsSection[] = [
+  {
+    title: "Legal information",
+    paragraphs: [
+      <>
+        Publisher: Quentin Genet, private individual. Contact:{" "}
+        <Link {...readableLink} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</Link>.
+      </>,
+      <>
+        Hosting of the API and its database: Hostinger (<ExternalLink href="https://www.hostinger.com">hostinger.com</ExternalLink>).
+        Hosting of the website: Netlify (<ExternalLink href="https://www.netlify.com">netlify.com</ExternalLink>).
+      </>,
+    ],
+  },
+  {
+    title: "1. Acceptance of the Terms",
+    paragraphs: [
+      "1.1. Using Vinyl Keeper (the \"Application\") means accepting these Terms of Use (the \"Terms\") without reservation.",
+      "1.2. You acknowledge having read these Terms and agree to comply with them.",
+    ],
+  },
+  {
+    title: "2. Use of the Application",
+    paragraphs: [
+      "2.1. The Application is meant for personal, non-commercial use: managing, sharing and discovering vinyl collections.",
+      "2.2. You must be at least 15 years old to create an account.",
+    ],
+  },
+  {
+    title: "3. Collection value estimates",
+    paragraphs: [
+      "3.1. The value shown for a collection is an indicative estimate, computed from the prices Discogs suggests for the pressings you recorded. It is not an appraisal and depends on how exact your pressings and conditions are.",
+      "3.2. For any decision about the value of your records (sale, insurance), consult a professional.",
+    ],
+  },
+  {
+    title: "4. Your content and what others see",
+    paragraphs: [
+      "4.1. You are responsible for what you add: collection names, records, Atlas spots, reports and their comments.",
+      "4.2. Collections you make public, and your username, are visible to the other members. The Vinyl Atlas, its spots included, is visible to everyone, visitors without an account too.",
+      "4.3. The administrator may correct or remove an Atlas spot that is wrong, closed or inappropriate.",
+    ],
+  },
+  {
+    title: "5. No warranty",
+    paragraphs: [
+      "5.1. The Application is provided \"as is\" under GPLv3, without warranty of accuracy, reliability or fitness for a particular purpose.",
+      "5.2. The developer cannot be held responsible for errors, inaccuracies or omissions, nor for decisions taken on the basis of the Application.",
+    ],
+  },
+  {
+    title: "6. Service interruption",
+    paragraphs: [
+      "6.1. The Application may be temporarily unavailable for technical or maintenance reasons. The developer cannot be held responsible for such interruptions.",
+    ],
+  },
+  {
+    title: "7. Personal data (GDPR)",
+    paragraphs: [
+      "7.1. Data processed: your account (email address, username, password stored hashed, timezone, preferred currency); your activity (dates of your last login and visit, number of logins); your content (collections, records and copies with their condition, wishlist, likes, Atlas spots you suggest, reports and their comments, contact messages); and, if you connect it, your Discogs account (Discogs username and access tokens, stored encrypted) with the history of your imports.",
+      "7.2. This data is only used to provide the features of the Application. It is never used for advertising or marketing, and never sold or rented.",
+      "7.3. Legal basis: the performance of the service you sign up for (Article 6.1.b of Regulation (EU) 2016/679, the GDPR). The technical logs that keep the service secure rely on its legitimate interest (Article 6.1.f).",
+      "7.4. Recipients, only what each one needs: Hostinger hosts the API and the database; Netlify hosts the website and sees the IP address of visitors; OVH sends the emails; Discogs answers the searches and, when you connect your account, gives access to your collection and wantlist; OpenStreetMap serves the map tiles your browser loads; Nominatim locates the Atlas spots. The exchange rates of the collection value (European Central Bank, through Frankfurter) involve no personal data.",
+      "7.5. Retention: your data is kept while your account exists. When you delete it, your account, collections, wishlist, likes and Discogs connection are deleted; the Atlas spots you suggested and your reports stay, without your name. Daily backups of the database keep the data until they are replaced, and the technical logs, which contain usernames, are kept up to 4 weeks.",
+      "7.6. Cookies: only cookies strictly necessary to the service (session and security). No tracking or advertising cookie. Your browser's local storage keeps a few preferences, such as the tutorial already seen.",
+      "7.7. Your rights under the GDPR: access, rectification, erasure (delete your account from the Settings page), portability (export your collections and wishlist as CSV or ODS from the Application, or ask for your data) and objection. You can disconnect your Discogs account at any time from the Discogs import window, and also remove Vinyl Keeper from the applications of your Discogs account.",
+      <>
+        7.8. To exercise these rights: <Link {...readableLink} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</Link>.
+        If you believe your rights are not respected, you may lodge a complaint with the French data protection
+        authority (CNIL) at <ExternalLink href="https://www.cnil.fr">www.cnil.fr</ExternalLink>.
+      </>,
+    ],
+  },
+  {
+    title: "8. Discogs attribution and disclaimer",
+    paragraphs: [
+      "8.1. Vinyl Keeper uses the Discogs API to search records, complete their details, estimate collection values and import Discogs collections.",
+      `8.2. ${DISCOGS_DISCLAIMER}`,
+      <>
+        8.3. Data provided by <ExternalLink href="https://www.discogs.com">Discogs</ExternalLink>. All rights to
+        Discogs trademarks and content remain with their respective owners.
+      </>,
+    ],
+  },
+  {
+    title: "9. Changes to the Terms",
+    paragraphs: ["9.1. The developer may change these Terms at any time. The date above shows the latest version."],
+  },
+  {
+    title: "10. Applicable law and jurisdiction",
+    paragraphs: ["10.1. These Terms are governed by French law. Any dispute falls under the exclusive jurisdiction of French courts."],
+  },
+];
 
 interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: (value: boolean) => void;
   openTermsModal: boolean;
 }
 
-export default function ModalTermsVinylKeeper(
-  props: ModalTermsVinylKeeperProps,
-) {
+export default function ModalTermsVinylKeeper(props: ModalTermsVinylKeeperProps) {
   const { setOpenTermsModal, openTermsModal } = props;
 
   const handleClose = () => setOpenTermsModal(false);
@@ -42,224 +150,47 @@ export default function ModalTermsVinylKeeper(
     <Modal
       open={openTermsModal}
       onClose={handleClose}
-      aria-labelledby="modal-modal-title"
-      aria-describedby="modal-modal-description"
+      aria-labelledby="terms-modal-title"
+      aria-describedby="terms-modal-description"
       disableAutoFocus
       disableEnforceFocus
     >
       <Box sx={style}>
-        <Typography
-          variant="h6"
-          component="h2"
-          sx={{
-            color: "black",
-            textAlign: "center",
-          }}
-        >
-          Terms of Use — Vinyl Keeper
+        <Typography id="terms-modal-title" variant="h6" component="h2" sx={{ color: "black", textAlign: "center" }}>
+          Vinyl Keeper Terms of Use
         </Typography>
 
-        <Typography id="modal-modal-description" sx={{ mt: 2, color: "black" }}>
-          <strong>
-            Vinyl Keeper is a free and open-source application licensed under
-            GPLv3, developed by Quentin Genet. The purpose of the Application is
-            to provide a tool for managing vinyl collections while promoting the
-            freedom to share and modify the software.
-            <br />
-          </strong>
-          <br />
-
-          <Typography sx={{ mt: 1, textAlign: "center", color: "black" }}>
-            The Application is available at
-            <br />
-            https://vinylkeeper.org
-            <br />
-            <Link
-              {...readableLink}
-              href="https://github.com/quentingenet/vinylkeeper"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Source code (GitHub)
-            </Link>
+        <Box id="terms-modal-description" sx={{ mt: 2, color: "black" }}>
+          <Typography sx={{ color: "black", fontWeight: 700 }}>
+            Vinyl Keeper is a free and open-source application licensed under GPLv3, developed by Quentin Genet, to
+            manage, share and discover vinyl collections while promoting the freedom to share and modify the software.
           </Typography>
 
           <Typography sx={{ mt: 2, textAlign: "center", color: "black" }}>
-            <strong>Last updated: 18/06/2026</strong>
+            Available at <ExternalLink href="https://vinylkeeper.org">vinylkeeper.org</ExternalLink>
+            <br />
+            <ExternalLink href="https://github.com/quentingenet/vinylkeeper">Source code (GitHub)</ExternalLink>
+          </Typography>
+          <Typography sx={{ mt: 1, textAlign: "center", color: "black", fontStyle: "italic" }}>
+            Last updated: {TERMS_LAST_UPDATED}
           </Typography>
 
-          <br />
-          <br />
+          {SECTIONS.map((section) => (
+            <Box key={section.title} component="section" sx={{ mt: 2.5 }}>
+              <Typography component="h3" sx={{ color: "black", fontWeight: 700 }}>
+                {section.title}
+              </Typography>
+              {section.paragraphs.map((paragraph, index) => (
+                <Typography key={index} variant="body2" sx={{ color: "black", mt: 0.75 }}>
+                  {paragraph}
+                </Typography>
+              ))}
+            </Box>
+          ))}
+        </Box>
 
-          <Typography sx={{ textAlign: "center", color: "black" }}>
-            <strong>Legal Information</strong>
-          </Typography>
-          <br />
-          The website is owned and administered by Quentin Genet. Hosting is
-          provided by Hostinger – a company registered in Lithuania. Contact and
-          address details for the hosting provider can be found on the Hostinger
-          website.
-          <br />
-          <br />
-
-          <strong>1. Acceptance of Terms of Use</strong>
-          <br />
-          1.1. The use of the Vinyl Keeper application (hereinafter referred to
-          as the "Application") is subject to the unconditional acceptance of
-          these Terms of Use (hereinafter referred to as "Terms").
-          <br />
-          1.2. The user acknowledges having read the Terms carefully and agrees
-          to comply with all the provisions stated herein.
-          <br />
-          <br />
-
-          <strong>2. Personal Use</strong>
-          <br />
-          2.1. The Application is intended solely for personal use in managing
-          vinyl collections.
-          <br />
-          2.2. Users are encouraged to consult a professional for any advice
-          regarding the value or management of their collection.
-          <br />
-          <br />
-
-          <strong>3. User Responsibility</strong>
-          <br />
-          3.1. The user is entirely responsible for their decisions and actions
-          resulting from the use of the Application.
-          <br />
-          3.2. The developer of the Application disclaims any responsibility for
-          the consequences of actions taken based on the information provided by
-          the Application.
-          <br />
-          <br />
-
-          <strong>4. No Warranty</strong>
-          <br />
-          4.1. The Application is provided "as is" under GPLv3 without warranty
-          of accuracy, reliability, or suitability for a particular purpose.
-          <br />
-          4.2. The developer of the Application makes no guarantees regarding
-          the results obtained from its use and cannot be held responsible for
-          errors, inaccuracies, or omissions.
-          <br />
-          <br />
-
-          <strong>5. Commitment to User Freedom and Privacy</strong>
-          <br />
-          5.1. As a GPLv3-licensed application, Vinyl Keeper promotes user
-          freedom by allowing users to study, share, and modify the software.
-          <br />
-          5.2. The developer commits not to disclose user data to third parties
-          for advertising or marketing purposes. No personal information will be
-          sold, rented, or shared without explicit consent.
-          <br />
-          <br />
-
-          <strong>6. Service Interruption</strong>
-          <br />
-          6.1. Users acknowledge that the Application may experience temporary
-          interruptions due to technical or maintenance issues. The developer
-          cannot be held responsible for such disruptions.
-          <br />
-          <br />
-
-          <strong>7. Collection and Use of Personal Data (GDPR)</strong>
-          <br />
-          7.1. The Application collects and processes the following personal
-          data: email address, username, timezone, and vinyl collection content
-          (albums, artists, wishlists, and associated metadata).
-          <br />
-          7.2. This data is collected solely for the purpose of providing the
-          Application's features and is never used for advertising or marketing
-          purposes.
-          <br />
-          7.3. The legal basis for processing is the user's explicit consent
-          given at registration, as required by Regulation (EU) 2016/679
-          (GDPR).
-          <br />
-          7.4. Data is retained for the duration of the user's account. Upon
-          account deletion, all personal data is permanently removed from our
-          servers.
-          <br />
-          7.5. In accordance with the GDPR, users have the following rights
-          regarding their personal data:
-          <br />
-          &nbsp;&nbsp;— <strong>Right of access:</strong> obtain a copy of the
-          data held about you.
-          <br />
-          &nbsp;&nbsp;— <strong>Right to rectification:</strong> request
-          correction of inaccurate or incomplete data.
-          <br />
-          &nbsp;&nbsp;— <strong>Right to erasure:</strong> request deletion of
-          your account and all associated data at any time via the Settings
-          page.
-          <br />
-          &nbsp;&nbsp;— <strong>Right to data portability:</strong> request a
-          copy of your data in a structured, machine-readable format.
-          <br />
-          &nbsp;&nbsp;— <strong>Right to object:</strong> object to the
-          processing of your data at any time.
-          <br />
-          7.6. To exercise any of these rights, contact:{" "}
-          <Link {...readableLink} href="mailto:vinylkeeper@quentingenet.fr">
-            vinylkeeper@quentingenet.fr
-          </Link>
-          <br />
-          7.7. If you believe your rights have not been respected, you may lodge
-          a complaint with the French data protection authority (CNIL) at{" "}
-          <Link
-            {...readableLink}
-            href="https://www.cnil.fr"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            www.cnil.fr
-          </Link>
-          .
-          <br />
-          <br />
-
-          <strong>8. Modification of Terms of Use</strong>
-          <br />
-          8.1. The developer reserves the right to modify the Terms at any time.
-          Users are responsible for regularly reviewing updates.
-          <br />
-          <br />
-
-          <strong>9. Contact</strong>
-          <br />
-          9.1. For any questions regarding these Terms or the processing of your
-          personal data, you may contact the developer at:{" "}
-          <Link {...readableLink} href="mailto:vinylkeeper@quentingenet.fr">
-            vinylkeeper@quentingenet.fr
-          </Link>
-          <br />
-          <br />
-
-          <strong>10. Applicable Law and Jurisdiction</strong>
-          <br />
-          10.1. These Terms are governed by French law. Any disputes shall fall
-          under the exclusive jurisdiction of French courts.
-        </Typography>
-
-        <Box
-          sx={{
-            mt: 3,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Button
-            variant="contained"
-            onClick={handleClose}
-            sx={{
-              color: "white",
-              px: 4,
-              py: 1,
-            }}
-          >
+        <Box sx={{ mt: 3, display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Button variant="contained" onClick={handleClose} sx={{ color: "white", px: 4, py: 1 }}>
             Understood
           </Button>
         </Box>
