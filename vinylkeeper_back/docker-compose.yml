@@ -69,6 +69,33 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
+  # Live logs of the Vinyl Keeper containers in a browser, behind NGINX (logs.vinylkeeper.org).
+  # Read only: container actions and shell stay off (Dozzle defaults). Login from dozzle/users.yml.
+  dozzle:
+    image: amir20/dozzle:v11.3.5
+    container_name: vinylkeeper-logs
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./dozzle:/data
+    environment:
+      - DOZZLE_AUTH_PROVIDER=simple
+      - DOZZLE_AUTH_TTL=48h
+      - DOZZLE_FILTER=name=vinylkeeper
+      - DOZZLE_NO_ANALYTICS=true
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
 
 networks:
   vk_network:
