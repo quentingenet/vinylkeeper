@@ -1,4 +1,6 @@
 """Sizes and qualities of the public image proxy are bounded to what the frontend requests."""
+import os
+import time
 from io import BytesIO
 
 import pytest
@@ -45,6 +47,47 @@ async def test_arbitrary_variants_share_the_cache_entry_of_a_served_one(service,
 
     assert first == second == b"300x300q85"
     assert len(fetched) == 1
+
+
+async def test_a_cover_older_than_its_lifetime_is_fetched_again(service, monkeypatch):
+    fetched = []
+
+    async def fake_fetch(url):
+        fetched.append(url)
+        return b"raw"
+
+    monkeypatch.setattr(service, "_fetch_image", fake_fetch)
+    monkeypatch.setattr(service, "_process_image", lambda data, w, h, q, fmt: b"cover")
+    src = "https://i.discogs.com/a.jpg"
+    await service.get_proxy_image(src, 300, 300, 85, cacheable=True)
+    await service.get_proxy_image(src, 300, 300, 85, cacheable=True)
+    assert len(fetched) == 1
+
+    expired = time.time() - service.CACHE_LIFETIME_SECONDS - 1
+    for path in service.cache_dir.iterdir():
+        os.utime(path, (expired, expired))
+    await service.get_proxy_image(src, 300, 300, 85, cacheable=True)
+
+    assert len(fetched) == 2
+
+
+def test_browser_and_disk_lifetimes_stay_within_six_hours_of_discogs():
+    # The endpoint gives the browser the same lifetime as the disk copy
+    assert 2 * ImageProxyService.CACHE_LIFETIME_SECONDS <= 6 * 3600
+
+
+def test_pruning_removes_expired_covers_and_keeps_fresh_ones(service):
+    fresh = service.cache_dir / "fresh.webp"
+    stale = service.cache_dir / "stale.webp"
+    fresh.write_bytes(b"x")
+    stale.write_bytes(b"x")
+    expired = time.time() - service.CACHE_LIFETIME_SECONDS - 1
+    os.utime(stale, (expired, expired))
+
+    service._prune_cache()
+
+    assert fresh.exists()
+    assert not stale.exists()
 
 
 def encode(format: str) -> bytes:

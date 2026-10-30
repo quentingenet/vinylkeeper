@@ -1,10 +1,10 @@
 /** Discogs pages of the data VinylKeeper shows: its terms ask for a link next to that data. */
 const DISCOGS_URL = "https://www.discogs.com";
 
-/** Required wherever the app runs: Discogs' terms for API applications */
+/** Word for word the notice of the Discogs API Terms of Use (May 2025), which may live in the terms */
 export const DISCOGS_DISCLAIMER =
-  "This application uses Discogs' API but is not affiliated with, sponsored or endorsed by Discogs. " +
-  "Discogs is a trademark of Zink Media, LLC.";
+  "This application uses Discogs’ API but is not affiliated with, sponsored or endorsed by Discogs. " +
+  "‘Discogs’ is a trademark of Zink Media, LLC.";
 
 const DISCOGS_ID = /^\d+$/;
 

@@ -67,7 +67,7 @@ async def proxy_image(
         BytesIO(image_data),
         media_type=content_type,
         headers={
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": f"public, max-age={ImageProxyService.CACHE_LIFETIME_SECONDS}",
             "Content-Length": str(len(image_data)),
             "ETag": f'"{etag}"',
             "Vary": "Accept"

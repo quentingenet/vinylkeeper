@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import os
 import random
+import time
 from pathlib import Path
 from typing import Optional, Tuple
 from urllib.parse import urlparse
@@ -32,6 +33,9 @@ class ImageProxyService:
     MAX_CACHE_BYTES = 2 * 1024 * 1024 * 1024
     PRUNE_TARGET_RATIO = 0.8
     PRUNE_PROBABILITY = 1 / 200
+    # Discogs API Terms: no content shown more than six hours older than discogs.com. A cover
+    # stays at most 3 h on disk, then at most 3 h in the browser (endpoint Cache-Control).
+    CACHE_LIFETIME_SECONDS = 3 * 3600
 
     def __init__(self, http_client: Optional[httpx.AsyncClient] = None):
         cache_path = os.getenv("IMAGE_CACHE_DIR")
@@ -96,16 +100,18 @@ class ImageProxyService:
         return self.cache_dir / f"{cache_key}.{format.lower()}"
 
     def _is_cached(self, cache_key: str, format: str) -> bool:
-        cache_path = self._get_cache_path(cache_key, format)
-        return cache_path.exists()
+        """Cached and still fresh: past its lifetime, a cover is fetched again from Discogs."""
+        try:
+            saved_at = self._get_cache_path(cache_key, format).stat().st_mtime
+        except FileNotFoundError:
+            return False
+        return time.time() - saved_at < self.CACHE_LIFETIME_SECONDS
 
     def _load_from_cache(self, cache_key: str, format: str) -> bytes:
         cache_path = self._get_cache_path(cache_key, format)
         with open(cache_path, "rb") as f:
-            data = f.read()
-        # Mark as recently used for the pruning
-        cache_path.touch(exist_ok=True)
-        return data
+            # The modification time stays the save time: it dates the copy for its lifetime
+            return f.read()
 
     def _save_to_cache(self, cache_key: str, format: str, data: bytes) -> None:
         cache_path = self._get_cache_path(cache_key, format)
@@ -122,30 +128,36 @@ class ImageProxyService:
         return min(self.SERVED_QUALITIES, key=lambda served: (abs(served - quality), served))
 
     def _prune_cache(self) -> None:
-        """Remove the least recently used files once the cache exceeds its budget."""
+        """Remove the expired files, then the oldest ones while the cache exceeds its budget."""
         try:
             entries = []
             total_size = 0
+            removed = 0
+            expired_before = time.time() - self.CACHE_LIFETIME_SECONDS
             for path in self.cache_dir.iterdir():
                 try:
                     stat = path.stat()
                 except FileNotFoundError:
                     continue  # removed meanwhile by another worker
+                if stat.st_mtime < expired_before:
+                    path.unlink(missing_ok=True)
+                    removed += 1
+                    continue
                 entries.append((stat.st_mtime, stat.st_size, path))
                 total_size += stat.st_size
 
-            if total_size <= self.MAX_CACHE_BYTES:
-                return
-
-            target_size = self.MAX_CACHE_BYTES * self.PRUNE_TARGET_RATIO
-            removed = 0
+            if total_size > self.MAX_CACHE_BYTES:
+                target_size = self.MAX_CACHE_BYTES * self.PRUNE_TARGET_RATIO
+            else:
+                target_size = total_size
             for _, size, path in sorted(entries):
                 if total_size <= target_size:
                     break
                 path.unlink(missing_ok=True)
                 total_size -= size
                 removed += 1
-            logger.info(f"Image cache pruned: {removed} files removed")
+            if removed:
+                logger.info(f"Image cache pruned: {removed} files removed")
         except OSError as e:
             logger.error(f"Failed to prune image cache: {str(e)}")
 
