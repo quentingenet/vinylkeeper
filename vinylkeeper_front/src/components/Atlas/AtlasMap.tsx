@@ -57,7 +57,7 @@ interface AtlasMapProps {
 
 const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAccount }) => {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
-  const defaultZoom = 5;
+  const defaultZoom = 4;
   const [selectedLocation, setSelectedLocation] = useState<{
     country: string;
     city: string;
