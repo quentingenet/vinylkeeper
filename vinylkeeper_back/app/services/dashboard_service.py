@@ -110,6 +110,7 @@ class DashboardService:
         """
         refreshes_left, next_refresh_at = await self._refresh_allowance(user)
         if not refreshes_left:
+            logger.info(f"Collection value: {user.username} asked a re-evaluation, refused until {next_refresh_at}")
             raise QuotaExceededError(
                 "One re-evaluation a day: the next one is possible later",
                 details={"next_refresh_at": next_refresh_at.isoformat() if next_refresh_at else None},
@@ -121,6 +122,11 @@ class DashboardService:
             await self.price_repository.record_refresh(user.id)
         await self.dashboard_repository.db.commit()
         pending = (await self.dashboard_repository.collection_value(user.id)).pending
+        logger.info(
+            f"Collection value: {user.username} re-evaluates their collections, "
+            f"{requested} pressing(s) queued, {pending} waiting"
+            + ("" if requested else " (prices already fresh, allowance not spent)")
+        )
         return ValueRefreshResponse(
             requested=requested, pending=pending,
             estimated_seconds=round(pending * REQUEST_MIN_INTERVAL_SECONDS),

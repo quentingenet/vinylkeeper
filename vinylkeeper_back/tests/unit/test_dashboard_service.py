@@ -217,13 +217,16 @@ class TestReEvaluationAllowance:
         assert refused.value.status_code == 429
         prices.request_refresh.assert_not_called()
 
-    async def test_a_re_evaluation_is_counted(self):
+    async def test_a_re_evaluation_is_counted_and_logged_with_the_username(self, monkeypatch):
         service, _, prices = make_value_service()
+        logged = []
+        monkeypatch.setattr(dashboard_service_module.logger, "info", logged.append)
 
         assert (await service.get_value(make_value_user())).refreshes_left == 1
         await service.request_value_refresh(make_value_user())
 
         prices.record_refresh.assert_awaited_once_with(1)
+        assert logged == ["Collection value: jane re-evaluates their collections, 2 pressing(s) queued, 0 waiting"]
 
     async def test_prices_already_fresh_do_not_spend_the_allowance(self):
         service, repo, prices = make_value_service()
