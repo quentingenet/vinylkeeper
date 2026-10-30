@@ -5,11 +5,14 @@ Albums enriched by a run also get their rule-based moods.
 
 Usage (from vinylkeeper_back/):
     poetry run python -m app.cli.enrich_albums [--limit N] [--dry-run] [--skip-masters] [--skip-editions]
+                                               [--refresh-titles]
 
     --limit N         fetch at most N releases (and N masters, N pressings)
     --dry-run         only count what is pending, no Discogs call, no write
     --skip-masters    fetch releases only (original years can be fetched later)
     --skip-editions   do not catch up pressing details of albums enriched before they were stored
+    --refresh-titles  also rewrite the title, cover and artists of albums enriched before
+                      they followed Discogs ('Hirt* - ...' -> 'Al Hirt - ...'), one call each
 """
 import argparse
 import asyncio
@@ -36,6 +39,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--skip-masters", action="store_true", help="Do not fetch original years")
     parser.add_argument("--skip-editions", action="store_true",
                         help="Do not catch up pressing details of albums enriched before they were stored")
+    parser.add_argument("--refresh-titles", action="store_true",
+                        help="Rewrite titles of albums enriched before they followed Discogs")
     return parser.parse_args(argv)
 
 
@@ -47,9 +52,11 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
             releases = await repository.list_pending_releases(args.limit)
             masters = await repository.list_pending_masters(args.limit)
             editions = await repository.list_pending_editions(args.limit)
-            minutes = (len(releases) + len(masters) + len(editions)) * DISCOGS_MIN_INTERVAL_SECONDS / 60
-            print(f"Pending: {len(releases)} release(s), {len(masters)} master(s), {len(editions)} pressing(s) "
-                  f"(~{minutes:.0f} min; masters of pending releases are not counted yet)")
+            titles = await repository.list_stale_titles(args.limit) if args.refresh_titles else []
+            calls = len(releases) + len(masters) + len(editions) + len(titles)
+            minutes = calls * DISCOGS_MIN_INTERVAL_SECONDS / 60
+            print(f"Pending: {len(releases)} release(s), {len(masters)} master(s), {len(editions)} pressing(s), "
+                  f"{len(titles)} title(s) (~{minutes:.0f} min; masters of pending releases are not counted yet)")
             return report
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as http_client:
@@ -64,11 +71,13 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
                 await service.enrich_pending_masters(args.limit, report=report)
             if not args.skip_editions:
                 await service.enrich_pending_editions(args.limit, report=report)
+            if args.refresh_titles:
+                await service.refresh_stale_titles(args.limit, report=report)
 
     print(
         f"Done: {report.enriched} enriched, {report.not_found} not found on Discogs, "
         f"{report.masters_done} master(s) resolved ({report.master_rows_updated} album rows), "
-        f"{report.editions_done} pressing(s) caught up, "
+        f"{report.editions_done} pressing(s) caught up, {report.titles_refreshed} title(s) refreshed, "
         f"{len(report.failed)} skipped (retry by running the command again)"
     )
     if report.failed:

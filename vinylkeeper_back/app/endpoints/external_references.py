@@ -15,6 +15,8 @@ from app.schemas.external_reference_schema import (
     AddToCollectionResponse,
     OwnedPressingResponse,
     ReplacePressingRequest,
+    MoveToCollectionRequest,
+    MoveToCollectionResponse,
 )
 from app.schemas.collection_schema import CollectionAlbumResponse
 from app.schemas.wishlist_schema import (
@@ -73,6 +75,24 @@ async def remove_from_wishlist(
     """Remove an item from user's wishlist"""
     await service.remove_from_wishlist(current_user.id, wishlist_id)
     return Response(status_code=http_status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/wishlist/{wishlist_id}/move-to-collection", response_model=MoveToCollectionResponse)
+@handle_app_exceptions
+async def move_wishlist_item_to_collection(
+    data: MoveToCollectionRequest,
+    background_tasks: BackgroundTasks,
+    wishlist_id: int = Path(..., gt=0, title="Wishlist Item ID"),
+    current_user: User = Depends(get_current_user),
+    service: ExternalReferenceService = Depends(get_external_reference_service)
+):
+    """A wanted record the user got, or an artist: into one of their collections, out of their wishlist."""
+    result = await service.move_wishlist_item_to_collection(
+        current_user.id, wishlist_id, data.collection_id, data.pressing_confirmed)
+    if result.entity_type == EntityTypeEnum.ALBUM.value:
+        # Its Discogs metadata, if the album still waits for it
+        background_tasks.add_task(enrich_album_in_background, result.external_id)
+    return result
 
 
 @router.post("/collection/{collection_id}/add", response_model=AddToCollectionResponse)

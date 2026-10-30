@@ -160,8 +160,8 @@ export default function MyCollectionsPanel() {
         open={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         latestImport={latestImport}
-        onStart={(discogsUsername, collectionId, saveCopy) =>
-          startImport.mutate({ discogsUsername, collectionId, saveCopy })
+        onStart={(discogsUsername, collectionId, saveCopy, includeWantlist) =>
+          startImport.mutate({ discogsUsername, collectionId, saveCopy, includeWantlist })
         }
         isStarting={startImport.isPending}
         startError={startImport.error}

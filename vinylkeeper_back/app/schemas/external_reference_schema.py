@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
@@ -169,3 +169,22 @@ class AddToCollectionResponse(BaseSchema):
     collection_name: str = Field(..., description="Name of the collection")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MoveToCollectionRequest(BaseModel):
+    """A wanted record the user got, or an artist: into one of their collections, out of the wishlist."""
+    model_config = ConfigDict(extra="forbid")
+
+    collection_id: int = Field(..., gt=0, description="Collection of the user receiving the record")
+    pressing_confirmed: bool = Field(
+        True, description="Record: the exact pressing got. False: to confirm or replace in the collection")
+
+
+class MoveToCollectionResponse(BaseSchema):
+    message: str
+    collection_id: int
+    collection_name: str
+    external_id: str = Field(..., description="Discogs id of the record (release) or artist moved")
+    entity_type: str = Field(..., description="album or artist")
+    already_in_collection: bool = Field(
+        ..., description="It was in the collection already: one more copy for a record, nothing for an artist")

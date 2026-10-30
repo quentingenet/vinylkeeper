@@ -17,7 +17,7 @@ from app.db.session import AsyncSessionLocal
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
 from app.repositories.mood_assignment_repository import MoodAssignmentRepository
 from app.services.mood_assignment_service import MoodAssignmentService
-from app.utils.discogs_release import DISAMBIGUATION_SUFFIX, is_discogs_image, parse_release_edition
+from app.utils.discogs_release import is_discogs_image, join_artist_credit, parse_release_edition
 
 # Column sizes of the albums table
 TITLE_MAX_LENGTH = 512
@@ -102,11 +102,6 @@ def _clean_tags(values: Any) -> list[str]:
     return list(seen)
 
 
-def _clean_artist_name(name: str) -> str:
-    """'Wings (2)' -> 'Wings', 'Hirt*' -> 'Hirt' (Discogs disambiguation markers)."""
-    return DISAMBIGUATION_SUFFIX.sub("", name.strip()).rstrip("*").strip()
-
-
 def _primary_image(data: dict[str, Any]) -> Optional[str]:
     """The primary image of the release, else its first one, if served by the Discogs CDN."""
     images = [image for image in data.get("images") or [] if isinstance(image, dict)]
@@ -134,8 +129,7 @@ def parse_release_identity(data: dict[str, Any], artist_name: Optional[str]) -> 
 
 def parse_release(data: dict[str, Any]) -> dict[str, Any]:
     """Map a Discogs /releases/{id} payload to album columns."""
-    names = [_clean_artist_name(a.get("name", "")) for a in data.get("artists") or []]
-    artist_name = ", ".join(n for n in names if n)[:512] or None
+    artist_name = (join_artist_credit(data.get("artists")) or "")[:512] or None
     master_id = data.get("master_id")
     external_master_id = str(master_id) if isinstance(master_id, int) and master_id > 0 else None
     return {
@@ -165,6 +159,7 @@ class EnrichmentReport:
     masters_done: int = 0
     master_rows_updated: int = 0
     editions_done: int = 0
+    titles_refreshed: int = 0
 
 
 class AlbumEnrichmentService:
@@ -250,6 +245,32 @@ class AlbumEnrichmentService:
             if index % commit_every == 0:
                 await self.repository.db.commit()
                 logger.info(f"Album enrichment: {index}/{len(pending)} pressings processed")
+        await self.repository.db.commit()
+        return report
+
+    async def refresh_stale_titles(
+        self, limit: Optional[int] = None, commit_every: int = 25, report: Optional[EnrichmentReport] = None
+    ) -> EnrichmentReport:
+        """One-off catch-up: titles and artists of albums enriched before they followed Discogs."""
+        report = report or EnrichmentReport()
+        pending = await self.repository.list_stale_titles(limit)
+        logger.info(f"Album enrichment: {len(pending)} title(s) to refresh")
+        for index, (album_id, external_album_id) in enumerate(pending, 1):
+            try:
+                data = await self.client.get(f"/releases/{external_album_id}")
+                # Gone from Discogs: the album keeps what it has
+                if data:
+                    release = parse_release(data)
+                    await self.repository.save_identity(album_id, {
+                        key: release[key] for key in ("title", "image_url", "artist_name") if release.get(key)
+                    })
+                    report.titles_refreshed += 1
+            except DiscogsUnavailableError as e:
+                logger.warning(f"Album enrichment: title of {external_album_id} skipped: {e}")
+                report.failed.append(f"title:{external_album_id}")
+            if index % commit_every == 0:
+                await self.repository.db.commit()
+                logger.info(f"Album enrichment: {index}/{len(pending)} titles processed")
         await self.repository.db.commit()
         return report
 

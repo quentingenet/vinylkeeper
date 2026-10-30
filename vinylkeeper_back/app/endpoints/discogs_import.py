@@ -32,14 +32,19 @@ async def preview_discogs_collection(
     current_user: User = Depends(get_current_user),
     repository: DiscogsImportRepository = Depends(get_discogs_import_repository),
 ):
-    """Size of a public Discogs collection, before importing it. One request to Discogs."""
+    """Size of a public Discogs collection and of its wantlist, before importing. Two requests to Discogs."""
     # A single attempt: a request worker never waits on Discogs backoff
     client = DiscogsClient(request.app.state.http_client, max_attempts=1)
     try:
-        items_total = await DiscogsImportService(repository, client).preview(discogs_username)
+        preview = await DiscogsImportService(repository, client).preview(discogs_username)
     except DiscogsImportError as e:
         raise_for_preview(e)
-    return DiscogsImportPreview(discogs_username=discogs_username, items_total=items_total)
+    return DiscogsImportPreview(
+        discogs_username=discogs_username,
+        items_total=preview.items_total,
+        wantlist_items_total=preview.wantlist_items_total,
+        wantlist_private=preview.wantlist_private,
+    )
 
 
 @router.post("/", response_model=DiscogsImportResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -52,7 +57,8 @@ async def start_discogs_import(
 ):
     """Queue the import: it runs after the response, its progress is read on GET /latest."""
     job = await DiscogsImportService(repository).create_import(
-        current_user.id, data.collection_id, data.discogs_username, save_copy=data.save_copy
+        current_user.id, data.collection_id, data.discogs_username, save_copy=data.save_copy,
+        include_wantlist=data.include_wantlist,
     )
     background_tasks.add_task(run_discogs_imports)
     return job

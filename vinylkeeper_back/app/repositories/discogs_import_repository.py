@@ -6,12 +6,14 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import ExternalSourceEnum
+from app.core.enums import EntityTypeEnum, ExternalSourceEnum
 from app.models.album_model import Album
 from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.collection_model import Collection
 from app.models.discogs_import_model import DiscogsImport
+from app.models.reference_data.entity_types import EntityType
 from app.models.reference_data.external_sources import ExternalSource
+from app.models.wishlist_model import Wishlist
 from app.models.user_model import User
 from app.repositories.collection_repository import CollectionRepository
 
@@ -51,10 +53,10 @@ class DiscogsImportRepository:
 
     async def create_import(
         self, user_id: int, collection_id: int, discogs_username: str, created_collection: bool = False,
-        saved_copy: Optional[Collection] = None,
+        saved_copy: Optional[Collection] = None, include_wantlist: bool = False,
     ) -> DiscogsImport:
         job = DiscogsImport(user_id=user_id, collection_id=collection_id, discogs_username=discogs_username,
-                            status="queued", created_collection=created_collection,
+                            status="queued", created_collection=created_collection, include_wantlist=include_wantlist,
                             saved_copy_collection_id=saved_copy.id if saved_copy else None,
                             saved_copy_name=saved_copy.name if saved_copy else None)
         self.db.add(job)
@@ -170,3 +172,49 @@ class DiscogsImportRepository:
         except IntegrityError:
             return False
         return True
+
+    # Wantlist into the wishlist
+
+    async def album_entity_type_id(self) -> int:
+        return (await self.db.execute(
+            select(EntityType.id).where(EntityType.name == EntityTypeEnum.ALBUM.value)
+        )).scalar_one()
+
+    async def owned_album_ids(self, user_id: int, album_ids: Iterable[int]) -> set[int]:
+        """The albums, among album_ids, in any collection of the user: this very pressing is owned."""
+        rows = (await self.db.execute(
+            select(CollectionAlbum.album_id).distinct()
+            .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .where(Collection.owner_id == user_id, CollectionAlbum.album_id.in_(list(album_ids)))
+        )).scalars()
+        return set(rows)
+
+    async def owned_masters(self, user_id: int) -> set[str]:
+        """The works (Discogs masters) in the collections of the user: another pressing of them is owned."""
+        rows = (await self.db.execute(
+            select(Album.external_master_id).distinct()
+            .join(CollectionAlbum, CollectionAlbum.album_id == Album.id)
+            .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .where(Collection.owner_id == user_id, Album.external_master_id.is_not(None))
+        )).scalars()
+        return set(rows)
+
+    async def wishlist_external_ids(
+        self, user_id: int, source_id: int, entity_type_id: int, external_ids: Iterable[str]
+    ) -> set[str]:
+        rows = (await self.db.execute(
+            select(Wishlist.external_id).where(
+                Wishlist.user_id == user_id,
+                Wishlist.external_source_id == source_id,
+                Wishlist.entity_type_id == entity_type_id,
+                Wishlist.external_id.in_(list(external_ids)),
+            )
+        )).scalars()
+        return set(rows)
+
+    async def add_to_wishlist(self, row: dict) -> bool:
+        """One wishlist row. False when it got there meanwhile (added by the user during the import)."""
+        result = await self.db.execute(
+            insert(Wishlist).values(**row).on_conflict_do_nothing(constraint="uq_wishlist_user_entity_source")
+        )
+        return result.rowcount > 0

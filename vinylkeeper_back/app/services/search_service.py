@@ -7,7 +7,7 @@ import httpx
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
-from app.utils.discogs_release import DISCOGS_IMAGE_HOST, parse_release_edition
+from app.utils.discogs_release import DISCOGS_IMAGE_HOST, clean_artist_name, parse_release_edition
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
     SearchQuery,
@@ -110,7 +110,7 @@ class SearchService:
         artist_name = hit.get("artist") or ""
 
         if is_artist:
-            return DiscogsData(id=str(hit.get("id")), name=title, type="artist")
+            return DiscogsData(id=str(hit.get("id")), name=clean_artist_name(title), type="artist")
 
         labels = hit.get("label") or []
         master_id = hit.get("master_id")
@@ -334,7 +334,7 @@ class SearchService:
         # Build artist metadata
         artist_metadata = ArtistMetadata(
             id=str(data.get("id", "")),
-            title=data.get("name", ""),  # Frontend expects 'title'
+            title=clean_artist_name(data.get("name") or ""),  # Frontend expects 'title'
             image_url=data.get("images", [{}])[0].get("uri", "") if data.get("images") else "",
             external_url=data.get("uri", ""),
             source="discogs",
@@ -450,7 +450,7 @@ class SearchService:
                     artist_info = Artist(
                         id=str(artist.get("id", "")),
                         # Frontend expects 'title', not 'name'
-                        title=artist.get("name", ""),
+                        title=clean_artist_name(artist.get("name") or ""),
                         type=artist.get("type", "")
                     )
                     artists.append(artist_info)
@@ -463,7 +463,7 @@ class SearchService:
         album_metadata = AlbumMetadata(
             id=str(data.get("id", "")),
             title=data.get("title", ""),
-            artist=data.get("artists", [{}])[0].get("name", "") if data.get("artists") else "",
+            artist=clean_artist_name(data["artists"][0].get("name") or "") if data.get("artists") else "",
             year=str(data.get("year", "")),
             image_url=raw_image_url,
             genres=data.get("genres", []),

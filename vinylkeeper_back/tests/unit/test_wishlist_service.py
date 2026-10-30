@@ -1,4 +1,5 @@
 import pytest
+from types import SimpleNamespace
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -200,37 +201,51 @@ class TestGetUserWishlistPaginated:
         with pytest.raises(ValidationError):
             await service.get_user_wishlist_paginated(user_id=1, page=1, limit=100)
 
-    async def test_entity_type_id_1_maps_to_album(self):
+    async def test_the_pressings_of_one_work_are_one_card(self):
         service, wishlist_repo, _ = make_service()
-        item = make_wishlist_item(entity_type_id=1)
-        wishlist_repo.get_user_wishlist_paginated = AsyncMock(return_value=([item], 1))
+        first, second = make_wishlist_item(item_id=1), make_wishlist_item(item_id=2)
+        album = SimpleNamespace(title="Miles Davis - Kind Of Blue", release_year=1959, country="US",
+                                label="Columbia", catno="CL 1355", formats=["LP", "Mono"])
+        reissue = SimpleNamespace(title="Miles Davis - Kind Of Blue", release_year=2015, country="EU",
+                                  label="Sony", catno="88875", formats=["LP"])
+        wishlist_repo.get_user_wishlist_paginated = AsyncMock(
+            return_value=([("5460", [(first, "album", album), (second, "album", reissue)])], 1))
 
         result = await service.get_user_wishlist_paginated(user_id=1, page=1, limit=10)
 
-        assert result.items[0].entity_type == "album"
+        [card] = result.items
+        assert (card.id, card.entity_type, card.pressings_count) == (1, "album", 2)
+        assert [p.id for p in card.pressings] == [1, 2]
+        assert (card.pressings[0].release_year, card.pressings[0].label, card.pressings[0].formats) == (
+            1959, "Columbia", ["LP", "Mono"])
 
-    async def test_entity_type_id_2_maps_to_artist(self):
+    async def test_the_enriched_album_title_is_shown_over_the_wanted_one(self):
         service, wishlist_repo, _ = make_service()
-        item = make_wishlist_item(entity_type_id=2)
-        wishlist_repo.get_user_wishlist_paginated = AsyncMock(return_value=([item], 1))
+        wanted = make_wishlist_item(item_id=1)
+        wanted.title = "Al (He's The King) Hirt* - They're Playing Our Song"
+        album = SimpleNamespace(title="Al Hirt - They're Playing Our Song", release_year=None, country=None,
+                                label=None, catno=None, formats=None)
+        wishlist_repo.get_user_wishlist_paginated = AsyncMock(return_value=([("w", [(wanted, "album", album)])], 1))
+
+        [card] = (await service.get_user_wishlist_paginated(user_id=1, page=1, limit=10)).items
+
+        assert card.title == card.pressings[0].title == "Al Hirt - They're Playing Our Song"
+
+    async def test_an_artist_is_a_card_of_its_own_without_pressings(self):
+        service, wishlist_repo, _ = make_service()
+        artist = make_wishlist_item(item_id=3)
+        wishlist_repo.get_user_wishlist_paginated = AsyncMock(
+            return_value=([("item:3", [(artist, "artist", None)])], 1))
 
         result = await service.get_user_wishlist_paginated(user_id=1, page=1, limit=10)
 
-        assert result.items[0].entity_type == "artist"
+        assert (result.items[0].entity_type, result.items[0].pressings_count, result.items[0].pressings) == (
+            "artist", 1, [])
 
-    async def test_unknown_entity_type_id_maps_to_unknown(self):
+    async def test_total_pages_count_works(self):
         service, wishlist_repo, _ = make_service()
-        item = make_wishlist_item(entity_type_id=99)
-        wishlist_repo.get_user_wishlist_paginated = AsyncMock(return_value=([item], 1))
-
-        result = await service.get_user_wishlist_paginated(user_id=1, page=1, limit=10)
-
-        assert result.items[0].entity_type == "unknown"
-
-    async def test_total_pages_calculation(self):
-        service, wishlist_repo, _ = make_service()
-        items = [make_wishlist_item(item_id=i) for i in range(1, 4)]
-        wishlist_repo.get_user_wishlist_paginated = AsyncMock(return_value=(items, 25))
+        works = [(f"release:{i}", [(make_wishlist_item(item_id=i), "album", None)]) for i in range(1, 4)]
+        wishlist_repo.get_user_wishlist_paginated = AsyncMock(return_value=(works, 25))
 
         result = await service.get_user_wishlist_paginated(user_id=1, page=1, limit=10)
 

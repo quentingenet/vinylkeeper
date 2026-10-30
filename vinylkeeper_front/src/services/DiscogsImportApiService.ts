@@ -8,11 +8,17 @@ export class DiscogsImportApiService extends BaseApiService {
   }
 
   /** collectionId null: a new collection is created for the records; saveCopy: an existing one is saved first */
-  async start(discogsUsername: string, collectionId: number | null, saveCopy: boolean): Promise<DiscogsImport> {
+  async start(
+    discogsUsername: string,
+    collectionId: number | null,
+    saveCopy: boolean,
+    includeWantlist: boolean
+  ): Promise<DiscogsImport> {
     return this.post<DiscogsImport>("/discogs-import/", {
       discogs_username: discogsUsername,
       collection_id: collectionId,
       save_copy: saveCopy,
+      include_wantlist: includeWantlist,
     });
   }
 

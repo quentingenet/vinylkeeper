@@ -12,7 +12,7 @@ every IMPORT_MIN_INTERVAL_SECONDS: the Discogs rate limit is shared with the liv
 """
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from urllib.parse import quote
 
 import httpx
@@ -67,9 +67,16 @@ def user_not_found_error() -> DiscogsImportError:
     return DiscogsImportError("No Discogs user with this name.", "not_found")
 
 
-def too_large_error(items: int) -> DiscogsImportError:
+def private_wantlist_error() -> DiscogsImportError:
     return DiscogsImportError(
-        f"This collection holds {items} items: imports are limited to {MAX_ITEMS} for now.", "too_large"
+        "Your Discogs wantlist is private. Make it public in your Discogs privacy settings, then import again.",
+        "private",
+    )
+
+
+def too_large_error(items: int, what: str = "collection") -> DiscogsImportError:
+    return DiscogsImportError(
+        f"This {what} holds {items} items: imports are limited to {MAX_ITEMS} for now.", "too_large"
     )
 
 
@@ -80,6 +87,12 @@ def unavailable_error() -> DiscogsImportError:
 def collection_path(username: str, page: int, per_page: int = PAGE_SIZE) -> str:
     # Oldest first: the import adds the records in the order they entered the Discogs collection
     return (f"/users/{quote(username, safe='')}/collection/folders/0/releases"
+            f"?per_page={per_page}&page={page}&sort=added&sort_order=asc")
+
+
+def wants_path(username: str, page: int, per_page: int = PAGE_SIZE) -> str:
+    """The wantlist, oldest first: the same item format as the collection."""
+    return (f"/users/{quote(username, safe='')}/wants"
             f"?per_page={per_page}&page={page}&sort=added&sort_order=asc")
 
 
@@ -97,6 +110,14 @@ def parse_collection_release(basic_information: dict[str, Any]) -> dict[str, Any
     # Every row of a multi-row insert has the same columns
     values.setdefault("title", None)
     return values
+
+
+@dataclass
+class ImportPreview:
+    items_total: int
+    # None when the wantlist cannot be read: private (wantlist_private), or Discogs not answering
+    wantlist_items_total: Optional[int]
+    wantlist_private: bool = False
 
 
 @dataclass
@@ -142,13 +163,23 @@ class DiscogsImportService:
 
     # Requests of the user
 
-    async def preview(self, discogs_username: str) -> int:
-        """Number of items of the public collection. One small request."""
+    async def preview(self, discogs_username: str) -> "ImportPreview":
+        """
+        Size of the public collection, and of the wantlist the user may import with it.
+        Two small requests. A private or unreadable wantlist does not fail the preview: the
+        collection can still be imported, without it.
+        """
         data = await self._get(collection_path(discogs_username, page=1, per_page=1))
-        return int((data.get("pagination") or {}).get("items") or 0)
+        items_total = int((data.get("pagination") or {}).get("items") or 0)
+        try:
+            wants = await self._get(wants_path(discogs_username, page=1, per_page=1), private_wantlist_error)
+        except DiscogsImportError as e:
+            return ImportPreview(items_total, None, wantlist_private=e.reason == "private")
+        return ImportPreview(items_total, int((wants.get("pagination") or {}).get("items") or 0))
 
     async def create_import(
-        self, user_id: int, collection_id: Optional[int], discogs_username: str, save_copy: bool = False
+        self, user_id: int, collection_id: Optional[int], discogs_username: str, save_copy: bool = False,
+        include_wantlist: bool = False,
     ) -> DiscogsImport:
         """
         Queue an import into one of the user's collections, or into a new one when collection_id is
@@ -182,7 +213,7 @@ class DiscogsImportService:
                 saved_copy = (await collection_repository.find_save_of(collection.id)
                               or await save_collection_copy(collection_repository, collection))
         job = await self.repository.create_import(
-            user_id, collection_id, discogs_username, created_collection, saved_copy)
+            user_id, collection_id, discogs_username, created_collection, saved_copy, include_wantlist)
         await self.repository.db.commit()
         logger.info(f"{describe_import(job, *await self.repository.import_labels(user_id, collection_id))}: queued")
         return job
@@ -217,6 +248,8 @@ class DiscogsImportService:
             await db.commit()
             for start in range(0, len(releases), WRITE_BATCH_SIZE):
                 await self._write_batch(job, releases[start:start + WRITE_BATCH_SIZE], masters_before)
+            if job.include_wantlist:
+                await self._import_wantlist(job)
             job.status = "done"
         except DiscogsImportError as e:
             await self._reset_after_failure(job)
@@ -236,8 +269,17 @@ class DiscogsImportService:
                 f"{description}: done, {job.vinyl_found} vinyls found, {job.added} added "
                 f"({job.copies_added} copies), {job.already_in_collection} already there, "
                 f"{job.other_pressings} other pressings, {job.in_other_collections} in other collections, "
-                f"{job.other_formats} other formats skipped, {job.pages_total} Discogs pages"
+                f"{job.other_formats} other formats skipped"
             )
+            if job.include_wantlist:
+                logger.info(
+                    f"{description}: wantlist "
+                    + (f"not imported, {job.wantlist_error}" if job.wantlist_error else
+                       f"{job.wantlist_vinyl_found} vinyls found, {job.wantlist_added} added to the wishlist, "
+                       f"{job.wantlist_already_in_wishlist} already there, {job.wantlist_owned} owned, "
+                       f"{job.wantlist_other_pressings_owned} other pressings owned, "
+                       f"{job.wantlist_other_formats} other formats skipped")
+                )
         else:
             logger.warning(f"{description}: failed, {job.error_message}")
 
@@ -246,11 +288,13 @@ class DiscogsImportService:
         await self.repository.db.rollback()
         await self.repository.db.refresh(job)
 
-    async def _get(self, path: str) -> dict[str, Any]:
+    async def _get(
+        self, path: str, private_error: Callable[[], DiscogsImportError] = private_collection_error
+    ) -> dict[str, Any]:
         try:
             data = await self.client.get(path)
         except DiscogsAccessDeniedError:
-            raise private_collection_error()
+            raise private_error()
         except DiscogsUnavailableError:
             raise unavailable_error()
         if data is None:
@@ -258,26 +302,123 @@ class DiscogsImportService:
         return data
 
     async def _fetch_collection(self, job: DiscogsImport) -> list[dict[str, Any]]:
+        return await self._fetch_pages(job, collection_path, "releases", "items_total", "collection",
+                                       private_collection_error)
+
+    async def _fetch_pages(
+        self, job: DiscogsImport, path: Callable[[str, int], str], items_key: str, total_field: str,
+        what: str, private_error: Callable[[], DiscogsImportError],
+    ) -> list[dict[str, Any]]:
+        """Every page of the collection or of the wantlist; pages_total and pages_done show the progress."""
         items: list[dict[str, Any]] = []
         page = 1
         while True:
-            data = await self._get(collection_path(job.discogs_username, page))
+            data = await self._get(path(job.discogs_username, page), private_error)
             pagination = data.get("pagination") or {}
-            job.items_total = int(pagination.get("items") or 0)
-            if job.items_total > MAX_ITEMS:
-                raise too_large_error(job.items_total)
+            total = int(pagination.get("items") or 0)
+            setattr(job, total_field, total)
+            if total > MAX_ITEMS:
+                raise too_large_error(total, what)
             job.pages_total = max(int(pagination.get("pages") or 1), 1)
-            items.extend(data.get("releases") or [])
+            items.extend(data.get(items_key) or [])
             job.pages_done = page
             await self.repository.db.commit()
             if page >= job.pages_total:
                 return items
             page += 1
 
+    async def _import_wantlist(self, job: DiscogsImport) -> None:
+        """
+        Second phase: the vinyls of the wantlist into the wishlist. This very pressing owned already is
+        left out; another pressing of a record owned is added (wanted on purpose) and counted.
+        A failure stops the wantlist only: the collection is imported, wantlist_error says why.
+        """
+        db = self.repository.db
+        job.phase, job.pages_total, job.pages_done = "wantlist", 0, 0
+        await db.commit()
+        try:
+            items = await self._fetch_pages(job, wants_path, "wants", "wantlist_items_total", "wantlist",
+                                            private_wantlist_error)
+            releases, skipped = collect_vinyl_releases(items)
+            job.wantlist_vinyl_found, job.wantlist_other_formats = len(releases), skipped
+            await db.commit()
+            # After the collection phase: what it just added counts as owned
+            masters_owned = await self.repository.owned_masters(job.user_id)
+            for start in range(0, len(releases), WRITE_BATCH_SIZE):
+                await self._write_wishlist_batch(job, releases[start:start + WRITE_BATCH_SIZE], masters_owned)
+        except DiscogsImportError as e:
+            await self._reset_after_failure(job)
+            job.wantlist_error = e.message
+        except Exception as e:
+            logger.error(f"Discogs import {job.id}: wantlist failed: {str(e)}", exc_info=True)
+            await self._reset_after_failure(job)
+            job.wantlist_error = ("The wantlist stopped on an unexpected error. "
+                                  "Import again: records already added are not added twice.")
+
     async def _write_batch(
         self, job: DiscogsImport, releases: list[CollectedRelease], masters_before: set[str]
     ) -> None:
         """Albums, collection rows and moods of up to WRITE_BATCH_SIZE releases, in one commit."""
+        repository = self.repository
+        album_ids = await self._ensure_albums(releases)
+
+        present = await repository.album_ids_in_collection(job.collection_id, album_ids.values())
+        elsewhere = await repository.album_ids_in_other_collections(
+            job.user_id, job.collection_id, album_ids.values())
+        for release in releases:
+            album_id = album_ids.get(release.external_id)
+            if album_id is None:
+                continue
+            if album_id not in present and await repository.add_album_with_copies(
+                    job.collection_id, album_id, release.copies):
+                job.added += 1
+                job.copies_added += release.copies
+                # Reported in the summary, for the owner to check (a pressing picked by mistake before)
+                if release.values.get("external_master_id") in masters_before:
+                    job.other_pressings += 1
+                if album_id in elsewhere:
+                    job.in_other_collections += 1
+            else:
+                job.already_in_collection += 1
+        await repository.db.commit()
+
+    async def _write_wishlist_batch(
+        self, job: DiscogsImport, releases: list[CollectedRelease], masters_owned: set[str]
+    ) -> None:
+        """Albums and wishlist rows of up to WRITE_BATCH_SIZE wanted releases, in one commit."""
+        repository = self.repository
+        album_ids = await self._ensure_albums(releases)
+        source_id = await repository.discogs_source_id()
+        entity_type_id = await repository.album_entity_type_id()
+        owned = await repository.owned_album_ids(job.user_id, album_ids.values())
+        listed = await repository.wishlist_external_ids(
+            job.user_id, source_id, entity_type_id, (r.external_id for r in releases))
+        for release in releases:
+            album_id = album_ids.get(release.external_id)
+            if album_id is None:
+                continue
+            if album_id in owned:
+                job.wantlist_owned += 1
+            elif release.external_id not in listed and await repository.add_to_wishlist({
+                "user_id": job.user_id,
+                "external_id": release.external_id,
+                "entity_type_id": entity_type_id,
+                "external_source_id": source_id,
+                "title": release.values.get("title"),
+                "image_url": release.values.get("image_url"),
+            }):
+                job.wantlist_added += 1
+                if release.values.get("external_master_id") in masters_owned:
+                    job.wantlist_other_pressings_owned += 1
+            else:
+                job.wantlist_already_in_wishlist += 1
+        await repository.db.commit()
+
+    async def _ensure_albums(self, releases: list[CollectedRelease]) -> dict[str, int]:
+        """
+        The album of every release, created already enriched when missing, with its moods.
+        Returns external id -> album id. No commit.
+        """
         repository = self.repository
         source_id = await repository.discogs_source_id()
         known = await repository.albums_by_external_id(source_id, (r.external_id for r in releases))
@@ -301,29 +442,10 @@ class DiscogsImportService:
                      for external_id, (album_id, _) in
                      (await repository.albums_by_external_id(source_id, (r.external_id for r in releases))).items()}
 
-        present = await repository.album_ids_in_collection(job.collection_id, album_ids.values())
-        elsewhere = await repository.album_ids_in_other_collections(
-            job.user_id, job.collection_id, album_ids.values())
-        for release in releases:
-            album_id = album_ids.get(release.external_id)
-            if album_id is None:
-                continue
-            if album_id not in present and await repository.add_album_with_copies(
-                    job.collection_id, album_id, release.copies):
-                job.added += 1
-                job.copies_added += release.copies
-                # Reported in the summary, for the owner to check (a pressing picked by mistake before)
-                if release.values.get("external_master_id") in masters_before:
-                    job.other_pressings += 1
-                if album_id in elsewhere:
-                    job.in_other_collections += 1
-            else:
-                job.already_in_collection += 1
-
-        enriched_now = [album_ids[external_id] for external_id in written]
+        enriched_now = [album_ids[external_id] for external_id in written if external_id in album_ids]
         if enriched_now:
             await MoodAssignmentService(MoodAssignmentRepository(repository.db)).assign(enriched_now)
-        await repository.db.commit()
+        return album_ids
 
 
 async def run_discogs_imports() -> None:

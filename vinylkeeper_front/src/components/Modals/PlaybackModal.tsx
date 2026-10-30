@@ -22,6 +22,8 @@ import TracklistAccordion from "@components/Modals/TracklistAccordion";
 import PressingSection from "@components/Modals/PressingSection";
 import CollectionPressings from "@components/Modals/CollectionPressings";
 import OwnedPressingsSection from "@components/Modals/OwnedPressingsSection";
+import WishlistPressings from "@components/Modals/WishlistPressings";
+import type { WishlistPressing } from "@models/IExternalReference";
 import type { CollectionAlbumResponse } from "@models/Collection";
 import { colors } from "@styles/colors";
 
@@ -36,6 +38,8 @@ export interface PlaybackItem {
   pressings?: CollectionAlbumResponse[];
   // A record of the user's own collections (Spinning now): list the pressings they own of the work
   owned?: { masterId: string | null };
+  // In a wishlist: the wanted pressings of the work, first added first
+  wantedPressings?: WishlistPressing[];
 }
 
 interface PlaybackModalProps {
@@ -45,6 +49,9 @@ interface PlaybackModalProps {
   context?: "wishlist" | "collection";
   isOwner?: boolean;
   onRemovePressing?: (pressing: CollectionAlbumResponse) => void;
+  /** Wishlist owner: a wanted pressing goes into a collection, or leaves the wishlist */
+  onMoveWanted?: (pressing: WishlistPressing) => void;
+  onRemoveWanted?: (pressing: WishlistPressing) => void;
 }
 
 export default function PlaybackModal({
@@ -54,6 +61,8 @@ export default function PlaybackModal({
   context,
   isOwner,
   onRemovePressing,
+  onMoveWanted,
+  onRemoveWanted,
 }: PlaybackModalProps) {
   const { isMobile } = useDetectMobile();
   const { id: collectionId } = useParams<{ id: string }>();
@@ -194,6 +203,13 @@ export default function PlaybackModal({
                     liveEdition={albumMetadata ?? undefined}
                     onFindPressing={handleFindPressing}
                     onRemovePressing={onRemovePressing}
+                  />
+                ) : item.itemType === "album" && context === "wishlist" && (item.wantedPressings?.length ?? 0) > 1 ? (
+                  <WishlistPressings
+                    pressings={item.wantedPressings ?? []}
+                    canEdit={isOwner === true && !!onMoveWanted && !!onRemoveWanted}
+                    onMove={(pressing) => onMoveWanted?.(pressing)}
+                    onRemove={(pressing) => onRemoveWanted?.(pressing)}
                   />
                 ) : item.itemType === "album" && item.owned ? (
                   <OwnedPressingsSection externalId={item.id} masterId={item.owned.masterId} />

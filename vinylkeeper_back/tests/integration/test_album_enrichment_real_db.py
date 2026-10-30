@@ -21,8 +21,7 @@ async def make_discogs_album(session: AsyncSession, **values) -> Album:
     album = Album(
         external_album_id=str(uuid.uuid4().int)[:12],
         external_source_id=discogs_id,
-        title="itest album",
-        **values,
+        **{"title": "itest album", **values},
     )
     session.add(album)
     await session.flush()
@@ -136,3 +135,31 @@ class TestPressingDetailsCatchUp:
 
         saved = await reload(real_session, album.id)
         assert (len(saved.country), len(saved.label), len(saved.catno)) == (100, 512, 255)
+
+
+class TestStaleTitles:
+    async def test_only_titles_not_led_by_their_artists_are_listed(self, real_session):
+        stale = await make_discogs_album(real_session, title="Al (He's The King) Hirt* - Our Song",
+                                         artist_name="Al Hirt", enriched_at=func.now(), enrichment_status="ok")
+        fresh = await make_discogs_album(real_session, title="Billy Preston & Syreeta - Billy Preston & Syreeta",
+                                         artist_name="Billy Preston & Syreeta", enriched_at=func.now(),
+                                         enrichment_status="ok")
+        unenriched = await make_discogs_album(real_session, title="Trust (2) - Repression")
+        repository = AlbumEnrichmentRepository(real_session)
+
+        listed = {album_id for album_id, _ in await repository.list_stale_titles()}
+
+        assert stale.id in listed
+        assert fresh.id not in listed and unenriched.id not in listed
+
+    async def test_identity_rewrite_keeps_the_enrichment(self, real_session):
+        album = await make_discogs_album(real_session, title="Hirt* - Our Song", artist_name="Al Hirt",
+                                         genres=["Jazz"], release_year=1965, enriched_at=func.now(),
+                                         enrichment_status="ok")
+        repository = AlbumEnrichmentRepository(real_session)
+
+        await repository.save_identity(album.id, {"title": "Al Hirt - Our Song", "artist_name": "Al Hirt"})
+        saved = await reload(real_session, album.id)
+
+        assert saved.title == "Al Hirt - Our Song"
+        assert (saved.genres, saved.release_year, saved.enrichment_status) == (["Jazz"], 1965, "ok")

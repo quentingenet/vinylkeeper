@@ -82,6 +82,26 @@ class AlbumEnrichmentRepository:
         """Pressing details only: years, tags and moods of an enriched album are left as they are."""
         await self.db.execute(update(Album).where(Album.id == album_id).values(**values))
 
+    async def list_stale_titles(self, limit: Optional[int] = None) -> list[tuple[int, str]]:
+        """
+        Albums enriched before the title followed Discogs: the title is still the one the
+        search sent ('Hirt* - ...', 'Trust (2) - ...'), not 'artist_name - title'.
+        """
+        query = (
+            self._discogs_albums()
+            .filter(Album.enriched_at.is_not(None), Album.enrichment_status != "not_found",
+                    Album.artist_name.is_not(None),
+                    func.left(Album.title, func.length(Album.artist_name) + 3) != Album.artist_name + " - ")
+            .order_by(Album.id)
+        )
+        if limit:
+            query = query.limit(limit)
+        return [(row.id, row.external_album_id) for row in (await self.db.execute(query)).all()]
+
+    async def save_identity(self, album_id: int, values: dict) -> None:
+        """Title, cover and artists only: years, tags, moods and pressing details are left as they are."""
+        await self.db.execute(update(Album).where(Album.id == album_id).values(**values))
+
     async def mark_release_not_found(self, album_id: int) -> None:
         await self.db.execute(
             update(Album).where(Album.id == album_id)

@@ -14,6 +14,31 @@ LABEL_MAX_LENGTH = 512
 CATNO_MAX_LENGTH = 255
 
 
+def clean_artist_name(name: str) -> str:
+    """'Wings (2)' -> 'Wings', 'Hirt*' -> 'Hirt' (Discogs disambiguation markers)."""
+    name = name.strip().rstrip("*").strip()
+    return DISAMBIGUATION_SUFFIX.sub("", name).rstrip("*").strip()
+
+
+def join_artist_credit(artists: Any) -> Optional[str]:
+    """
+    Artists of a release as Discogs credits them: 'Billy Preston & Syreeta',
+    'Kenny Burrell With Stanley Turrentine'. Each artist's 'join' links it to the next one.
+    """
+    credit = ""
+    previous_join: Optional[str] = None
+    for artist in artists if isinstance(artists, list) else []:
+        name = clean_artist_name(artist.get("name") or "") if isinstance(artist, dict) else ""
+        if not name:
+            continue
+        if credit:
+            join = (previous_join or "").strip()
+            credit += ", " if join in ("", ",") else f" {join} "
+        credit += name
+        previous_join = artist.get("join")
+    return credit or None
+
+
 def is_discogs_image(url: Optional[str]) -> bool:
     """An https image of the Discogs CDN, the only host the image proxy serves."""
     if not url:

@@ -3,6 +3,7 @@ from pydantic import Field, field_validator
 from datetime import datetime
 
 from app.schemas import BaseSchema
+from app.utils.discogs_release import clean_artist_name
 
 
 class ArtistBase(BaseSchema):
@@ -39,7 +40,12 @@ class ArtistBase(BaseSchema):
 
 class ArtistCreate(ArtistBase):
     """Schema for creating a new artist."""
-    pass
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, v: Optional[str]) -> Optional[str]:
+        # The name as the search shows it, without the Discogs homonym marker: "Trust (2)" -> "Trust"
+        return clean_artist_name(v) if v else v
 
 
 class ArtistInDB(ArtistBase):

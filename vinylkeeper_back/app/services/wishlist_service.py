@@ -8,6 +8,7 @@ from app.schemas.external_reference_schema import (
 )
 from app.schemas.wishlist_schema import (
     WishlistItemListResponse,
+    WishlistPressingResponse,
     PaginatedWishlistResponse
 )
 from app.schemas.album_schema import AlbumResponse, AlbumCreate
@@ -25,6 +26,7 @@ from app.core.transaction import transaction_context
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.wishlist_model import Wishlist
+from app.utils.discogs_release import clean_artist_name
 
 
 class WishlistService:
@@ -164,7 +166,8 @@ class WishlistService:
                         user_id=user_id,
                         external_id=external_id,
                         entity_type=request.entity_type,
-                        title=request.title,
+                        title=(request.title if request.entity_type == EntityTypeEnum.ALBUM
+                               else clean_artist_name(request.title or "")),
                         image_url=request.image_url,
                         external_source_id=external_source_id
                     )
@@ -264,6 +267,37 @@ class WishlistService:
                 message="Limit must be between 1 and 50"
             )
 
+    @staticmethod
+    def _build_wishlist_card(rows: list) -> WishlistItemListResponse:
+        """One card: the first wanted pressing stands for the work, all of them are listed."""
+        first, entity_type, first_album = rows[0]
+        pressings = [
+            WishlistPressingResponse(
+                id=wishlist.id,
+                external_id=wishlist.external_id,
+                # The album title, cleaned by the enrichment, over the one sent when it was wanted
+                title=(album.title if album and album.title else wishlist.title) or "",
+                image_url=wishlist.image_url,
+                created_at=wishlist.created_at,
+                release_year=album.release_year if album else None,
+                country=album.country if album else None,
+                label=album.label if album else None,
+                catno=album.catno if album else None,
+                formats=list(album.formats or []) if album else [],
+            )
+            for wishlist, _type, album in rows
+        ] if entity_type == EntityTypeEnum.ALBUM.value else []
+        return WishlistItemListResponse(
+            id=first.id,
+            entity_type=entity_type,
+            external_id=first.external_id,
+            title=(first_album.title if first_album and first_album.title else first.title) or "",
+            image_url=first.image_url,
+            created_at=first.created_at,
+            pressings_count=len(rows),
+            pressings=pressings,
+        )
+
     async def get_user_wishlist_paginated(
         self, user_id: int, page: int = 1, limit: int = 8,
         search: Optional[str] = None, sort_order: str = "newest"
@@ -272,28 +306,16 @@ class WishlistService:
         try:
             self._validate_pagination_params(page, limit)
 
-            items, total = await self.wishlist_repo.get_user_wishlist_paginated(
+            works, total = await self.wishlist_repo.get_user_wishlist_paginated(
                 user_id, page, limit, search, sort_order
             )
 
             list_responses = []
-            for item in items:
+            for _key, rows in works:
                 try:
-                    _entity_type_map = {1: EntityTypeEnum.ALBUM.value, 2: EntityTypeEnum.ARTIST.value}
-                    entity_type_str = _entity_type_map.get(item.entity_type_id, "unknown")
-
-                    list_response = WishlistItemListResponse(
-                        id=item.id,
-                        entity_type=entity_type_str,
-                        external_id=item.external_id,
-                        title=item.title or "",
-                        image_url=item.image_url,
-                        created_at=item.created_at
-                    )
-                    list_responses.append(list_response)
+                    list_responses.append(self._build_wishlist_card(rows))
                 except Exception as e:
-                    logger.error(
-                        f"Error processing wishlist item {item.id}: {str(e)}", exc_info=True)
+                    logger.error(f"Error processing wishlist work {_key}: {str(e)}", exc_info=True)
                     continue
 
             total_pages = (total + limit - 1) // limit if total > 0 else 0

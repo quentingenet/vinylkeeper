@@ -23,6 +23,7 @@ from app.services.wishlist_service import WishlistService
 
 from app.schemas.external_reference_schema import AddToWishlistRequest
 from app.core.enums import EntityTypeEnum
+from app.models.reference_data.entity_types import EntityType
 from app.core.exceptions import ResourceNotFoundError
 
 from tests.integration.conftest import make_real_test_user as make_test_user
@@ -242,3 +243,181 @@ class TestGetWishlistItemDetail:
 
         assert detail.entity_type == "artist"
         assert detail.source == "musicbrainz"
+
+
+class TestWishlistByWork:
+    """The wishlist shows one card per work, as the collections do."""
+
+    async def test_the_pressings_of_a_work_are_one_card_and_an_artist_stays_apart(self, real_session):
+        from datetime import datetime, timedelta, timezone
+        from app.models.album_model import Album
+        from app.models.wishlist_model import Wishlist
+        from app.repositories.discogs_import_repository import DiscogsImportRepository
+
+        user = await make_test_user(real_session)
+        imports = DiscogsImportRepository(real_session)
+        source_id = await imports.discogs_source_id()
+        album_type = await imports.album_entity_type_id()
+        artist_type = (await real_session.execute(
+            select(EntityType.id).where(EntityType.name == EntityTypeEnum.ARTIST.value))).scalar_one()
+
+        base = random.randint(3_000_000_000, 3_900_000_000)
+        original, reissue, other = str(base), str(base + 1), str(base + 2)
+        master = f"itest-master-{base}"
+        real_session.add_all([
+            Album(external_album_id=original, external_source_id=source_id, title="Kind Of Blue",
+                  external_master_id=master, release_year=1959, label="Columbia", formats=["LP", "Mono"]),
+            Album(external_album_id=reissue, external_source_id=source_id, title="Kind Of Blue",
+                  external_master_id=master, release_year=2015, label="Sony", formats=["LP"]),
+            Album(external_album_id=other, external_source_id=source_id, title="Blue Train"),
+        ])
+        now = datetime.now(timezone.utc)
+        for minutes, external_id, entity_type, title in [
+            (4, original, album_type, "Kind Of Blue"),
+            (3, other, album_type, "Blue Train"),
+            (2, reissue, album_type, "Kind Of Blue"),
+            # Same number as a release id: an artist is never joined to that album
+            (1, original, artist_type, "Miles Davis"),
+        ]:
+            real_session.add(Wishlist(user_id=user.id, external_id=external_id, entity_type_id=entity_type,
+                                      external_source_id=source_id, title=title,
+                                      created_at=now - timedelta(minutes=minutes)))
+        await real_session.flush()
+
+        page = await make_wishlist_service(real_session).get_user_wishlist_paginated(user_id=user.id, page=1, limit=8)
+
+        assert page.total == 3
+        # Newest first, a work by its last added pressing
+        assert [(card.title, card.entity_type, card.pressings_count) for card in page.items] == [
+            ("Miles Davis", "artist", 1), ("Kind Of Blue", "album", 2), ("Blue Train", "album", 1)]
+        kind_of_blue = page.items[1]
+        assert [(p.external_id, p.release_year, p.label) for p in kind_of_blue.pressings] == [
+            (original, 1959, "Columbia"), (reissue, 2015, "Sony")]
+
+        oldest_first = await make_wishlist_service(real_session).get_user_wishlist_paginated(
+            user_id=user.id, page=1, limit=8, sort_order="oldest")
+        assert [card.title for card in oldest_first.items] == ["Kind Of Blue", "Blue Train", "Miles Davis"]
+
+
+class TestMoveToCollection:
+    """« Got it »: a wanted record into a collection, out of the wishlist, in one transaction."""
+
+    async def wanted(self, real_session, user, entity=EntityTypeEnum.ALBUM):
+        from app.models.album_model import Album
+        from app.models.wishlist_model import Wishlist
+        from app.repositories.discogs_import_repository import DiscogsImportRepository
+
+        imports = DiscogsImportRepository(real_session)
+        source_id = await imports.discogs_source_id()
+        type_id = (await real_session.execute(
+            select(EntityType.id).where(EntityType.name == entity.value))).scalar_one()
+        external_id = str(random.randint(3_000_000_000, 3_900_000_000))
+        if entity == EntityTypeEnum.ALBUM:
+            real_session.add(Album(external_album_id=external_id, external_source_id=source_id, title="Wanted LP"))
+        item = Wishlist(user_id=user.id, external_id=external_id, entity_type_id=type_id,
+                        external_source_id=source_id, title="Wanted LP")
+        real_session.add(item)
+        await real_session.flush()
+        return item
+
+    async def copies(self, real_session, collection_id):
+        from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
+        rows = (await real_session.execute(
+            select(CollectionAlbum.pressing_confirmed, CollectionAlbumCopy.id)
+            .join(CollectionAlbumCopy, (CollectionAlbumCopy.collection_id == CollectionAlbum.collection_id)
+                  & (CollectionAlbumCopy.album_id == CollectionAlbum.album_id))
+            .where(CollectionAlbum.collection_id == collection_id))).all()
+        return rows
+
+    async def test_the_record_moves_with_its_pressing_confirmed(self, real_session):
+        from app.models.wishlist_model import Wishlist
+        from tests.integration.test_real_db_relationships import make_external_reference_service, make_test_collection
+
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        item = await self.wanted(real_session, user)
+        item_id = item.id
+
+        result = await make_external_reference_service(real_session).move_wishlist_item_to_collection(
+            user.id, item_id, collection.id)
+
+        assert result.already_in_collection is False and result.collection_id == collection.id
+        copies = await self.copies(real_session, collection.id)
+        assert len(copies) == 1 and copies[0].pressing_confirmed is True
+        assert (await real_session.execute(select(Wishlist).where(Wishlist.id == item_id))).first() is None
+
+    async def test_already_in_the_collection_gives_one_more_copy(self, real_session):
+        from tests.integration.test_real_db_relationships import make_external_reference_service, make_test_collection
+
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        service = make_external_reference_service(real_session)
+        first = await self.wanted(real_session, user)
+        await service.move_wishlist_item_to_collection(user.id, first.id, collection.id)
+        again = await self.wanted(real_session, user)
+        again.external_id = first.external_id
+        await real_session.flush()
+
+        result = await service.move_wishlist_item_to_collection(user.id, again.id, collection.id)
+
+        assert result.already_in_collection is True
+        assert len(await self.copies(real_session, collection.id)) == 2
+
+    async def test_only_the_owner_moves_into_their_own_collection(self, real_session):
+        from app.core.exceptions import ForbiddenError
+        from tests.integration.test_real_db_relationships import make_external_reference_service, make_test_collection
+
+        owner, stranger = await make_test_user(real_session), await make_test_user(real_session)
+        theirs = await make_test_collection(real_session, owner_id=stranger.id)
+        mine = await make_test_collection(real_session, owner_id=owner.id)
+        item = await self.wanted(real_session, owner)
+        service = make_external_reference_service(real_session)
+
+        with pytest.raises(ResourceNotFoundError):
+            await service.move_wishlist_item_to_collection(stranger.id, item.id, theirs.id)
+        with pytest.raises(ForbiddenError):
+            await service.move_wishlist_item_to_collection(owner.id, item.id, theirs.id)
+        moved = await service.move_wishlist_item_to_collection(owner.id, item.id, mine.id)
+        assert moved.already_in_collection is False
+
+    async def test_an_artist_goes_to_the_artists_of_the_collection_once(self, real_session):
+        from app.models.association_tables import CollectionArtist
+        from app.models.wishlist_model import Wishlist
+        from tests.integration.test_real_db_relationships import make_external_reference_service, make_test_collection
+
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        service = make_external_reference_service(real_session)
+        artist = await self.wanted(real_session, user, EntityTypeEnum.ARTIST)
+        external_id, artist_wish_id = artist.external_id, artist.id
+
+        result = await service.move_wishlist_item_to_collection(user.id, artist_wish_id, collection.id)
+
+        assert (result.entity_type, result.already_in_collection) == ("artist", False)
+        assert (await real_session.execute(select(Wishlist).where(Wishlist.id == artist_wish_id))).first() is None
+        count = lambda: real_session.execute(  # noqa: E731
+            select(CollectionArtist).where(CollectionArtist.collection_id == collection.id))
+        assert len((await count()).all()) == 1
+
+        again = await self.wanted(real_session, user, EntityTypeEnum.ARTIST)
+        again.external_id = external_id
+        await real_session.flush()
+        result = await service.move_wishlist_item_to_collection(user.id, again.id, collection.id)
+
+        assert result.already_in_collection is True and "already" in result.message
+        assert len((await count()).all()) == 1
+
+
+class TestMoveWithAPressingToConfirm:
+    async def test_a_pressing_not_sure_stays_to_confirm_in_the_collection(self, real_session):
+        from tests.integration.test_real_db_relationships import make_external_reference_service, make_test_collection
+
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        item = await TestMoveToCollection().wanted(real_session, user)
+
+        await make_external_reference_service(real_session).move_wishlist_item_to_collection(
+            user.id, item.id, collection.id, pressing_confirmed=False)
+
+        [row] = await TestMoveToCollection().copies(real_session, collection.id)
+        assert row.pressing_confirmed is False

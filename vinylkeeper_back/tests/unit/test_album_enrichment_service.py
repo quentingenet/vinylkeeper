@@ -101,6 +101,22 @@ class TestParseRelease:
 
         assert values["artist_name"] == "Wings, Al (He's The King) Hirt"
 
+    def test_artists_are_joined_as_discogs_credits_them(self):
+        values = parse_release({**HIGHWAY_TO_HELL, "title": "Midnight Blue", "artists": [
+            {"name": "Kenny Burrell", "join": "With"},
+            {"name": "Stanley Turrentine", "join": ","},
+            {"name": "Major Holley Jr*", "join": "&"},
+            {"name": "Ray Barretto", "join": ""},
+        ]})
+
+        assert values["artist_name"] == "Kenny Burrell With Stanley Turrentine, Major Holley Jr & Ray Barretto"
+        assert values["title"] == f"{values['artist_name']} - Midnight Blue"
+
+    def test_ampersand_in_a_name_is_kept(self):
+        values = parse_release({**HIGHWAY_TO_HELL, "artists": [{"name": "Simon & Garfunkel", "join": ""}]})
+
+        assert values["artist_name"] == "Simon & Garfunkel"
+
     def test_tags_are_trimmed_deduplicated_and_ordered(self):
         values = parse_release({**HIGHWAY_TO_HELL, "styles": [" Hard Rock", "Hard Rock", "", None, "Blues Rock"]})
 
@@ -300,6 +316,41 @@ class TestAlbumEnrichmentService:
 
         assert report.failed == ["edition:1"]
         assert repository.save_edition.await_args.args[0] == 8
+
+    async def test_stale_titles_rewrite_title_cover_and_artists_only(self):
+        release = {**HIGHWAY_TO_HELL, "country": "UK",
+                   "images": [{"type": "primary", "uri": "https://i.discogs.com/cover.jpg"}]}
+        service, repository, _ = make_service(client_get=AsyncMock(return_value=release))
+        repository.list_stale_titles = AsyncMock(return_value=[(7, "380980")])
+        repository.save_identity = AsyncMock()
+
+        report = await service.refresh_stale_titles()
+
+        repository.save_identity.assert_awaited_once_with(7, {
+            "title": "AC/DC - Highway To Hell", "image_url": "https://i.discogs.com/cover.jpg",
+            "artist_name": "AC/DC"})
+        assert report.titles_refreshed == 1
+
+    async def test_stale_title_gone_from_discogs_is_kept(self):
+        service, repository, _ = make_service(client_get=AsyncMock(return_value=None))
+        repository.list_stale_titles = AsyncMock(return_value=[(7, "1")])
+        repository.save_identity = AsyncMock()
+
+        report = await service.refresh_stale_titles()
+
+        repository.save_identity.assert_not_called()
+        assert report.titles_refreshed == 0
+
+    async def test_stale_titles_continue_after_a_failure(self):
+        client_get = AsyncMock(side_effect=[DiscogsUnavailableError("429"), HIGHWAY_TO_HELL])
+        service, repository, _ = make_service(client_get=client_get)
+        repository.list_stale_titles = AsyncMock(return_value=[(7, "1"), (8, "2")])
+        repository.save_identity = AsyncMock()
+
+        report = await service.refresh_stale_titles()
+
+        assert report.failed == ["title:1"]
+        assert repository.save_identity.await_args.args[0] == 8
 
 
 class TestBackgroundEnrichment:

@@ -107,6 +107,13 @@ class TestSearchMusic:
 
         assert (result.name, result.type, result.picture) == ("John Coltrane", "artist", COVER)
 
+    async def test_artist_homonym_marker_is_removed(self):
+        service, _ = discogs([artist_hit(12, "Jimmy Smith (12)")])
+
+        [result] = (await service.search_music_page(SearchQuery(query="jimmy smith", is_artist=True))).items
+
+        assert result.name == "Jimmy Smith"
+
     async def test_artist_without_image_gets_no_picture(self):
         """Discogs returns a spacer.gif placeholder in search hits for artists without image."""
         service, _ = discogs([artist_hit(11, "Sita Coltrane", cover=SPACER, thumb="")])

@@ -11,7 +11,8 @@ from app.schemas.external_reference_schema import (
     WishlistItemResponse,
     CollectionItemResponse,
     AddToWishlistResponse,
-    AddToCollectionResponse
+    AddToCollectionResponse,
+    MoveToCollectionResponse,
 )
 from app.schemas.album_schema import AlbumCreate
 from app.schemas.collection_schema import CollectionAlbumResponse
@@ -22,7 +23,8 @@ from app.core.exceptions import (
     ValidationError,
     ResourceNotFoundError,
     ServerError,
-    ForbiddenError
+    ForbiddenError,
+    ErrorCode,
 )
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
@@ -357,6 +359,70 @@ class ExternalReferenceService:
                 message="Failed to add to collection",
                 details={}
             )
+
+    async def move_wishlist_item_to_collection(
+        self, user_id: int, wishlist_id: int, collection_id: int, pressing_confirmed: bool = True
+    ) -> MoveToCollectionResponse:
+        """
+        The user got a wanted record (or wants an artist in a collection): into one of their
+        collections, then out of the wishlist, in one transaction.
+        A record goes with its pressing confirmed, unless the user is not sure it is the one they got:
+        then it is to confirm, or to replace, in the collection. Already in that collection, it gets
+        one more copy. An artist already there is not added twice.
+        """
+        item = await self.repository.wishlist_repo.get_by_id(wishlist_id)
+        if item is None or item.user_id != user_id:
+            raise ResourceNotFoundError("Wishlist item", wishlist_id)
+        entity_type = item.entity_type.name if item.entity_type else None
+        if entity_type not in (EntityTypeEnum.ALBUM.value, EntityTypeEnum.ARTIST.value):
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="This wishlist item cannot be moved to a collection",
+                details={"wishlist_id": wishlist_id},
+            )
+        collection = await self._verify_collection_access(collection_id, user_id)
+        is_album = entity_type == EntityTypeEnum.ALBUM.value
+
+        async with transaction_context(self.repository.db):
+            if is_album:
+                album = await self.repository.find_album_by_external_id(item.external_id, item.external_source_id)
+                if album is None:
+                    album = await self.repository.create_album(AlbumCreate(
+                        external_album_id=item.external_id, title=item.title or "",
+                        image_url=item.image_url or "", external_source_id=item.external_source_id,
+                    ))
+                _collection_album, is_new = await self.repository.add_album_to_collection(
+                    collection, album, None, is_new_entity=False, pressing_confirmed=pressing_confirmed,
+                    add_copy=True,
+                )
+            else:
+                artist = await self.repository.find_artist_by_external_id(item.external_id, item.external_source_id)
+                is_new_entity = artist is None
+                if artist is None:
+                    artist = await self.repository.create_artist(ArtistCreate(
+                        external_artist_id=item.external_id, title=item.title or "",
+                        image_url=item.image_url or "", external_source_id=item.external_source_id,
+                    ))
+                is_new = await self.repository.find_artist_in_collection(collection.id, artist.id) is None
+                if is_new:
+                    await self.repository.add_artist_to_collection(collection, artist, is_new_entity)
+            await self.repository.remove_wishlist_item(item)
+
+        title = item.title or ("This record" if is_album else "This artist")
+        if is_new:
+            message = f"“{title}” moved to “{collection.name}”"
+        elif is_album:
+            message = f"“{title}” was in “{collection.name}” already: one more copy added"
+        else:
+            message = f"“{title}” was in “{collection.name}” already"
+        return MoveToCollectionResponse(
+            message=message,
+            collection_id=collection.id,
+            collection_name=collection.name,
+            external_id=item.external_id,
+            entity_type=entity_type,
+            already_in_collection=not is_new,
+        )
 
     async def remove_from_collection(
         self, user_id: int, collection_id: int, external_id: str, entity_type: EntityTypeEnum

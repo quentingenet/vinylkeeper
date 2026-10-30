@@ -20,6 +20,7 @@ class DiscogsImport(Base):
             "status IN ('queued', 'running', 'done', 'failed')",
             name="ck_discogs_imports_status"
         ),
+        CheckConstraint("phase IN ('collection', 'wantlist')", name="ck_discogs_imports_phase"),
         # The latest import of a user, polled while it runs
         Index("ix_discogs_imports_user_id_id", "user_id", "id"),
     )
@@ -48,6 +49,22 @@ class DiscogsImport(Base):
                              comment="Added releases whose work was already in the collection, another pressing")
     in_other_collections = Column(Integer, nullable=False, server_default="0",
                                   comment="Added releases already in another collection of the user")
+
+    # Wantlist, imported into the wishlist after the collection when asked (same import, second phase)
+    include_wantlist = Column(Boolean, nullable=False, server_default=false())
+    phase = Column(String(20), nullable=False, server_default="collection",
+                   comment="'collection' then 'wantlist': what pages_total and pages_done count")
+    wantlist_items_total = Column(Integer, nullable=False, server_default="0", comment="Every format")
+    wantlist_vinyl_found = Column(Integer, nullable=False, server_default="0")
+    wantlist_other_formats = Column(Integer, nullable=False, server_default="0")
+    wantlist_added = Column(Integer, nullable=False, server_default="0", comment="Added to the wishlist")
+    wantlist_already_in_wishlist = Column(Integer, nullable=False, server_default="0")
+    wantlist_owned = Column(Integer, nullable=False, server_default="0",
+                            comment="Skipped: this very pressing is in a collection of the user")
+    wantlist_other_pressings_owned = Column(Integer, nullable=False, server_default="0",
+                                            comment="Added: another pressing of the work is in a collection")
+    wantlist_error = Column(String(255), nullable=True,
+                            comment="Why the wantlist was not imported (the collection was)")
     error_message = Column(String(255), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

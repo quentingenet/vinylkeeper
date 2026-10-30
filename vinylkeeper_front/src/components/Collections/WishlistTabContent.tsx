@@ -17,7 +17,15 @@ interface WishlistTabContentProps {
   onPageChange: (page: number) => void;
   onPlay: (item: WishlistItemResponse, type: "album" | "artist") => void;
   onDelete?: (item: WishlistItemResponse) => void;
+  /** Owner only: the record of a single-pressing card, or an artist, goes into a collection */
+  onGotIt?: (item: WishlistItemResponse) => void;
 }
+
+/**
+ * As in the collections: a card of several pressings is never removed (nor moved) at once,
+ * its popup lists them, one action each.
+ */
+const isSinglePressing = (item: WishlistItemResponse) => (item.pressings_count ?? 1) <= 1;
 
 export default function WishlistTabContent({
   isLoading,
@@ -30,6 +38,7 @@ export default function WishlistTabContent({
   onPageChange,
   onPlay,
   onDelete,
+  onGotIt,
 }: WishlistTabContentProps) {
   if (isLoading) {
     return <LoadingCenter />;
@@ -55,7 +64,8 @@ export default function WishlistTabContent({
               item={item}
               itemType="wishlist"
               onPlay={() => onPlay(item, item.entity_type === "album" ? "album" : "artist")}
-              onDelete={onDelete ? () => onDelete(item) : undefined}
+              onDelete={onDelete && isSinglePressing(item) ? () => onDelete(item) : undefined}
+              onGotIt={onGotIt && isSinglePressing(item) ? () => onGotIt(item) : undefined}
               imageSize={{ w: 300, h: 300, q: 75 }}
             />
           ))}
@@ -82,7 +92,8 @@ export default function WishlistTabContent({
             item={item}
             itemType="wishlist"
             onPlay={() => onPlay(item, item.entity_type === "album" ? "album" : "artist")}
-            onDelete={onDelete ? () => onDelete(item) : undefined}
+            onDelete={onDelete && isSinglePressing(item) ? () => onDelete(item) : undefined}
+            onGotIt={onGotIt && isSinglePressing(item) ? () => onGotIt(item) : undefined}
             imageSize={{ w: 500, h: 500, q: 85 }}
           />
         ))}

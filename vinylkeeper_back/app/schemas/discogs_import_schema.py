@@ -19,12 +19,18 @@ class DiscogsImportCreate(BaseModel):
     save_copy: bool = Field(
         False, description="Save a copy of the receiving collection first (ignored for a new collection)"
     )
+    include_wantlist: bool = Field(
+        False, description="Then import the public wantlist into the wishlist, in the same import"
+    )
 
 
 class DiscogsImportPreview(BaseModel):
     """The collection found on Discogs, before importing it."""
     discogs_username: str
     items_total: int = Field(..., description="Items of the Discogs collection, every format")
+    wantlist_items_total: Optional[int] = Field(
+        None, description="Items of the wantlist, every format; null when it cannot be read")
+    wantlist_private: bool = Field(False, description="The wantlist is private: it cannot be imported")
 
 
 class DiscogsImportResponse(BaseModel):
@@ -48,6 +54,16 @@ class DiscogsImportResponse(BaseModel):
     already_in_collection: int
     other_pressings: int
     in_other_collections: int
+    include_wantlist: bool
+    phase: str
+    wantlist_items_total: int
+    wantlist_vinyl_found: int
+    wantlist_other_formats: int
+    wantlist_added: int
+    wantlist_already_in_wishlist: int
+    wantlist_owned: int
+    wantlist_other_pressings_owned: int
+    wantlist_error: Optional[str] = None
     error_message: Optional[str] = None
     created_at: datetime
     finished_at: Optional[datetime] = None

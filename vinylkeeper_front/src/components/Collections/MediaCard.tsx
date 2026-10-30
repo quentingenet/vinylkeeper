@@ -5,8 +5,11 @@ import {
   IconButton,
   Typography,
   Box,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DoubleArrowIcon from "@mui/icons-material/DoubleArrow";
+import { ARTIST_TO_COLLECTION_TOOLTIP, GOT_IT_TOOLTIP } from "@components/Collections/wishlistLabels";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { Album } from "@mui/icons-material";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
@@ -20,6 +23,8 @@ interface MediaCardItem {
   entity_type?: string;
   // Copies of the record in the collection, shown as "×3" on the cover above one
   copies_count?: number;
+  // Wishlist: wanted pressings of the work, shown the same way
+  pressings_count?: number;
 }
 
 interface MediaCardProps {
@@ -27,6 +32,8 @@ interface MediaCardProps {
   itemType: "album" | "artist" | "wishlist";
   onPlay: () => void;
   onDelete?: () => void;
+  /** Wishlist: the user got this record, into one of their collections */
+  onGotIt?: () => void;
   imageSize?: { w: number; h: number; q: number };
 }
 
@@ -47,6 +54,7 @@ export default function MediaCard({
   itemType,
   onPlay,
   onDelete,
+  onGotIt,
   imageSize = { w: 300, h: 300, q: 75 },
 }: MediaCardProps) {
   const titleLine1 =
@@ -58,6 +66,9 @@ export default function MediaCard({
     itemType === "album"
       ? truncateText(item.title?.split(" - ")[1] || item.title || "", 20)
       : null;
+
+  // Copies in a collection, or wanted pressings in the wishlist
+  const badgeCount = item.copies_count ?? item.pressings_count ?? 1;
 
   const entityBadge =
     itemType === "wishlist"
@@ -102,6 +113,20 @@ export default function MediaCard({
         >
           <PlayArrowIcon sx={{ color: "white", fontSize: "20px" }} />
         </IconButton>
+        {onGotIt && (
+          <Tooltip title={item.entity_type === "artist" ? ARTIST_TO_COLLECTION_TOOLTIP : GOT_IT_TOOLTIP}>
+            <IconButton
+              aria-label="Move to a collection"
+              onClick={(e) => {
+                e.stopPropagation();
+                onGotIt();
+              }}
+              sx={iconButtonSx}
+            >
+              <DoubleArrowIcon sx={{ color: "white", fontSize: "20px" }} />
+            </IconButton>
+          </Tooltip>
+        )}
         {onDelete && (
           <IconButton
             onClick={(e) => {
@@ -115,9 +140,9 @@ export default function MediaCard({
         )}
       </Box>
 
-      {(item.copies_count ?? 1) > 1 && (
+      {badgeCount > 1 && (
         <Box
-          aria-label={`${item.copies_count} copies`}
+          aria-label={item.copies_count ? `${badgeCount} copies` : `${badgeCount} pressings`}
           sx={{
             position: "absolute",
             top: 10,
@@ -132,7 +157,7 @@ export default function MediaCard({
             fontSize: "0.9rem",
           }}
         >
-          ×{item.copies_count}
+          ×{badgeCount}
         </Box>
       )}
 

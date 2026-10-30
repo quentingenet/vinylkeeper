@@ -12,8 +12,10 @@ import {
 import { externalReferenceApiService } from "@services/ExternalReferenceService";
 import {
   type WishlistItemResponse,
+  type WishlistPressing,
   type PaginatedWishlistResponse,
 } from "@models/IExternalReference";
+import MoveToCollectionDialog, { type WantedRecord } from "@components/Collections/MoveToCollectionDialog";
 import { useWishlist } from "@hooks/useWishlist";
 import {
   Typography,
@@ -26,6 +28,8 @@ import {
   TextField,
   InputAdornment,
   Button,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
 import { useAddRecord } from "@contexts/AddRecordContext";
@@ -65,6 +69,8 @@ interface PlayableItem {
   id?: number;
   // Collection albums: the work it stands for, with all its pressings
   record?: RecordCard["record"];
+  // Wishlist albums: the wanted pressings of the work
+  pressings?: WishlistPressing[];
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -129,6 +135,9 @@ export default function CollectionDetails() {
     type: "album" | "artist";
     title: string;
   } | null>(null);
+  // « Got it »: the wanted pressing being moved to a collection, and the message once moved
+  const [wantedToMove, setWantedToMove] = useState<WantedRecord | null>(null);
+  const [movedMessage, setMovedMessage] = useState<string | null>(null);
   const [wishlistItemToDelete, setWishlistItemToDelete] =
     useState<WishlistItemResponse | null>(null);
 
@@ -234,6 +243,8 @@ export default function CollectionDetails() {
       created_at: item.created_at,
       entity_type: item.entity_type,
       source: "",
+      pressings_count: item.pressings_count,
+      pressings: item.pressings,
     }));
   }, [ownerWishlistItems]);
 
@@ -369,6 +380,7 @@ export default function CollectionDetails() {
       itemType: type,
       internalId: type === "album" ? item.id?.toString() : undefined,
       pressings: type === "album" ? item.record?.pressings : undefined,
+      wantedPressings: type === "album" ? item.pressings : undefined,
     };
 
     setSelectedPlaybackItem(playbackItem);
@@ -424,6 +436,18 @@ export default function CollectionDetails() {
     setWishlistItemToDelete(item);
     setDeleteWishlistModalOpen(true);
   };
+
+  /** A wanted pressing of a several-pressing card: removed through the same confirmation */
+  const handleDeleteWantedPressing = (pressing: WishlistPressing) =>
+    handleDeleteWishlistItem({
+      id: pressing.id,
+      external_id: pressing.external_id,
+      title: pressing.title,
+      image_url: pressing.image_url ?? "",
+      created_at: pressing.created_at,
+      entity_type: "album",
+      source: "",
+    });
 
   const confirmDeleteWishlistItem = () => {
     if (wishlistItemToDelete) {
@@ -725,6 +749,17 @@ export default function CollectionDetails() {
             onPageChange={setWishlistPage}
             onPlay={handlePlayClick}
             onDelete={isOwner ? handleDeleteWishlistItem : undefined}
+            onGotIt={
+              isOwner
+                ? (item) =>
+                    setWantedToMove({
+                      id: item.id,
+                      title: item.title,
+                      entityType: item.entity_type === "artist" ? "artist" : "album",
+                      pressing: item.pressings?.[0],
+                    })
+                : undefined
+            }
           />
         </TabPanel>
       </Box>
@@ -739,7 +774,31 @@ export default function CollectionDetails() {
           handleClosePlaybackModal();
           handleDeleteAlbum(pressing);
         }}
+        onMoveWanted={(pressing) => {
+          handleClosePlaybackModal();
+          setWantedToMove({ id: pressing.id, title: pressing.title, entityType: "album", pressing });
+        }}
+        onRemoveWanted={(pressing) => {
+          handleClosePlaybackModal();
+          handleDeleteWantedPressing(pressing);
+        }}
       />
+
+      <MoveToCollectionDialog
+        record={wantedToMove}
+        onClose={() => setWantedToMove(null)}
+        onMoved={setMovedMessage}
+      />
+      <Snackbar
+        open={movedMessage !== null}
+        autoHideDuration={5000}
+        onClose={() => setMovedMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" onClose={() => setMovedMessage(null)} sx={{ width: "100%" }}>
+          {movedMessage}
+        </Alert>
+      </Snackbar>
 
       <ConfirmDeleteDialog
         open={deleteAlbumModalOpen}

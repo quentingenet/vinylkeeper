@@ -12,6 +12,7 @@ from app.services.discogs_import_service import (
     collect_vinyl_releases,
     collection_path,
     is_vinyl,
+    wants_path,
     parse_collection_release,
 )
 
@@ -114,6 +115,9 @@ def make_job():
         status="queued",
         pages_total=0, pages_done=0, items_total=0, vinyl_found=0, other_formats=0, added=0, copies_added=0,
         already_in_collection=0, other_pressings=0, in_other_collections=0, error_message=None, finished_at=None,
+        include_wantlist=False, phase="collection", wantlist_items_total=0, wantlist_vinyl_found=0,
+        wantlist_other_formats=0, wantlist_added=0, wantlist_already_in_wishlist=0, wantlist_owned=0,
+        wantlist_other_pressings_owned=0, wantlist_error=None,
     )
 
 
@@ -122,6 +126,7 @@ def make_service(pages=None, error=None):
         db=SimpleNamespace(commit=AsyncMock(), rollback=AsyncMock(), refresh=AsyncMock(), flush=AsyncMock()),
         masters_in_collection=AsyncMock(return_value=set()),
         import_labels=AsyncMock(return_value=("kent1", "Discogs import (kent)")),
+        owned_masters=AsyncMock(return_value=set()),
         delete_empty_collection=AsyncMock(),
     )
     client = SimpleNamespace(get=AsyncMock(side_effect=error, return_value=None))
@@ -132,6 +137,10 @@ def make_service(pages=None, error=None):
 
 def page(items, page_number, pages, total):
     return {"pagination": {"page": page_number, "pages": pages, "items": total}, "releases": items}
+
+
+def wants_page(items, page_number, pages, total):
+    return {"pagination": {"page": page_number, "pages": pages, "items": total}, "wants": items}
 
 
 class TestRunImport:
@@ -246,11 +255,22 @@ class TestCollectionCreatedForTheImport:
         client.get.assert_not_awaited()
 
 
-async def test_preview_reads_the_size_with_one_small_request():
-    service, client = make_service(pages=[page([item(1)], 1, 1500, 1500)])
+async def test_preview_reads_the_collection_and_wantlist_sizes_with_two_small_requests():
+    service, client = make_service(pages=[page([item(1)], 1, 1500, 1500), wants_page([item(2)], 1, 12, 12)])
 
-    assert await service.preview("kent") == 1500
-    assert "per_page=1&" in client.get.await_args.args[0]
+    preview = await service.preview("kent")
+
+    assert (preview.items_total, preview.wantlist_items_total, preview.wantlist_private) == (1500, 12, False)
+    assert all("per_page=1&" in call.args[0] for call in client.get.await_args_list)
+    assert "/wants?" in client.get.await_args_list[1].args[0]
+
+
+async def test_a_private_wantlist_does_not_fail_the_preview():
+    service, _ = make_service(pages=[page([item(1)], 1, 7, 7), DiscogsAccessDeniedError("403")])
+
+    preview = await service.preview("kent")
+
+    assert (preview.items_total, preview.wantlist_items_total, preview.wantlist_private) == (7, None, True)
 
 
 async def test_discogs_client_reports_a_refused_resource():
@@ -259,3 +279,49 @@ async def test_discogs_client_reports_a_refused_resource():
         client = DiscogsClient(http_client, max_attempts=1, min_interval=0)
         with pytest.raises(DiscogsAccessDeniedError):
             await client.get("/users/kent/collection/folders/0/releases")
+
+
+def test_wants_path_reads_the_wantlist_oldest_first():
+    path = wants_path("kent", page=3)
+    assert path.startswith("/users/kent/wants?") and "per_page=100" in path and "page=3" in path
+
+
+class TestWantlistPhase:
+    async def test_the_wantlist_follows_the_collection_in_the_same_import(self, monkeypatch):
+        service, client = make_service(pages=[
+            page([item(1)], 1, 1, 1),
+            wants_page([item(7), item(8, formats=("CD",))], 1, 1, 2),
+        ])
+        monkeypatch.setattr(service, "_write_batch", AsyncMock())
+        wanted = []
+        monkeypatch.setattr(service, "_write_wishlist_batch",
+                            AsyncMock(side_effect=lambda job, rs, masters: wanted.extend(rs)))
+        job = make_job()
+        job.include_wantlist = True
+
+        await service.run_import(job)
+
+        assert job.status == "done" and job.phase == "wantlist"
+        assert "/wants?" in client.get.await_args_list[1].args[0]
+        assert (job.wantlist_items_total, job.wantlist_vinyl_found, job.wantlist_other_formats) == (2, 1, 1)
+        assert [r.external_id for r in wanted] == ["7"]
+
+    async def test_a_private_wantlist_leaves_the_collection_imported(self, monkeypatch):
+        service, client = make_service(pages=[page([item(1)], 1, 1, 1), DiscogsAccessDeniedError("403")])
+        monkeypatch.setattr(service, "_write_batch", AsyncMock())
+        job = make_job()
+        job.include_wantlist = True
+
+        await service.run_import(job)
+
+        assert job.status == "done" and job.error_message is None
+        assert "wantlist is private" in job.wantlist_error
+
+    async def test_no_wantlist_without_asking(self, monkeypatch):
+        service, client = make_service(pages=[page([item(1)], 1, 1, 1)])
+        monkeypatch.setattr(service, "_write_batch", AsyncMock())
+        job = make_job()
+
+        await service.run_import(job)
+
+        assert client.get.await_count == 1 and job.phase == "collection"

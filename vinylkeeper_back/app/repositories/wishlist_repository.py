@@ -1,8 +1,10 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import String, and_, case, cast, func, literal_column, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from app.models.album_model import Album
 from app.models.wishlist_model import Wishlist
+from app.repositories.work_queries import work_key
 from app.models.reference_data.entity_types import EntityType
 from app.core.enums import EntityTypeEnum
 from app.core.exceptions import ServerError
@@ -134,32 +136,57 @@ class WishlistRepository(TransactionalMixin):
     async def get_user_wishlist_paginated(
         self, user_id: int, page: int = 1, limit: int = 8,
         search: Optional[str] = None, sort_order: str = "newest"
-    ) -> Tuple[List[Wishlist], int]:
-        """Get paginated wishlist items for a user with optional search and sort."""
+    ) -> Tuple[List[Tuple[str, List[Tuple[Wishlist, str, Optional[Album]]]]], int]:
+        """
+        One page of works of the wishlist, as in the collections: the pressings of one Discogs master
+        are one card. Returns (work key, [(Wishlist, entity type name, Album or None) first added first])
+        and the number of works. An artist, or an album not known yet, is a work of its own.
+        Newest: works by their last added pressing; oldest: by their first one.
+        """
         try:
-            offset = (page - 1) * limit
-
-            base_filter = Wishlist.user_id == user_id
-            if search and search.strip():
-                base_filter = and_(base_filter, Wishlist.title.ilike(f"%{search.strip()}%"))
-
-            order_clause = Wishlist.created_at.desc() if sort_order == "newest" else Wishlist.created_at.asc()
-
-            query = (
-                select(Wishlist)
-                .filter(base_filter)
-                .order_by(order_clause)
-                .offset(offset)
-                .limit(limit)
+            # The album of a wishlist row: same release, same source, and an album row (an artist id may
+            # be the same number as a release id)
+            album_join = and_(
+                Album.external_album_id == Wishlist.external_id,
+                Album.external_source_id == Wishlist.external_source_id,
+                EntityType.name == EntityTypeEnum.ALBUM.value,
             )
-            result = await self.db.execute(query)
-            items = result.scalars().all()
+            work = func.coalesce(
+                case((Album.id.is_not(None), work_key(Album))),
+                literal_column("'item:'", String) + cast(Wishlist.id, String),
+            )
+            filters = [Wishlist.user_id == user_id]
+            if search and search.strip():
+                filters.append(Wishlist.title.ilike(f"%{search.strip()}%"))
 
-            count_query = select(func.count(Wishlist.id)).filter(base_filter)
-            count_result = await self.db.execute(count_query)
-            total = count_result.scalar() or 0
+            def from_wishlist(query):
+                return (query.select_from(Wishlist)
+                        .join(EntityType, EntityType.id == Wishlist.entity_type_id)
+                        .outerjoin(Album, album_join)
+                        .where(*filters))
 
-            return items, total
+            groups = from_wishlist(select(
+                work.label("work"),
+                func.min(Wishlist.created_at).label("first_added"),
+                func.max(Wishlist.created_at).label("last_added"),
+            )).group_by(work).subquery()
+            order = (groups.c.first_added.asc() if sort_order == "oldest" else groups.c.last_added.desc())
+            page_keys = list((await self.db.execute(
+                select(groups.c.work).order_by(order, groups.c.work).offset((page - 1) * limit).limit(limit)
+            )).scalars().all())
+            total = (await self.db.execute(select(func.count()).select_from(groups))).scalar() or 0
+            if not page_keys:
+                return [], total
+
+            rows = (await self.db.execute(
+                from_wishlist(select(Wishlist, EntityType.name, Album, work))
+                .where(work.in_(page_keys))
+                .order_by(Wishlist.created_at.asc(), Wishlist.id)
+            )).all()
+            pressings: dict[str, list] = {key: [] for key in page_keys}
+            for wishlist, entity_type, album, key in rows:
+                pressings[key].append((wishlist, entity_type, album))
+            return [(key, pressings[key]) for key in page_keys], total
         except SQLAlchemyError as e:
             logger.error(
                 f"Error getting paginated wishlist items for user {user_id}: {str(e)}", exc_info=True)

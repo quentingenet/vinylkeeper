@@ -13,7 +13,8 @@ def patched_session():
 
 def test_parse_args_defaults_and_flags():
     assert vars(cli.parse_args([])) == {
-        "limit": None, "dry_run": False, "skip_masters": False, "skip_editions": False}
+        "limit": None, "dry_run": False, "skip_masters": False, "skip_editions": False,
+        "refresh_titles": False}
     args = cli.parse_args(["--limit", "20", "--dry-run", "--skip-masters", "--skip-editions"])
     assert (args.limit, args.dry_run, args.skip_masters, args.skip_editions) == (20, True, True, True)
 
@@ -30,7 +31,7 @@ async def test_dry_run_counts_without_calling_discogs(capsys):
         await cli.run(cli.parse_args(["--dry-run"]))
 
     service_cls.assert_not_called()
-    assert "2 release(s), 1 master(s), 1 pressing(s)" in capsys.readouterr().out
+    assert "2 release(s), 1 master(s), 1 pressing(s), 0 title(s)" in capsys.readouterr().out
 
 
 async def test_run_fetches_releases_then_masters_then_pressings():
@@ -133,3 +134,19 @@ async def test_dry_run_assigns_no_moods():
         await cli.run(cli.parse_args(["--dry-run"]))
 
     mood_service_cls.assert_not_called()
+
+
+async def test_refresh_titles_only_when_asked():
+    service = MagicMock()
+    for name in ("enrich_pending_releases", "enrich_pending_masters", "enrich_pending_editions",
+                 "refresh_stale_titles"):
+        setattr(service, name, AsyncMock())
+
+    with patched_session(), \
+            patch.object(cli, "AlbumEnrichmentRepository"), \
+            patch.object(cli, "AlbumEnrichmentService", return_value=service):
+        await cli.run(cli.parse_args([]))
+        service.refresh_stale_titles.assert_not_called()
+        await cli.run(cli.parse_args(["--refresh-titles", "--limit", "5"]))
+
+    assert service.refresh_stale_titles.await_args.args == (5,)

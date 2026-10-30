@@ -43,8 +43,12 @@ import {
   plural,
   existingSaveWarning,
   savedCopyName,
+  canImportWantlist,
+  previewMessage,
+  wantlistUnavailableReason,
   summaryDetails,
   summaryWarnings,
+  wantlistSummary,
 } from "@components/Collections/discogsImportLabels";
 
 // Value of the "Import into" choice creating a new collection
@@ -80,8 +84,11 @@ interface DiscogsImportDialogProps {
   open: boolean;
   onClose: () => void;
   latestImport: DiscogsImport | null;
-  /** collectionId null: a new collection is created; saveCopy: an existing one is saved first */
-  onStart: (discogsUsername: string, collectionId: number | null, saveCopy: boolean) => void;
+  /**
+   * collectionId null: a new collection is created; saveCopy: an existing one is saved first;
+   * includeWantlist: the wantlist then goes into the wishlist
+   */
+  onStart: (discogsUsername: string, collectionId: number | null, saveCopy: boolean, includeWantlist: boolean) => void;
   isStarting: boolean;
   startError: ApiError | null;
 }
@@ -101,6 +108,7 @@ export default function DiscogsImportDialog({
   const [target, setTarget] = useState<number | typeof NEW_COLLECTION>(NEW_COLLECTION);
   // Safe by default: importing into an existing collection saves a copy of it first
   const [saveCopy, setSaveCopy] = useState(true);
+  const [includeWantlist, setIncludeWantlist] = useState(false);
 
   const { data: collectionsData } = useQuery<PaginatedCollectionListResponse>({
     queryKey: queryKeys.collections.list(currentUser?.user_uuid, 1, COLLECTIONS_LIMIT),
@@ -143,6 +151,8 @@ export default function DiscogsImportDialog({
   // One save per collection: an existing one is kept, and a save is not saved again
   const targetSaveName = targetCollection?.save_collection_name ?? null;
   const targetIsSave = targetCollection?.saved_from_collection_id != null;
+  // Ticked and still importable (a new preview may find it private or empty)
+  const wantlistIncluded = includeWantlist && !!preview.data && canImportWantlist(preview.data);
   const canImport = previewMatches && (preview.data?.items_total ?? 0) > 0 && !isStarting;
 
   const handleUsernameChange = (value: string) => {
@@ -227,9 +237,7 @@ export default function DiscogsImportDialog({
             {previewMatches && preview.data && (
               <>
                 <Alert severity={preview.data.items_total > 0 ? "success" : "info"} sx={{ mb: 2 }}>
-                  {preview.data.items_total > 0
-                    ? `${plural(preview.data.items_total, "item")} found in this Discogs collection. Only the vinyl records will be imported.`
-                    : "This Discogs collection is empty."}
+                  {previewMessage(preview.data, includeWantlist)}
                 </Alert>
                 {preview.data.items_total > 0 && (
                   <FormControl fullWidth size="small" sx={{ mb: 2 }}>
@@ -281,6 +289,37 @@ export default function DiscogsImportDialog({
                     )}
                   </FormControl>
                 )}
+                {preview.data.items_total > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <FormControlLabel
+                      disabled={!canImportWantlist(preview.data)}
+                      control={
+                        <Checkbox
+                          checked={includeWantlist && canImportWantlist(preview.data)}
+                          onChange={(e) => setIncludeWantlist(e.target.checked)}
+                        />
+                      }
+                      label={
+                        <Typography variant="body2">
+                          {canImportWantlist(preview.data)
+                            ? `Also import my Discogs wantlist (${plural(preview.data.wantlist_items_total ?? 0, "item")}) into my wishlist`
+                            : "Also import my Discogs wantlist into my wishlist"}
+                        </Typography>
+                      }
+                    />
+                    {wantlistUnavailableReason(preview.data) && (
+                      <Typography variant="caption" color="text.secondary" component="p">
+                        {wantlistUnavailableReason(preview.data)}
+                      </Typography>
+                    )}
+                    {includeWantlist && canImportWantlist(preview.data) && (
+                      <Typography variant="caption" color="text.secondary" component="p">
+                        Your wantlist must be public. Only vinyl records are added; a pressing you already own is
+                        skipped, another pressing of a record you own is added and pointed out.
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </>
             )}
 
@@ -296,9 +335,9 @@ export default function DiscogsImportDialog({
                 disabled={!canImport}
                 onClick={() =>
                   target === NEW_COLLECTION
-                    ? onStart(trimmed, null, false)
+                    ? onStart(trimmed, null, false, wantlistIncluded)
                     // With a save already there, the API keeps it as the copy of the import
-                    : onStart(trimmed, target, !targetIsSave && (saveCopy || targetSaveName !== null))
+                    : onStart(trimmed, target, !targetIsSave && (saveCopy || targetSaveName !== null), wantlistIncluded)
                 }
               >
                 {isStarting ? <VinylSpinner size={20} /> : "Import"}
@@ -343,9 +382,10 @@ interface ImportSummaryProps {
 function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps) {
   const details = summaryDetails(job);
   const warnings = summaryWarnings(job);
+  const wantlist = wantlistSummary(job);
   return (
     <Alert
-      severity={warnings.length > 0 ? "warning" : "success"}
+      severity={warnings.length > 0 || wantlist?.isError ? "warning" : "success"}
       sx={{ mb: 2 }}
       action={
         // "Open" and the close button together: an action replaces the close button of an Alert
@@ -368,6 +408,11 @@ function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps)
           {warning}
         </Box>
       ))}
+      {wantlist && (
+        <Box component="span" display="block" sx={{ mt: 0.5 }}>
+          {wantlist.text}
+        </Box>
+      )}
       <Box component="span" display="block" sx={{ mt: 0.5 }}>
         Remember to confirm the pressing of each record.
       </Box>

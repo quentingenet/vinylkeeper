@@ -47,6 +47,20 @@ export interface OwnedPressing {
 // The release on the owner's shelf, replacing the one picked by mistake
 export type ReplacePressingRequest = Omit<AddToCollectionRequest, "album_data" | "pressing_confirmed" | "add_copy">;
 
+/** One wanted pressing of a work: one wishlist row, with the pressing details of its album */
+export interface WishlistPressing {
+  id: number;
+  external_id: string;
+  title: string;
+  image_url: string | null;
+  created_at: string;
+  release_year: number | null;
+  country: string | null;
+  label: string | null;
+  catno: string | null;
+  formats: string[];
+}
+
 export interface WishlistItemResponse {
   id: number;
   external_id: string;
@@ -55,8 +69,12 @@ export interface WishlistItemResponse {
   created_at: string;
   entity_type: string;
   source: string;
+  /** Wanted pressings of the work (×2, ×3 on the cover), 1 for an artist */
+  pressings_count?: number;
+  pressings?: WishlistPressing[];
 }
 
+/** A card of the wishlist: a work (the pressings of one Discogs master), or an artist */
 export interface WishlistItemListResponse {
   id: number;
   entity_type: string;
@@ -64,6 +82,18 @@ export interface WishlistItemListResponse {
   title: string;
   image_url: string | null;
   created_at: string;
+  pressings_count: number;
+  pressings: WishlistPressing[];
+}
+
+export interface MoveToCollectionResponse {
+  message: string;
+  collection_id: number;
+  collection_name: string;
+  external_id: string;
+  entity_type: "album" | "artist";
+  /** It was in the collection already: one more copy for a record, nothing for an artist */
+  already_in_collection: boolean;
 }
 
 export interface PaginatedWishlistResponse {

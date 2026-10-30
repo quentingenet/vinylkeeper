@@ -8,6 +8,7 @@ import {
   AddToCollectionResponse,
   OwnedPressing,
   ReplacePressingRequest,
+  MoveToCollectionResponse,
 } from "@models/IExternalReference";
 import type { CollectionAlbumResponse } from "@models/Collection";
 import { BaseApiService } from "./BaseApiService";
@@ -69,6 +70,18 @@ export class ExternalReferenceService extends BaseApiService {
       logger.error("Error replacing pressing:", error);
       throw new Error("Failed to replace the pressing");
     }
+  }
+
+  /** A wanted record the user got: into one of their collections, out of the wishlist */
+  async moveWishlistItemToCollection(
+    wishlistId: number,
+    collectionId: number,
+    pressingConfirmed: boolean = true
+  ): Promise<MoveToCollectionResponse> {
+    return this.post<MoveToCollectionResponse>(`${this.endpoint}/wishlist/${wishlistId}/move-to-collection`, {
+      collection_id: collectionId,
+      pressing_confirmed: pressingConfirmed,
+    });
   }
 
   async removeFromWishlist(wishlistId: number): Promise<void> {
@@ -144,6 +157,8 @@ export const externalReferenceApiService = {
     externalReferenceServiceInstance.findOwnedPressings(externalId, masterId),
   replacePressing: (collectionId: number, albumId: number, data: ReplacePressingRequest) =>
     externalReferenceServiceInstance.replacePressing(collectionId, albumId, data),
+  moveWishlistItemToCollection: (wishlistId: number, collectionId: number, pressingConfirmed?: boolean) =>
+    externalReferenceServiceInstance.moveWishlistItemToCollection(wishlistId, collectionId, pressingConfirmed),
   removeFromWishlist: (wishlistId: number) =>
     externalReferenceServiceInstance.removeFromWishlist(wishlistId),
   removeFromCollection: (

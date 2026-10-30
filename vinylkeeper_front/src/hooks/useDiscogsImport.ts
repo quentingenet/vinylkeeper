@@ -41,13 +41,14 @@ export function useDiscogsImport() {
           : []),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.spinningNow.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.wishlist.all() }),
       ]);
     }
   }, [latestImport, queryClient]);
 
-  const startImport = useMutation<DiscogsImport, ApiError, { discogsUsername: string; collectionId: number | null; saveCopy: boolean }>({
-    mutationFn: ({ discogsUsername, collectionId, saveCopy }) =>
-      discogsImportApiService.start(discogsUsername, collectionId, saveCopy),
+  const startImport = useMutation<DiscogsImport, ApiError, { discogsUsername: string; collectionId: number | null; saveCopy: boolean; includeWantlist: boolean }>({
+    mutationFn: ({ discogsUsername, collectionId, saveCopy, includeWantlist }) =>
+      discogsImportApiService.start(discogsUsername, collectionId, saveCopy, includeWantlist),
     onSuccess: (job) => {
       queryClient.setQueryData(queryKey, job);
       // A new collection may have been created for the records

@@ -191,3 +191,42 @@ class TestReportedDuplicates:
 
         assert job.status == "done", job.error_message
         assert (job.added, job.other_pressings, job.in_other_collections) == (2, 1, 1)
+
+
+class TestWantlist:
+    async def test_vinyls_go_to_the_wishlist_by_pressing(self, real_session):
+        from app.models.wishlist_model import Wishlist
+
+        user = await make_test_user(real_session)
+        collection = await make_test_collection(real_session, owner_id=user.id)
+        owned, other_pressing, new_one, listed, cd = release_ids(5)
+        master = owned
+        repository = DiscogsImportRepository(real_session)
+        # Owned before: this pressing is in a collection
+        await run(real_session, user, collection, [item(owned, master_id=master)])
+        # Already in the wishlist
+        real_session.add(Wishlist(user_id=user.id, external_id=str(listed), title="Listed",
+                                  entity_type_id=await repository.album_entity_type_id(),
+                                  external_source_id=await repository.discogs_source_id()))
+        await real_session.flush()
+
+        wants = [item(owned, master_id=master), item(other_pressing, master_id=master), item(new_one),
+                 item(listed), item(cd, ("CD",))]
+        pages = [
+            {"pagination": {"page": 1, "pages": 1, "items": 0}, "releases": []},
+            {"pagination": {"page": 1, "pages": 1, "items": len(wants)}, "wants": wants},
+        ]
+        job = await repository.create_import(user.id, collection.id, "itest", include_wantlist=True)
+        await DiscogsImportService(repository, SimpleNamespace(get=AsyncMock(side_effect=pages))).run_import(job)
+
+        assert job.status == "done" and job.wantlist_error is None, job.wantlist_error
+        assert (job.wantlist_vinyl_found, job.wantlist_other_formats) == (4, 1)
+        # This very pressing owned: left out. Another pressing of an owned record: added and counted
+        assert (job.wantlist_owned, job.wantlist_added, job.wantlist_other_pressings_owned,
+                job.wantlist_already_in_wishlist) == (1, 2, 1, 1)
+
+        rows = (await real_session.execute(select(Wishlist.external_id, Wishlist.title, Wishlist.image_url)
+                                           .where(Wishlist.user_id == user.id))).all()
+        by_id = {external_id: (title, image) for external_id, title, image in rows}
+        assert set(by_id) == {str(other_pressing), str(new_one), str(listed)}
+        assert by_id[str(new_one)] == (f"Itest Band - Album {new_one}", COVER)

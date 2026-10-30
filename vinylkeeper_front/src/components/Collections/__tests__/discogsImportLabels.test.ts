@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   importProgress,
+  previewMessage,
+  wantlistUnavailableReason,
+  wantlistSummary,
   savedCopyName,
   summaryDetails,
   summaryWarnings,
@@ -25,6 +28,16 @@ const job = (overrides: Partial<DiscogsImport> = {}): DiscogsImport => ({
   already_in_collection: 0,
   other_pressings: 0,
   in_other_collections: 0,
+  include_wantlist: false,
+  phase: "collection",
+  wantlist_items_total: 0,
+  wantlist_vinyl_found: 0,
+  wantlist_other_formats: 0,
+  wantlist_added: 0,
+  wantlist_already_in_wishlist: 0,
+  wantlist_owned: 0,
+  wantlist_other_pressings_owned: 0,
+  wantlist_error: null,
   error_message: null,
   created_at: "2026-10-29T10:00:00Z",
   finished_at: null,
@@ -85,5 +98,60 @@ describe("saved copy", () => {
     expect(summaryWarnings(job({ saved_copy_name: "SAVE Jazz shelf (2026-10-29)", other_pressings: 1 }))[0]).toBe(
       "“SAVE Jazz shelf (2026-10-29)” is the save to restore this collection from: delete it once everything is fine."
     );
+  });
+});
+
+describe("wantlist", () => {
+  it("fills the second half of the bar while reading and adding the wantlist", () => {
+    const reading = importProgress(job({ include_wantlist: true, phase: "wantlist", pages_total: 4, pages_done: 2 }));
+    expect(reading).toEqual({ label: "Reading your Discogs wantlist: page 2 of 4.", value: 62.5 });
+
+    const adding = importProgress(
+      job({ include_wantlist: true, phase: "wantlist", pages_total: 1, pages_done: 1, wantlist_vinyl_found: 10,
+        wantlist_added: 4, wantlist_owned: 1 })
+    );
+    expect(adding).toEqual({ label: "Adding to your wishlist: 5 of 10.", value: 87.5 });
+  });
+
+  it("fills the first half while the collection is read when the wantlist follows", () => {
+    expect(importProgress(job({ include_wantlist: true, pages_total: 2, pages_done: 1 })).value).toBe(12.5);
+  });
+
+  it("sums up what went into the wishlist, by pressing", () => {
+    expect(wantlistSummary(job())).toBeNull();
+    expect(
+      wantlistSummary(job({ include_wantlist: true, wantlist_added: 12, wantlist_already_in_wishlist: 3,
+        wantlist_owned: 2, wantlist_other_formats: 1, wantlist_other_pressings_owned: 1 }))
+    ).toEqual({
+      text: "Wantlist: 12 records added to your wishlist (3 already there, 2 records you already own skipped, " +
+        "1 other format skipped). 1 of them is another pressing of a record you own.",
+      isError: false,
+    });
+  });
+
+  it("says why the wantlist was not imported", () => {
+    expect(wantlistSummary(job({ include_wantlist: true, wantlist_error: "Your Discogs wantlist is private." })))
+      .toEqual({ text: "Wantlist not imported: Your Discogs wantlist is private.", isError: true });
+  });
+});
+
+describe("preview", () => {
+  const preview = (wantlist_items_total: number | null, wantlist_private = false) =>
+    ({ discogs_username: "kent", items_total: 7, wantlist_items_total, wantlist_private });
+
+  it("counts the wantlist only when it is imported too", () => {
+    expect(previewMessage(preview(12), false)).toBe(
+      "7 items found in this Discogs collection. Only the vinyl records will be imported.");
+    expect(previewMessage(preview(12), true)).toBe(
+      "7 items in this Discogs collection and 12 in its wantlist. Only the vinyl records will be imported.");
+    expect(previewMessage(preview(null, true), true)).toBe(
+      "7 items found in this Discogs collection. Only the vinyl records will be imported.");
+  });
+
+  it("says why the wantlist cannot be imported", () => {
+    expect(wantlistUnavailableReason(preview(12))).toBeNull();
+    expect(wantlistUnavailableReason(preview(null, true))).toMatch(/private/);
+    expect(wantlistUnavailableReason(preview(0))).toBe("Your Discogs wantlist is empty.");
+    expect(wantlistUnavailableReason(preview(null))).toMatch(/could not be read/);
   });
 });

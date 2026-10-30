@@ -68,8 +68,25 @@ class WishlistUpdate(BaseSchema):
         return self
 
 
+class WishlistPressingResponse(BaseSchema):
+    """One wanted pressing of a work: one wishlist row, with the pressing details of its album."""
+    id: int = Field(gt=0, description="Wishlist row id (to remove it, or move it to a collection)")
+    external_id: str
+    title: str
+    image_url: Optional[str] = None
+    created_at: datetime
+    release_year: Optional[int] = None
+    country: Optional[str] = None
+    label: Optional[str] = None
+    catno: Optional[str] = None
+    formats: List[str] = Field(default_factory=list)
+
+
 class WishlistItemListResponse(BaseSchema):
-    """Lightweight schema for wishlist list view (optimized for performance)."""
+    """
+    A card of the wishlist: a work (the pressings of one Discogs master), or an artist.
+    id, title and image_url are the ones of its first wanted pressing.
+    """
     id: int = Field(gt=0, description="Unique identifier")
     entity_type: str = Field(...,
                              description="Entity type name (album or artist)")
@@ -78,12 +95,15 @@ class WishlistItemListResponse(BaseSchema):
     image_url: Optional[str] = Field(None, description="URL of the image")
     created_at: datetime = Field(...,
                                  description="When the wishlist item was created")
+    pressings_count: int = Field(1, ge=1, description="Wanted pressings of the work (x2, x3 on the cover)")
+    pressings: List[WishlistPressingResponse] = Field(
+        default_factory=list, description="The wanted pressings of an album work, first added first")
 
 
 class PaginatedWishlistResponse(BaseSchema):
     """Schema for paginated wishlist response."""
     items: List[WishlistItemListResponse] = Field(default_factory=list)
-    total: int = Field(ge=0, description="Total number of wishlist items")
+    total: int = Field(ge=0, description="Total number of wishlist cards (works and artists)")
     page: int = Field(gt=0, description="Current page number")
     limit: int = Field(gt=0, description="Number of items per page")
     total_pages: int = Field(ge=0, description="Total number of pages")
