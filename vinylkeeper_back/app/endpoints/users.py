@@ -10,6 +10,7 @@ from app.schemas.user_schema import (
     EmailChangeRequest,
     ConfirmEmailRequest,
     ContactMessageRequest,
+    CurrencyUpdateRequest,
     ContactMessageResponse,
     LoginResponse,
     RegisterResponse,
@@ -143,6 +144,18 @@ async def get_current_user_settings(
     """Get current user settings information"""
     user_settings_data = await user_service.get_user_settings(current_user)
     return user_settings_data
+
+
+@router.put("/me/currency", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def set_my_currency(
+    currency_data: CurrencyUpdateRequest,
+    current_user=Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> MessageResponse:
+    """Currency the collection value is shown in."""
+    await user_service.set_preferred_currency(current_user, currency_data.currency)
+    return MessageResponse(message=f"Collection value shown in {currency_data.currency}")
 
 
 @router.put("/me/password", response_model=MessageResponse, status_code=status.HTTP_200_OK)

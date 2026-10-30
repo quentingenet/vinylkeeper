@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import (
     UUID as SQLUUID,
+    CheckConstraint,
     Column,
     ForeignKey,
     Index,
@@ -40,6 +41,7 @@ class User(Base):
     __table_args__ = (
         # One account per address whatever its case (migration d4a7c2e9f1b3)
         Index("ix_users_email_lower", func.lower(email), unique=True),
+        CheckConstraint("preferred_currency IN ('EUR', 'USD')", name="ck_users_preferred_currency"),
     )
     password = Column(
         String(1024),
@@ -86,6 +88,12 @@ class User(Base):
         String(100),
         nullable=False,
         server_default="Europe/Paris"
+    )
+    # Currency the collection value is shown in: prices are stored in EUR and converted
+    preferred_currency = Column(
+        String(3),
+        nullable=False,
+        server_default="EUR"
     )
     role_id = Column(
         Integer,

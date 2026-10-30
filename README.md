@@ -120,7 +120,8 @@ The API runs at **http://localhost:8000**, with interactive docs at **/docs**.
 Optional, to fill in Discogs metadata and moods for existing records:
 ```bash
 poetry run python -m app.cli.sync_mood_rules       # load the mood rules
-poetry run python -m app.cli.enrich_albums         # fetch Discogs metadata, then assign moods
+poetry run python -m app.cli.enrich_albums         # fetch Discogs metadata and prices, then assign moods
+poetry run python -m app.cli.refresh_rates         # today's EUR/USD rate (ECB), for the collection value
 ```
 
 ### Frontend

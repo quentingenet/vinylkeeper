@@ -19,6 +19,7 @@ export interface UserSettingsResponse {
   created_at: string;
   is_accepted_terms: boolean;
   is_email_confirmed: boolean;
+  preferred_currency: "EUR" | "USD";
 }
 
 export interface LoginResponse {
@@ -178,6 +179,15 @@ export class UserApiService extends BaseApiService {
     }
   }
 
+  /** Currency the collection value is shown in */
+  async setCurrency(currency: "EUR" | "USD"): Promise<{ message: string }> {
+    try {
+      return await this.put<{ message: string }>("/users/me/currency", { currency });
+    } catch (error: unknown) {
+      throw new Error(isApiError(error) ? error.message : "Failed to change the currency.");
+    }
+  }
+
   async changePassword(data: PasswordChangeData): Promise<{ message: string }> {
     try {
       return await this.put<{ message: string }>("/users/me/password", {
@@ -227,6 +237,7 @@ export const userApiService = {
   resendEmailConfirmation: () => userApiServiceInstance.resendEmailConfirmation(),
   requestEmailChange: (data: EmailChangeData) => userApiServiceInstance.requestEmailChange(data),
   changePassword: (data: PasswordChangeData) => userApiServiceInstance.changePassword(data),
+  setCurrency: (currency: "EUR" | "USD") => userApiServiceInstance.setCurrency(currency),
   deleteAccount: () => userApiServiceInstance.deleteAccount(),
   sendContactMessage: (data: ContactMessageData) => userApiServiceInstance.sendContactMessage(data),
 };

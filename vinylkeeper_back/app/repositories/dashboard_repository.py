@@ -1,13 +1,16 @@
 from typing import Any, List, Optional, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, case, distinct, func, select, tuple_
+from sqlalchemy import and_, case, distinct, func, or_, select, tuple_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.user_model import User
 from app.models.collection_model import Collection
-from app.models.collection_album import CollectionAlbum
+from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
+from app.models.album_price_model import AlbumPrice, AlbumPriceRequest
+from app.models.reference_data.external_sources import ExternalSource
+from app.core.enums import ExternalSourceEnum
 from app.models.place_model import Place
 from app.models.association_tables import CollectionArtist
 from app.repositories.work_queries import work_key
@@ -271,11 +274,12 @@ class DashboardRepository:
             raise ServerError(error_code=5000, message=f"Failed to {operation}", details={})
 
     async def stats_collections(self, user_id: int) -> list[Any]:
-        """(id, name) of the user's collections that hold albums, their saved copies left out."""
+        """(id, name, albums) of the user's collections that hold albums, their saved copies left out."""
         query = (
-            select(Collection.id, Collection.name)
-            .where(Collection.owner_id == user_id, Collection.saved_from_collection_id.is_(None),
-                   Collection.id.in_(select(CollectionAlbum.collection_id)))
+            select(Collection.id, Collection.name, func.count(CollectionAlbum.album_id).label("albums_count"))
+            .join(CollectionAlbum, CollectionAlbum.collection_id == Collection.id)
+            .where(Collection.owner_id == user_id, Collection.saved_from_collection_id.is_(None))
+            .group_by(Collection.id, Collection.name)
             .order_by(Collection.name)
         )
         return await self._rows(query, "list collections for stats")
@@ -334,3 +338,72 @@ class DashboardRepository:
             .limit(self.TOP_PRESSING_VALUES)
         )
         return await self._rows(query, "count pressing formats")
+
+    async def collection_value(self, user_id: int, collection_ids: Sequence[int] = ()) -> Any:
+        """
+        Sum of the Discogs suggested prices (EUR) of the user's pressings, each copy counted.
+        A pressing kept in two collections counts once, with its most copies; saved copies are left out.
+        Returns (records, priced, low, average, high, unconfirmed, updated_at, pending): updated_at is
+        the latest price fetched, pending the pressings queued for a re-evaluation.
+        """
+        copies = (
+            select(func.count(CollectionAlbumCopy.id))
+            .where(CollectionAlbumCopy.collection_id == CollectionAlbum.collection_id,
+                   CollectionAlbumCopy.album_id == CollectionAlbum.album_id)
+            .scalar_subquery()
+        )
+        owned_query = (
+            select(
+                CollectionAlbum.album_id,
+                func.max(func.greatest(copies, 1)).label("copies"),
+                func.bool_or(CollectionAlbum.pressing_confirmed).label("confirmed"),
+            )
+            .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .where(Collection.owner_id == user_id, Collection.saved_from_collection_id.is_(None))
+            .group_by(CollectionAlbum.album_id)
+        )
+        if collection_ids:
+            owned_query = owned_query.where(Collection.id.in_(collection_ids))
+        owned = owned_query.subquery()
+        priced = AlbumPrice.status == "ok"
+        query = (
+            select(
+                func.count().label("records"),
+                func.count().filter(priced).label("priced"),
+                func.coalesce(func.sum(AlbumPrice.price_very_good * owned.c.copies), 0).label("low"),
+                func.coalesce(func.sum(AlbumPrice.price_very_good_plus * owned.c.copies), 0).label("average"),
+                func.coalesce(func.sum(AlbumPrice.price_near_mint * owned.c.copies), 0).label("high"),
+                func.count().filter(owned.c.confirmed.is_(False)).label("unconfirmed"),
+                func.max(AlbumPrice.fetched_at).filter(priced).label("updated_at"),
+                func.count(AlbumPriceRequest.album_id).label("pending"),
+            )
+            .select_from(owned)
+            .outerjoin(AlbumPrice, AlbumPrice.album_id == owned.c.album_id)
+            .outerjoin(AlbumPriceRequest, AlbumPriceRequest.album_id == owned.c.album_id)
+        )
+        return (await self._rows(query, "compute collection value"))[0]
+
+    async def refreshable_album_ids(
+        self, user_id: int, collection_ids: Sequence[int] = (), min_age_hours: int = 24
+    ) -> list[int]:
+        """
+        Discogs pressings of the user (saved copies left out) without a price or with one older
+        than min_age_hours, and not queued yet: what a re-evaluation would ask Discogs again.
+        """
+        stale = func.now() - func.make_interval(0, 0, 0, 0, min_age_hours)
+        query = (
+            select(CollectionAlbum.album_id)
+            .join(Collection, Collection.id == CollectionAlbum.collection_id)
+            .join(Album, Album.id == CollectionAlbum.album_id)
+            .join(ExternalSource, ExternalSource.id == Album.external_source_id)
+            .outerjoin(AlbumPrice, AlbumPrice.album_id == CollectionAlbum.album_id)
+            .outerjoin(AlbumPriceRequest, AlbumPriceRequest.album_id == CollectionAlbum.album_id)
+            .where(Collection.owner_id == user_id, Collection.saved_from_collection_id.is_(None),
+                   ExternalSource.name == ExternalSourceEnum.DISCOGS.value,
+                   AlbumPriceRequest.album_id.is_(None),
+                   or_(AlbumPrice.album_id.is_(None), AlbumPrice.fetched_at < stale))
+            .distinct()
+        )
+        if collection_ids:
+            query = query.where(Collection.id.in_(collection_ids))
+        return [row[0] for row in await self._rows(query, "list pressings to re-evaluate")]

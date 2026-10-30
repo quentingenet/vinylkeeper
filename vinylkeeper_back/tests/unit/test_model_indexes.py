@@ -38,6 +38,8 @@ PRODUCTION_INDEXES = {
     "ix_users_email_lower": "ON users (lower(email))",
     # Migration e7b3d9a1c5f2: the latest Discogs import of a user, polled while it runs
     "ix_discogs_imports_user_id_id": "ON discogs_imports (user_id, id)",
+    # Migration d8f3a6c1e5b7: re-evaluations of a user in the last 24 hours (one at most)
+    "ix_value_refreshes_user_id_created_at": "ON value_refreshes (user_id, created_at)",
     # Migration f1c8a3b7d2e4: one save per collection
     "ix_collections_saved_from_collection_id": "ON collections (saved_from_collection_id)",
 }

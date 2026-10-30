@@ -19,6 +19,7 @@ import ChangePasswordSection from "@components/Settings/ChangePasswordSection";
 import EmailSection from "@components/Settings/EmailSection";
 import ContactSection from "@components/Settings/ContactSection";
 import DangerZoneSection from "@components/Settings/DangerZoneSection";
+import CurrencySection from "@components/Settings/CurrencySection";
 
 export default function Settings() {
   const { currentUser, isUserLoggedIn } = useUserContext();
@@ -107,6 +108,7 @@ export default function Settings() {
       {settingsUser && (
         <EmailSection email={settingsUser.email} isEmailConfirmed={settingsUser.is_email_confirmed} />
       )}
+      {settingsUser && <CurrencySection currency={settingsUser.preferred_currency ?? "EUR"} />}
       <ChangePasswordSection />
       <ContactSection />
       <DangerZoneSection />

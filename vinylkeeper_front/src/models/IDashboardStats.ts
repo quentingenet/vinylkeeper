@@ -51,3 +51,41 @@ export interface CollectionBreakdown {
   moods: BreakdownEntry[];
   pressings: PressingsBreakdown;
 }
+
+export type Currency = "EUR" | "USD";
+
+/** Which collection the value is about: the largest one, all of them, or one by id */
+export type ValueScope = "largest" | "all" | number;
+
+export interface ValueAmounts {
+  currency: Currency;
+  low: number;
+  average: number;
+  high: number;
+}
+
+/** Estimated value of a collection, from Discogs suggested prices of its pressings */
+export interface CollectionValue {
+  collection_id: number | null;
+  collections: { id: number; name: string }[];
+  /** Currency the user picked in Settings, shown first */
+  currency: Currency;
+  /** EUR, then USD once a rate is known */
+  amounts: ValueAmounts[];
+  usd_rate: number | null;
+  rate_date: string | null;
+  records_total: number;
+  records_priced: number;
+  pressings_to_confirm: number;
+  estimated_at: string | null;
+  refresh_pending: number;
+  refreshable: number;
+  refreshes_left: number;
+  next_refresh_at: string | null;
+}
+
+export interface ValueRefresh {
+  requested: number;
+  pending: number;
+  estimated_seconds: number;
+}

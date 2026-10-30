@@ -29,6 +29,7 @@ class ErrorCode:
     FORBIDDEN = 4030
     FORBIDDEN_OWNER = 4003
     CSRF_TOKEN_INVALID = 4004
+    QUOTA_EXCEEDED = 4290
 
     # Server errors (5000-5999)
     SERVER_ERROR = 5000
@@ -172,6 +173,18 @@ class ResourceNotFoundError(ResourceError):
             message=f"{resource_type} with id {resource_id} not found",
             details={"resource_type": resource_type,
                      "resource_id": resource_id}
+        )
+
+
+class QuotaExceededError(AppException):
+    """The user has used up a daily allowance: retry once the oldest use leaves the window."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            error_code=ErrorCode.QUOTA_EXCEEDED,
+            message=message,
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            details=details,
+            should_log=False,
         )
 
 

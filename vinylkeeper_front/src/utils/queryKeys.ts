@@ -38,6 +38,7 @@ export const queryKeys = {
     stats: () => ["dashboard-stats"] as const,
     // Under the stats key: what invalidates the stats refreshes the breakdowns too
     breakdown: (collectionId: number | null) => ["dashboard-stats", "breakdown", collectionId ?? "all"] as const,
+    value: (scope: string | number) => ["dashboard-stats", "value", scope] as const,
   },
   spinningNow: {
     all: () => ["spinning-now"] as const,

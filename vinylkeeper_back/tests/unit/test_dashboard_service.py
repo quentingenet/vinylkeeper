@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock
 import pytest
 
 import app.services.dashboard_service as dashboard_service_module
-from app.core.exceptions import ResourceNotFoundError
+from datetime import datetime, timedelta, timezone
+
+from app.core.exceptions import QuotaExceededError, ResourceNotFoundError
 from app.services.dashboard_service import DashboardService
 
 
@@ -116,3 +118,119 @@ class TestCollectionBreakdown:
         with pytest.raises(ResourceNotFoundError):
             await service.get_breakdown(make_user(), collection_id=99)
         repo.pressing_counts.assert_not_called()
+
+
+def make_value_service(rows=((7, "Jazz", 10), (8, "Blues", 30), (9, "Abba", 30)), rate=None):
+    repo = AsyncMock()
+    repo.stats_collections = AsyncMock(return_value=list(rows))
+    repo.collection_value = AsyncMock(return_value=SimpleNamespace(
+        records=4, priced=3, low=100, average=150.5, high=200, unconfirmed=2, updated_at=None, pending=0))
+    repo.refreshable_album_ids = AsyncMock(return_value=[11, 12])
+    repo.db.commit = AsyncMock()
+    prices = AsyncMock()
+    prices.get_rate = AsyncMock(return_value=rate)
+    prices.request_refresh = AsyncMock(return_value=2)
+    prices.recent_refreshes = AsyncMock(return_value=[])
+    prices.record_refresh = AsyncMock()
+    return DashboardService(repo, AsyncMock(), prices), repo, prices
+
+
+def make_value_user(currency="EUR"):
+    return SimpleNamespace(id=1, username="jane", preferred_currency=currency)
+
+
+class TestCollectionValue:
+    async def test_the_largest_collection_by_default_first_by_name_on_a_tie(self):
+        service, repo, _ = make_value_service()
+
+        result = await service.get_value(make_value_user())
+
+        assert result.collection_id == 9
+        assert repo.collection_value.await_args_list[0].args == (1, [9])
+        [eur] = result.amounts
+        assert (eur.currency, eur.low, eur.average, eur.high, result.currency) == ("EUR", 100, 150.5, 200, "EUR")
+        assert (result.records_priced, result.records_total, result.pressings_to_confirm) == (3, 4, 2)
+        assert result.refreshable == 2
+
+    async def test_all_collections(self):
+        service, repo, _ = make_value_service()
+
+        result = await service.get_value(make_value_user(), all_collections=True)
+
+        assert result.collection_id is None
+        repo.collection_value.assert_awaited_once_with(1, [])
+
+    async def test_someone_elses_collection_is_not_found(self):
+        service, *_ = make_value_service()
+
+        with pytest.raises(ResourceNotFoundError):
+            await service.get_value(make_value_user(), collection_id=99)
+
+    async def test_euros_and_dollars_at_the_last_known_rate(self):
+        rate = SimpleNamespace(currency="USD", rate=1.1, rate_date="2026-10-29")
+        service, *_ = make_value_service(rate=rate)
+
+        result = await service.get_value(make_value_user("USD"))
+
+        eur, usd = result.amounts
+        assert (eur.currency, eur.low) == ("EUR", 100)
+        assert (usd.currency, usd.low, usd.average) == ("USD", 110.0, 165.55)
+        assert (result.currency, result.usd_rate, str(result.rate_date)) == ("USD", 1.1, "2026-10-29")
+
+    async def test_eur_while_no_rate_is_known(self):
+        service, *_ = make_value_service(rate=None)
+
+        result = await service.get_value(make_value_user("USD"))
+
+        assert (result.currency, [a.currency for a in result.amounts], result.usd_rate) == ("EUR", ["EUR"], None)
+
+    async def test_one_collection_shown_but_the_re_evaluation_state_covers_every_collection(self):
+        service, repo, _ = make_value_service()
+
+        await service.get_value(make_value_user(), collection_id=7)
+
+        assert [call.args for call in repo.collection_value.await_args_list] == [(1, [7]), (1,)]
+        repo.refreshable_album_ids.assert_awaited_once_with(1)
+
+    async def test_re_evaluation_queues_the_stale_pressings(self):
+        service, repo, prices = make_value_service()
+        repo.collection_value.return_value.pending = 2
+
+        result = await service.request_value_refresh(make_value_user())
+
+        prices.request_refresh.assert_awaited_once_with([11, 12])
+        repo.refreshable_album_ids.assert_awaited_once_with(1)  # every collection
+        assert (result.requested, result.pending, result.estimated_seconds) == (2, 2, 4)
+
+
+class TestReEvaluationAllowance:
+    async def test_one_a_day_then_refused_until_it_leaves_the_window(self):
+        service, _, prices = make_value_service()
+        last = datetime(2026, 10, 30, 8, tzinfo=timezone.utc)
+        prices.recent_refreshes.return_value = [last]
+
+        value = await service.get_value(make_value_user())
+        with pytest.raises(QuotaExceededError) as refused:
+            await service.request_value_refresh(make_value_user())
+
+        assert (value.refreshes_left, value.next_refresh_at) == (0, last + timedelta(hours=24))
+        assert refused.value.status_code == 429
+        prices.request_refresh.assert_not_called()
+
+    async def test_a_re_evaluation_is_counted(self):
+        service, _, prices = make_value_service()
+
+        assert (await service.get_value(make_value_user())).refreshes_left == 1
+        await service.request_value_refresh(make_value_user())
+
+        prices.record_refresh.assert_awaited_once_with(1)
+
+    async def test_prices_already_fresh_do_not_spend_the_allowance(self):
+        service, repo, prices = make_value_service()
+        repo.refreshable_album_ids.return_value = []
+        prices.request_refresh.return_value = 0
+
+        result = await service.request_value_refresh(make_value_user())
+
+        assert result.requested == 0
+        prices.record_refresh.assert_not_called()

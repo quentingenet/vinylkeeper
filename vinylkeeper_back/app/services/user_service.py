@@ -347,7 +347,14 @@ class UserService:
             "created_at": user.created_at,
             "is_accepted_terms": user.is_accepted_terms,
             "is_email_confirmed": user.is_email_confirmed,
+            "preferred_currency": user.preferred_currency,
         }
+
+    async def set_preferred_currency(self, user: User, currency: str) -> None:
+        """Currency the collection value is shown in (EUR or USD, checked by the schema)."""
+        async with transaction_context(self.repository.db):
+            user.preferred_currency = currency
+            await self.repository.update_user(user)
 
     async def send_contact_message(self, user: User, message_data: ContactMessageRequest) -> ContactMessageResponse:
         """Send contact message"""

@@ -76,6 +76,9 @@ class DiscogsClient:
                     await asyncio.sleep(RATE_LIMIT_BACKOFF_SECONDS[attempt % len(RATE_LIMIT_BACKOFF_SECONDS)])
                 continue
             if response.status_code == 404:
+                # Prices answer 404 too while the token account has no seller settings: not a missing release
+                if "seller settings" in response.text:
+                    raise DiscogsAccessDeniedError(f"Discogs needs seller settings to answer {path}")
                 return None
             if response.status_code in (401, 403):
                 raise DiscogsAccessDeniedError(f"Discogs refused access to {path}")
@@ -160,6 +163,9 @@ class EnrichmentReport:
     master_rows_updated: int = 0
     editions_done: int = 0
     titles_refreshed: int = 0
+    prices_done: int = 0
+    prices_missing: int = 0
+    prices_blocked: bool = False
 
 
 class AlbumEnrichmentService:

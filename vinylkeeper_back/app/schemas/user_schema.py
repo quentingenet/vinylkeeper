@@ -1,3 +1,4 @@
+from typing import Literal
 import re
 from datetime import datetime
 from uuid import UUID
@@ -261,6 +262,17 @@ class UserSettingsResponse(BaseSchema):
     is_email_confirmed: bool = Field(
         description="Whether the user confirmed their email address"
     )
+    preferred_currency: Literal["EUR", "USD"] = Field(
+        default="EUR",
+        description="Currency the collection value is shown in"
+    )
+
+
+class CurrencyUpdateRequest(BaseModel):
+    """Schema for the currency the collection value is shown in."""
+    model_config = ConfigDict(extra="forbid")
+
+    currency: Literal["EUR", "USD"] = Field(description="EUR or USD")
 
 
 class ContactMessageRequest(BaseSchema):

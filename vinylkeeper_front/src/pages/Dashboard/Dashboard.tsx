@@ -26,6 +26,7 @@ import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { toPlaybackItem } from "@utils/toPlaybackItem";
 import { COMMUNITY_COLLECTIONS_URL, EGlobalUrls } from "@utils/GlobalUrls";
 import CollectionStatsCard from "@components/Dashboard/CollectionStatsCard";
+import CollectionValueCard from "@components/Dashboard/CollectionValueCard";
 import { colors } from "@styles/colors";
 
 const LatestAdditionCard = ({
@@ -492,6 +493,12 @@ export default function Dashboard() {
                 </Typography>
               )}
           </Box>
+        </div>
+
+        <div className={styles.rowCenter}>
+          <div className={styles.chart}>
+            <CollectionValueCard />
+          </div>
         </div>
 
         <div className={styles.rowCenter}>
