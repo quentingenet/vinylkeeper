@@ -196,6 +196,22 @@ async def make_pressing(session, **values) -> Album:
     return album
 
 
+class TestSavedCopiesInUserStats:
+    async def test_a_saved_copy_does_not_double_my_albums(self, real_session):
+        user = await make_test_user(real_session)
+        kept = await make_test_collection(real_session, owner_id=user.id)
+        saved = await make_test_collection(real_session, owner_id=user.id)
+        saved.saved_from_collection_id = kept.id
+        album_id = await pick_existing_album_id(real_session)
+        await put_album_in_collection(real_session, kept.id, album_id)
+        await put_album_in_collection(real_session, saved.id, album_id)
+        await real_session.flush()
+
+        stats = await DashboardRepository(real_session).get_user_stats_batch(user.id)
+
+        assert stats["albums_total"] == 1
+
+
 class TestCollectionBreakdown:
     async def test_pressings_by_year_country_and_format(self, real_session):
         user = await make_test_user(real_session)

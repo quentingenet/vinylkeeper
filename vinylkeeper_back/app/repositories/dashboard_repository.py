@@ -120,13 +120,14 @@ class DashboardRepository:
         try:
             # Use scalar subqueries to combine multiple counts in a single query
             # Sum of what each collection shows: works per collection (the pressings of a record
-            # count once in a collection, a record kept in two collections counts in both)
+            # count once in a collection, a record kept in two collections counts in both).
+            # Saved copies are left out: a backup of a collection is not more records.
             albums_count_subq = (
                 select(func.count(distinct(tuple_(CollectionAlbum.collection_id, work_key()))).label('count'))
                 .select_from(CollectionAlbum)
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(Album, Album.id == CollectionAlbum.album_id)
-                .filter(Collection.owner_id == user_id)
+                .filter(Collection.owner_id == user_id, Collection.saved_from_collection_id.is_(None))
                 .scalar_subquery()
             )
 
