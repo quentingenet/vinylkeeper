@@ -6,6 +6,19 @@ services:
       - .env
     environment:
       - PGTZ=Europe/Paris
+    # Sized for the KVM4 VPS (16 GB): a quarter of the container memory as cache, the OS cache for the rest
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+    # Parallel queries share memory through /dev/shm (64 MB by default in Docker)
+    shm_size: 256mb
     ports:
       - "127.0.0.1:5432:5432"
     networks:
@@ -21,8 +34,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1"
-          memory: 1G
+          cpus: "2"
+          memory: 4G
 
   vinylkeeper-back:
     build:

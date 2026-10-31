@@ -1,8 +1,8 @@
 import { Box, Typography, Button, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { logger } from "@utils/logger";
 import useDetectMobile from "@hooks/useDetectMobile";
-import { musicStreamingService } from "@services/MusicStreamingService";
+import { streamingHref, streamingPlatforms, streamingQuery } from "@services/MusicStreamingService";
+import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { colors } from "@styles/colors";
 
 interface StreamingLinksAccordionProps {
@@ -17,43 +17,9 @@ export default function StreamingLinksAccordion({
   itemType,
 }: StreamingLinksAccordionProps) {
   const { isMobile } = useDetectMobile();
-
-  const handleRedirect = (platformName: string) => {
-    const queryParts: string[] = [];
-    if (itemType === "album") {
-      if (itemArtist) queryParts.push(itemArtist);
-      queryParts.push(itemTitle);
-    } else {
-      queryParts.push(itemTitle);
-    }
-
-    const searchQuery = encodeURIComponent(
-      Array.from(new Set(queryParts)).join(" ")
-    );
-
-    let url = "";
-    switch (platformName.toLowerCase()) {
-      case "spotify":
-        url = `${import.meta.env.VITE_SPOTIFY_WEB_URL}/${searchQuery}`;
-        break;
-      case "deezer":
-        url = `${import.meta.env.VITE_DEEZER_WEB_URL}/${searchQuery}`;
-        break;
-      case "youtubemusic":
-      case "youtube music":
-        url = `${import.meta.env.VITE_YOUTUBE_MUSIC_URL}?q=${searchQuery}`;
-        break;
-      default:
-        logger.warn("Unsupported platform:", platformName);
-        return;
-    }
-
-    if (isMobile) {
-      window.location.assign(url);
-    } else {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  };
+  const query = streamingQuery(itemTitle, itemArtist, itemType);
+  // Intent links are for mobile browsers: the WebView of the native app does not open them
+  const userAgent = isCapacitorPlatform() ? "" : navigator.userAgent;
 
   return (
     <Accordion
@@ -78,12 +44,15 @@ export default function StreamingLinksAccordion({
       </AccordionSummary>
       <AccordionDetails>
         <Box display="flex" flexDirection="column" gap={2}>
-          {musicStreamingService.getPlatforms().map((platform) => (
+          {streamingPlatforms.map((platform) => (
+            // A real link: phones open the installed app on a tap, not on a script navigation
             <Button
               key={platform.name}
+              component="a"
+              href={streamingHref(platform, query, userAgent)}
+              {...(!isMobile && { target: "_blank", rel: "noopener noreferrer" })}
               variant="contained"
               fullWidth
-              onClick={() => handleRedirect(platform.name)}
               sx={{
                 backgroundColor: colors.deep,
                 color: "primary.main",

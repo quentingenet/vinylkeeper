@@ -1,108 +1,49 @@
-import { logger } from "@utils/logger";
-import { getPlatform } from "@utils/CapacitorUtils";
-
 export interface StreamingPlatform {
   name: string;
   icon: string;
-  webUrl: string;
-  mobileUrl?: string;
+  // Web search page of the platform, for a query already encoded
+  searchUrl: (query: string) => string;
+  // Android app opened by the intent link, the web page being its fallback
+  androidPackage: string;
 }
 
-export interface StreamingQuery {
-  artist?: string;
-  album?: string;
-  track?: string;
+export const streamingPlatforms: StreamingPlatform[] = [
+  {
+    name: "Spotify",
+    icon: "🎧",
+    searchUrl: (query) => `${import.meta.env.VITE_SPOTIFY_WEB_URL}/${query}`,
+    androidPackage: "com.spotify.music",
+  },
+  {
+    name: "Deezer",
+    icon: "🎧",
+    searchUrl: (query) => `${import.meta.env.VITE_DEEZER_WEB_URL}/${query}`,
+    androidPackage: "deezer.android.app",
+  },
+  {
+    name: "YouTube Music",
+    icon: "🎧",
+    searchUrl: (query) => `${import.meta.env.VITE_YOUTUBE_MUSIC_URL}?q=${query}`,
+    androidPackage: "com.google.android.apps.youtube.music",
+  },
+];
+
+/** "Artist Title" for an album, the name for an artist, encoded for a URL. */
+export function streamingQuery(title: string, artist: string, itemType: "album" | "artist"): string {
+  const parts = itemType === "album" ? [artist, title].filter(Boolean) : [title];
+  return encodeURIComponent(Array.from(new Set(parts)).join(" "));
 }
 
-class MusicStreamingService {
-  private platforms: StreamingPlatform[] = [
-    {
-      name: "Spotify",
-      icon: "🎧",
-      webUrl: import.meta.env.VITE_SPOTIFY_WEB_URL,
-      mobileUrl: import.meta.env.VITE_SPOTIFY_MOBILE_URL,
-    },
-    {
-      name: "Deezer",
-      icon: "🎧",
-      webUrl: import.meta.env.VITE_DEEZER_WEB_URL,
-      mobileUrl: import.meta.env.VITE_DEEZER_MOBILE_URL,
-    },
-    {
-      name: "YouTube Music",
-      icon: "🎧",
-      webUrl: import.meta.env.VITE_YOUTUBE_MUSIC_URL,
-    },
-  ];
-
-  private isMobile(): boolean {
-    const platform = getPlatform();
-    return platform === "android" || platform === "ios";
-  }
-
-  private buildSearchQuery(query: StreamingQuery): string {
-    const parts: string[] = [];
-
-    if (query.artist) parts.push(query.artist);
-    if (query.album) parts.push(query.album);
-    if (query.track) parts.push(query.track);
-
-    return encodeURIComponent(parts.join(" "));
-  }
-
-  private buildUrl(platform: StreamingPlatform, searchQuery: string): string {
-    const isMobile = this.isMobile();
-
-    if (isMobile && platform.mobileUrl) {
-      return `${platform.mobileUrl}:${searchQuery}`;
-    }
-
-    // Specific format according to platform
-    if (platform.name === "Spotify" || platform.name === "Deezer") {
-      return `${platform.webUrl}/${searchQuery}`;
-    } else {
-      return `${platform.webUrl}?q=${searchQuery}`;
-    }
-  }
-
-  public redirectTo(platformName: string, query: StreamingQuery): void {
-    const platform = this.platforms.find((p) => p.name === platformName);
-    if (!platform) {
-      logger.error(`Platform ${platformName} not found`);
-      return;
-    }
-
-    const searchQuery = this.buildSearchQuery(query);
-    const url = this.buildUrl(platform, searchQuery);
-
-    if (this.isMobile() && platform.mobileUrl) {
-      this.attemptMobileRedirect(url, platform, searchQuery);
-    } else {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  }
-
-  private attemptMobileRedirect(
-    mobileUrl: string,
-    platform: StreamingPlatform,
-    searchQuery: string
-  ): void {
-    const webFallback = `${platform.webUrl}?q=${searchQuery}`;
-
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = mobileUrl;
-    document.body.appendChild(iframe);
-
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-      window.open(webFallback, "_blank", "noopener,noreferrer");
-    }, 1000);
-  }
-
-  public getPlatforms(): StreamingPlatform[] {
-    return this.platforms;
-  }
+/**
+ * Link to the search of a platform. In an Android browser, an intent link opens the app when it is
+ * installed and the web page otherwise; elsewhere the web page (iOS opens the app itself for the
+ * links it declares, on a tap).
+ */
+export function streamingHref(platform: StreamingPlatform, query: string, userAgent: string): string {
+  const url = platform.searchUrl(query);
+  if (!/Android/i.test(userAgent) || !url.startsWith("https://")) return url;
+  return (
+    `intent://${url.slice("https://".length)}#Intent;scheme=https;package=${platform.androidPackage};` +
+    `S.browser_fallback_url=${encodeURIComponent(url)};end`
+  );
 }
-
-export const musicStreamingService = new MusicStreamingService();
