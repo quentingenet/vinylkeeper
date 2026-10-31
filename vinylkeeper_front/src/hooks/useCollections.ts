@@ -7,9 +7,11 @@ import {
   type CollectionCreate,
   type CollectionAlbumCopyData,
   type CollectionCopyResponse,
+  type CollectionAlbumResponse,
 } from "@services/CollectionApiService";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
+import { applyCollectionAlbum } from "@utils/collectionCache";
 import { type ApiError } from "@utils/apiError";
 import { useUserContext } from "@contexts/UserContext";
 import { useEffect } from "react";
@@ -262,28 +264,25 @@ export const useCollections = (
 /** Add, update and delete copies of an album; each call answers the album with all its copies. */
 export function useAlbumCopies(collectionId: number) {
   const queryClient = useQueryClient();
-  const refresh = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(collectionId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(collectionId) }),
-    ]);
+  // Every call answers the album with all its copies: the cards show the new count at once
+  const apply = (album: CollectionAlbumResponse) => applyCollectionAlbum(queryClient, collectionId, album.id, album);
 
   const addCopy = useMutation({
     mutationFn: ({ albumId, data }: { albumId: number; data: CollectionAlbumCopyData }) =>
       collectionApiService.addAlbumCopy(collectionId, albumId, data),
-    onSuccess: refresh,
+    onSuccess: apply,
     onError: (error) => logger.error("Error adding a copy:", error),
   });
   const updateCopy = useMutation({
     mutationFn: ({ albumId, copyId, data }: { albumId: number; copyId: number; data: CollectionAlbumCopyData }) =>
       collectionApiService.updateAlbumCopy(collectionId, albumId, copyId, data),
-    onSuccess: refresh,
+    onSuccess: apply,
     onError: (error) => logger.error("Error updating a copy:", error),
   });
   const deleteCopy = useMutation({
     mutationFn: ({ albumId, copyId }: { albumId: number; copyId: number }) =>
       collectionApiService.deleteAlbumCopy(collectionId, albumId, copyId),
-    onSuccess: refresh,
+    onSuccess: apply,
     onError: (error) => logger.error("Error deleting a copy:", error),
   });
 
@@ -296,12 +295,8 @@ export function useConfirmAlbumPressing() {
   return useMutation({
     mutationFn: ({ collectionId, albumId }: { collectionId: number; albumId: number }) =>
       collectionApiService.confirmAlbumPressing(collectionId, albumId),
-    onSuccess: async (_data, variables) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(variables.collectionId) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(variables.collectionId) }),
-      ]);
-    },
+    onSuccess: (album, variables) =>
+      applyCollectionAlbum(queryClient, variables.collectionId, variables.albumId, album),
     onError: (error) => {
       logger.error("Error confirming album pressing:", error);
     },

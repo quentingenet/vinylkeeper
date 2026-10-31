@@ -344,7 +344,7 @@ def _album_with_copies() -> CollectionAlbumResponse:
     return CollectionAlbumResponse(
         id=10, external_album_id="123", external_source_id=1, title="Brel - Brel",
         created_at=now, updated_at=now, state_record="mint",
-        copies=[CollectionAlbumCopyResponse(id=1, state_record="mint", created_at=now),
+        copies=[CollectionAlbumCopyResponse(id=1, state_record="mint", created_at=now, updated_at=now),
                 CollectionAlbumCopyResponse(id=2, state_cover="good", created_at=now)],
         copies_count=2,
     )
@@ -359,6 +359,8 @@ class TestAlbumCopies:
 
         assert resp.status_code == 201
         assert resp.json()["copies_count"] == 2
+        first = resp.json()["copies"][0]
+        assert first["updated_at"] == first["created_at"]
         args = service.add_album_copy.await_args.args
         assert args[:3] == (user.id, 1, 10)
         assert args[3].model_dump(exclude_unset=True) == {"state_cover": "good"}

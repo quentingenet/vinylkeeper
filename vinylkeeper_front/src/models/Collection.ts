@@ -32,6 +32,7 @@ export interface CollectionAlbumCopy {
   state_cover?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
   created_at: string;
+  updated_at?: string | null;
 }
 
 export interface CollectionAlbumResponse extends AlbumBase {

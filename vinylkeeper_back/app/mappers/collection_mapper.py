@@ -30,6 +30,7 @@ def copy_to_response(copy) -> CollectionAlbumCopyResponse:
         state_cover=vinyl_state(copy.state_cover),
         acquisition_month_year=copy.acquisition_month_year,
         created_at=copy.created_at,
+        updated_at=copy.updated_at,
     )
 
 

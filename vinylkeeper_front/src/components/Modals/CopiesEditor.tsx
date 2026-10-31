@@ -6,6 +6,8 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse } from "date-fns";
 import type { CollectionAlbumCopy, CollectionAlbumCopyData, CollectionAlbumResponse } from "@models/Collection";
 import { useAlbumCopies } from "@hooks/useCollections";
+import { editionChips, type Edition } from "@components/Records/editionLabels";
+import { copyDatesCaption } from "@components/Records/copyLabels";
 import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
 import { colors } from "@styles/colors";
 
@@ -44,6 +46,25 @@ const datePickerSlotProps = {
   },
 };
 
+// Pressing of the copy and when it was added, under the condition
+function CopyFooter({ copy, edition }: { copy: CollectionAlbumCopy; edition?: Edition }) {
+  const chips = edition ? editionChips(edition) : [];
+  return (
+    <Box display="flex" flexDirection="column" gap={0.5} mt={1}>
+      {chips.length > 0 && (
+        <Box display="flex" flexWrap="wrap" gap={0.5}>
+          {chips.map((chip) => (
+            <Chip key={chip.key} label={chip.label} size="small" variant="outlined" sx={{ color: colors.textMuted }} />
+          ))}
+        </Box>
+      )}
+      <Typography variant="caption" color="text.secondary">
+        {copyDatesCaption(copy)}
+      </Typography>
+    </Box>
+  );
+}
+
 interface StateSelectProps {
   id: string;
   label: string;
@@ -78,6 +99,7 @@ function StateSelect({ id, label, value, onChange }: StateSelectProps) {
 interface CopyRowProps {
   copy: CollectionAlbumCopy;
   number: number;
+  edition?: Edition;
   canEdit: boolean;
   canDelete: boolean;
   isBusy: boolean;
@@ -85,7 +107,7 @@ interface CopyRowProps {
   onDelete: () => void;
 }
 
-function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }: CopyRowProps) {
+function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, onDelete }: CopyRowProps) {
   const [record, setRecord] = useState<VinylStateEnum | null>(copy.state_record ?? null);
   const [cover, setCover] = useState<VinylStateEnum | null>(copy.state_cover ?? null);
   const [acquired, setAcquired] = useState<string>(copy.acquisition_month_year ?? "");
@@ -102,17 +124,20 @@ function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }:
       copy.acquisition_month_year && `Acquired: ${copy.acquisition_month_year}`,
     ].filter((detail): detail is string => Boolean(detail));
     return (
-      <Box display="flex" flexWrap="wrap" alignItems="center" gap={0.5}>
-        <Typography variant="body2" sx={{ color: "text.primary", mr: 0.5 }}>
-          Copy {number}
-        </Typography>
-        {details.length > 0 ? (
-          details.map((detail) => <Chip key={detail} label={detail} size="small" variant="outlined" />)
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No condition given
+      <Box>
+        <Box display="flex" flexWrap="wrap" alignItems="center" gap={0.5}>
+          <Typography variant="body2" sx={{ color: "text.primary", mr: 0.5 }}>
+            Copy {number}
           </Typography>
-        )}
+          {details.length > 0 ? (
+            details.map((detail) => <Chip key={detail} label={detail} size="small" variant="outlined" />)
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No condition given
+            </Typography>
+          )}
+        </Box>
+        <CopyFooter copy={copy} edition={edition} />
       </Box>
     );
   }
@@ -171,6 +196,7 @@ function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }:
           )}
         </Box>
       )}
+      <CopyFooter copy={copy} edition={edition} />
     </Box>
   );
 }
@@ -178,11 +204,13 @@ function CopyRow({ copy, number, canEdit, canDelete, isBusy, onSave, onDelete }:
 interface CopiesEditorProps {
   collectionId: number;
   pressing: CollectionAlbumResponse;
+  // Pressing details shown on each copy
+  edition?: Edition;
   canEdit: boolean;
   onPressingChange: (pressing: CollectionAlbumResponse) => void;
 }
 
-export default function CopiesEditor({ collectionId, pressing, canEdit, onPressingChange }: CopiesEditorProps) {
+export default function CopiesEditor({ collectionId, pressing, edition, canEdit, onPressingChange }: CopiesEditorProps) {
   const { addCopy, updateCopy, deleteCopy } = useAlbumCopies(collectionId);
   const copies = pressing.copies ?? [];
   const isBusy = addCopy.isPending || updateCopy.isPending || deleteCopy.isPending;
@@ -207,6 +235,7 @@ export default function CopiesEditor({ collectionId, pressing, canEdit, onPressi
             key={`${copy.id}-${copy.state_record}-${copy.state_cover}-${copy.acquisition_month_year}`}
             copy={copy}
             number={index + 1}
+            edition={edition}
             canEdit={canEdit}
             canDelete={copies.length > 1}
             isBusy={isBusy}

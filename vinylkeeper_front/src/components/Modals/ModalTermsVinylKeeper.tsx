@@ -29,9 +29,15 @@ const SECTIONS: TermsSection[] = [
         Publisher: Quentin Genet, private individual. Contact:{" "}
         <Link {...readableLink} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</Link>.
       </>,
+      // Neither host publishes a phone number: their official address and contact instead
       <>
-        Hosting of the API and its database: Hostinger (<ExternalLink href="https://www.hostinger.com">hostinger.com</ExternalLink>).
-        Hosting of the website: Netlify (<ExternalLink href="https://www.netlify.com">netlify.com</ExternalLink>).
+        Hosting of the API and its database: Hostinger International Limited, 61 Lordou Vironos Street, 6023
+        Larnaca, Cyprus. Contact: <ExternalLink href="https://www.hostinger.com">hostinger.com</ExternalLink>.
+      </>,
+      <>
+        Hosting of the website: Netlify, Inc., 101 2nd Street, San Francisco, CA 94105, United States. Contact:{" "}
+        <ExternalLink href="https://www.netlify.com">netlify.com</ExternalLink>,{" "}
+        <Link {...readableLink} href="mailto:privacy@netlify.com">privacy@netlify.com</Link>.
       </>,
     ],
   },

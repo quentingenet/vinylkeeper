@@ -13,6 +13,7 @@ export const queryKeys = {
     albums: (id: number) => ["collectionAlbums", id] as const,
     albumsPage: (id: number, page: number, sort: string) => ["collectionAlbums", id, page, sort] as const,
     // Under the albums prefix: whatever refreshes the albums of a collection refreshes its works too
+    records: (id: number) => ["collectionAlbums", id, "records"] as const,
     recordsPage: (id: number, page: number, sort: string) => ["collectionAlbums", id, "records", page, sort] as const,
     artists: (id: number) => ["collectionArtists", id] as const,
     artistsPage: (id: number, page: number, sort: string) => ["collectionArtists", id, page, sort] as const,
@@ -64,6 +65,7 @@ export const queryKeys = {
     all: () => ["userSettings"] as const,
     forUser: (userUuid: string | undefined) => ["userSettings", userUuid] as const,
   },
+  ownedPressingsAll: () => ["ownedPressings"] as const,
   ownedPressings: (externalId: string) => ["ownedPressings", externalId] as const,
   discogsImport: {
     latest: (userUuid: string | undefined) => ["discogsImport", "latest", userUuid] as const,

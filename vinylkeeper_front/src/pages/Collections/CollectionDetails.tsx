@@ -27,18 +27,20 @@ import {
   SelectChangeEvent,
   TextField,
   InputAdornment,
+  IconButton,
   Button,
   Snackbar,
   Alert,
 } from "@mui/material";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
 import { useAddRecord } from "@contexts/AddRecordContext";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
 import { useUserContext } from "@contexts/UserContext";
 import { useDebounce } from "@hooks/useDebounce";
 import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { groupIntoRecords, toRecordCard, type RecordCard } from "@utils/collectionRecords";
 import { queryKeys } from "@utils/queryKeys";
@@ -115,6 +117,7 @@ export default function CollectionDetails() {
   // Search state
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Pagination states
   const [albumsPage, setAlbumsPage] = useState(1);
@@ -335,10 +338,19 @@ export default function CollectionDetails() {
     }
   };
 
-  useEffect(() => {
+  const clearSearch = () => {
     setSearchTerm("");
     setDebouncedSearchTerm("");
-  }, [tabValue]);
+  };
+
+  // The cross empties the search at once, the grid of the tab comes back
+  const handleClearSearch = () => {
+    clearSearch();
+    if (tabValue === TAB.WISHLIST) setWishlistPage(1);
+    searchInputRef.current?.focus();
+  };
+
+  useEffect(clearSearch, [tabValue]);
 
   const getSearchPlaceholder = () => {
     switch (tabValue) {
@@ -567,10 +579,22 @@ export default function CollectionDetails() {
               onChange={handleSearchTermChange}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               disabled={isLoadingSearch}
+              inputRef={searchInputRef}
               slotProps={{
                 input: {
                   endAdornment: (
                     <InputAdornment position="end">
+                      {searchTerm && (
+                        <IconButton
+                          aria-label="Clear search"
+                          size="small"
+                          edge="end"
+                          onClick={handleClearSearch}
+                          sx={{ color: "text.secondary", mr: 0.5 }}
+                        >
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      )}
                       {isLoadingSearch ? (
                         <VinylSpinner size={24} />
                       ) : (

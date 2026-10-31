@@ -110,6 +110,19 @@ describe("CollectionPressings, one pressing", () => {
     expect(screen.queryByRole("button", { name: "Add a copy" })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
+
+  it("shows on each copy its pressing and the day it was added", () => {
+    const two = pressing(1, {
+      release_year: 1959, country: "US", label: "Columbia", catno: "CL 1355",
+      copies: [copy(10), copy(11, { created_at: "2025-03-02T00:00:00Z", updated_at: "2025-04-10T00:00:00Z" })],
+      copies_count: 2,
+    });
+    renderPressings([two], { canEdit: false });
+
+    expect(screen.getAllByText("Columbia CL 1355").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Added on 1 Jan 2024")).toBeInTheDocument();
+    expect(screen.getByText("Added on 2 Mar 2025, updated on 10 Apr 2025")).toBeInTheDocument();
+  });
 });
 
 describe("CollectionPressings, several pressings", () => {

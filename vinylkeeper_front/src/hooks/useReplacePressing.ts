@@ -3,6 +3,7 @@ import { externalReferenceApiService } from "@services/ExternalReferenceService"
 import type { IAlbumRequestResults } from "@models/IRequestProxy";
 import type { ReplaceTarget } from "@utils/findPressing";
 import { queryKeys } from "@utils/queryKeys";
+import { applyCollectionAlbum } from "@utils/collectionCache";
 import { logger } from "@utils/logger";
 
 export function useReplacePressing(target: ReplaceTarget | null) {
@@ -19,11 +20,12 @@ export function useReplacePressing(target: ReplaceTarget | null) {
         source: "discogs",
       });
     },
-    onSuccess: async () => {
+    // The pressing picked shows on the card at once, in the grid and in a search alike
+    onSuccess: async (album) => {
       if (!target) return;
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.collections.detail(target.collectionId) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.collections.albums(target.collectionId) }),
+        applyCollectionAlbum(queryClient, target.collectionId, target.albumId, album),
+        queryClient.invalidateQueries({ queryKey: queryKeys.metadata.album(album.external_album_id) }),
       ]);
     },
     onError: (error) => logger.error("Error replacing pressing:", error),

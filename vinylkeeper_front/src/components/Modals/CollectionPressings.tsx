@@ -60,7 +60,13 @@ export default function CollectionPressings({
         onConfirm={() => confirm(pressing)}
         onFindPressing={() => onFindPressing(pressing)}
       />
-      <CopiesEditor collectionId={collectionId} pressing={pressing} canEdit={canEdit} onPressingChange={replace} />
+      <CopiesEditor
+        collectionId={collectionId}
+        pressing={pressing}
+        edition={edition}
+        canEdit={canEdit}
+        onPressingChange={replace}
+      />
     </>
   );
 

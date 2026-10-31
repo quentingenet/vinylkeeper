@@ -55,3 +55,5 @@ class CollectionAlbumCopyResponse(BaseSchema):
     state_cover: Optional[VinylStateEnum] = None
     acquisition_month_year: Optional[str] = None
     created_at: datetime
+    # Last change of its condition; equal to created_at for a copy never edited
+    updated_at: Optional[datetime] = None

@@ -69,6 +69,11 @@ class CollectionAlbumRepository(TransactionalMixin):
                 setattr(copy, field, cls._state_id(field, data[field]))
         if "acquisition_month_year" in data:
             copy.acquisition_month_year = data["acquisition_month_year"]
+
+    @classmethod
+    def edit_copy(cls, copy: CollectionAlbumCopy, data: dict) -> None:
+        """Change the condition of a copy already saved: its updated_at moves on."""
+        cls.apply_copy_data(copy, data)
         copy.updated_at = datetime.now(timezone.utc)
 
     async def find_with_copies(self, collection_id: int, album_id: int) -> Optional[CollectionAlbum]:
@@ -104,7 +109,7 @@ class CollectionAlbumRepository(TransactionalMixin):
                 self.apply_copy_data(copy, data)
                 existing.copies.append(copy)
             elif data:
-                self.apply_copy_data(existing.first_copy(), data)
+                self.edit_copy(existing.first_copy(), data)
             # Picked again with its pressing details in sight; a confirmed pressing never goes back
             if pressing_confirmed:
                 existing.pressing_confirmed = True
@@ -125,7 +130,7 @@ class CollectionAlbumRepository(TransactionalMixin):
     async def add_copy(self, collection_album: CollectionAlbum, data: dict) -> CollectionAlbum:
         now = datetime.now(timezone.utc)
         copy = CollectionAlbumCopy(collection_id=collection_album.collection_id,
-                                   album_id=collection_album.album_id, created_at=now)
+                                   album_id=collection_album.album_id, created_at=now, updated_at=now)
         self.apply_copy_data(copy, data)
         collection_album.updated_at = now
         await self._add_entity(copy, flush=True)
@@ -133,7 +138,7 @@ class CollectionAlbumRepository(TransactionalMixin):
 
     async def update_copy(self, collection_album: CollectionAlbum, copy: CollectionAlbumCopy,
                           data: dict) -> CollectionAlbum:
-        self.apply_copy_data(copy, data)
+        self.edit_copy(copy, data)
         collection_album.updated_at = copy.updated_at
         await self.db.flush()
         return await self._reload_copies(collection_album)
