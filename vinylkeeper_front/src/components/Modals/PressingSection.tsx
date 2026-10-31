@@ -1,9 +1,12 @@
 import { Box, Button, Typography } from "@mui/material";
 import EditionChips from "@components/Records/EditionChips";
 import { hasEdition, type Edition } from "@components/Records/editionLabels";
+import PressingMoreInfo from "@components/Records/PressingMoreInfo";
 
 interface PressingSectionProps {
   edition: Edition;
+  // Discogs release: barcode, matrix and release date on demand
+  releaseId?: string;
   // undefined outside a collection: the pressing of a search result is a plain fact
   confirmed?: boolean;
   canConfirm?: boolean;
@@ -15,6 +18,7 @@ interface PressingSectionProps {
 
 export default function PressingSection({
   edition,
+  releaseId,
   confirmed,
   canConfirm = false,
   isConfirming = false,
@@ -29,6 +33,7 @@ export default function PressingSection({
         Pressing
       </Typography>
       <EditionChips album={edition} centered={false} />
+      {releaseId && <PressingMoreInfo releaseId={releaseId} />}
       {confirmed === false && (
         <Box mt={1.5}>
           <Typography variant="body2" color="text.secondary">

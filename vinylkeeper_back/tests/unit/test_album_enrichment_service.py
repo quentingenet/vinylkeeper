@@ -3,6 +3,7 @@ Discogs album enrichment: payload parsing, rate-limit handling, enrichment flow
 and the guarantee that background enrichment never breaks an album addition.
 No network: Discogs is simulated with httpx.MockTransport.
 """
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -316,6 +317,27 @@ class TestAlbumEnrichmentService:
 
         assert report.failed == ["edition:1"]
         assert repository.save_edition.await_args.args[0] == 8
+
+    async def test_stale_editions_get_the_full_format(self):
+        heavy = [{"name": "Vinyl", "qty": "2", "descriptions": ["LP"], "text": "180 Gram"}]
+        release = {**HIGHWAY_TO_HELL, "formats": heavy}
+        service, repository, _ = make_service(client_get=AsyncMock(return_value=release))
+        repository.list_stale_editions = AsyncMock(return_value=[(7, "380980")])
+        before = datetime(2026, 11, 1, tzinfo=timezone.utc)
+
+        report = await service.refresh_stale_editions(before, 10)
+
+        repository.list_stale_editions.assert_awaited_once_with(before, 10)
+        assert repository.save_edition.await_args.args[1]["formats"] == ["2 × Vinyl", "LP", "180 Gram"]
+        assert report.editions_done == 1
+
+    async def test_stale_edition_gone_from_discogs_keeps_its_details(self):
+        service, repository, _ = make_service(client_get=AsyncMock(return_value=None))
+        repository.list_stale_editions = AsyncMock(return_value=[(7, "380980")])
+
+        await service.refresh_stale_editions(datetime(2026, 11, 1, tzinfo=timezone.utc))
+
+        repository.save_edition.assert_awaited_once_with(7, {})
 
     async def test_stale_titles_rewrite_title_cover_and_artists_only(self):
         release = {**HIGHWAY_TO_HELL, "country": "UK",

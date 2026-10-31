@@ -30,7 +30,7 @@ def patched_session():
 def test_parse_args_defaults_and_flags():
     assert vars(cli.parse_args([])) == {
         "limit": None, "dry_run": False, "skip_masters": False, "skip_editions": False,
-        "refresh_titles": False, "skip_prices": False}
+        "refresh_titles": False, "refresh_editions_before": None, "skip_prices": False}
     args = cli.parse_args(["--limit", "20", "--dry-run", "--skip-masters", "--skip-editions"])
     assert (args.limit, args.dry_run, args.skip_masters, args.skip_editions) == (20, True, True, True)
 
@@ -184,3 +184,25 @@ async def test_rates_then_prices_unless_skipped(prices):
         prices.service.refresh_prices.reset_mock()
         await cli.run(cli.parse_args(["--skip-prices"]))
         prices.service.refresh_prices.assert_not_called()
+
+
+async def test_refresh_editions_only_when_asked():
+    service = MagicMock()
+    for name in ("enrich_pending_releases", "enrich_pending_masters", "enrich_pending_editions",
+                 "refresh_stale_editions"):
+        setattr(service, name, AsyncMock())
+
+    with patched_session(), \
+            patch.object(cli, "AlbumEnrichmentRepository"), \
+            patch.object(cli, "AlbumEnrichmentService", return_value=service):
+        await cli.run(cli.parse_args([]))
+        service.refresh_stale_editions.assert_not_called()
+        await cli.run(cli.parse_args(["--refresh-editions-before", "2026-11-01", "--limit", "5"]))
+
+    before, limit = service.refresh_stale_editions.await_args.args
+    assert (before.isoformat(), limit) == ("2026-11-01T00:00:00+00:00", 5)
+
+
+def test_refresh_editions_rejects_a_wrong_day():
+    with pytest.raises(SystemExit):
+        cli.parse_args(["--refresh-editions-before", "01/11/2026"])

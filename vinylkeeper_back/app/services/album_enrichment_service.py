@@ -7,6 +7,7 @@ stored, so features built on it never call Discogs at request time.
 import asyncio
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Callable, Optional
 
 import httpx
@@ -240,15 +241,27 @@ class AlbumEnrichmentService:
         self, limit: Optional[int] = None, commit_every: int = 25, report: Optional[EnrichmentReport] = None
     ) -> EnrichmentReport:
         """One-off catch-up of pressing details for albums enriched before they were stored."""
-        report = report or EnrichmentReport()
         pending = await self.repository.list_pending_editions(limit)
+        # Gone from Discogs: an empty format list closes the album, it is not fetched again
+        return await self._fetch_editions(pending, {"formats": []}, commit_every, report or EnrichmentReport())
+
+    async def refresh_stale_editions(
+        self, before: datetime, limit: Optional[int] = None, commit_every: int = 25,
+        report: Optional[EnrichmentReport] = None,
+    ) -> EnrichmentReport:
+        """One-off catch-up: pressing details stored before `before` get the full format ('180 Gram', '2 × Vinyl')."""
+        pending = await self.repository.list_stale_editions(before, limit)
+        # Gone from Discogs: the album keeps what it has, only marked as done
+        return await self._fetch_editions(pending, {}, commit_every, report or EnrichmentReport())
+
+    async def _fetch_editions(
+        self, pending: list[tuple[int, str]], when_gone: dict, commit_every: int, report: EnrichmentReport
+    ) -> EnrichmentReport:
         logger.info(f"Album enrichment: {len(pending)} pressing(s) to fetch")
         for index, (album_id, external_album_id) in enumerate(pending, 1):
             try:
                 data = await self.client.get(f"/releases/{external_album_id}")
-                # Gone from Discogs: an empty format list closes the album, it is not fetched again
-                edition = parse_release_edition(data) if data else {"formats": []}
-                await self.repository.save_edition(album_id, edition)
+                await self.repository.save_edition(album_id, parse_release_edition(data) if data else when_gone)
                 report.editions_done += 1
             except DiscogsUnavailableError as e:
                 logger.warning(f"Album enrichment: pressing of {external_album_id} skipped: {e}")

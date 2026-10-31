@@ -47,15 +47,29 @@ def is_discogs_image(url: Optional[str]) -> bool:
     return parsed.scheme == "https" and parsed.hostname == DISCOGS_IMAGE_HOST
 
 
+def format_values(formats: Any) -> list[str]:
+    """
+    Format of a release as chips: '2 × Vinyl' for several discs, the descriptions ('LP', 'Album')
+    and the free text Discogs adds ('180 Gram', 'Red Translucent'). 'Vinyl' alone tells nothing.
+    """
+    values: list[str] = []
+    for fmt in formats if isinstance(formats, list) else []:
+        if not isinstance(fmt, dict):
+            continue
+        name = fmt.get("name") or ""
+        qty = str(fmt.get("qty") or "1")
+        if qty.isdigit() and int(qty) > 1:
+            values.append(f"{qty} × {name or 'Vinyl'}")
+        elif name != "Vinyl":
+            values.append(name)
+        values.extend(fmt.get("descriptions") or [])
+        values.append(fmt.get("text") or "")
+    return list(dict.fromkeys(value.strip() for value in values if value and value.strip()))
+
+
 def parse_release_edition(data: dict[str, Any]) -> dict[str, Any]:
-    """Country, first label, catalogue number and format descriptions (without 'Vinyl')."""
+    """Country, first label, catalogue number and format of a release."""
     labels = data.get("labels") or [{}]
-    descriptions = [
-        value
-        for fmt in data.get("formats") or []
-        for value in [fmt.get("name"), *(fmt.get("descriptions") or [])]
-        if value and value != "Vinyl"
-    ]
     label = DISAMBIGUATION_SUFFIX.sub("", labels[0].get("name") or "")
     catno = labels[0].get("catno") or ""
     return {
@@ -63,5 +77,24 @@ def parse_release_edition(data: dict[str, Any]) -> dict[str, Any]:
         "label": label[:LABEL_MAX_LENGTH] or None,
         # Discogs writes "none" when there is no catalogue number
         "catno": catno[:CATNO_MAX_LENGTH] if catno and catno.lower() != "none" else None,
-        "formats": list(dict.fromkeys(descriptions)),
+        "formats": format_values(data.get("formats")),
+    }
+
+
+def parse_release_marks(data: dict[str, Any]) -> dict[str, Any]:
+    """
+    What is printed or etched on the record, to tell a pressing from another: barcode,
+    matrix / runout of each side, and the release date ('1972', '1972-05', '1972-05-17').
+    """
+    identifiers = [i for i in data.get("identifiers") or [] if isinstance(i, dict) and i.get("value")]
+
+    def values(kind: str) -> list[str]:
+        return [i["value"].strip() for i in identifiers if i.get("type") == kind]
+
+    # Discogs pads an unknown month or day with 00
+    released = re.sub(r"(-00)+$", "", str(data.get("released") or "").strip())
+    return {
+        "barcode": next(iter(values("Barcode")), None),
+        "matrix": list(dict.fromkeys(values("Matrix / Runout"))),
+        "released": released if re.fullmatch(r"\d{4}(-\d{2}){0,2}", released) else None,
     }

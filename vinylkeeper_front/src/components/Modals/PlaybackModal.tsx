@@ -216,7 +216,7 @@ export default function PlaybackModal({
                 ) : item.itemType === "album" && item.owned ? (
                   <OwnedPressingsSection externalId={item.id} masterId={item.owned.masterId} />
                 ) : item.itemType === "album" && albumMetadata ? (
-                  <PressingSection edition={albumMetadata} />
+                  <PressingSection edition={albumMetadata} releaseId={item.id} />
                 ) : null}
 
                 {item.itemType === "album" &&

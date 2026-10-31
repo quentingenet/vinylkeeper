@@ -236,6 +236,10 @@ class AlbumMetadata(BaseModel):
     label: Optional[str] = Field(default=None, description="First label of this pressing")
     catno: Optional[str] = Field(default=None, description="Catalogue number")
     formats: List[str] = Field(default_factory=list, description="Format descriptions, without 'Vinyl'")
+    # Printed or etched on the record: shown on demand to identify the pressing
+    barcode: Optional[str] = Field(default=None, description="First barcode of this pressing")
+    matrix: List[str] = Field(default_factory=list, description="Matrix / runout of each side")
+    released: Optional[str] = Field(default=None, description="Release date: YYYY, YYYY-MM or YYYY-MM-DD")
 
     model_config = ConfigDict(from_attributes=True)
 

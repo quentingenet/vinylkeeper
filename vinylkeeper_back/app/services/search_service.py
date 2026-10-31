@@ -7,7 +7,9 @@ import httpx
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
-from app.utils.discogs_release import DISCOGS_IMAGE_HOST, clean_artist_name, parse_release_edition
+from app.utils.discogs_release import (
+    DISCOGS_IMAGE_HOST, clean_artist_name, format_values, parse_release_edition, parse_release_marks,
+)
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
     SearchQuery,
@@ -122,8 +124,7 @@ class SearchService:
             country=hit.get("country") or None,
             label=labels[0] if labels else None,
             catno=hit.get("catno") or None,
-            # Every result is vinyl: "Vinyl" itself tells nothing about the edition
-            formats=list(dict.fromkeys(f for f in hit.get("format") or [] if f != "Vinyl")),
+            formats=self._hit_formats(hit),
             # Discogs sends 0 for releases without a master
             master_id=str(master_id) if master_id else None,
         )
@@ -131,9 +132,17 @@ class SearchService:
             discogs.artist = Artist(id="", name=artist_name, type="artist")
         return discogs
 
+    @staticmethod
+    def _hit_formats(hit: Dict[str, Any]) -> List[str]:
+        """Detailed formats when the hit has them (number of discs, '180 Gram', colour), else the flat list."""
+        if hit.get("formats"):
+            return format_values(hit["formats"])
+        # Every result is vinyl: "Vinyl" itself tells nothing about the edition
+        return list(dict.fromkeys(f for f in hit.get("format") or [] if f != "Vinyl"))
+
     @classmethod
     def _release_key(cls, hit: Dict[str, Any]) -> Tuple[str, ...]:
-        """Same album and same visible edition: different pressings stay apart."""
+        """Same album and same visible edition: different pressings stay apart, a 180 g one too."""
         labels = hit.get("label") or []
         return (
             cls.normalize(hit.get("title")),
@@ -142,6 +151,7 @@ class SearchService:
             cls.normalize(hit.get("country")),
             cls.normalize(labels[0] if labels else ""),
             cls.normalize(hit.get("catno")),
+            *(cls.normalize(f) for f in cls._hit_formats(hit)),
         )
 
     async def search_music_page(self, search_query: SearchQuery) -> SearchResultsPage:
@@ -472,6 +482,7 @@ class SearchService:
             source="discogs",
             artists=artists,
             **parse_release_edition(data),
+            **parse_release_marks(data),
         )
 
         return album_metadata

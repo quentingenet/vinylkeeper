@@ -54,6 +54,7 @@ export default function CollectionPressings({
     <>
       <PressingSection
         edition={edition}
+        releaseId={pressing.external_album_id}
         confirmed={pressing.pressing_confirmed ?? false}
         canConfirm={canEdit}
         isConfirming={confirmPressing.isPending}

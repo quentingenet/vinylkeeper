@@ -225,6 +225,17 @@ class TestSearchMusicEditions:
 
         assert [r.id for r in results] == ["1"]
 
+    async def test_a_180_gram_pressing_is_not_merged_with_the_standard_one(self):
+        edition = {"year": "2013", "country": "Europe", "label": ["Columbia"], "catno": "88883716861"}
+        heavy = release_hit(2, "Daft Punk - RAM", **edition)
+        heavy["formats"] = [{"name": "Vinyl", "qty": "2", "descriptions": ["LP"], "text": "180 Gram"}]
+        service, _ = discogs([release_hit(1, "Daft Punk - RAM", **edition), heavy])
+
+        results = (await service.search_music_page(SearchQuery(query="ram", is_artist=False))).items
+
+        assert [r.id for r in results] == ["1", "2"]
+        assert results[1].formats == ["2 × Vinyl", "LP", "180 Gram"]
+
 
 class TestSearchMusicPagination:
     async def test_requested_page_is_sent_and_vinyl_filtered_by_discogs(self):
@@ -289,3 +300,24 @@ class TestAlbumMetadataEdition:
         metadata = await service.get_album_metadata("1")
 
         assert (metadata.country, metadata.catno, metadata.formats) == (None, None, [])
+        assert (metadata.barcode, metadata.matrix, metadata.released) == (None, [], None)
+
+    async def test_marks_on_the_record_come_from_the_identifiers(self):
+        release = {
+            "id": 4570366, "title": "Random Access Memories", "released": "2013-05-17",
+            "identifiers": [
+                {"type": "Barcode", "value": "8 88837 16861 8"},
+                {"type": "Barcode", "value": "888837168618"},
+                {"type": "Label Code", "value": "LC00162"},
+                {"type": "Matrix / Runout", "value": "AL88883716861-2 A2"},
+                {"type": "Matrix / Runout", "value": "BL88883716861-2 B1"},
+            ],
+        }
+        service = SearchService(http_client=httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json=release))))
+
+        metadata = await service.get_album_metadata("4570366")
+
+        assert metadata.barcode == "8 88837 16861 8"
+        assert metadata.matrix == ["AL88883716861-2 A2", "BL88883716861-2 B1"]
+        assert metadata.released == "2013-05-17"

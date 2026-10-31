@@ -75,6 +75,10 @@ export interface AlbumMetadata {
   label?: string | null;
   catno?: string | null;
   formats?: string[];
+  // Printed or etched on the record, shown on demand to identify the pressing
+  barcode?: string | null;
+  matrix?: string[];
+  released?: string | null;
 }
 
 export interface ArtistMetadata {

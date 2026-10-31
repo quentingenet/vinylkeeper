@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Avatar, Box, Collapse, ListItemButton, Typography } from "@mui/material";
 import { Album as AlbumIcon, Person as PersonIcon } from "@mui/icons-material";
 import EditionChips from "@components/Records/EditionChips";
+import PressingMoreInfo from "@components/Records/PressingMoreInfo";
 import type { DiscogsData } from "@models/IRequestProxy";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { colors } from "@styles/colors";
@@ -37,7 +38,14 @@ export default function RecordResultRow({ item, isArtist, expanded, onToggle, ch
         </Box>
       </ListItemButton>
       <Collapse in={expanded} unmountOnExit>
-        <Box sx={{ px: { xs: 1, sm: 2 }, pb: 2 }}>{children}</Box>
+        <Box sx={{ px: { xs: 1, sm: 2 }, pb: 2 }}>
+          {!isArtist && (
+            <Box mb={1}>
+              <PressingMoreInfo releaseId={item.id} />
+            </Box>
+          )}
+          {children}
+        </Box>
       </Collapse>
     </Box>
   );

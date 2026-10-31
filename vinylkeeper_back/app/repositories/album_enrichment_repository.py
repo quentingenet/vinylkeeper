@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, cast
 
 from sqlalchemy import func, select, update
@@ -78,9 +79,25 @@ class AlbumEnrichmentRepository:
             query = query.limit(limit)
         return [(row.id, row.external_album_id) for row in (await self.db.execute(query)).all()]
 
+    async def list_stale_editions(self, before: datetime, limit: Optional[int] = None) -> list[tuple[int, str]]:
+        """
+        Albums whose pressing details were stored before `before`, when the format kept less
+        ('180 Gram', colours and the number of discs were left out). save_edition moves
+        updated_at on: an interrupted run starts again where it stopped.
+        """
+        query = (
+            self._discogs_albums()
+            .filter(Album.enriched_at.is_not(None), Album.enrichment_status != "not_found",
+                    Album.formats.is_not(None), Album.updated_at < before)
+            .order_by(Album.id)
+        )
+        if limit:
+            query = query.limit(limit)
+        return [(row.id, row.external_album_id) for row in (await self.db.execute(query)).all()]
+
     async def save_edition(self, album_id: int, values: dict) -> None:
         """Pressing details only: years, tags and moods of an enriched album are left as they are."""
-        await self.db.execute(update(Album).where(Album.id == album_id).values(**values))
+        await self.db.execute(update(Album).where(Album.id == album_id).values(**values, updated_at=func.now()))
 
     async def list_stale_titles(self, limit: Optional[int] = None) -> list[tuple[int, str]]:
         """

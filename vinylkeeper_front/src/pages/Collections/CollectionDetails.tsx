@@ -528,12 +528,14 @@ export default function CollectionDetails() {
         </Typography>
         <Box
           sx={{
-            mb: 1,
+            // Room above the search field, whose label sits on its border
+            mb: 3,
             width: "100%",
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
             columnGap: 2,
+            rowGap: 1,
           }}
         >
           {isOwner && <CollectionExportMenu collectionId={collectionId} />}
@@ -550,7 +552,7 @@ export default function CollectionDetails() {
             </Button>
           )}
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">
             Created on{" "}
             {collectionDetails.created_at
               ? new Date(collectionDetails.created_at).toLocaleDateString()
