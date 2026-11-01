@@ -45,8 +45,8 @@ def run_migrations_offline():
 
 def run_migrations_online():
     """Run migrations in 'online' mode."""
-    # For async support, we need to use the sync URL for Alembic
-    sync_url = config.get_main_option("sqlalchemy.url").replace("postgresql+asyncpg://", "postgresql://")
+    # Alembic runs sync: psycopg2 named explicitly, since SQLAlchemy 2.1 maps "postgresql://" to psycopg 3
+    sync_url = config.get_main_option("sqlalchemy.url").replace("postgresql+asyncpg://", "postgresql+psycopg2://")
     config.set_main_option('sqlalchemy.url', sync_url)
 
     connectable = engine_from_config(

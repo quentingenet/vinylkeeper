@@ -26,7 +26,12 @@ from app.core.security import verify_password
 from app.models.reference_data.roles import Role
 from app.core.enums import RoleEnum
 
+from app.models.association_tables import CollectionArtist
+from app.models.collection_model import Collection
+from app.models.like_model import Like
+
 from tests.integration.conftest import make_real_test_user as make_test_user
+from tests.integration.test_collection_save_copy_real_db import filled_collection
 from tests.integration.test_real_db_relationships import make_collection_service
 
 
@@ -200,6 +205,23 @@ class TestDeleteUser:
 
         reloaded = await UserRepository(real_session).get_user_by_id(user.id)
         assert reloaded is None
+
+    async def test_deletes_user_with_collection_like_and_artist(self, real_session):
+        """User.collections, User.likes and Collection.artists are lazy="raise": the delete must not
+        load them, the database cascades remove the rows."""
+        user, collection = await filled_collection(real_session)
+        real_session.add(Like(user_id=user.id, collection_id=collection.id))
+        await real_session.flush()
+
+        assert await make_user_service(real_session).delete_user(user) is True
+
+        for model, column in (
+            (Collection, Collection.owner_id),
+            (Like, Like.user_id),
+        ):
+            assert (await real_session.execute(select(model).where(column == user.id))).first() is None
+        assert (await real_session.execute(
+            select(CollectionArtist).where(CollectionArtist.collection_id == collection.id))).first() is None
 
 
 class TestUserMeAndSettings:
