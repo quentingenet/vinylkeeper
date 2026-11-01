@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminApiService, ModerationRequest } from "@services/AdminApiService";
+import { adminApiService, ModerationRequest, type ReportedPlace } from "@services/AdminApiService";
+import { editablePlace } from "@components/Admin/adminUtils";
 import { queryKeys } from "@utils/queryKeys";
 
 interface FeedbackState {
@@ -22,6 +23,8 @@ export function useModerationActions() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [moderationActionError, setModerationActionError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>(FEEDBACK_CLOSED);
+  const [editingPlace, setEditingPlace] = useState<ReportedPlace | null>(null);
+  const [removingPlace, setRemovingPlace] = useState<NonNullable<ModerationRequest["place"]> | null>(null);
 
   const invalidateModerationQueries = async () => {
     await Promise.all([
@@ -87,6 +90,32 @@ export function useModerationActions() {
 
   const closeFeedback = () => setFeedback((prev) => ({ ...prev, open: false }));
 
+  const handleEdit = (request: ModerationRequest) => setEditingPlace(editablePlace(request));
+  const closeEdit = () => setEditingPlace(null);
+  const removeMutation = useMutation({
+    mutationFn: (placeId: number) => adminApiService.removePlace(placeId),
+    onSuccess: async () => {
+      setRemovingPlace(null);
+      await Promise.all([
+        invalidateModerationQueries(),
+        // Its open reports are resolved too
+        queryClient.invalidateQueries({ queryKey: queryKeys.moderation.allPlaceReports() }),
+      ]);
+      setFeedback({ open: true, severity: "success", message: "Spot removed from the map." });
+    },
+    onError: (error: unknown) => setFeedback({ open: true, severity: "error", message: getErrorMessage(error) }),
+  });
+
+  const handleRemove = (request: ModerationRequest) => setRemovingPlace(request.place ?? null);
+  const cancelRemove = () => setRemovingPlace(null);
+  const confirmRemove = (placeId: number) => removeMutation.mutate(placeId);
+
+  const handleSpotSaved = async () => {
+    setEditingPlace(null);
+    await invalidateModerationQueries();
+    setFeedback({ open: true, severity: "success", message: "Spot updated on the map." });
+  };
+
   return {
     selectedRequest,
     detailDialogOpen,
@@ -97,6 +126,15 @@ export function useModerationActions() {
     handleViewDetails,
     handleApprove,
     handleReject,
+    editingPlace,
+    handleEdit,
+    closeEdit,
+    handleSpotSaved,
+    removingPlace,
+    handleRemove,
+    cancelRemove,
+    confirmRemove,
+    isRemoving: removeMutation.isPending,
     isApproving: approveMutation.isPending,
     isRejecting: rejectMutation.isPending,
   };

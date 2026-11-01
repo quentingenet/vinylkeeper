@@ -1,4 +1,5 @@
 import { Chip } from "@mui/material";
+import type { ModerationRequest, ReportedPlace } from "@services/AdminApiService";
 import { colors } from "@styles/colors";
 
 export const getStatusChip = (statusName: string) => {
@@ -9,6 +10,8 @@ export const getStatusChip = (statusName: string) => {
       return <Chip label="Approved" color="success" size="small" />;
     case "rejected":
       return <Chip label="Rejected" color="error" size="small" />;
+    case "removed":
+      return <Chip label="Removed" size="small" />;
     default:
       return <Chip label={statusName} size="small" />;
   }
@@ -22,6 +25,26 @@ export const formatDate = (dateString: string) =>
     hour: "2-digit",
     minute: "2-digit",
   });
+
+/** The spot of a moderation request, in the shape the edit dialog takes; null for an older API */
+export const editablePlace = (request: ModerationRequest): ReportedPlace | null => {
+  const place = request.place;
+  if (!place || place.address === undefined || place.place_type_id === undefined) return null;
+  return {
+    id: place.id,
+    name: place.name,
+    address: place.address,
+    city: place.city,
+    country: place.country,
+    description: place.description ?? null,
+    source_url: place.source_url ?? null,
+    place_type_id: place.place_type_id,
+    place_type: place.place_type?.name ?? null,
+    is_valid: place.is_valid,
+    is_moderated: place.is_moderated,
+    updated_at: place.updated_at ?? null,
+  };
+};
 
 export const tablePaginationSx = {
   color: colors.textLight,

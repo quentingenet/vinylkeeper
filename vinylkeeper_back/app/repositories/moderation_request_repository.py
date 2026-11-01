@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.moderation_request_model import ModerationRequest
+from app.models.place_model import Place
 from app.models.reference_data.moderation_statuses import ModerationStatus
 from app.core.enums import ModerationStatusEnum
 from app.core.exceptions import ResourceNotFoundError, ServerError
@@ -174,12 +175,17 @@ class ModerationRequestRepository(TransactionalMixin):
             )
 
     async def get_moderation_request_count_by_status(self, status_name: str) -> int:
-        """Get count of moderation requests by status."""
+        """
+        Get count of moderation requests by status. Approved counts only the spots still on the map:
+        a spot an admin removed later keeps its approved request, for the history.
+        """
         try:
 
             query = select(func.count(ModerationRequest.id)).join(ModerationStatus).filter(
                 ModerationStatus.name == status_name
             )
+            if status_name == ModerationStatusEnum.APPROVED.value:
+                query = query.join(Place, Place.id == ModerationRequest.place_id).filter(Place.is_valid.is_(True))
             result = await self.db.execute(query)
             return result.scalar()
         except SQLAlchemyError as e:

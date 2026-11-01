@@ -21,6 +21,7 @@ from app.models.place_model import Place
 
 from app.repositories.atlas_repository import AtlasRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
+from app.repositories.dashboard_repository import DashboardRepository
 
 from app.services.atlas_service import AtlasService
 from app.services.moderation_service import ModerationService
@@ -187,6 +188,46 @@ class TestModerationApproveRejectFlow:
         ).scalar_one()
         assert place.is_moderated is True
         assert place.is_valid is True
+
+    async def test_a_removed_spot_leaves_the_approved_and_dashboard_counts(self, real_session):
+        """Counted: spots approved and still on the map; a removed spot keeps its row for the history."""
+        user = await make_test_user(real_session)
+        place_type_id = await pick_existing_place_type_id(real_session)
+        moderation_repository = ModerationRequestRepository(real_session)
+        dashboard_repository = DashboardRepository(real_session)
+        created = await make_place_service(real_session).create_place(make_place_create(place_type_id), user)
+
+        from app.models.moderation_request_model import ModerationRequest
+        mod_request = (
+            await real_session.execute(
+                select(ModerationRequest).filter(ModerationRequest.place_id == created.id)
+            )
+        ).scalar_one()
+        await make_moderation_service(real_session).approve_moderation_request(mod_request.id, admin_user_id=user.id)
+        approved = (await moderation_repository.get_moderation_request_stats())["approved"]
+        on_map = (await dashboard_repository.get_places_counts_batch())["moderated_total"]
+
+        await AtlasRepository(real_session).delete_place(created.id)
+        await real_session.flush()
+
+        assert (await moderation_repository.get_moderation_request_stats())["approved"] == approved - 1
+        assert (await dashboard_repository.get_places_counts_batch())["moderated_total"] == on_map - 1
+
+    async def test_a_request_carries_what_the_admin_can_edit(self, real_session):
+        user = await make_test_user(real_session)
+        place_type_id = await pick_existing_place_type_id(real_session)
+        created = await make_place_service(real_session).create_place(make_place_create(place_type_id), user)
+
+        from app.models.moderation_request_model import ModerationRequest
+        mod_request = (
+            await real_session.execute(
+                select(ModerationRequest).filter(ModerationRequest.place_id == created.id)
+            )
+        ).scalar_one()
+        place = (await make_moderation_service(real_session).get_moderation_request_by_id(mod_request.id)).place
+
+        assert (place.address, place.place_type_id) == ("1 Test Street", place_type_id)
+        assert place.updated_at is not None
 
     async def test_reject_invalidates_place(self, real_session):
         user = await make_test_user(real_session)

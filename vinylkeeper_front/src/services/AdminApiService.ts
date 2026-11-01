@@ -18,9 +18,13 @@ export interface ModerationRequest {
     city: string;
     country: string;
     description?: string;
+    address?: string;
+    source_url?: string | null;
+    place_type_id?: number;
     place_type?: { id: number; name: string };
     is_moderated: boolean;
     is_valid: boolean;
+    updated_at?: string | null;
   };
   user?: {
     username: string;
@@ -71,6 +75,7 @@ export interface ReportedPlace {
   place_type: string | null;
   is_valid: boolean;
   is_moderated: boolean;
+  updated_at?: string | null;
 }
 
 export interface PlaceReport {

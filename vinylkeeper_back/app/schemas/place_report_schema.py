@@ -46,6 +46,7 @@ class ReportedPlace(BaseModel):
     place_type: Optional[str] = Field(None, description="Name of the spot type")
     is_valid: bool
     is_moderated: bool
+    updated_at: Optional[datetime] = Field(None, description="Last change of the spot")
 
 
 class PlaceReportResponse(BaseModel):

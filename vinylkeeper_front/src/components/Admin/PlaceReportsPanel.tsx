@@ -5,10 +5,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Paper,
   Snackbar,
   TablePagination,
@@ -23,6 +19,7 @@ import { queryKeys } from "@utils/queryKeys";
 import { isApiError } from "@utils/apiError";
 import { ADMIN_LIVE_QUERY, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
 import AdminSpotEditDialog from "@components/Admin/AdminSpotEditDialog";
+import RemoveSpotDialog from "@components/Admin/RemoveSpotDialog";
 import { issueChipLabel } from "@components/Atlas/placeReportLabels";
 import { colors } from "@styles/colors";
 
@@ -189,21 +186,12 @@ export default function PlaceReportsPanel() {
 
       <AdminSpotEditDialog place={editing?.place ?? null} onClose={() => setEditing(null)} onSaved={onSaved} />
 
-      <Dialog open={removing !== null} onClose={() => setRemoving(null)} aria-labelledby="remove-spot-title">
-        <DialogTitle id="remove-spot-title">Remove {removing?.name} from the map?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            For a spot that closed for good. It disappears from the Atlas and its open reports are resolved.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRemoving(null)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={() => removing && remove.mutate(removing.id)}
-            disabled={remove.isPending}>
-            Remove
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <RemoveSpotDialog
+        spot={removing}
+        onCancel={() => setRemoving(null)}
+        onConfirm={(spotId) => remove.mutate(spotId)}
+        isPending={remove.isPending}
+      />
 
       <Snackbar
         open={feedback !== null}

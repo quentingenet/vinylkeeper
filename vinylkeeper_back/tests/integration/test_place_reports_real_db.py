@@ -148,6 +148,8 @@ class TestAdminFixesSpot:
             admin, spot.id, PlaceUpdate(name="Right Name", source_url="https://right.example.com"))
 
         assert (fixed.name, fixed.source_url, fixed.is_moderated) == ("Right Name", "https://right.example.com", True)
+        # Shown as "Last update" in the admin lists
+        assert fixed.updated_at is not None
 
     async def test_a_new_city_moves_the_pin(self, real_session):
         admin = await make_test_user(real_session)

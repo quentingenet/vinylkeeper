@@ -15,7 +15,7 @@ import {
   IconButton,
   Snackbar,
 } from "@mui/material";
-import { Visibility, AdminPanelSettings } from "@mui/icons-material";
+import { Visibility, AdminPanelSettings, Edit, Delete } from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@utils/queryKeys";
 import { adminApiService } from "@services/AdminApiService";
@@ -25,6 +25,8 @@ import { useModerationActions } from "@hooks/useModerationActions";
 import ModerationStatsCards from "@components/Admin/ModerationStatsCards";
 import ModerationDetailDialog from "@components/Admin/ModerationDetailDialog";
 import PlaceReportsPanel from "@components/Admin/PlaceReportsPanel";
+import AdminSpotEditDialog from "@components/Admin/AdminSpotEditDialog";
+import RemoveSpotDialog from "@components/Admin/RemoveSpotDialog";
 import { ADMIN_LIVE_QUERY, getStatusChip, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
 import { colors } from "@styles/colors";
 
@@ -51,6 +53,15 @@ const Admin: React.FC = () => {
     handleViewDetails,
     handleApprove,
     handleReject,
+    editingPlace,
+    handleEdit,
+    closeEdit,
+    handleSpotSaved,
+    removingPlace,
+    handleRemove,
+    cancelRemove,
+    confirmRemove,
+    isRemoving,
     isApproving,
     isRejecting,
   } = useModerationActions();
@@ -161,10 +172,20 @@ const Admin: React.FC = () => {
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.city}, {request.place?.country}</TableCell>
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
-                    <TableCell>
-                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small">
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small" aria-label="View details">
                         <Visibility />
                       </IconButton>
+                      {request.place?.is_valid !== false && (
+                        <>
+                          <IconButton onClick={() => handleEdit(request)} sx={{ color: "primary.main" }} size="small" aria-label="Edit spot">
+                            <Edit />
+                          </IconButton>
+                          <IconButton onClick={() => handleRemove(request)} sx={{ color: colors.error }} size="small" aria-label="Remove from the map">
+                            <Delete />
+                          </IconButton>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -200,7 +221,7 @@ const Admin: React.FC = () => {
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
                 <TableRow>
-                  {["Spot", "City", "User", "Status", "Date", "Actions"].map((h) => (
+                  {["Spot", "City", "User", "Status", "Date", "Last update", "Actions"].map((h) => (
                     <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                       {h}
                     </TableCell>
@@ -213,12 +234,26 @@ const Admin: React.FC = () => {
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.name ?? "N/A"}</TableCell>
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.city}, {request.place?.country}</TableCell>
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
-                    <TableCell>{getStatusChip(request.status?.name ?? "unknown")}</TableCell>
-                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell>
-                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small">
+                      {/* A spot taken off the map keeps its row, for the history */}
+                      {getStatusChip(request.place?.is_valid === false && request.status?.name !== "rejected" ? "removed" : request.status?.name ?? "unknown")}
+                    </TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
+                    <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.updated_at ? formatDate(request.place.updated_at) : "N/A"}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small" aria-label="View details">
                         <Visibility />
                       </IconButton>
+                      {request.place?.is_valid !== false && (
+                        <>
+                          <IconButton onClick={() => handleEdit(request)} sx={{ color: "primary.main" }} size="small" aria-label="Edit spot">
+                            <Edit />
+                          </IconButton>
+                          <IconButton onClick={() => handleRemove(request)} sx={{ color: colors.error }} size="small" aria-label="Remove from the map">
+                            <Delete />
+                          </IconButton>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -247,6 +282,11 @@ const Admin: React.FC = () => {
         isApproving={isApproving}
         isRejecting={isRejecting}
       />
+
+      {/* Edited from the moderation lists: no report to resolve here */}
+      <AdminSpotEditDialog place={editingPlace} onClose={closeEdit} onSaved={() => void handleSpotSaved()} canResolve={false} />
+
+      <RemoveSpotDialog spot={removingPlace} onCancel={cancelRemove} onConfirm={confirmRemove} isPending={isRemoving} />
     </Box>
   );
 };

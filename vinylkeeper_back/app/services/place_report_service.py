@@ -36,7 +36,7 @@ def reported_place(place: Place) -> ReportedPlace:
         id=place.id, name=place.name, address=place.address, city=place.city, country=place.country,
         description=place.description, source_url=place.source_url, place_type_id=place.place_type_id,
         place_type=place.place_type.name if place.place_type else None,
-        is_valid=place.is_valid, is_moderated=place.is_moderated,
+        is_valid=place.is_valid, is_moderated=place.is_moderated, updated_at=place.updated_at,
     )
 
 

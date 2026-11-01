@@ -9,17 +9,21 @@ import {
   DialogTitle,
   MenuItem,
   TextField,
+  Typography,
 } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { adminApiService, type AdminPlaceUpdate, type ReportedPlace } from "@services/AdminApiService";
 import { atlasApiService, type PlaceTypeData } from "@services/AtlasApiService";
 import { isApiError } from "@utils/apiError";
+import { formatDate } from "./adminUtils";
 
 interface AdminSpotEditDialogProps {
   place: ReportedPlace | null;
   onClose: () => void;
   /** Called once saved; resolve: also close the open reports of the spot */
   onSaved: (resolve: boolean) => void;
+  /** Offers "Save and resolve": only when the spot is edited from a report */
+  canResolve?: boolean;
 }
 
 type Form = {
@@ -58,7 +62,7 @@ function changes(place: ReportedPlace, form: Form): AdminPlaceUpdate {
 }
 
 /** The admin corrects a spot: published at once, without moderation. */
-export default function AdminSpotEditDialog({ place, onClose, onSaved }: AdminSpotEditDialogProps) {
+export default function AdminSpotEditDialog({ place, onClose, onSaved, canResolve = true }: AdminSpotEditDialogProps) {
   const [form, setForm] = useState<Form | null>(null);
 
   useEffect(() => {
@@ -93,6 +97,11 @@ export default function AdminSpotEditDialog({ place, onClose, onSaved }: AdminSp
       <DialogTitle id="edit-spot-title">Edit spot</DialogTitle>
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+          {place.updated_at && (
+            <Typography variant="body2" color="text.secondary">
+              Last update: {formatDate(place.updated_at)}
+            </Typography>
+          )}
           <TextField label="Name" required {...field("name")} slotProps={{ htmlInput: { maxLength: 255 } }} />
           <TextField label="Address" required {...field("address")} slotProps={{ htmlInput: { maxLength: 255 } }} />
           <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
@@ -135,18 +144,21 @@ export default function AdminSpotEditDialog({ place, onClose, onSaved }: AdminSp
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button
+          variant={canResolve ? "text" : "contained"}
           onClick={() => save.mutate({ update, resolve: false })}
           disabled={nothingChanged || requiredMissing || save.isPending}
         >
           Save
         </Button>
-        <Button
-          variant="contained"
-          onClick={() => save.mutate({ update, resolve: true })}
-          disabled={nothingChanged || requiredMissing || save.isPending}
-        >
-          Save and resolve
-        </Button>
+        {canResolve && (
+          <Button
+            variant="contained"
+            onClick={() => save.mutate({ update, resolve: true })}
+            disabled={nothingChanged || requiredMissing || save.isPending}
+          >
+            Save and resolve
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

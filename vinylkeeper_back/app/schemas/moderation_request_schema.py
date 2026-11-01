@@ -25,9 +25,14 @@ class PlaceMiniResponse(BaseModel):
     city: str = Field(description="City")
     country: str = Field(description="Country")
     description: Optional[str] = Field(None, description="Place description")
+    # The other fields an admin can correct from the moderation list
+    address: Optional[str] = Field(None, description="Street address")
+    source_url: Optional[str] = Field(None, description="Website")
+    place_type_id: Optional[int] = Field(None, description="Place type ID")
     place_type: Optional[PlaceTypeResponse] = Field(None, description="Place type")
     is_moderated: bool = Field(False, description="Whether the place has been moderated")
     is_valid: bool = Field(True, description="Whether the place is valid")
+    updated_at: Optional[datetime] = Field(None, description="Last change of the place")
 
     model_config = ConfigDict(from_attributes=True)
 
