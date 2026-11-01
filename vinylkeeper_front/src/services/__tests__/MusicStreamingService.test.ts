@@ -32,6 +32,16 @@ describe("streamingHref", () => {
     );
   });
 
+  it("opens the app through its own scheme when it has one", () => {
+    const deezerApp = { ...deezer, appUrl: (q: string) => `deezer://www.deezer.com/search/${q}` };
+    expect(streamingHref(deezerApp, query, ANDROID)).toBe(
+      "intent://www.deezer.com/search/Miles%20Davis%20Kind%20Of%20Blue#Intent;scheme=deezer;" +
+        "package=deezer.android.app;" +
+        "S.browser_fallback_url=https%3A%2F%2Fwww.deezer.com%2Fsearch%2FMiles%2520Davis%2520Kind%2520Of%2520Blue;end"
+    );
+    expect(streamingHref(deezerApp, query, IPHONE)).toBe("https://www.deezer.com/search/Miles%20Davis%20Kind%20Of%20Blue");
+  });
+
   it("gives the web page on iPhone, desktop and in the native app", () => {
     const web = "https://www.deezer.com/search/Miles%20Davis%20Kind%20Of%20Blue";
     expect(streamingHref(deezer, query, IPHONE)).toBe(web);

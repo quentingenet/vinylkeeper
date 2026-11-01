@@ -5,6 +5,8 @@ export interface StreamingPlatform {
   searchUrl: (query: string) => string;
   // Android app opened by the intent link, the web page being its fallback
   androidPackage: string;
+  // Link of the app's own scheme, for an app that does not open the web search page itself
+  appUrl?: (query: string) => string;
 }
 
 export const streamingPlatforms: StreamingPlatform[] = [
@@ -19,6 +21,8 @@ export const streamingPlatforms: StreamingPlatform[] = [
     icon: "🎧",
     searchUrl: (query) => `${import.meta.env.VITE_DEEZER_WEB_URL}/${query}`,
     androidPackage: "deezer.android.app",
+    // The app opens album, artist and track pages of deezer.com but sends its search back to the browser
+    appUrl: (query) => `deezer://www.deezer.com/search/${query}`,
   },
   {
     name: "YouTube Music",
@@ -42,8 +46,9 @@ export function streamingQuery(title: string, artist: string, itemType: "album" 
 export function streamingHref(platform: StreamingPlatform, query: string, userAgent: string): string {
   const url = platform.searchUrl(query);
   if (!/Android/i.test(userAgent) || !url.startsWith("https://")) return url;
+  const [scheme, path] = (platform.appUrl?.(query) ?? url).split("://");
   return (
-    `intent://${url.slice("https://".length)}#Intent;scheme=https;package=${platform.androidPackage};` +
+    `intent://${path}#Intent;scheme=${scheme};package=${platform.androidPackage};` +
     `S.browser_fallback_url=${encodeURIComponent(url)};end`
   );
 }
