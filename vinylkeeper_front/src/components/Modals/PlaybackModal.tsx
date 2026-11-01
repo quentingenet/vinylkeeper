@@ -17,6 +17,7 @@ import { useParams } from "react-router-dom";
 import { useAddRecord } from "@contexts/AddRecordContext";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import StreamingLinksAccordion from "@components/Modals/StreamingLinksAccordion";
 import TracklistAccordion from "@components/Modals/TracklistAccordion";
 import PressingSection from "@components/Modals/PressingSection";
@@ -165,6 +166,7 @@ export default function PlaybackModal({
                     ? albumMetadata?.image_url
                     : item.image_url) && (
                     <img
+                      key={item.itemType === "album" ? albumMetadata?.image_url : item.image_url}
                       src={buildProxyImageUrl(
                         (item.itemType === "album"
                           ? albumMetadata?.image_url
@@ -175,7 +177,9 @@ export default function PlaybackModal({
                         true
                       )}
                       alt={item.title}
+                      onLoad={revealImage}
                       style={{
+                        ...fadeInImageStyle,
                         width: 120,
                         height: 120,
                         objectFit: "cover",

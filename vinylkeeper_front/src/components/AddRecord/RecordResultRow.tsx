@@ -5,6 +5,7 @@ import EditionChips from "@components/Records/EditionChips";
 import PressingMoreInfo from "@components/Records/PressingMoreInfo";
 import type { DiscogsData } from "@models/IRequestProxy";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import { colors } from "@styles/colors";
 
 const THUMBNAIL_SIZE = 64;
@@ -23,9 +24,11 @@ export default function RecordResultRow({ item, isArtist, expanded, onToggle, ch
     <Box component="li" sx={{ listStyle: "none", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
       <ListItemButton onClick={onToggle} selected={expanded} aria-expanded={expanded} sx={{ gap: 2, py: 1 }}>
         <Avatar
+          key={item.picture}
           variant="rounded"
           src={item.picture ? buildProxyImageUrl(item.picture, 128, 128, 75, false) : undefined}
           alt=""
+          slotProps={{ img: { onLoad: revealImage, style: fadeInImageStyle } }}
           sx={{ width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE, bgcolor: colors.panel, color: "primary.main" }}
         >
           {isArtist ? <PersonIcon /> : <AlbumIcon />}
