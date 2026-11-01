@@ -20,8 +20,8 @@ jobs:
     env:
       # Placeholder settings for this throwaway GitHub test machine only, as the settings have no
       # defaults: they never reach the VPS, where docker compose reads app/.env.production and the
-      # PostgreSQL volume as before. Nothing here connects to a real service: without
-      # TEST_DATABASE_URL the real-database tests skip. APP_ENV=test keeps cookies non-secure.
+      # PostgreSQL volume as before. Only Alembic connects, to the empty PostgreSQL service below:
+      # without TEST_DATABASE_URL the real-database tests skip. APP_ENV=test keeps cookies non-secure.
       APP_ENV: test
       DATABASE_NAME: vinylkeeper
       DATABASE_HOST: localhost
@@ -53,6 +53,21 @@ jobs:
       DISCOGS_API_KEY: ci
       USER_AGENT: VinylKeeperCI/1.0
       ALBUM_ENRICHMENT_ENABLED: "false"
+    # Empty database, same major version as production: the container runs the migrations on boot
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: vinylkeeper
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d vinylkeeper"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
       - run: pipx install poetry
@@ -69,6 +84,11 @@ jobs:
           openssl rsa -in app/keys/private_key.pem -pubout -out app/keys/public_key.pem
       - run: poetry run flake8 app tests
       - run: poetry run pytest -q
+      # What the container runs first on the VPS: a migration that fails here would stop the API there
+      - name: Migrations on an empty database
+        run: poetry run alembic upgrade head
+      - name: Models match the migrated schema
+        run: poetry run alembic check
 
   frontend:
     name: Web app (eslint, tsc, vitest)
