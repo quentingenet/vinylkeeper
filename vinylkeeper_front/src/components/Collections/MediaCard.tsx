@@ -13,6 +13,7 @@ import { ARTIST_TO_COLLECTION_TOOLTIP, GOT_IT_TOOLTIP } from "@components/Collec
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { Album } from "@mui/icons-material";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import styles from "../../styles/pages/Collection.module.scss";
 import { colors } from "@styles/colors";
 
@@ -160,9 +161,11 @@ export default function MediaCard({
 
       {item.image_url ? (
         <CardMedia
+          key={item.image_url}
           component="img"
           height={250}
-          sx={{ objectFit: "contain" }}
+          onLoad={revealImage}
+          sx={{ ...fadeInImageStyle, objectFit: "contain" }}
           image={
             buildProxyImageUrl(
               item.image_url,

@@ -1,6 +1,7 @@
 import { Box, Card, CardActionArea, CardContent, CardMedia, Chip, Typography } from "@mui/material";
 import type { SpinningNowAlbum } from "@models/ISpinningNow";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import { albumTitleOnly, formatMoodName } from "@components/SpinningNow/spinningNowLabels";
 
@@ -32,11 +33,13 @@ export default function SpinningNowAlbumCard({ album, onPlay }: SpinningNowAlbum
         sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch" }}
       >
         <CardMedia
+          key={cover}
           component="img"
           image={cover || vinylKeeperImg}
           alt=""
           loading="lazy"
-          sx={{ aspectRatio: "1 / 1", objectFit: "cover" }}
+          onLoad={revealImage}
+          sx={{ ...fadeInImageStyle, aspectRatio: "1 / 1", objectFit: "cover" }}
         />
         <CardContent sx={{ flexGrow: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: "bold", lineHeight: 1.2 }} noWrap title={title}>

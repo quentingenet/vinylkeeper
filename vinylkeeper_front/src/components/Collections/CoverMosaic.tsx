@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Box } from "@mui/material";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import { colors } from "@styles/colors";
 
 export const MOSAIC_COVERS_COUNT = 6;
@@ -67,8 +68,9 @@ export default function CoverMosaic({ images }: CoverMosaicProps) {
           // Decorative: the card title is the accessible name
           alt=""
           loading="lazy"
+          onLoad={revealImage}
           onError={() => setHasBrokenCover(true)}
-          sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          sx={{ ...fadeInImageStyle, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
       ))}
     </Box>

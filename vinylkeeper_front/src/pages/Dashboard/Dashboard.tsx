@@ -17,6 +17,7 @@ import { IDashboardStats, LatestAddition } from "@models/IDashboardStats";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { truncateText } from "@utils/GlobalUtils";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
+import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import TutorialModal from "@components/Modals/TutorialModal";
 import { useUserContext } from "@contexts/UserContext";
@@ -71,6 +72,7 @@ const LatestAdditionCard = ({
           >
             {data.image_url && (
               <img
+                key={data.image_url}
                 src={buildProxyImageUrl(
                   data.image_url,
                   isMobile ? 300 : 200,
@@ -79,7 +81,9 @@ const LatestAdditionCard = ({
                   true
                 )}
                 alt={data.name}
+                onLoad={revealImage}
                 style={{
+                  ...fadeInImageStyle,
                   width: isMobile ? "150px" : "100px",
                   height: isMobile ? "150px" : "100px",
                   objectFit: "cover",
@@ -327,7 +331,9 @@ export default function Dashboard() {
                           true
                         )}
                         alt={album.name}
+                        onLoad={revealImage}
                         style={{
+                          ...fadeInImageStyle,
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
