@@ -53,14 +53,15 @@ class Collection(Base):
         "Artist",
         secondary="collection_artist",
         back_populates="collections",
-        lazy="noload",
+        lazy="raise",
+        passive_deletes=True,
         overlaps="artist,collection,collection_artists"
     )
 
     likes = relationship(
         "Like",
         back_populates="collection",
-        lazy="noload",
+        lazy="raise",
         cascade="all, delete-orphan",
         passive_deletes=True
     )

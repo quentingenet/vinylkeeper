@@ -53,13 +53,13 @@ class Place(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     moderation_requests = relationship(
-        "ModerationRequest", back_populates="place", lazy="noload",
+        "ModerationRequest", back_populates="place", lazy="raise",
         cascade="all, delete-orphan", passive_deletes=True
     )
 
     likes = relationship(
         "PlaceLike", back_populates="place", cascade="all, delete-orphan",
-        lazy="noload", passive_deletes=True
+        lazy="raise", passive_deletes=True
     )
 
     __table_args__ = (

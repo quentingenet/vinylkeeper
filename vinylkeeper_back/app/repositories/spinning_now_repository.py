@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
 
 from sqlalchemy import distinct, func, select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -60,7 +61,7 @@ class SpinningNowRepository:
             .join(Collection, Collection.id == CollectionAlbum.collection_id)
             .join(Album, Album.id == CollectionAlbum.album_id)
             .where(Collection.owner_id == user_id)
-            .distinct(work_key())
+            .ext(distinct_on(work_key()))
             .order_by(work_key(), CollectionAlbum.album_id)
         )
         if collection_ids:

@@ -1,6 +1,7 @@
 from typing import Any, List, Optional, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, case, distinct, func, or_, select, tuple_
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 from app.models.album_model import Album
@@ -70,7 +71,7 @@ class DashboardRepository:
                 .join(Collection, CollectionAlbum.collection_id == Collection.id)
                 .join(User, Collection.owner_id == User.id)
                 .where(*inner_where)
-                .distinct(work_key())
+                .ext(distinct_on(work_key()))
                 .order_by(work_key(), CollectionAlbum.updated_at.desc())
             ).subquery()
 

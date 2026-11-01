@@ -1,5 +1,5 @@
 import ky, { HTTPError } from "ky";
-import { ApiError } from "./apiError";
+import { ApiError, isApiError } from "./apiError";
 
 export type { ApiError };
 export type AppError = ApiError;
@@ -22,16 +22,12 @@ const refreshSession = (apiTarget: string): Promise<void> => {
   return refreshInFlight;
 };
 
-interface EnrichedHTTPError extends HTTPError {
-  errorData?: ApiError;
-}
-
 interface RequestOptions {
   apiTarget: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   endpoint: string;
   body?: unknown;
-  headers?: HeadersInit;
+  headers?: Record<string, string>;
   retrying?: boolean;
   skipRefresh?: boolean;
 }
@@ -61,31 +57,11 @@ const requestService = async <T = unknown>({
     credentials: "include" as RequestCredentials,
     hooks: {
       beforeRequest: [
-        (request: Request): void => {
+        ({ request }: { request: Request }): void => {
           const csrfToken = getCsrfToken();
           if (csrfToken) {
             request.headers.set("X-CSRF-Token", csrfToken);
           }
-        },
-      ],
-      beforeError: [
-        async (error: HTTPError): Promise<HTTPError> => {
-          const { response } = error;
-          if (response && response.body) {
-            try {
-              const errorData = (await response.json()) as AppError;
-              const enriched = new HTTPError(
-                response,
-                error.request,
-                error.options
-              ) as EnrichedHTTPError;
-              enriched.errorData = errorData;
-              return enriched;
-            } catch {
-              return error;
-            }
-          }
-          return error;
         },
       ],
     },
@@ -134,9 +110,9 @@ const requestService = async <T = unknown>({
       }
     }
 
-    const enriched = error as EnrichedHTTPError;
-    if (enriched instanceof HTTPError && enriched.errorData) {
-      throw enriched.errorData;
+    // ky has already parsed the error body: the API sends an ApiError
+    if (error instanceof HTTPError && isApiError(error.data)) {
+      throw error.data;
     }
     // Body that is not JSON (a 429 or 502 page of the proxy, say): keep the HTTP status
     if (error instanceof HTTPError) {

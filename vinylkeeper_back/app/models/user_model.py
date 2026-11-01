@@ -128,7 +128,7 @@ class User(Base):
     collections = relationship(
         "Collection",
         back_populates="owner",
-        lazy="noload",
+        lazy="raise",
         cascade="all, delete-orphan",
         passive_deletes=True
     )
@@ -136,7 +136,7 @@ class User(Base):
     wishlist_items = relationship(
         "Wishlist",
         back_populates="user",
-        lazy="noload",
+        lazy="raise",
         cascade="all, delete-orphan",
         passive_deletes=True
     )
@@ -144,7 +144,7 @@ class User(Base):
     likes = relationship(
         "Like",
         back_populates="user",
-        lazy="noload",
+        lazy="raise",
         cascade="all, delete-orphan",
         passive_deletes=True
     )
@@ -152,7 +152,7 @@ class User(Base):
     place_likes = relationship(
         "PlaceLike",
         back_populates="user",
-        lazy="noload",
+        lazy="raise",
         cascade="all, delete-orphan",
         passive_deletes=True
     )
@@ -160,13 +160,13 @@ class User(Base):
     submitted_places = relationship(
         "Place",
         back_populates="submitted_by",
-        lazy="noload",
+        lazy="raise",
         cascade="all, delete-orphan",
         passive_deletes=True
     )
 
     moderation_requests = relationship(
-        "ModerationRequest", back_populates="user", lazy="noload")
+        "ModerationRequest", back_populates="user", lazy="raise", passive_deletes=True)
 
     def __repr__(self):
         """String representation of the user."""

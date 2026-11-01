@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select, func, and_, case, insert, literal
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.collection_model import Collection
 from app.models.album_model import Album
@@ -482,7 +483,7 @@ class CollectionRepository(TransactionalMixin):
                     Album.image_url.isnot(None),
                     Album.image_url != "",
                 )
-                .distinct(CollectionAlbum.collection_id, work_key())
+                .ext(distinct_on(CollectionAlbum.collection_id, work_key()))
                 .order_by(CollectionAlbum.collection_id, work_key(), CollectionAlbum.album_id)
                 .subquery()
             )

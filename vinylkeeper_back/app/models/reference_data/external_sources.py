@@ -11,11 +11,11 @@ class ExternalSource(Base):
 
     # Never loaded: looking a reference value up must not load all the rows pointing to it
     albums = relationship(
-        "Album", back_populates="external_source", lazy="noload")
+        "Album", back_populates="external_source", lazy="raise")
     artists = relationship(
-        "Artist", back_populates="external_source", lazy="noload")
+        "Artist", back_populates="external_source", lazy="raise")
     wishlist_items = relationship(
-        "Wishlist", back_populates="external_source", lazy="noload")
+        "Wishlist", back_populates="external_source", lazy="raise")
 
     def __repr__(self):
         return f"<ExternalSource(name={self.name})>"

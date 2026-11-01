@@ -12,7 +12,7 @@ starlette = "^1.10.0"
 uvicorn = {extras = ["standard"], version = ">=0.37,<0.55"}
 gunicorn = ">=23,<27"
 alembic = "^1.14.1"
-sqlalchemy = "^2.0.37"
+sqlalchemy = {version = "^2.1.6", extras = ["asyncio"]}
 asyncpg = ">=0.30,<0.33"
 pydantic = "^2.10.6"
 argon2-cffi = "^25.1.0"
@@ -38,6 +38,9 @@ pytest-cov = "^7.1.0"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# A SQLAlchemy deprecation fails the tests: the API is fixed before the next version removes it
+filterwarnings = ["error::sqlalchemy.exc.SADeprecationWarning"]
 testpaths = ["tests"]
 pythonpath = ["."]
 

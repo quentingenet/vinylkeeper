@@ -12,7 +12,7 @@ class ModerationStatus(Base):
 
     # Never loaded: looking a reference value up must not load all the rows pointing to it
     moderation_requests = relationship(
-        "ModerationRequest", back_populates="status", lazy="noload")
+        "ModerationRequest", back_populates="status", lazy="raise")
 
     def __repr__(self):
         return f"<ModerationStatus(name={self.name})>"

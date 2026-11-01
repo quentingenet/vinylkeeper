@@ -11,7 +11,7 @@ class EntityType(Base):
 
     # Never loaded: looking a reference value up must not load all the rows pointing to it
     wishlist_items = relationship(
-        "Wishlist", back_populates="entity_type", lazy="noload")
+        "Wishlist", back_populates="entity_type", lazy="raise")
 
     def __repr__(self):
         return f"<EntityType(name={self.name})>"

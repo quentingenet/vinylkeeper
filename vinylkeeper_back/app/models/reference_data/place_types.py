@@ -11,7 +11,7 @@ class PlaceType(Base):
 
     # Never loaded: looking a reference value up must not load all the rows pointing to it
     places = relationship(
-        "Place", back_populates="place_type", lazy="noload")
+        "Place", back_populates="place_type", lazy="raise")
 
     def __repr__(self):
         return f"<PlaceType(name={self.name})>"
