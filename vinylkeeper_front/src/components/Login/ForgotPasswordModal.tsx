@@ -78,8 +78,8 @@ export default function ForgotPasswordModal({
       <Grid
         container
         spacing={2}
-        justifyContent="center"
         sx={{
+          justifyContent: "center",
           bgcolor: colors.textLight,
           borderRadius: "5px",
           width: isMobile ? "90dvw" : "24vw",
@@ -120,8 +120,10 @@ export default function ForgotPasswordModal({
             error={!!emailError}
             helperText={emailError}
             sx={{ mb: 2 }}
-            InputProps={{
-              style: { textTransform: "lowercase" },
+            slotProps={{
+              input: {
+                style: { textTransform: "lowercase" },
+              },
             }}
           />
 

@@ -67,7 +67,7 @@ const MobileThemeLandpageVinylKeeper = createTheme({
     MuiTextField: {
       styleOverrides: {
         root: {
-          "& label.Mui-focused": {
+          "& .MuiInputLabel-root.Mui-focused": {
             color: "black",
           },
           "& .MuiInput-underline:after": {

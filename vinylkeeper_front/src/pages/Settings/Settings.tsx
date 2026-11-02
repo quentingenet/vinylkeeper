@@ -50,7 +50,7 @@ export default function Settings() {
 
   if (!isUserLoggedIn || !currentUser) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
         <Typography variant="h6" color="error">
           Please log in to access settings
         </Typography>
@@ -64,7 +64,7 @@ export default function Settings() {
     <Box sx={{ p: 3, maxWidth: 800, mx: "auto" }}>
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Box display="flex" alignItems="center" mb={2}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <Person sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="h6">Profile informations</Typography>
           </Box>
@@ -85,7 +85,7 @@ export default function Settings() {
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <TextField
                   fullWidth
                   label="Terms Accepted?"

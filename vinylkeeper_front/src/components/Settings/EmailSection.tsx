@@ -81,7 +81,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
   return (
     <Card sx={{ mb: 4 }}>
       <CardContent>
-        <Box display="flex" alignItems="center" mb={2}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Email sx={{ color: "primary.main", mr: 1 }} />
           <Typography variant="h6">Email address</Typography>
         </Box>
@@ -90,7 +90,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
             {message.text}
           </Alert>
         )}
-        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" mb={3}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 3 }}>
           <TextField label="Current email" value={email} disabled sx={{ flexGrow: 1, minWidth: 220 }} />
           <Chip
             label={isEmailConfirmed ? "Confirmed" : "Not confirmed"}
@@ -109,7 +109,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
           )}
         </Box>
 
-        <Typography variant="subtitle1" mb={1}>
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
           Change your email address
         </Typography>
         <form
@@ -165,7 +165,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
               />
             </Grid>
           </Grid>
-          <Box mt={2} display="flex" justifyContent={{ xs: "center", md: "flex-end" }} mx={2}>
+          <Box sx={{ mt: 2, display: "flex", justifyContent: { xs: "center", md: "flex-end" }, mx: 2 }}>
             <Button
               type="submit"
               variant="contained"

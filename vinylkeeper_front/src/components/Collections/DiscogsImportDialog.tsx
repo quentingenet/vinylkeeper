@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { DISCOGS_DISCLAIMER, discogsCollectionUrl } from "@utils/discogsLinks";
@@ -215,7 +215,7 @@ export default function DiscogsImportDialog({
               </Alert>
             )}
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
               Before you import
             </Typography>
             <List dense disablePadding aria-label="Conditions to import a Discogs collection" sx={{ mb: 2 }}>
@@ -236,7 +236,7 @@ export default function DiscogsImportDialog({
             )}
 
             {connection.isLoading ? (
-              <Box display="flex" justifyContent="center" sx={{ py: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
                 <VinylSpinner size={32} />
               </Box>
             ) : connection.isError || !connection.data?.available ? (
@@ -274,7 +274,7 @@ export default function DiscogsImportDialog({
             )}
 
             {connectedAs && preview.isLoading && (
-              <Box display="flex" justifyContent="center" sx={{ py: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
                 <VinylSpinner size={32} />
               </Box>
             )}
@@ -308,11 +308,11 @@ export default function DiscogsImportDialog({
                       ))}
                     </Select>
                     {target === NEW_COLLECTION ? (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5 }}>
                         A private collection is created: deleting it undoes the import.
                       </Typography>
                     ) : targetIsSave ? (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5 }}>
                         This collection is a save: the records join it, there is no undo.
                       </Typography>
                     ) : targetSaveName ? (
@@ -330,7 +330,7 @@ export default function DiscogsImportDialog({
                             </Typography>
                           }
                         />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
                           {saveCopy
                             ? `The copy is named “${savedCopyName(targetName)}”: delete it once everything is fine.`
                             : "Without a copy, the records join the ones of this collection: there is no undo."}
@@ -358,12 +358,12 @@ export default function DiscogsImportDialog({
                       }
                     />
                     {wantlistUnavailableReason(preview.data) && (
-                      <Typography variant="caption" color="text.secondary" component="p">
+                      <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
                         {wantlistUnavailableReason(preview.data)}
                       </Typography>
                     )}
                     {includeWantlist && canImportWantlist(preview.data) && (
-                      <Typography variant="caption" color="text.secondary" component="p">
+                      <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
                         Only vinyl records are added; a pressing you already own is skipped, another pressing of a
                         record you own is added and pointed out.
                       </Typography>
@@ -379,7 +379,7 @@ export default function DiscogsImportDialog({
               </Alert>
             )}
 
-            <Box display="flex" justifyContent="flex-end" sx={{ pb: 1 }}>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", pb: 1 }}>
               <Button
                 variant="contained"
                 disabled={!canImport}
@@ -398,7 +398,7 @@ export default function DiscogsImportDialog({
                 lead="Collection data provided by"
                 href={connectedAs ? discogsCollectionUrl(connectedAs) : "https://www.discogs.com"}
               />
-              <Typography variant="caption" color="text.secondary" component="p">
+              <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
                 {DISCOGS_DISCLAIMER}
               </Typography>
             </Box>
@@ -422,10 +422,10 @@ function ImportInProgress({ job }: { job: DiscogsImport }) {
         aria-label="Import progress"
         sx={{ mb: 1.5, height: 6, borderRadius: 3 }}
       />
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>
         {label}
       </Typography>
-      <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 2 }}>
+      <Typography variant="caption" component="p" sx={{ color: "text.secondary", mt: 2 }}>
         You can close this window: the import goes on.
       </Typography>
     </Box>
@@ -448,7 +448,7 @@ function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps)
       sx={{ mb: 2 }}
       action={
         // "Open" and the close button together: an action replaces the close button of an Alert
-        <Box display="flex" alignItems="center">
+        <Box sx={{ display: "flex", alignItems: "center" }}>
           {job.collection_id !== null && (
             <Button component={RouterLink} to={`/collections/${job.collection_id}`} onClick={onOpenCollection} size="small">
               Open
@@ -463,16 +463,16 @@ function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps)
       Last import from {job.discogs_username}: {plural(job.added, "record")} added
       {details.length > 0 ? ` (${details.join(", ")})` : ""}.
       {warnings.map((warning) => (
-        <Box component="span" display="block" key={warning} sx={{ mt: 0.5 }}>
+        <Box component="span" key={warning} sx={{ display: "block", mt: 0.5 }}>
           {warning}
         </Box>
       ))}
       {wantlist && (
-        <Box component="span" display="block" sx={{ mt: 0.5 }}>
+        <Box component="span" sx={{ display: "block", mt: 0.5 }}>
           {wantlist.text}
         </Box>
       )}
-      <Box component="span" display="block" sx={{ mt: 0.5 }}>
+      <Box component="span" sx={{ display: "block", mt: 0.5 }}>
         Remember to confirm the pressing of each record.
       </Box>
     </Alert>

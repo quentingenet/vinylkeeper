@@ -8,7 +8,7 @@ interface AuthSwitchLinkProps {
 
 export default function AuthSwitchLink({ prompt, actionLabel, onClick }: AuthSwitchLinkProps) {
   return (
-    <Typography variant="caption" color="black" sx={{ display: "block", textAlign: "center", mt: 1 }}>
+    <Typography variant="caption" sx={{ color: "black", display: "block", textAlign: "center", mt: 1 }}>
       {prompt}{" "}
       <Link
         component="button"

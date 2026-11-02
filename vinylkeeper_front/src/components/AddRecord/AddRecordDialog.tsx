@@ -129,7 +129,7 @@ export default function AddRecordDialog({ options, onClose }: AddRecordDialogPro
         />
 
         {results && results.items.length === 0 && (
-          <Typography color="text.secondary" sx={{ textAlign: "center", py: 4 }}>
+          <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
             {results.isArtist ? "No artist found" : "No album found"}
           </Typography>
         )}
@@ -165,7 +165,7 @@ export default function AddRecordDialog({ options, onClose }: AddRecordDialogPro
               ))}
             </List>
             {results.total_pages > 1 && (
-              <Box display="flex" justifyContent="center" mt={2}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                 <PaginationWithEllipsis count={results.total_pages} page={results.page} onChange={changePage} />
               </Box>
             )}

@@ -29,11 +29,11 @@ export default function OwnedPressingsSection({ externalId, masterId }: OwnedPre
   if (owned.length === 0) return null;
 
   return (
-    <Box mb={3}>
+    <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
         {owned.length > 1 ? "Your pressings" : "Your pressing"}
       </Typography>
-      <Box display="flex" flexDirection="column" gap={1.5}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
         {owned.map((pressing) => (
           <Box key={`${pressing.collection_id}-${pressing.album_id}`}>
             <Typography variant="body2" sx={{ color: "text.primary", mb: 0.5 }}>
@@ -42,7 +42,7 @@ export default function OwnedPressingsSection({ externalId, masterId }: OwnedPre
             </Typography>
             <EditionChips album={edition(pressing)} centered={false} />
             {!pressing.pressing_confirmed && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
                 Pressing not confirmed yet: open it from your collection to check it.
               </Typography>
             )}

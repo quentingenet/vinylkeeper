@@ -131,12 +131,7 @@ export default function PlaybackModal({
       >
         <Fade in={isOpen}>
           <Box sx={modalStyle}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
               <Typography
                 variant="h5"
                 component="h2"
@@ -150,18 +145,18 @@ export default function PlaybackModal({
             </Box>
 
             {isLoading ? (
-              <Box display="flex" justifyContent="center" my={4}>
+              <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
                 <VinylSpinner />
               </Box>
             ) : error ? (
-              <Box display="flex" justifyContent="center" my={4}>
+              <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
                 <Typography sx={{ color: colors.textMuted }}>
                   {error instanceof Error ? error.message : "An error occurred"}
                 </Typography>
               </Box>
             ) : (
               <>
-                <Box display="flex" alignItems="center" mb={3}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                   {(item.itemType === "album"
                     ? albumMetadata?.image_url
                     : item.image_url) && (
@@ -189,11 +184,7 @@ export default function PlaybackModal({
                     />
                   )}
                   <Box>
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                      sx={{ color: "primary.main", mb: 1 }}
-                    >
+                    <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.main", mb: 1 }}>
                       {item.title}
                     </Typography>
                   </Box>
@@ -226,11 +217,11 @@ export default function PlaybackModal({
                 {item.itemType === "album" &&
                   albumMetadata?.genres &&
                   albumMetadata.genres.length > 0 && (
-                    <Box mb={3}>
+                    <Box sx={{ mb: 3 }}>
                       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
                         Genres
                       </Typography>
-                      <Box display="flex" flexWrap="wrap" gap={1}>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                         {[
                           ...new Set([
                             ...(albumMetadata.genres || []),
@@ -257,7 +248,7 @@ export default function PlaybackModal({
                 )}
 
                 {item.itemType === "artist" && artistMetadata?.biography && (
-                  <Box mb={3}>
+                  <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
                       Biography
                     </Typography>
@@ -274,11 +265,11 @@ export default function PlaybackModal({
                 {item.itemType === "artist" &&
                   artistMetadata?.genres &&
                   artistMetadata.genres.length > 0 && (
-                    <Box mb={3}>
+                    <Box sx={{ mb: 3 }}>
                       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
                         Genres
                       </Typography>
-                      <Box display="flex" flexWrap="wrap" gap={1}>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                         {artistMetadata.genres.map((genre, index) => (
                           <Chip
                             key={index}

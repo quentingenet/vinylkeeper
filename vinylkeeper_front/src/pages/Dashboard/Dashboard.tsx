@@ -57,7 +57,7 @@ const LatestAdditionCard = ({
       onClick={onClick}
     >
       <CardContent>
-        <Box display="flex" alignItems="center" mb={2}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Avatar sx={{ bgcolor: color, mr: 1 }}>{icon}</Avatar>
           <Typography variant="h6" sx={{ color: color }}>
             {title}
@@ -65,10 +65,12 @@ const LatestAdditionCard = ({
         </Box>
         {data ? (
           <Box
-            display="flex"
-            flexDirection={isMobile ? "column" : "row"}
-            alignItems={isMobile ? "center" : "flex-start"}
-            gap={2}
+            sx={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "center" : "flex-start",
+              gap: 2,
+            }}
           >
             {data.image_url && (
               <img
@@ -91,23 +93,23 @@ const LatestAdditionCard = ({
                 }}
               />
             )}
-            <Box flex={1} textAlign={isMobile ? "center" : "left"}>
+            <Box sx={{ flex: 1, textAlign: isMobile ? "center" : "left" }}>
               <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
                 {truncateText(data.name, 55)}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 Added by{" "}
                 <span style={{ color: color, fontWeight: "bold" }}>
                   {data.username}
                 </span>
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
                 {new Date(data.created_at).toLocaleDateString()}
               </Typography>
             </Box>
           </Box>
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
             No recent additions
           </Typography>
         )}
@@ -155,12 +157,7 @@ export default function Dashboard() {
   }
   if (!isLoading && isError) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="300px"
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
         <Typography color="error">Failed to load dashboard data.</Typography>
       </Box>
     );
@@ -195,7 +192,7 @@ export default function Dashboard() {
   );
 
   return (
-    <Box p={3} sx={{ backgroundColor: colors.raised, color: colors.textMuted }}>
+    <Box sx={{ p: 3, backgroundColor: colors.raised, color: colors.textMuted }}>
       <div className={styles.dashboard}>
         {renderStatCard(
           "My albums",

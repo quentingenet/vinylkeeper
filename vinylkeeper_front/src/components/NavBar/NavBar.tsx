@@ -137,13 +137,13 @@ const NavBar: React.FC<NavBarProps> = ({
       }}
     >
       <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        px={1}
-        py={1}
         onClick={toggleMenu}
         sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          px: 1,
+          py: 1,
           cursor: "pointer",
           transition: "background-color 0.3s ease",
           "&:hover": {
@@ -153,9 +153,9 @@ const NavBar: React.FC<NavBarProps> = ({
       >
         <Typography
           variant="h5"
-          fontFamily="RockSalt"
-          color={colorYellow}
           sx={{
+            color: colorYellow,
+            fontFamily: "RockSalt",
             textShadow: `2px 2px 4px ${colors.black}`,
             overflow: "hidden",
             whiteSpace: "nowrap",
@@ -218,7 +218,7 @@ const NavBar: React.FC<NavBarProps> = ({
           </ListItem>
         ))}
       </List>
-      <Box flexGrow={1} />
+      <Box sx={{ flexGrow: 1 }} />
       <Divider />
       <ListItem disablePadding>
         <ListItemButton

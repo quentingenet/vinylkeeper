@@ -10,12 +10,11 @@ interface DiscogsAttributionProps {
 /** Next to data coming from Discogs, with a link to its Discogs page, as Discogs' terms ask. */
 export default function DiscogsAttribution({ href, lead = "Data provided by" }: DiscogsAttributionProps) {
   return (
-    <Typography variant="caption" color="text.secondary" component="p">
+    <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
       {lead}{" "}
       <Link href={href} target="_blank" rel="noopener noreferrer" color="inherit" underline="always">
         Discogs
-      </Link>
-      .
-    </Typography>
+      </Link>.
+          </Typography>
   );
 }

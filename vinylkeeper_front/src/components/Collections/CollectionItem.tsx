@@ -247,9 +247,15 @@ export default function CollectionItem({
 
           <Typography
             variant="body2"
-            color="text.secondary"
             gutterBottom
-            sx={{ flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}
+            sx={{
+              color: "text.secondary",
+              flexShrink: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "100%",
+            }}
           >
             {collection.description}
           </Typography>
@@ -259,7 +265,7 @@ export default function CollectionItem({
               {showOwner && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <PersonIcon fontSize="small" color="action" />
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     {collection.owner?.username || "Unknown"}
                   </Typography>
                 </Box>
@@ -315,15 +321,14 @@ export default function CollectionItem({
             )}
           </Box>
 
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+            <Typography variant="caption" sx={{ color: "text.secondary", mt: 1, display: "block" }}>
               Created on {formatDate(collection.created_at)}
               {!showOwner && <> by {truncateText(collection.owner?.username || "Unknown", 10)}</>}
             </Typography>
             {localLikesCount > 0 && (
               <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{
                   color: colors.textLight,
                   fontWeight: 600,
@@ -369,7 +374,7 @@ export default function CollectionItem({
             The collection <strong>“{collection.name}”</strong> is deleted with {deletedContents}. This cannot be undone.
           </Typography>
           {!isSave && !existingSaveName && albumsCount > 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 1.5 }}>
               To keep a copy first, cancel and use the save button of the collection.
             </Typography>
           )}

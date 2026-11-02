@@ -47,7 +47,7 @@ export default function FilterChipGroup<T extends string | number>({
           {title}
         </Typography>
         {selectedLabels.length > 0 && (
-          <Typography variant="body2" color="text.secondary" noWrap>
+          <Typography variant="body2" noWrap sx={{ color: "text.secondary" }}>
             {selectedLabels.join(", ")}
           </Typography>
         )}

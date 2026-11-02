@@ -35,16 +35,7 @@ export default function PaginationWithEllipsis({
   const visiblePages = getVisiblePages(count, page, maxVisiblePages, isMobile);
 
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      gap={isMobile ? 0.5 : 1}
-      sx={{
-        justifyContent: "center",
-        ...sx,
-      }}
-    >
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: isMobile ? 0.5 : 1, ...sx }}>
       <Button
         variant="outlined"
         size={size}

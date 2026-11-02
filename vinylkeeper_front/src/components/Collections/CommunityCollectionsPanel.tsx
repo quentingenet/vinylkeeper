@@ -84,7 +84,7 @@ export default function CommunityCollectionsPanel() {
   if (error) {
     return (
       <Box>
-        <Typography variant="h6" color="white">
+        <Typography variant="h6" sx={{ color: "white" }}>
           Error loading public collections
         </Typography>
       </Box>
@@ -94,14 +94,16 @@ export default function CommunityCollectionsPanel() {
   return (
     <Box>
       <Box
-        display="flex"
-        flexDirection={isMobile ? "column" : "row"}
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-        gap={4}
+        sx={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+          gap: 4,
+        }}
       >
-        <Typography variant="h6" color="white">
+        <Typography variant="h6" sx={{ color: "white" }}>
           Explore public and shared vinyl collections from other users on the
           platform.
         </Typography>
@@ -135,7 +137,7 @@ export default function CommunityCollectionsPanel() {
         </FormControl>
       </Box>
 
-      <Box mb={4}>
+      <Box sx={{ mb: 4 }}>
         {publicCollections.length > 0 ? (
           <CollectionGrid>
             {publicCollections.map((collection: CollectionListItemResponse) => (
@@ -155,8 +157,8 @@ export default function CommunityCollectionsPanel() {
             ))}
           </CollectionGrid>
         ) : (
-          <Box width="100%" textAlign="center">
-            <Typography variant="body1" color="text.secondary">
+          <Box sx={{ width: "100%", textAlign: "center" }}>
+            <Typography variant="body1" sx={{ color: "text.secondary" }}>
               No public collections available at the moment.
             </Typography>
           </Box>

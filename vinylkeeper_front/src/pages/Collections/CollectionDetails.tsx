@@ -506,14 +506,9 @@ export default function CollectionDetails() {
         width: "100%",
       }}
     >
-      <Box
-        display="flex"
-        flexDirection="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-      >
+      <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start" }}>
         <BackToCollectionsButton isOwner={isOwner} />
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography
             variant="h4"
             component="h1"
@@ -523,7 +518,7 @@ export default function CollectionDetails() {
             {collectionDetails.name || "Collection"}
           </Typography>
         </Box>
-        <Typography variant="body1" color="text.secondary" paragraph>
+        <Typography variant="body1" sx={{ color: "text.secondary", marginBottom: "16px" }}>
           {collectionDetails.description || "No description available"}
         </Typography>
         <Box
@@ -552,7 +547,7 @@ export default function CollectionDetails() {
             </Button>
           )}
 
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
             Created on{" "}
             {collectionDetails.created_at
               ? new Date(collectionDetails.created_at).toLocaleDateString()

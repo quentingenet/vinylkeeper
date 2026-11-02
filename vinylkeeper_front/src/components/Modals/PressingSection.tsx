@@ -28,15 +28,15 @@ export default function PressingSection({
   if (!hasEdition(edition)) return null;
 
   return (
-    <Box mb={3}>
+    <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
         Pressing
       </Typography>
       <EditionChips album={edition} centered={false} />
       {releaseId && <PressingMoreInfo releaseId={releaseId} />}
       {confirmed === false && (
-        <Box mt={1.5}>
-          <Typography variant="body2" color="text.secondary">
+        <Box sx={{ mt: 1.5 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
             {canConfirm
               ? "Added before pressings were shown in search results. Is this your copy?"
               : "Pressing not confirmed by the owner."}

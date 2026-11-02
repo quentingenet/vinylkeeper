@@ -70,13 +70,11 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
               textAlign: "center",
             }}
           >
-            <Stack direction="column" justifyContent="center" alignItems="center">
+            <Stack direction="column" sx={{ justifyContent: "center", alignItems: "center" }}>
               <Box
                 component="img"
                 src={founderImg}
                 alt="Quentin Genet, founder of Vinyl Keeper"
-                width={PHOTO_WIDTH}
-                height={PHOTO_HEIGHT}
                 sx={{
                   width: "100%",
                   maxWidth: `${PHOTO_WIDTH}px`,

@@ -50,15 +50,15 @@ const datePickerSlotProps = {
 function CopyFooter({ copy, edition }: { copy: CollectionAlbumCopy; edition?: Edition }) {
   const chips = edition ? editionChips(edition) : [];
   return (
-    <Box display="flex" flexDirection="column" gap={0.5} mt={1}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mt: 1 }}>
       {chips.length > 0 && (
-        <Box display="flex" flexWrap="wrap" gap={0.5}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
           {chips.map((chip) => (
             <Chip key={chip.key} label={chip.label} size="small" variant="outlined" sx={{ color: colors.textMuted }} />
           ))}
         </Box>
       )}
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{ color: "text.secondary" }}>
         {copyDatesCaption(copy)}
       </Typography>
     </Box>
@@ -125,14 +125,14 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
     ].filter((detail): detail is string => Boolean(detail));
     return (
       <Box>
-        <Box display="flex" flexWrap="wrap" alignItems="center" gap={0.5}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5 }}>
           <Typography variant="body2" sx={{ color: "text.primary", mr: 0.5 }}>
             Copy {number}
           </Typography>
           {details.length > 0 ? (
             details.map((detail) => <Chip key={detail} label={detail} size="small" variant="outlined" />)
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
               No condition given
             </Typography>
           )}
@@ -144,7 +144,7 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
 
   return (
     <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: colors.panel }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
         <Typography variant="body2" sx={{ color: "text.primary", fontWeight: "bold" }}>
           Copy {number}
         </Typography>
@@ -160,7 +160,7 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
         )}
       </Box>
       {isConfirmingDelete ? (
-        <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
           <Typography variant="body2" sx={{ color: "text.primary" }}>
             Delete this copy?
           </Typography>
@@ -172,7 +172,7 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
           </Button>
         </Box>
       ) : (
-        <Box display="flex" flexDirection="column" gap={1.5}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           <StateSelect id={`record-${copy.id}`} label="Record state" value={record} onChange={setRecord} />
           <StateSelect id={`cover-${copy.id}`} label="Cover state" value={cover} onChange={setCover} />
           <DatePicker
@@ -224,11 +224,11 @@ export default function CopiesEditor({ collectionId, pressing, edition, canEdit,
   if (!canEdit && copies.length === 0) return null;
 
   return (
-    <Box mb={2}>
+    <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
         {copies.length > 1 ? `Copies (${copies.length})` : "Copy"}
       </Typography>
-      <Box display="flex" flexDirection="column" gap={1.5}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
         {copies.map((copy, index) => (
           <CopyRow
             // Remount when saved: the row starts again from what the API answered

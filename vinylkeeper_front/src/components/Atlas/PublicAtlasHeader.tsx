@@ -28,7 +28,7 @@ export default function PublicAtlasHeader() {
       >
         Vinyl Keeper
       </Typography>
-      <Box display="flex" gap={1}>
+      <Box sx={{ display: "flex", gap: 1 }}>
         <Button component={RouterLink} to={LOGIN_URL} size="small" variant="text">
           Log in
         </Button>

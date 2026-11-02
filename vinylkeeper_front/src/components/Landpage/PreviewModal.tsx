@@ -132,11 +132,11 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
           </Typography>
         </TextContainer>
 
-        <Box display="flex" justifyContent="center">
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
           <Button onClick={handleEnter}>Enter</Button>
         </Box>
 
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <IconButton
             aria-label="Previous screenshot"
             onClick={() => goTo(activeIndex - 1)}
@@ -145,7 +145,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
           >
             <ChevronLeft fontSize="large" />
           </IconButton>
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {slides.map((item, index) => (
               <Box
                 key={item.title}

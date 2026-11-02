@@ -8,7 +8,7 @@ interface LoadingCenterProps {
 
 export default function LoadingCenter({ minHeight = "200px", spinnerSize }: LoadingCenterProps) {
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight={minHeight}>
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: minHeight }}>
       <VinylSpinner size={spinnerSize} />
     </Box>
   );

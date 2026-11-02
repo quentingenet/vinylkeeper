@@ -72,11 +72,13 @@ export default function CollectionPressings({
   );
 
   if (pressings.length === 1) {
-    return <Box mb={1}>{details(pressings[0], liveEdition ?? storedEdition(pressings[0]))}</Box>;
+    return (
+      <Box sx={{ mb: 1 }}>{details(pressings[0], liveEdition ?? storedEdition(pressings[0]))}</Box>
+    );
   }
 
   return (
-    <Box mb={3}>
+    <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
         Pressings in this collection ({pressings.length})
       </Typography>

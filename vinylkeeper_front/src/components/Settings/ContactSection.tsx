@@ -61,16 +61,16 @@ export default function ContactSection() {
         }}
       >
         <CardContent>
-          <Box display="flex" alignItems="center" mb={2}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <ContactSupport sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="h6">Contact support</Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
             Questions, feedback, or bug reports?
             <br />
             We'd love to hear from you! Drop us a message and we'll reply as soon as we can.
           </Typography>
-          <Box display="flex" justifyContent={{ xs: "center", md: "flex-end" }} mx={2}>
+          <Box sx={{ display: "flex", justifyContent: { xs: "center", md: "flex-end" }, mx: 2 }}>
             <Button
               variant="contained"
               startIcon={<ContactSupport />}
@@ -85,7 +85,7 @@ export default function ContactSection() {
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Box display="flex" alignItems="center">
+          <Box sx={{ display: "flex", alignItems: "center" }}>
             <ContactSupport sx={{ color: "primary.main", mr: 1 }} />
             Contact support
           </Box>
@@ -115,8 +115,10 @@ export default function ContactSection() {
               label="Subject"
               required
               margin="normal"
-              inputProps={{ minLength: 1, maxLength: 200 }}
               helperText="200 max characters"
+              slotProps={{
+                htmlInput: { minLength: 1, maxLength: 200 },
+              }}
             />
             <TextField
               fullWidth
@@ -126,8 +128,10 @@ export default function ContactSection() {
               multiline
               rows={4}
               margin="normal"
-              inputProps={{ minLength: 1, maxLength: 2000 }}
               helperText="2000 max characters"
+              slotProps={{
+                htmlInput: { minLength: 1, maxLength: 2000 },
+              }}
             />
             <button type="submit" style={{ display: "none" }} />
           </Box>

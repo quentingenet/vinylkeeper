@@ -43,7 +43,7 @@ export default function RecordResultRow({ item, isArtist, expanded, onToggle, ch
       <Collapse in={expanded} unmountOnExit>
         <Box sx={{ px: { xs: 1, sm: 2 }, pb: 2 }}>
           {!isArtist && (
-            <Box mb={1}>
+            <Box sx={{ mb: 1 }}>
               <PressingMoreInfo releaseId={item.id} />
             </Box>
           )}

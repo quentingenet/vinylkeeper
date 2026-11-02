@@ -132,7 +132,6 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        MenuListProps={{ dense: true }}
         slotProps={{
           paper: {
             sx: {
@@ -140,21 +139,24 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
               "& .MuiTypography-root": isMobile ? { fontSize: "0.95rem" } : desktopMenuTextSx,
             },
           },
+          list: { dense: true },
         }}
       >
         {exportItems.map(({ key, label, action }) => (
           <MenuItem key={key} onClick={() => void action()}>
             {isExporting && activeExportKey === key ? (
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <VinylSpinner size={18} />
                 <Typography variant="caption">Exporting…</Typography>
               </Box>
             ) : (
               <ListItemText
                 primary={label}
-                primaryTypographyProps={{ variant: "caption" }}
                 // On the component itself: wins over the ListItemText size of the theme
                 sx={isMobile ? undefined : { "& .MuiListItemText-primary": desktopMenuTextSx }}
+                slotProps={{
+                  primary: { variant: "caption" },
+                }}
               />
             )}
           </MenuItem>

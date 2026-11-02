@@ -80,13 +80,13 @@ export default function SpinningNow() {
       <Typography variant="h6" component="p" sx={{ color: "text.primary", textAlign: "center", mb: 0.5 }}>
         Pick a mood, an era or a genre and find what to put on the turntable.
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mb: 3 }}>
+      <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", mb: 3 }}>
         The more records you add, the better your picks get.
       </Typography>
 
       <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, backgroundColor: "background.paper" }}>
         {!hasFilterOptions && (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center" }}>
             Moods, eras and genres show up once your records have been analysed.
           </Typography>
         )}
@@ -151,14 +151,14 @@ export default function SpinningNow() {
           )}
         </Box>
         {surpriseMessage && (
-          <Typography role="status" variant="body2" color="text.secondary" sx={{ textAlign: "center", mt: 2 }}>
+          <Typography role="status" variant="body2" sx={{ color: "text.secondary", textAlign: "center", mt: 2 }}>
             {surpriseMessage}
           </Typography>
         )}
       </Paper>
 
       {results && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} role="status">
+        <Typography variant="body2" role="status" sx={{ color: "text.secondary", mb: 2 }}>
           {results.total === 0
             ? "No record matches these filters."
             : `${results.items.length} of ${results.total} records, picked at random.`}

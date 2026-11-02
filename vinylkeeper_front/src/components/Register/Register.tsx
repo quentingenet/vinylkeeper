@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { Email, Person2, Visibility, VisibilityOff } from "@mui/icons-material";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { userApiService } from "@services/UserApiService";
 import { useUserContext } from "../../contexts/UserContext";
@@ -52,12 +52,13 @@ const Register = ({
   const {
     handleSubmit,
     register,
-    watch,
+    control,
     formState: { errors, isValid },
   } = useForm<IRegisterForm>({
     defaultValues: { timezone: getTimezone() },
     resolver: yupResolver(registerValidationSchema),
   });
+  const isAcceptedTerms = useWatch({ control, name: "isAcceptedTerms" });
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
   const handleMouseDownPassword = (
@@ -74,12 +75,12 @@ const Register = ({
     setLogin(true);
   };
 
-  const submitRegister = async () => {
+  const submitRegister = async (data: IRegisterForm) => {
     if (!isValid) return;
 
     userContext.setIsLoading(true);
     try {
-      const response = await userApiService.register(watch());
+      const response = await userApiService.register(data);
       userContext.setIsUserLoggedIn(response.isLoggedIn);
 
       const userData = await userApiService.getCurrentUser();
@@ -120,8 +121,8 @@ const Register = ({
         <Grid
           container
           spacing={2}
-          justifyContent="center"
           sx={{
+            justifyContent: "center",
             bgcolor: colors.textLight,
             borderRadius: "5px",
             width: isMobile ? "90dvw" : "24vw",
@@ -149,15 +150,16 @@ const Register = ({
                 variant="outlined"
                 error={!!errors.username}
                 helperText={errors.username?.message}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Person2 />
-                    </InputAdornment>
-                  ),
-                }}
                 {...register("username")}
-              />
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Person2 />
+                      </InputAdornment>
+                    ),
+                  },
+                }} />
             </Grid>
 
             <Grid sx={{ width: "100%", mb: 2 }}>
@@ -168,18 +170,19 @@ const Register = ({
                 variant="outlined"
                 error={!!errors.email}
                 helperText={errors.email?.message}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Email />
-                    </InputAdornment>
-                  ),
-                  style: { textTransform: "lowercase" },
-                }}
                 {...register("email", {
                   setValueAs: (value: unknown): string => String(value).toLowerCase(),
                 })}
-              />
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Email />
+                      </InputAdornment>
+                    ),
+                    style: { textTransform: "lowercase" },
+                  },
+                }} />
             </Grid>
 
             <Grid sx={{ width: "100%", mb: 2 }}>
@@ -190,21 +193,22 @@ const Register = ({
                 variant="outlined"
                 error={!!errors.password}
                 helperText={errors.password?.message}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={handleClickShowPassword}
-                        onMouseDown={handleMouseDownPassword}
-                        sx={{ marginRight: "-8px" }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
                 {...register("password")}
-              />
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={handleClickShowPassword}
+                          onMouseDown={handleMouseDownPassword}
+                          sx={{ marginRight: "-8px" }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }} />
             </Grid>
 
             <Grid sx={{ width: "100%", mb: 2 }}>
@@ -215,25 +219,26 @@ const Register = ({
                 variant="outlined"
                 error={!!errors.passwordBis}
                 helperText={errors.passwordBis?.message}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={handleClickShowPassword}
-                        onMouseDown={handleMouseDownPassword}
-                        sx={{ marginRight: "-8px" }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
                 {...register("passwordBis")}
-              />
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={handleClickShowPassword}
+                          onMouseDown={handleMouseDownPassword}
+                          sx={{ marginRight: "-8px" }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }} />
             </Grid>
 
             <Grid sx={{ textAlign: "center" }}>
-              <Typography color="black" variant="caption" mb={2}>
+              <Typography variant="caption" sx={{ color: "black", mb: 2 }}>
                 I confirm that I have read, and accepted{" "}
                 <span
                   style={{ fontWeight: "bold", cursor: "pointer" }}
@@ -252,14 +257,14 @@ const Register = ({
               />
             </Grid>
 
-            <Grid display="flex" alignItems={"center"} justifyContent="center">
+            <Grid sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               {userContext.isLoading ? (
                 <VinylSpinner />
               ) : (
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={!watch().isAcceptedTerms}
+                  disabled={!isAcceptedTerms}
                 >
                   Join now
                 </Button>

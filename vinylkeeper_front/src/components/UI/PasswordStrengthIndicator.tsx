@@ -48,10 +48,10 @@ export default function PasswordStrengthIndicator({
   return (
     <Box sx={{ mt: 1 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: "text.secondary" }}>
           Password strength
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: "text.secondary" }}>
           {getStrengthText(strength)}
         </Typography>
       </Box>
@@ -72,8 +72,7 @@ export default function PasswordStrengthIndicator({
           <Typography
             key={index}
             variant="caption"
-            color={check.test ? "success.main" : "text.secondary"}
-            sx={{ display: "block", fontSize: "0.75rem" }}
+            sx={{ color: check.test ? "success.main" : "text.secondary", display: "block", fontSize: "0.75rem" }}
           >
             {check.test ? "✓" : "○"} {check.label}
           </Typography>

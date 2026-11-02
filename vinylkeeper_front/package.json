@@ -27,9 +27,10 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^6.0.2",
-    "@mui/icons-material": "^7.3.4",
-    "@mui/material": "^7.3.4",
-    "@mui/x-date-pickers": "^8.27.2",
+    "@mui/icons-material": "^9.5.0",
+    "@mui/material": "^9.5.0",
+    "@mui/system": "^9.5.0",
+    "@mui/x-date-pickers": "^9.17.0",
     "@tanstack/react-query": "^5.105.0",
     "chart.js": "^4.6.1",
     "date-fns": "^4.4.0",
@@ -64,5 +65,9 @@
     "typescript-eslint": "^8.72.1",
     "vite": "^8.0.7",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "minimatch": "^11.0.4",
+    "glob": "^14.0.3"
   }
 }

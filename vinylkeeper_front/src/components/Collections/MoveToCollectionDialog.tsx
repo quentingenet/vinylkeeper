@@ -110,7 +110,7 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
         )}
         {isAlbum && record?.pressing && (
           <Box sx={{ mb: 1 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
               Pressing
             </Typography>
             <EditionChips
@@ -132,7 +132,7 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
               label={<Typography variant="body2">This is the exact pressing I got</Typography>}
             />
             {!exactPressing && (
-              <Typography variant="caption" color="text.secondary" component="p">
+              <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
                 The record goes in with a pressing to confirm: in the collection, confirm it or find the right
                 one to replace it.
               </Typography>

@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import { LOGIN_URL, REGISTER_URL } from "@utils/GlobalUrls";
 import { growItem } from "@utils/Animations";
 import PreviewModal from "@components/Landpage/PreviewModal";
@@ -41,71 +41,71 @@ export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeper
 
   return (
     <>
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs" aria-labelledby="join-vinyl-keeper-title">
-      <DialogTitle
-        id="join-vinyl-keeper-title"
-        sx={{ color: "primary.main", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}
-      >
-        Join Vinyl Keeper to like spots and suggest new ones
-        <IconButton aria-label="Close" onClick={onClose} sx={{ color: "text.primary" }}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          Vinyl Keeper is free and open source. With an account you can also:
-        </Typography>
-        <List dense disablePadding aria-label="What members can do">
-          {MEMBER_FEATURES.map((feature) => (
-            <ListItem key={feature} disableGutters sx={{ py: 0.25 }}>
-              <ListItemIcon sx={{ minWidth: 30, color: "primary.main" }}>
-                <CheckCircleOutlineIcon fontSize="small" />
-              </ListItemIcon>
-              <Typography variant="body2">{feature}</Typography>
-            </ListItem>
-          ))}
-        </List>
-        {/* A tour of the app before signing up: the screens of a member */}
-        <Link
-          component="button"
-          type="button"
-          underline="none"
-          variant="body2"
-          onClick={() => setOpenPreview(true)}
-          sx={{
-            mt: 1.5,
-            display: "inline-block",
-            // A link styled as a button keeps the browser font otherwise
-            fontFamily: "inherit",
-            fontWeight: 600,
-            color: "primary.main",
-            // Always pulsing: it invites the visitor to open the tour
-            animation: `${growItem} 2s ease-in-out infinite`,
-            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-          }}
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs" aria-labelledby="join-vinyl-keeper-title">
+        <DialogTitle
+          id="join-vinyl-keeper-title"
+          sx={{ color: "primary.main", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}
         >
-          Take a look inside?
-        </Link>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Box display="flex" gap={1}>
-          <Button component={RouterLink} to={LOGIN_URL} variant="text">
-            Log in
-          </Button>
-          <Button component={RouterLink} to={REGISTER_URL} variant="contained">
-            Sign up
-          </Button>
-        </Box>
-      </DialogActions>
-    </Dialog>
-    {/* Over the join popup: closing the tour comes back to it, its last step leads to the login */}
-    <PreviewModal
-      open={openPreview}
-      slides={previewSlides}
-      onClose={() => setOpenPreview(false)}
-      onEnter={() => void navigate(LOGIN_URL)}
-      preload={open}
-    />
+          Join Vinyl Keeper to like spots and suggest new ones
+          <IconButton aria-label="Close" onClick={onClose} sx={{ color: "text.primary" }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Vinyl Keeper is free and open source. With an account you can also:
+          </Typography>
+          <List dense disablePadding aria-label="What members can do">
+            {MEMBER_FEATURES.map((feature) => (
+              <ListItem key={feature} disableGutters sx={{ py: 0.25 }}>
+                <ListItemIcon sx={{ minWidth: 30, color: "primary.main" }}>
+                  <CheckCircleOutlineIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body2">{feature}</Typography>
+              </ListItem>
+            ))}
+          </List>
+          {/* A tour of the app before signing up: the screens of a member */}
+          <Link
+            component="button"
+            type="button"
+            underline="none"
+            variant="body2"
+            onClick={() => setOpenPreview(true)}
+            sx={{
+              mt: 1.5,
+              display: "inline-block",
+              // A link styled as a button keeps the browser font otherwise
+              fontFamily: "inherit",
+              fontWeight: 600,
+              color: "primary.main",
+              // Always pulsing: it invites the visitor to open the tour
+              animation: `${growItem} 2s ease-in-out infinite`,
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          >
+            Take a look inside?
+          </Link>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button component={RouterLink} to={LOGIN_URL} variant="text">
+              Log in
+            </Button>
+            <Button component={RouterLink} to={REGISTER_URL} variant="contained">
+              Sign up
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+      {/* Over the join popup: closing the tour comes back to it, its last step leads to the login */}
+      <PreviewModal
+        open={openPreview}
+        slides={previewSlides}
+        onClose={() => setOpenPreview(false)}
+        onEnter={() => void navigate(LOGIN_URL)}
+        preload={open}
+      />
     </>
   );
 }

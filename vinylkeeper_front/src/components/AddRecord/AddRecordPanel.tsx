@@ -48,7 +48,7 @@ export default function AddRecordPanel({ item, itemType, presetCollectionId, onD
       {pendingDuplicate && (
         <Alert severity="warning">
           {pendingDuplicate.message}
-          <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
             <Button size="small" variant="contained" onClick={confirmDuplicate} disabled={isAddingToCollection}>
               {pendingDuplicate.confirmLabel}
             </Button>
@@ -69,11 +69,11 @@ export default function AddRecordPanel({ item, itemType, presetCollectionId, onD
       )}
 
       {collectionsLoading ? (
-        <Box display="flex" justifyContent="center">
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
           <VinylSpinner size={24} />
         </Box>
       ) : collections.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
           No collections yet. Create one in Collections to add records to it.
         </Typography>
       ) : (

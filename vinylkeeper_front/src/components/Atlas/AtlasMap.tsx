@@ -235,12 +235,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
       >
         <Fade in={selectedLocation !== null}>
           <Box sx={modalStyle}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
               <Typography
                 variant="h5"
                 component="h2"
@@ -257,12 +252,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
             </Box>
 
             {isLoadingPlaces ? (
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight="200px"
-              >
+              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
                 <CircularProgress sx={{ color: "primary.main" }} />
               </Box>
             ) : isPlacesError ? (

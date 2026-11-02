@@ -38,12 +38,14 @@ export default function ModerationDetailDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        sx: {
-          bgcolor: colors.surface,
-          color: colors.textLight,
-          m: { xs: 1, sm: 2 },
-          width: { xs: "calc(100% - 16px)", sm: "auto" },
+      slotProps={{
+        paper: {
+          sx: {
+            bgcolor: colors.surface,
+            color: colors.textLight,
+            m: { xs: 1, sm: 2 },
+            width: { xs: "calc(100% - 16px)", sm: "auto" },
+          },
         },
       }}
     >
@@ -60,7 +62,7 @@ export default function ModerationDetailDialog({
               {selectedRequest.place?.name}
             </Typography>
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} useFlexGap flexWrap="wrap">
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} useFlexGap sx={{ flexWrap: "wrap" }}>
               <Stack spacing={1} sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}>
                 <Typography
                   variant="subtitle2"

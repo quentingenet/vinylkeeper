@@ -38,7 +38,7 @@ export default function TracklistAccordion({ tracklist }: TracklistAccordionProp
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="subtitle1" fontWeight="bold">
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
           Tracklist
         </Typography>
       </AccordionSummary>

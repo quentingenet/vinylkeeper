@@ -18,7 +18,7 @@ export default function CollectionsPagination({
   if (totalPages <= 1) return null;
 
   return (
-    <Box display="flex" justifyContent="center" mt={4} mb={2}>
+    <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>
       <PaginationWithEllipsis
         count={totalPages}
         page={page}

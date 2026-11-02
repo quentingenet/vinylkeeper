@@ -13,7 +13,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { collectionValidationSchema } from "@utils/validators/collection";
 import { useUserContext } from "@contexts/UserContext";
@@ -73,7 +73,7 @@ export default function ModalCollection({
     handleSubmit,
     formState: { errors, isValid },
     setValue,
-    watch,
+    control,
   } = useForm<ICollectionForm>({
     defaultValues: {
       name: collection?.name ?? "",
@@ -89,6 +89,7 @@ export default function ModalCollection({
     resolver: yupResolver(collectionValidationSchema),
     mode: "onChange",
   });
+  const isPublicChecked = useWatch({ control, name: "is_public" });
 
   useEffect(() => {
     if (openModal) {
@@ -223,27 +224,27 @@ export default function ModalCollection({
         <Fade in={openModal}>
           <form onSubmit={(e) => { void handleSubmit(submitCollection)(e); }}>
             <Box sx={style}>
-              <Box display="flex" justifyContent="flex-end">
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                 <IconButton onClick={handleClose}>
                   <CloseIcon />
                 </IconButton>
               </Box>
               <Box
-                display={"flex"}
-                flexDirection={"row"}
-                alignItems={"center"}
-                justifyContent={"space-around"}
-                gap={1}
-                paddingY={1}
-                marginX={1}
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-around",
+                  gap: 1,
+                  paddingY: 1,
+                  marginX: 1,
+                }}
               >
                 <Typography
                   id="transition-modal-title"
                   variant="h3"
                   component="h2"
-                  color={colors.gold}
-                  sx={{ textAlign: "center", width: isMobile ? "75%" : "50%" }}
-                  marginBottom={1}
+                  sx={{ color: colors.gold, marginBottom: 1, textAlign: "center", width: isMobile ? "75%" : "50%" }}
                 >
                   {isUpdatingCollection ? "Updating" : "Creating a new"}
                   {" collection"}
@@ -252,20 +253,15 @@ export default function ModalCollection({
                   sx={{ width: isMobile ? "25%" : "15%" }}
                   control={
                     <Switch
-                      checked={watch("is_public")}
+                      checked={isPublicChecked}
                       color="default"
                       {...register("is_public")}
                     />
                   }
-                  label={watch("is_public") ? "Public" : "Private"}
+                  label={isPublicChecked ? "Public" : "Private"}
                 />
               </Box>
-              <Box
-                display={"flex"}
-                flexDirection={"column"}
-                justifyContent={"center"}
-                gap={2}
-              >
+              <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
                 <TextField
                   sx={{
                     width: isMobile ? "100%" : "85%",
@@ -291,7 +287,7 @@ export default function ModalCollection({
                   {...register("description")}
                 />
               </Box>
-              <Box display={"flex"} justifyContent={"center"} marginTop={2}>
+              <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
                 <Button
                   sx={{ alignSelf: "center" }}
                   variant="contained"

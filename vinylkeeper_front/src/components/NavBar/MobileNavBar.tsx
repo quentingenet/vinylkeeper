@@ -147,10 +147,8 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
           </IconButton>
           <Typography
             variant="h5"
-            fontFamily="Oswald"
-            color={colorYellow}
             noWrap
-            sx={{ marginX: "auto", textShadow: `2px 2px 4px ${colors.black}` }}
+            sx={{ color: colorYellow, fontFamily: "Oswald", marginX: "auto", textShadow: `2px 2px 4px ${colors.black}` }}
           >
             {titlePage}
           </Typography>
@@ -188,9 +186,9 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
         <Typography
           variant="h4"
-          fontFamily="RockSalt"
-          color={colorYellow}
           sx={{
+            color: colorYellow,
+            fontFamily: "RockSalt",
             textAlign: "center",
             textShadow: `2px 2px 4px ${colors.black}`,
             marginX: "auto",
@@ -250,11 +248,13 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
                 </ListItemIcon>
                 <ListItemText
                   primary={text}
-                  primaryTypographyProps={{
-                    variant: "h6",
-                    sx: {
-                      fontWeight: "bold",
-                      textAlign: "center",
+                  slotProps={{
+                    primary: {
+                      variant: "h6",
+                      sx: {
+                        fontWeight: "bold",
+                        textAlign: "center",
+                      },
                     },
                   }}
                 />

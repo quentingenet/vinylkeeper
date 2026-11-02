@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import type { FieldError } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { passwordChangeValidationSchema } from "@utils/validators/passwordChangeValidationSchema";
@@ -57,15 +57,13 @@ export default function ChangePasswordSection() {
     control,
     handleSubmit,
     formState: { errors, isValid },
-    watch,
     reset,
   } = useForm<PasswordFormData>({
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
     resolver: yupResolver(passwordChangeValidationSchema),
     mode: "onChange",
   });
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const newPassword = watch("newPassword");
+  const newPassword = useWatch({ control, name: "newPassword" });
 
   const changePasswordMutation = useMutation({
     mutationFn: (data: PasswordFormData) => userApiService.changePassword(data),
@@ -85,7 +83,7 @@ export default function ChangePasswordSection() {
   return (
     <Card sx={{ mb: 4 }}>
       <CardContent>
-        <Box display="flex" alignItems="center" mb={2}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Lock sx={{ color: "primary.main", mr: 1 }} />
           <Typography variant="h6">Change password</Typography>
         </Box>
@@ -138,7 +136,7 @@ export default function ChangePasswordSection() {
             ))}
           </Grid>
           <PasswordStrengthIndicator password={newPassword} />
-          <Box mt={2} display="flex" justifyContent={{ xs: "center", md: "flex-end" }} mx={2}>
+          <Box sx={{ mt: 2, display: "flex", justifyContent: { xs: "center", md: "flex-end" }, mx: 2 }}>
             <Button
               type="submit"
               variant="contained"

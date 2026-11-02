@@ -60,13 +60,13 @@ export default function AlbumStateForm({
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="subtitle1" fontWeight="bold">
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
           Album states (Optional)
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
-        <Box display="flex" flexDirection="column" gap={2}>
-          <Box display="flex" flexDirection="column" gap={2}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <FormControl fullWidth size="small">
               <InputLabel
                 id="cover-state-label"

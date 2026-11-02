@@ -95,7 +95,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         >
           {!isMobile && (
-            <Typography variant="h1" component="h1" color={colors.gold}>
+            <Typography variant="h1" component="h1" sx={{ color: colors.gold }}>
               {currentTitle}
             </Typography>
           )}

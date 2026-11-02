@@ -98,7 +98,7 @@ export default function AdminSpotEditDialog({ place, onClose, onSaved, canResolv
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           {place.updated_at && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
               Last update: {formatDate(place.updated_at)}
             </Typography>
           )}

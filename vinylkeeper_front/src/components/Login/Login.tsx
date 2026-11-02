@@ -66,17 +66,16 @@ export default function Login({
     handleSubmit,
     register,
     formState: { errors, isValid },
-    watch,
   } = useForm<ILoginForm>({
     defaultValues: { email: "", password: "" },
     resolver: yupResolver(loginValidationSchema),
   });
 
-  const submitLogin = async () => {
+  const submitLogin = async (data: ILoginForm) => {
     if (!isValid) return;
     userContext.setIsLoading(true);
     try {
-      const response = await userApiService.login(watch());
+      const response = await userApiService.login(data);
       userContext.setIsUserLoggedIn(response.isLoggedIn);
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
@@ -105,8 +104,8 @@ export default function Login({
       <Grid
         container
         spacing={2}
-        justifyContent="center"
         sx={{
+          justifyContent: "center",
           bgcolor: colors.textLight,
           borderRadius: "5px",
           width: isMobile ? "90dvw" : "24vw",
@@ -138,18 +137,19 @@ export default function Login({
               variant="outlined"
               error={!!errors.email}
               helperText={errors.email?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Person2 />
-                  </InputAdornment>
-                ),
-                style: { textTransform: "lowercase" },
-              }}
               {...register("email", {
                 setValueAs: (value: unknown): string => String(value).toLowerCase(),
               })}
-            />
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Person2 />
+                    </InputAdornment>
+                  ),
+                  style: { textTransform: "lowercase" },
+                },
+              }} />
           </Grid>
           <Grid sx={{ width: "100%" }}>
             <TextField
@@ -159,28 +159,25 @@ export default function Login({
               variant="outlined"
               error={!!errors.password}
               helperText={errors.password?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      sx={{ marginRight: "-8px" }}
-                      onClick={() => setShowPassword(!showPassword)}
-                      onMouseDown={(e) => e.preventDefault()}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
               {...register("password")}
-            />
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        sx={{ marginRight: "-8px" }}
+                        onClick={() => setShowPassword(!showPassword)}
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }} />
           </Grid>
           <Grid
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            flexDirection="column"
-            mt={3}
+            sx={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", mt: 3 }}
           >
             {userContext.isLoading ? (
               <VinylSpinner />
@@ -192,8 +189,8 @@ export default function Login({
             <Typography
               onClick={() => setOpenForgotPassword(true)}
               variant="caption"
-              color="black"
               sx={{
+                color: "black",
                 textAlign: "center",
                 mb: 1,
                 cursor: "pointer",

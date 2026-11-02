@@ -45,11 +45,11 @@ export default function SpinningNowAlbumCard({ album, onPlay }: SpinningNowAlbum
           <Typography variant="subtitle1" sx={{ fontWeight: "bold", lineHeight: 1.2 }} noWrap title={title}>
             {title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" noWrap gutterBottom>
+          <Typography variant="body2" noWrap gutterBottom sx={{ color: "text.secondary" }}>
             {album.artist_name}
           </Typography>
           {album.collections.length > 0 && (
-            <Typography variant="caption" color="text.secondary" noWrap component="p" title={collectionNames}>
+            <Typography variant="caption" noWrap component="p" title={collectionNames} sx={{ color: "text.secondary" }}>
               In {collectionNames}
             </Typography>
           )}

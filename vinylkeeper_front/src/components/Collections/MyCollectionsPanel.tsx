@@ -1,5 +1,5 @@
 import { Box, Button, Typography } from "@mui/material";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import CloudDownloadOutlinedIcon from "@mui/icons-material/CloudDownloadOutlined";
 import DiscogsImportDialog from "@components/Collections/DiscogsImportDialog";
 import { useDiscogsImport } from "@hooks/useDiscogsImport";
@@ -102,12 +102,7 @@ export default function MyCollectionsPanel() {
 
   if (isError) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
         <Typography color="error">
           {error instanceof Error ? error.message : "Error loading collections"}
         </Typography>
@@ -134,13 +129,15 @@ export default function MyCollectionsPanel() {
       />
 
       <Box
-        display="flex"
-        gap={1}
-        flexDirection="row"
-        justifyContent="center"
-        alignItems="center"
-        sx={{ cursor: "pointer" }}
         onClick={() => handleOpenModalCollection(false)}
+        sx={{
+          display: "flex",
+          gap: 1,
+          flexDirection: "row",
+          justifyContent: "center",
+          alignItems: "center",
+          cursor: "pointer",
+        }}
       >
         <AddCircleOutlineIcon
           fontSize="large"
@@ -151,14 +148,14 @@ export default function MyCollectionsPanel() {
         />
         <Box>
           <Typography variant="h3">Create a new collection</Typography>
-          <Typography variant="body1" color="text.secondary" mt={1}>
+          <Typography variant="body1" sx={{ color: "text.secondary", mt: 1 }}>
             Share your collection with others by changing
             <br /> its visibility from private to public.
           </Typography>
         </Box>
       </Box>
 
-      <Box display="flex" justifyContent="center" mt={2}>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
         <Button
           variant="text"
           size="small"
@@ -211,13 +208,8 @@ export default function MyCollectionsPanel() {
           ))}
         </CollectionGrid>
       ) : (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          marginY={4}
-        >
-          <Typography variant="body1" color="text.secondary">
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", marginY: 4 }}>
+          <Typography variant="body1" sx={{ color: "text.secondary" }}>
             No collection found. Create a new one!
           </Typography>
         </Box>

@@ -46,16 +46,16 @@ export default function DangerZoneSection() {
     <>
       <Card sx={{ border: `2px solid ${colors.error}` }}>
         <CardContent>
-          <Box display="flex" alignItems="center" mb={2}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <Security sx={{ color: colors.error, mr: 1 }} />
             <Typography variant="h6" color="error">
               Danger zone
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
             Once you delete your account, it's permanent.
           </Typography>
-          <Box display="flex" justifyContent={{ xs: "center", md: "flex-end" }} mx={2}>
+          <Box sx={{ display: "flex", justifyContent: { xs: "center", md: "flex-end" }, mx: 2 }}>
             <Button
               variant="outlined"
               color="error"
@@ -71,7 +71,7 @@ export default function DangerZoneSection() {
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle color="error">Delete account</DialogTitle>
         <DialogContent>
-          <Typography mb={2}>This action cannot be undone.</Typography>
+          <Typography sx={{ mb: 2 }}>This action cannot be undone.</Typography>
           <TextField
             fullWidth
             placeholder="Type DELETE in uppercase to delete"

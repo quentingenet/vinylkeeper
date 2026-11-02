@@ -22,7 +22,7 @@ const STAT_CARDS = [
 
 export default function ModerationStatsCards({ stats, isLoading }: Props) {
   return (
-    <Box justifyContent="center">
+    <Box sx={{ justifyContent: "center" }}>
       <Box
         sx={{
           display: "grid",

@@ -58,7 +58,7 @@ export default function Atlas({ isPublic = false }: AtlasProps) {
   if (error) {
     return (
       <Box>
-        <Typography variant="h6" color="white">
+        <Typography variant="h6" sx={{ color: "white" }}>
           Error loading the Atlas
         </Typography>
       </Box>

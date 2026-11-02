@@ -38,12 +38,12 @@ export default function StreamingLinksAccordion({
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="subtitle1" fontWeight="bold">
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
           Listen on
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
-        <Box display="flex" flexDirection="column" gap={2}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {streamingPlatforms.map((platform) => (
             // A real link: phones open the installed app on a tap, not on a script navigation
             <Button

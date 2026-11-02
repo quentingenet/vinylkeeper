@@ -288,9 +288,11 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
                       error={!!errors.country}
                       label="Country"
                       MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 300,
+                        slotProps: {
+                          paper: {
+                            style: {
+                              maxHeight: 300,
+                            },
                           },
                         },
                       }}
@@ -343,7 +345,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
                 sx={formFieldStyle}
               />
 
-              <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
                 <Button variant="outlined" onClick={handleClose}>
                   Cancel
                 </Button>
@@ -378,11 +380,13 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
         onClose={handleSuccessDialogClose}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: "background.default",
-            color: "text.primary",
-            borderRadius: "8px",
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: "background.default",
+              color: "text.primary",
+              borderRadius: "8px",
+            },
           },
         }}
       >

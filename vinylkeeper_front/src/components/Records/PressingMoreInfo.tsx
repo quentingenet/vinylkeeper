@@ -14,7 +14,7 @@ function Mark({ label, values }: { label: string; values: string[] }) {
   if (values.length === 0) return null;
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{ color: "text.secondary" }}>
         {label}
       </Typography>
       {values.map((value) => (
@@ -35,7 +35,7 @@ export default function PressingMoreInfo({ releaseId }: PressingMoreInfoProps) {
   const hasMarks = Boolean(released || data?.barcode || data?.matrix?.length);
 
   return (
-    <Box mt={1}>
+    <Box sx={{ mt: 1 }}>
       <Button
         size="small"
         variant="text"
@@ -49,7 +49,7 @@ export default function PressingMoreInfo({ releaseId }: PressingMoreInfoProps) {
         More about this pressing
       </Button>
       <Collapse in={open} unmountOnExit>
-        <Box display="flex" flexDirection="column" gap={1} mt={1} pl={0.5}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1, pl: 0.5 }}>
           {isLoading ? (
             <VinylSpinner size={24} />
           ) : isError ? (
@@ -63,7 +63,7 @@ export default function PressingMoreInfo({ releaseId }: PressingMoreInfoProps) {
               <Mark label="Matrix / Runout" values={data?.matrix ?? []} />
             </>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
               No more details on Discogs for this pressing.
             </Typography>
           )}

@@ -42,10 +42,10 @@ export default function ConfirmEmail() {
       : null;
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="70vh" p={2}>
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "70vh", p: 2 }}>
       <Card sx={{ maxWidth: 480, width: "100%" }}>
         <CardContent>
-          <Box display="flex" alignItems="center" mb={2}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <MarkEmailRead sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="h6">Email confirmation</Typography>
           </Box>
@@ -55,7 +55,7 @@ export default function ConfirmEmail() {
           )}
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
           {!confirmation.isLoading && (
-            <Box mt={2} display="flex" justifyContent="flex-end">
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
               <Button variant="contained" onClick={() => void navigate("/", { replace: true })}>
                 {isUserLoggedIn ? "Back to Vinyl Keeper" : "Go to Vinyl Keeper"}
               </Button>

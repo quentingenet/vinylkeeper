@@ -29,7 +29,7 @@ export default function CurrencySection({ currency }: CurrencySectionProps) {
   return (
     <Card sx={{ mb: 4 }}>
       <CardContent>
-        <Box display="flex" alignItems="center" mb={2}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Euro sx={{ color: "primary.main", mr: 1 }} />
           <Typography variant="h6">Collection value</Typography>
         </Box>

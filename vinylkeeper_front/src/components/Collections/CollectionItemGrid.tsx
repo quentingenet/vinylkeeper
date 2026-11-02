@@ -50,7 +50,7 @@ export default function CollectionItemGrid({
         ))}
       </div>
       {totalPages && totalPages > 1 && page && onPageChange && (
-        <Box display="flex" justifyContent="center" mt={3}>
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
           <PaginationWithEllipsis
             count={totalPages}
             page={page}

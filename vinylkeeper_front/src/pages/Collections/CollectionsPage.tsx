@@ -89,9 +89,7 @@ export default function CollectionsPage() {
         role="tabpanel"
         id={TAB_IDS[activeTab].panel}
         aria-labelledby={TAB_IDS[activeTab].tab}
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
+        sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
       >
         {activeTab === "community" ? (
           <CommunityCollectionsPanel />
