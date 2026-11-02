@@ -100,7 +100,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.post<LoginResponse>("/users/auth", { email: data.email, password: data.password }, true);
     } catch (error: unknown) {
-      throw new Error(loginErrorMessage(error));
+      throw new Error(loginErrorMessage(error), { cause: error });
     }
   }
 
@@ -121,7 +121,8 @@ export class UserApiService extends BaseApiService {
       throw new Error(
         isApiError(error) && error.code === TOO_MANY_REQUESTS
           ? "Too many requests. Wait a minute and try again."
-          : "The link could not be sent. Try again in a moment."
+          : "The link could not be sent. Try again in a moment.",
+        { cause: error }
       );
     }
   }
@@ -155,7 +156,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.post<{ message: string }>("/users/confirm-email", { token }, true);
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to confirm your email address.");
+      throw new Error(isApiError(error) ? error.message : "Failed to confirm your email address.", { cause: error });
     }
   }
 
@@ -163,7 +164,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.post<{ message: string }>("/users/me/confirm-email/resend");
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to send the confirmation email.");
+      throw new Error(isApiError(error) ? error.message : "Failed to send the confirmation email.", { cause: error });
     }
   }
 
@@ -175,7 +176,7 @@ export class UserApiService extends BaseApiService {
         current_password: data.currentPassword,
       });
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to change your email address.");
+      throw new Error(isApiError(error) ? error.message : "Failed to change your email address.", { cause: error });
     }
   }
 
@@ -184,7 +185,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.put<{ message: string }>("/users/me/currency", { currency });
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to change the currency.");
+      throw new Error(isApiError(error) ? error.message : "Failed to change the currency.", { cause: error });
     }
   }
 
@@ -198,7 +199,7 @@ export class UserApiService extends BaseApiService {
       const message = isApiError(error) && error.code === 1000
         ? "Wrong current password."
         : isApiError(error) ? error.message : "Failed to change password. Please try again.";
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 

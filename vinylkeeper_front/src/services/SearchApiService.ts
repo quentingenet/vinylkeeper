@@ -16,7 +16,7 @@ export class SearchApiService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Search failed:", error);
-      throw new Error("Failed to search music");
+      throw new Error("Failed to search music", { cause: error });
     }
   }
 
@@ -38,7 +38,7 @@ export class SearchApiService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Failed to fetch artist metadata:", error);
-      throw new Error("Failed to fetch artist metadata");
+      throw new Error("Failed to fetch artist metadata", { cause: error });
     }
   }
 
@@ -60,7 +60,7 @@ export class SearchApiService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Failed to fetch album metadata:", error);
-      throw new Error("Failed to fetch album metadata");
+      throw new Error("Failed to fetch album metadata", { cause: error });
     }
   }
 

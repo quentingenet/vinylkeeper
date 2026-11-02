@@ -90,3 +90,47 @@ describe("ModalCollection update", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.collections.detail(9) });
   });
 });
+
+describe("ModalCollection create", () => {
+  const renderCreate = (onCollectionAdded = vi.fn()) => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ModalCollection
+          openModal
+          isUpdatingCollection={false}
+          handleClose={vi.fn()}
+          onCollectionAdded={onCollectionAdded}
+          isPublic={false}
+          setIsPublic={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+    return onCollectionAdded;
+  };
+
+  it("refuses a name made of spaces", async () => {
+    renderCreate();
+
+    await userEvent.type(screen.getByLabelText("Name"), "   ");
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Name cannot be empty")).toBeInTheDocument();
+    expect(api.createCollection).not.toHaveBeenCalled();
+  });
+
+  it("creates a private collection with its name and description", async () => {
+    api.createCollection.mockResolvedValue({ id: 10 });
+    const onCollectionAdded = renderCreate();
+
+    await userEvent.type(screen.getByLabelText("Name"), "Soul");
+    await userEvent.type(screen.getByLabelText("Description"), "Motown and Stax");
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(onCollectionAdded).toHaveBeenCalled());
+    expect(api.createCollection.mock.calls[0][0]).toMatchObject({
+      name: "Soul",
+      description: "Motown and Stax",
+      is_public: false,
+    });
+  });
+});

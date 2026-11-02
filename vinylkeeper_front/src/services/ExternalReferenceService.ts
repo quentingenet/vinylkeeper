@@ -26,7 +26,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error adding to wishlist:", error);
-      throw new Error("Failed to add item to wishlist");
+      throw new Error("Failed to add item to wishlist", { cause: error });
     }
   }
 
@@ -41,7 +41,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error adding to collection:", error);
-      throw new Error("Failed to add item to collection");
+      throw new Error("Failed to add item to collection", { cause: error });
     }
   }
 
@@ -52,7 +52,7 @@ export class ExternalReferenceService extends BaseApiService {
       return await this.get<OwnedPressing[]>(`${this.endpoint}/collection/owned?${params.toString()}`);
     } catch (error) {
       logger.error("Error fetching owned pressings:", error);
-      throw new Error("Failed to check your collections");
+      throw new Error("Failed to check your collections", { cause: error });
     }
   }
 
@@ -68,7 +68,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error replacing pressing:", error);
-      throw new Error("Failed to replace the pressing");
+      throw new Error("Failed to replace the pressing", { cause: error });
     }
   }
 
@@ -91,7 +91,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error removing from wishlist:", error);
-      throw new Error("Failed to remove item from wishlist");
+      throw new Error("Failed to remove item from wishlist", { cause: error });
     }
   }
 
@@ -106,7 +106,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error removing from collection:", error);
-      throw new Error("Failed to remove item from collection");
+      throw new Error("Failed to remove item from collection", { cause: error });
     }
   }
 
@@ -130,7 +130,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error fetching paginated wishlist:", error);
-      throw new Error("Failed to fetch wishlist items");
+      throw new Error("Failed to fetch wishlist items", { cause: error });
     }
   }
 
@@ -141,7 +141,7 @@ export class ExternalReferenceService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Error fetching collection items:", error);
-      throw new Error("Failed to fetch collection items");
+      throw new Error("Failed to fetch collection items", { cause: error });
     }
   }
 }
