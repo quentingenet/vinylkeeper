@@ -6,7 +6,13 @@ from app.main import app
 from app.deps.deps import get_collection_service
 from app.utils.auth_utils.auth import get_current_user
 from app.schemas.collection_album_schema import CollectionAlbumCopyResponse
-from app.schemas.collection_schema import CollectionAlbumResponse, CollectionSearchResponse
+from app.schemas.collection_schema import (
+    CollectionAlbumResponse,
+    CollectionSearchResponse,
+    SharedCollectionResponse,
+    SharedItem,
+    SharedItemsResponse,
+)
 from app.core.exceptions import (
     DuplicateCollectionNameError,
     ForbiddenError,
@@ -30,6 +36,7 @@ def _make_collection(collection_id: int = 1, owner_id: int = 1, is_public: bool 
     col.mood_id = None
     col.collection_albums = []
     col.collection_artists = []
+    col.share_token = "0123456789abcdef0123456789abcdef"
     col.owner = None
     col.created_at = datetime.now(timezone.utc)
     col.updated_at = datetime.now(timezone.utc)
@@ -411,3 +418,109 @@ class TestConfirmPressing:
         resp = await client.post("/api/collections/1/albums/10/pressing/confirm")
 
         assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# GET /api/collections/shared/{token}
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+async def visitor_client(mock_collection_service):
+    """No session at all: someone who received the link."""
+    app.dependency_overrides[get_collection_service] = lambda: mock_collection_service
+
+    from unittest.mock import patch
+    from httpx import AsyncClient, ASGITransport
+
+    with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            yield c, mock_collection_service
+
+    app.dependency_overrides.clear()
+
+
+TOKEN = "0123456789abcdef0123456789abcdef"
+
+
+class TestSharedCollection:
+    async def test_open_to_a_visitor_and_never_cached(self, visitor_client):
+        client, service = visitor_client
+        service.get_shared_collection = AsyncMock(return_value=SharedCollectionResponse(
+            id=7,
+            name="Jazz shelf",
+            description="Blue Note",
+            owner_username="kent",
+            records_count=40,
+            artists_count=2,
+            wishlist_count=5,
+            likes_count=3,
+            cover_url="https://i.discogs.com/a.jpg",
+        ))
+
+        resp = await client.get(f"/api/collections/shared/{TOKEN}")
+
+        assert resp.status_code == 200
+        assert resp.headers["cache-control"] == "no-store"
+        assert resp.json()["name"] == "Jazz shelf"
+        assert resp.json()["wishlist_count"] == 5
+        service.get_shared_collection.assert_awaited_once_with(TOKEN)
+
+    @pytest.mark.parametrize("kind", ["records", "artists", "wishlist"])
+    async def test_its_lists_are_open_too_page_by_page(self, visitor_client, kind):
+        client, service = visitor_client
+        service.get_shared_items = AsyncMock(return_value=SharedItemsResponse(
+            items=[SharedItem(title="Moanin'", image_url="https://i.discogs.com/a.jpg")],
+            total_count=40,
+            visible_count=16,
+            page=2,
+            total_pages=2,
+        ))
+
+        resp = await client.get(f"/api/collections/shared/{TOKEN}/{kind}?page=2")
+
+        assert resp.status_code == 200
+        assert resp.headers["cache-control"] == "no-store"
+        assert resp.json()["items"] == [{"title": "Moanin'", "image_url": "https://i.discogs.com/a.jpg"}]
+        service.get_shared_items.assert_awaited_once_with(TOKEN, kind, 2)
+
+    async def test_no_other_list_is_open(self, visitor_client):
+        client, _ = visitor_client
+
+        assert (await client.get(f"/api/collections/shared/{TOKEN}/copies")).status_code == 422
+
+    async def test_private_collection_is_refused(self, visitor_client):
+        client, service = visitor_client
+        service.get_shared_collection = AsyncMock(side_effect=ForbiddenError(
+            error_code=4003, message="This collection is private", should_log=False
+        ))
+
+        resp = await client.get(f"/api/collections/shared/{TOKEN}")
+
+        assert resp.status_code == 403
+        assert resp.json()["code"] == 4003
+        assert "name" not in resp.json()
+
+    async def test_deleted_collection_is_not_found(self, visitor_client):
+        client, service = visitor_client
+        service.get_shared_collection = AsyncMock(side_effect=ResourceNotFoundError("Collection", 7))
+
+        resp = await client.get(f"/api/collections/shared/{TOKEN}")
+
+        assert resp.status_code == 404
+        assert resp.json()["code"] == 2000
+
+    @pytest.mark.parametrize("token", ["7", "abc", TOKEN.upper(), TOKEN + "0"])
+    async def test_only_a_token_opens_a_collection_never_an_id(self, visitor_client, token):
+        client, service = visitor_client
+        service.get_shared_collection = AsyncMock()
+
+        resp = await client.get(f"/api/collections/shared/{token}")
+
+        assert resp.status_code in (404, 422)
+        service.get_shared_collection.assert_not_awaited()
+
+    async def test_every_other_read_still_needs_a_session(self, visitor_client):
+        client, _ = visitor_client
+
+        for path in ("/api/collections/7/details", "/api/collections/7/records", "/api/collections/7/artists"):
+            assert (await client.get(path)).status_code == 401

@@ -148,6 +148,23 @@ class CollectionRepository(TransactionalMixin):
                 details={}
             )
 
+    async def find_by_share_token(self, share_token: str) -> Optional[Collection]:
+        """The collection of a public link, with its owner."""
+        try:
+            result = await self.db.execute(
+                select(Collection)
+                .filter(Collection.share_token == share_token)
+                .options(selectinload(Collection.owner))
+            )
+            return result.scalar_one_or_none()
+        except SQLAlchemyError as e:
+            logger.error(f"Error retrieving a shared collection: {str(e)}", exc_info=True)
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to retrieve collection",
+                details={}
+            )
+
     async def find_by_name_and_owner(self, name: str, owner_id: int) -> Optional[Collection]:
         """Find a collection by name and owner ID."""
         try:

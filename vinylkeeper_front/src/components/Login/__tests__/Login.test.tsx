@@ -27,7 +27,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const renderLogin = () =>
+const renderLogin = (nextPath?: string) =>
   render(
     <MemoryRouter>
       <Login
@@ -37,6 +37,7 @@ const renderLogin = () =>
         setOpen={vi.fn()}
         openForgotPassword={false}
         setOpenForgotPassword={vi.fn()}
+        nextPath={nextPath}
       />
     </MemoryRouter>
   );
@@ -63,6 +64,18 @@ describe("Login form", () => {
 
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/dashboard"));
     expect(api.login).toHaveBeenCalledWith({ email: "jane@example.com", password: "secret1" });
+  });
+
+  it("comes back to the shared collection the visitor came from", async () => {
+    api.login.mockResolvedValue({ isLoggedIn: true });
+    api.getCurrentUser.mockResolvedValue({ username: "jane" });
+    renderLogin("/collections/12");
+
+    await userEvent.type(screen.getByLabelText("Email"), "jane@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "secret1");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/collections/12"));
   });
 
   it("says why the login failed", async () => {

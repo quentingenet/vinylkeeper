@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
-import { AUTH_PARAM, EGlobalUrls } from "@utils/GlobalUrls";
+import { AUTH_PARAM, EGlobalUrls, NEXT_PARAM, safeNextPath } from "@utils/GlobalUrls";
 import { usePageMeta } from "@hooks/usePageMeta";
 import styles from "../../styles/pages/Landpage.module.scss";
 import useDetectMobile from "@hooks/useDetectMobile";
@@ -26,6 +26,8 @@ export default function Landpage() {
   const [login, setLogin] = useState<boolean>(authParam === "login");
   const [register, setRegister] = useState<boolean>(authParam === "register");
   const [open, setOpen] = useState<boolean>(authParam === "login" || authParam === "register");
+  // Kept: the parameters leave the URL below, and the visitor may switch between the two forms
+  const [nextPath] = useState(() => safeNextPath(searchParams.get(NEXT_PARAM)));
 
   useEffect(() => {
     if (authParam !== null) setSearchParams({}, { replace: true });
@@ -93,6 +95,7 @@ export default function Landpage() {
             <div className={styles.actionContainer}>
               {login && open && (
                 <Login
+                  nextPath={nextPath}
                   setRegister={setRegister}
                   setLogin={setLogin}
                   open={open}
@@ -103,6 +106,7 @@ export default function Landpage() {
               )}
               {register && open && (
                 <Register
+                  nextPath={nextPath}
                   setRegister={setRegister}
                   setLogin={setLogin}
                   open={open}

@@ -44,9 +44,11 @@ PRODUCTION_INDEXES = {
     "uq_place_reports_open_per_user": "ON place_reports (place_id, user_id) WHERE status = 'open'",
     # Migration f1c8a3b7d2e4: one save per collection
     "ix_collections_saved_from_collection_id": "ON collections (saved_from_collection_id)",
+    "ix_collections_share_token": "ON collections (share_token)",
 }
 UNIQUE_PRODUCTION_INDEXES = {
-    "ix_users_email_lower", "ix_collections_saved_from_collection_id", "uq_place_reports_open_per_user",
+    "ix_users_email_lower", "ix_collections_saved_from_collection_id", "ix_collections_share_token",
+    "uq_place_reports_open_per_user",
 }
 
 

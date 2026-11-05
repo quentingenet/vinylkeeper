@@ -157,6 +157,7 @@ class CollectionInDB(CollectionBase):
 
 class CollectionResponse(CollectionInDB):
     """Schema for collection data in API responses."""
+    share_token: Optional[str] = Field(default=None, description="Key of the public link")
     owner: Optional[UserMiniResponse] = None
     albums: List[CollectionAlbumResponse] = Field(default_factory=list)
     artists: List[CollectionArtistResponse] = Field(default_factory=list)
@@ -171,6 +172,7 @@ class CollectionListItemResponse(BaseSchema):
     description: Optional[str] = None
     is_public: bool
     mood_id: int | None = None
+    share_token: Optional[str] = Field(default=None, description="Key of the public link")
     owner: Optional[UserMiniResponse] = None
     likes_count: int = Field(default=0)
     is_liked_by_user: bool = Field(default=False)
@@ -196,6 +198,7 @@ class CollectionDetailResponse(BaseSchema):
     name: str
     description: Optional[str] = None
     is_public: bool
+    share_token: Optional[str] = Field(default=None, description="Key of the public link")
     mood_id: int | None = None
     owner_uuid: Optional[UUID] = Field(
         None,
@@ -226,6 +229,34 @@ class PaginatedRecordsResponse(BaseSchema):
     page: int = Field(gt=0, description="Current page number")
     limit: int = Field(gt=0, description="Number of items per page")
     total_pages: int = Field(ge=0, description="Total number of pages")
+
+
+class SharedItem(BaseSchema):
+    """A record or an artist of a shared collection: nothing about the copies of its owner."""
+    title: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class SharedCollectionResponse(BaseSchema):
+    """What anyone with the link of a public collection sees, without an account."""
+    id: int
+    name: str
+    description: Optional[str] = None
+    owner_username: Optional[str] = None
+    records_count: int = Field(ge=0, description="Total number of works")
+    artists_count: int = Field(ge=0)
+    wishlist_count: int = Field(ge=0, description="Works on the wishlist of the owner")
+    likes_count: int = Field(ge=0)
+    cover_url: Optional[str] = Field(None, description="A cover for the preview of the link")
+
+
+class SharedItemsResponse(BaseSchema):
+    """One page of a list of a shared collection."""
+    items: List[SharedItem] = Field(default_factory=list, description="Last added first")
+    total_count: int = Field(ge=0)
+    visible_count: int = Field(ge=0, description="How many of them a visitor can see")
+    page: int = Field(gt=0)
+    total_pages: int = Field(gt=0)
 
 
 class PaginatedArtistsResponse(BaseSchema):

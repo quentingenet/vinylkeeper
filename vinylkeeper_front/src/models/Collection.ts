@@ -92,6 +92,8 @@ export interface CollectionResponse {
   name: string;
   description?: string;
   is_public: boolean;
+  /** Key of the public link */
+  share_token?: string | null;
   mood_id?: number;
   created_at: string;
   updated_at: string;
@@ -107,6 +109,8 @@ export interface CollectionListItemResponse {
   name: string;
   description?: string;
   is_public: boolean;
+  /** Key of the public link */
+  share_token?: string | null;
   mood_id?: number | null;
   created_at: string;
   updated_at: string;
@@ -124,11 +128,43 @@ export interface CollectionListItemResponse {
   save_collection_name?: string | null;
 }
 
+export interface SharedItem {
+  title: string | null;
+  image_url: string | null;
+}
+
+/** What anyone with the link of a public collection sees, without an account. */
+export interface SharedCollectionResponse {
+  id: number;
+  name: string;
+  description: string | null;
+  owner_username: string | null;
+  records_count: number;
+  artists_count: number;
+  wishlist_count: number;
+  likes_count: number;
+  cover_url: string | null;
+}
+
+export type SharedItemsKind = "records" | "artists" | "wishlist";
+
+/** One page of a list of a shared collection. */
+export interface SharedItemsResponse {
+  items: SharedItem[];
+  total_count: number;
+  /** How many of them a visitor can see: 40% of the records and artists, the whole wishlist */
+  visible_count: number;
+  page: number;
+  total_pages: number;
+}
+
 export interface CollectionDetailResponse {
   id: number;
   name: string;
   description: string | null;
   is_public: boolean;
+  /** Key of the public link */
+  share_token?: string | null;
   mood_id: number | null;
   owner_uuid: string | null;
   owner: UserMiniResponse | null;

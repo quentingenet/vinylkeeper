@@ -34,6 +34,8 @@ interface RegisterProps {
   setOpenTermsModal: (value: boolean) => void;
   openTermsModal: boolean;
   setErrorSnackbar: (snackbar: { open: boolean; message: string }) => void;
+  /** The page to open once signed up, the dashboard by default */
+  nextPath?: string | null;
 }
 
 const Register = ({
@@ -43,6 +45,7 @@ const Register = ({
   open,
   setOpenTermsModal,
   setErrorSnackbar,
+  nextPath,
 }: RegisterProps) => {
   const userContext = useUserContext();
   const navigate = useNavigate();
@@ -86,7 +89,7 @@ const Register = ({
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
 
-      void navigate("/dashboard");
+      void navigate(nextPath ?? "/dashboard");
     } catch (error: unknown) {
       let errorMessage =
         "An error occurred during registration. Please try again.";

@@ -6,6 +6,8 @@ export const queryKeys = {
     forUser: (userUuid: string | undefined) => ["collections", userUuid] as const,
     list: (userUuid: string | undefined, page: number, itemsPerPage?: number) => ["collections", userUuid, page, itemsPerPage] as const,
     detail: (id: number) => ["collectionDetails", id] as const,
+    shared: (token: string) => ["sharedCollection", token] as const,
+    sharedItems: (token: string, kind: string, page: number) => ["sharedCollection", token, kind, page] as const,
     public: {
       all: () => ["publicCollections"] as const,
       list: (page: number, sortBy: string) => ["publicCollections", page, sortBy] as const,

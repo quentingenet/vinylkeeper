@@ -33,9 +33,9 @@ class ImageProxyService:
     MAX_CACHE_BYTES = 2 * 1024 * 1024 * 1024
     PRUNE_TARGET_RATIO = 0.8
     PRUNE_PROBABILITY = 1 / 200
-    # Discogs API Terms: no content shown more than six hours older than discogs.com. A cover
-    # stays at most 3 h on disk, then at most 3 h in the browser (endpoint Cache-Control).
-    CACHE_LIFETIME_SECONDS = 3 * 3600
+    # A cover stays at most 30 days on disk, then at most 30 days in the browser (endpoint
+    # Cache-Control). Past that it is fetched again from Discogs.
+    CACHE_LIFETIME_SECONDS = 30 * 24 * 3600
 
     def __init__(self, http_client: Optional[httpx.AsyncClient] = None):
         cache_path = os.getenv("IMAGE_CACHE_DIR")

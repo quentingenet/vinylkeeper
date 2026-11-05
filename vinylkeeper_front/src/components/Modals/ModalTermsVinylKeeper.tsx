@@ -7,7 +7,7 @@ import { DISCOGS_DISCLAIMER } from "@utils/discogsLinks";
 // underlined, whatever the theme of the page opening it (the gold primary is unreadable on it)
 const readableLink = { color: "inherit", underline: "always", sx: { fontWeight: 600 } } as const;
 
-export const TERMS_LAST_UPDATED = "30/10/2026";
+export const TERMS_LAST_UPDATED = "05/11/2026";
 const CONTACT_EMAIL = "vinylkeeper@quentingenet.fr";
 
 const ExternalLink = ({ href, children }: { href: string; children: ReactNode }) => (
@@ -68,7 +68,7 @@ const SECTIONS: TermsSection[] = [
       "4.1. You agree to provide accurate information when signing up, to keep your credentials confidential and to keep a single account. Report any use of your account you did not authorize to the contact address above.",
       "4.2. You are responsible for what you add: collection names, records, Atlas spots, reports and their comments. You may not post illegal, offensive, defamatory or misleading content, nor content that infringes the rights of others, intellectual property included.",
       "4.3. Atlas spots: only public places and businesses (record shops, bars, venues, fairs...) may be suggested. Never post the address of a private individual.",
-      "4.4. Collections you make public, and your username, are visible to the other members. The Vinyl Atlas, its spots included, is visible to everyone, visitors without an account too.",
+      "4.4. Collections you make public, and your username, are visible to the other members. Anyone with the link of a public collection, visitors without an account too, can see its name, its description, your username, a preview of its records and artists, and your whole wishlist. The Vinyl Atlas, its spots included, is visible to everyone, visitors without an account too.",
       "4.5. You grant Vinyl Keeper a free, non-exclusive, worldwide license to host, store and display the content you publish, solely to operate the service. The GPLv3 covers the code of the Application, not your content.",
       "4.6. You may not scrape the Application, abuse its API or interfere with its operation.",
       <>

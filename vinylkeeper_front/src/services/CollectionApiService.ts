@@ -21,6 +21,9 @@ import type {
   PaginatedRecordsResponse,
   CollectionRecordResponse,
   CollectionAlbumCopyData,
+  SharedCollectionResponse,
+  SharedItemsKind,
+  SharedItemsResponse,
 } from "@models/Collection";
 
 export type {
@@ -107,6 +110,15 @@ export class CollectionApiService extends BaseApiService {
 
   async getCollectionById(collectionId: number): Promise<CollectionResponse> {
     return this.get<CollectionResponse>(`/collections/${collectionId}`);
+  }
+
+  /** Open to everyone: the preview of a public collection */
+  async getSharedCollection(shareToken: string): Promise<SharedCollectionResponse> {
+    return this.get<SharedCollectionResponse>(`/collections/shared/${shareToken}`);
+  }
+
+  async getSharedItems(shareToken: string, kind: SharedItemsKind, page: number): Promise<SharedItemsResponse> {
+    return this.get<SharedItemsResponse>(`/collections/shared/${shareToken}/${kind}?page=${page}`);
   }
 
   async getCollectionDetails(
@@ -252,6 +264,10 @@ const collectionApiServiceInstance = new CollectionApiService();
 export const collectionApiService = {
   getCollectionDetails: (collectionId: number) =>
     collectionApiServiceInstance.getCollectionDetails(collectionId),
+  getSharedCollection: (shareToken: string) =>
+    collectionApiServiceInstance.getSharedCollection(shareToken),
+  getSharedItems: (shareToken: string, kind: SharedItemsKind, page: number) =>
+    collectionApiServiceInstance.getSharedItems(shareToken, kind, page),
   createCollection: (data: CollectionCreate) =>
     collectionApiServiceInstance.createCollection(data),
   updateCollection: (collectionId: number, data: CollectionUpdate) =>

@@ -31,6 +31,7 @@ const makeCollection = (
   id: 1,
   name: "Jazz shelf",
   is_public: true,
+  share_token: "0123456789abcdef0123456789abcdef",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
   likes_count: 0,
@@ -56,6 +57,17 @@ const renderItem = (
   );
 
 describe("CollectionItem", () => {
+  it("shares a public collection, and explains why a private one cannot be", () => {
+    renderItem(makeCollection());
+    expect(screen.getByRole("button", { name: "Share this collection" })).toBeEnabled();
+    cleanup();
+
+    renderItem(makeCollection({ is_public: false }));
+    expect(
+      screen.getByRole("button", { name: "Go public to share this collection with diggers all around the world, on Vinyl Keeper or not" })
+    ).toBeDisabled();
+  });
+
   it("lets the owner save a copy without opening the collection", async () => {
     const onCollectionClick = vi.fn();
     render(

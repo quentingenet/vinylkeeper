@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
-import { LOGIN_URL, REGISTER_URL } from "@utils/GlobalUrls";
+import { loginUrl, registerUrl } from "@utils/GlobalUrls";
 import { growItem } from "@utils/Animations";
 import PreviewModal from "@components/Landpage/PreviewModal";
 import { previewSlides } from "@components/Landpage/previewSlides";
@@ -32,10 +32,18 @@ const MEMBER_FEATURES = [
 interface JoinVinylKeeperDialogProps {
   open: boolean;
   onClose: () => void;
+  title?: string;
+  /** The page to come back to once logged in */
+  nextPath?: string;
 }
 
-/** Shown to a visitor of the public Atlas who tries to like a spot or suggest one. */
-export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeperDialogProps) {
+/** Shown to a visitor who tries something a member can do: like a spot, open a shared collection. */
+export default function JoinVinylKeeperDialog({
+  open,
+  onClose,
+  title = "Join Vinyl Keeper to like spots and suggest new ones",
+  nextPath,
+}: JoinVinylKeeperDialogProps) {
   const [openPreview, setOpenPreview] = useState(false);
   const navigate = useNavigate();
 
@@ -46,7 +54,7 @@ export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeper
           id="join-vinyl-keeper-title"
           sx={{ color: "primary.main", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}
         >
-          Join Vinyl Keeper to like spots and suggest new ones
+          {title}
           <IconButton aria-label="Close" onClick={onClose} sx={{ color: "text.primary" }}>
             <CloseIcon />
           </IconButton>
@@ -89,10 +97,10 @@ export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeper
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button component={RouterLink} to={LOGIN_URL} variant="text">
+            <Button component={RouterLink} to={loginUrl(nextPath)} variant="text">
               Log in
             </Button>
-            <Button component={RouterLink} to={REGISTER_URL} variant="contained">
+            <Button component={RouterLink} to={registerUrl(nextPath)} variant="contained">
               Sign up
             </Button>
           </Box>
@@ -103,7 +111,7 @@ export default function JoinVinylKeeperDialog({ open, onClose }: JoinVinylKeeper
         open={openPreview}
         slides={previewSlides}
         onClose={() => setOpenPreview(false)}
-        onEnter={() => void navigate(LOGIN_URL)}
+        onEnter={() => void navigate(loginUrl(nextPath))}
         preload={open}
       />
     </>

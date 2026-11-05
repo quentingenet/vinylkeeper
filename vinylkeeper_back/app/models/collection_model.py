@@ -1,3 +1,5 @@
+import secrets
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -6,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Boolean,
     func,
+    text,
     CheckConstraint,
     Index,
     UniqueConstraint,
@@ -16,6 +19,10 @@ from app.core.orm_utils import is_loaded
 from app.models.base import Base
 
 
+def new_share_token() -> str:
+    return secrets.token_hex(16)
+
+
 class Collection(Base):
     __tablename__ = "collections"
 
@@ -23,6 +30,13 @@ class Collection(Base):
     name = Column(String(255), nullable=False)
     description = Column(String(255), nullable=True)
     is_public = Column(Boolean, default=False, nullable=False)
+    # The key of the public link of the collection: random, so that links cannot be guessed
+    share_token = Column(
+        String(32),
+        nullable=False,
+        default=new_share_token,
+        server_default=text("replace(gen_random_uuid()::text, '-', '')"),
+    )
 
     mood_id = Column(Integer, ForeignKey("moods.id"), nullable=True, index=True)
     mood = relationship("Mood", back_populates="collections", lazy="raise")
@@ -90,6 +104,7 @@ class Collection(Base):
         Index("ix_collections_is_public_updated_at", "is_public", updated_at.desc()),
         # One save per collection (migration f1c8a3b7d2e4)
         Index("ix_collections_saved_from_collection_id", "saved_from_collection_id", unique=True),
+        Index("ix_collections_share_token", "share_token", unique=True),
     )
 
     @validates('name')

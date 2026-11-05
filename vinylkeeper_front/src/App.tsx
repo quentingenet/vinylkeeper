@@ -16,6 +16,8 @@ const OpenAddRecordRoute = lazy(() => import("@components/AddRecord/OpenAddRecor
 const CollectionDetails = lazy(() => import("@pages/Collections/CollectionDetails"));
 const Atlas = lazy(() => import("@pages/Atlas/Atlas"));
 const PublicAtlas = lazy(() => import("@pages/Atlas/PublicAtlas"));
+const PublicCollection = lazy(() => import("@pages/Collections/PublicCollection"));
+const OpenSharedCollection = lazy(() => import("@pages/Collections/OpenSharedCollection"));
 const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
 const ConfirmEmail = lazy(() => import("@pages/ConfirmEmail/ConfirmEmail"));
@@ -79,6 +81,15 @@ function App() {
                 </Protected>
               }
             />
+            {/* The public link of a collection, opened by a member: the full page */}
+            <Route
+              path={EGlobalUrls.SHARED_COLLECTION}
+              element={
+                <Protected>
+                  <OpenSharedCollection />
+                </Protected>
+              }
+            />
             <Route
               path={EGlobalUrls.ADD_VINYLS}
               element={
@@ -137,12 +148,14 @@ function App() {
       ) : (
         <Routes>
           <Route path={EGlobalUrls.ROOT} element={<Landpage />} />
-          {/* The only page of the app open to visitors, read only */}
+          {/* The pages of the app open to visitors, read only */}
           <Route
             path={EGlobalUrls.ATLAS}
             element={<PublicAtlas />}
           />
           <Route path={EGlobalUrls.PLACES_LEGACY} element={<Navigate to={EGlobalUrls.ATLAS} replace />} />
+          {/* The link a member shares */}
+          <Route path={EGlobalUrls.SHARED_COLLECTION} element={<PublicCollection />} />
           <Route
             path={EGlobalUrls.RESET_PASSWORD}
             element={<ResetPassword />}

@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.services.collection_service import CollectionService
+from app.services.collection_service import CollectionService, shared_visible_items
 from app.schemas.collection_schema import CollectionCreate, CollectionUpdate
 from app.core.exceptions import (
     DuplicateCollectionNameError,
@@ -45,6 +45,7 @@ def make_collection(
     col.mood_id = None
     col.collection_albums = []
     col.collection_artists = []
+    col.share_token = "0123456789abcdef0123456789abcdef"
     col.owner = None
     col.created_at = datetime.now(timezone.utc)
     col.updated_at = datetime.now(timezone.utc)
@@ -637,3 +638,98 @@ class TestDeleteCollection:
 
         with pytest.raises(ForbiddenError):
             await service.delete_collection(user_id=1, collection_id=1)
+
+
+class TestSharedCollection:
+    def _service_with(self, collection, records=([], 0), wishlist=([], 0)):
+        service, repo, _, album_repo = make_service()
+        repo.find_by_share_token = AsyncMock(return_value=collection)
+        album_repo.get_collection_records_paginated = AsyncMock(return_value=records)
+        repo.get_collection_artists_paginated = AsyncMock(return_value=([], 0))
+        repo.get_collections_likes_info_batch = AsyncMock(return_value={"counts": {1: 4}, "user_likes": {}})
+        repo.get_preview_images_batch = AsyncMock(return_value={1: ["https://i.discogs.com/a.jpg"]})
+        service.wishlist_repository.get_user_wishlist_paginated = AsyncMock(return_value=wishlist)
+        return service, album_repo
+
+    @pytest.mark.parametrize("read", [
+        lambda service: service.get_shared_collection("token"),
+        lambda service: service.get_shared_items("token", "records"),
+        lambda service: service.get_shared_items("token", "wishlist"),
+    ])
+    async def test_private_collection_is_refused_without_a_log_line(self, read):
+        service, album_repo = self._service_with(make_collection(is_public=False))
+
+        with pytest.raises(ForbiddenError) as refused:
+            await read(service)
+
+        assert refused.value.should_log is False
+        album_repo.get_collection_records_paginated.assert_not_awaited()
+        service.wishlist_repository.get_user_wishlist_paginated.assert_not_awaited()
+
+    async def test_missing_collection_is_not_found(self):
+        service, repo, *_ = make_service()
+        repo.find_by_share_token = AsyncMock(return_value=None)
+
+        with pytest.raises(ResourceNotFoundError):
+            await service.get_shared_collection("token")
+
+    async def test_presentation_with_its_counts(self):
+        service, _ = self._service_with(make_collection(), wishlist=([], 5))
+
+        shared = await service.get_shared_collection("token")
+
+        assert (shared.likes_count, shared.wishlist_count) == (4, 5)
+        assert shared.cover_url == "https://i.discogs.com/a.jpg"
+        assert shared.owner_username is None
+
+    @pytest.mark.parametrize("total, visible", [(0, 0), (3, 3), (6, 6), (10, 6), (15, 6), (16, 7), (86, 35), (100, 40)])
+    def test_a_visitor_sees_forty_percent_and_a_few_at_least(self, total, visible):
+        assert shared_visible_items(total) == visible
+
+    async def test_an_empty_list_is_one_empty_page(self):
+        service, _ = self._service_with(make_collection())
+
+        shared = await service.get_shared_items("token", "records")
+
+        assert (shared.page, shared.total_pages, shared.visible_count) == (1, 1, 0)
+
+    async def test_a_page_past_the_limit_gives_the_last_visible_one(self):
+        service, album_repo = self._service_with(make_collection(), records=([], 86))
+
+        shared = await service.get_shared_items("token", "records", page=99)
+
+        assert (shared.page, shared.total_pages) == (4, 4)
+        assert album_repo.get_collection_records_paginated.await_args.args[1] == 4
+
+    async def test_the_wishlist_is_whole_for_who_wants_to_offer_a_record(self):
+        service, _ = self._service_with(make_collection(owner_id=3), wishlist=([], 86))
+
+        shared = await service.get_shared_items("token", "wishlist", page=9)
+
+        assert (shared.page, shared.total_pages, shared.visible_count) == (9, 9, 86)
+        service.wishlist_repository.get_user_wishlist_paginated.assert_awaited_once_with(3, 9, 10)
+
+
+class TestOnlyTheOwnerWrites:
+    """A public collection opens to everyone: reading it gives no right on it."""
+
+    @pytest.mark.parametrize("write", [
+        lambda service: service.update_collection(2, 1, CollectionUpdate(name="Taken")),
+        lambda service: service.delete_collection(2, 1),
+        lambda service: service.save_copy(2, 1),
+        lambda service: service.remove_album_from_collection(2, 1, 5),
+        lambda service: service.remove_artist_from_collection(2, 1, 5),
+        lambda service: service.confirm_album_pressing(2, 1, 5),
+        lambda service: service.delete_album_copy(2, 1, 5, 9),
+    ])
+    async def test_another_member_is_refused(self, write):
+        service, repo, *_ = make_service()
+        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=1, is_public=True))
+        repo.delete = AsyncMock()
+        repo.update = AsyncMock()
+
+        with pytest.raises(ForbiddenError):
+            await write(service)
+
+        repo.delete.assert_not_awaited()
+        repo.update.assert_not_awaited()

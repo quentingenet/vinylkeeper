@@ -20,6 +20,8 @@ export enum EGlobalUrls {
   DASHBOARD = "/dashboard",
   COLLECTIONS = "/collections",
   COLLECTION_DETAILS = "/collections/:id",
+  // The public link of a collection: a random key, so that links cannot be guessed
+  SHARED_COLLECTION = "/shared/:token",
   ADD_VINYLS = "/add-vinyls",
   EXPLORE = "/explore",
   WISHLIST = "/wishlist",
@@ -45,5 +47,18 @@ export const COMMUNITY_COLLECTIONS_URL = `${EGlobalUrls.COLLECTIONS}?${COLLECTIO
 
 // The home page opens its login or sign up form from this parameter (links of the public Atlas)
 export const AUTH_PARAM = "auth";
-export const LOGIN_URL = `${EGlobalUrls.ROOT}?${AUTH_PARAM}=login`;
-export const REGISTER_URL = `${EGlobalUrls.ROOT}?${AUTH_PARAM}=register`;
+// The page of the site to come back to once logged in (a shared collection)
+export const NEXT_PARAM = "next";
+const authUrl = (form: "login" | "register", nextPath?: string) =>
+  `${EGlobalUrls.ROOT}?${AUTH_PARAM}=${form}${nextPath ? `&${NEXT_PARAM}=${encodeURIComponent(nextPath)}` : ""}`;
+export const loginUrl = (nextPath?: string) => authUrl("login", nextPath);
+export const registerUrl = (nextPath?: string) => authUrl("register", nextPath);
+export const LOGIN_URL = loginUrl();
+export const REGISTER_URL = registerUrl();
+
+/** A path of this site only: "//other.site" or an absolute URL in a link must not redirect there. */
+export const safeNextPath = (value: string | null): string | null =>
+  value && /^\/(?![/\\])/.test(value) ? value : null;
+
+export const collectionUrl = (collectionId: number) => `${EGlobalUrls.COLLECTIONS}/${collectionId}`;
+export const sharedCollectionUrl = (token: string) => `/shared/${token}`;

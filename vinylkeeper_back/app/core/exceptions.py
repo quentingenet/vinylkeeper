@@ -236,13 +236,15 @@ class ForbiddenError(AppException):
         self,
         error_code: int = ErrorCode.FORBIDDEN,
         message: str = "You are not allowed to access this resource",
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
+        should_log: bool = True
     ):
         super().__init__(
             error_code=error_code,
             message=message,
             status_code=status.HTTP_403_FORBIDDEN,
-            details=details
+            details=details,
+            should_log=should_log
         )
 
 

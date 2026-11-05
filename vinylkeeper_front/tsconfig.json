@@ -32,7 +32,7 @@
       "@hooks/*": ["./src/hooks/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "netlify"],
   "exclude": ["node_modules", "**/@types/babel__*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

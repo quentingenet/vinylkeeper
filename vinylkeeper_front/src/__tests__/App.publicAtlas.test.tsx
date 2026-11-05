@@ -14,6 +14,7 @@ vi.mock("@pages/Atlas/Atlas", () => ({
   },
 }));
 vi.mock("@pages/Landpage/Landpage", () => ({ default: () => <div data-testid="landpage" /> }));
+vi.mock("@pages/Collections/PublicCollection", () => ({ default: () => <div data-testid="shared-collection" /> }));
 
 afterEach(cleanup);
 
@@ -39,6 +40,15 @@ describe("Public Atlas", () => {
   it("is reached from the former /places URL", async () => {
     renderAt("/places");
     expect(await screen.findByTestId("atlas-page", {}, { timeout: 3000 })).toHaveTextContent("/atlas public=true");
+  });
+
+  it("opens the link of a shared collection, never a collection by its id", async () => {
+    renderAt("/shared/0123456789abcdef0123456789abcdef");
+    expect(await screen.findByTestId("shared-collection", {}, { timeout: 3000 })).toBeInTheDocument();
+    cleanup();
+
+    renderAt("/collections/12");
+    expect(await screen.findByTestId("landpage", {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   it("leaves every other page of the app closed to visitors", async () => {

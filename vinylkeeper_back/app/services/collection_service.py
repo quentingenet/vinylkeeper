@@ -19,7 +19,10 @@ from app.schemas.collection_schema import (
     CollectionAlbumResponse,
     PaginatedRecordsResponse,
     PaginatedArtistsResponse,
-    CollectionSearchResponse
+    CollectionSearchResponse,
+    SharedCollectionResponse,
+    SharedItem,
+    SharedItemsResponse,
 )
 from app.schemas.collection_album_schema import (
     CollectionAlbumCopyData,
@@ -73,6 +76,17 @@ async def save_collection_copy(repository: CollectionRepository, source: Collect
     await repository.create(copy)
     await repository.copy_contents(source.id, copy.id)
     return copy
+
+
+# What a visitor without an account sees of a shared collection: a taste, not the collection.
+# 40% of its records and artists, and a few at least, so that a small one is not an empty page.
+SHARED_ITEMS_PER_PAGE = 10
+SHARED_MIN_VISIBLE_ITEMS = 6
+
+
+def shared_visible_items(total: int) -> int:
+    """How many items of a list of `total` a visitor can see (40%, rounded up)."""
+    return max((total * 2 + 4) // 5, min(total, SHARED_MIN_VISIBLE_ITEMS))
 
 
 class CollectionService:
@@ -460,6 +474,7 @@ class CollectionService:
                 name=collection.name,
                 description=collection.description,
                 is_public=collection.is_public,
+                share_token=collection.share_token,
                 mood_id=collection.mood_id,
                 owner_uuid=owner_uuid,
                 owner=owner,
@@ -478,6 +493,108 @@ class CollectionService:
             raise ServerError(
                 error_code=ErrorCode.SERVER_ERROR,
                 message="Failed to get collection details",
+                details={}
+            )
+
+    async def _get_shared(self, share_token: str) -> Collection:
+        """
+        A collection open to anyone with its link. A private one is refused without a word about
+        its content, and without a log line: a link that outlived its collection is no error.
+        """
+        collection = await self.repository.find_by_share_token(share_token)
+        if not collection:
+            raise ResourceNotFoundError("Collection", share_token)
+        if not collection.is_public:
+            raise ForbiddenError(
+                error_code=ErrorCode.FORBIDDEN_OWNER,
+                message="This collection is private",
+                details={},
+                should_log=False,
+            )
+        return collection
+
+    async def get_shared_collection(self, share_token: str) -> SharedCollectionResponse:
+        """The presentation of a public collection for anyone with its link, no account needed."""
+        try:
+            collection = await self._get_shared(share_token)
+            collection_id = collection.id
+            _, records_count = await self.collection_album_repository.get_collection_records_paginated(
+                collection_id, 1, 1, "newest"
+            )
+            _, artists_count = await self.repository.get_collection_artists_paginated(collection_id, 1, 1)
+            _, wishlist_count = await self.wishlist_repository.get_user_wishlist_paginated(collection.owner_id, 1, 1)
+            likes = await self.repository.get_collections_likes_info_batch(None, [collection_id])
+            covers = await self.repository.get_preview_images_batch([collection_id], limit=1)
+
+            owner = collection.owner if is_loaded(collection, 'owner') else None
+            return SharedCollectionResponse(
+                id=collection.id,
+                name=collection.name,
+                description=collection.description,
+                owner_username=owner.username if owner else None,
+                records_count=records_count,
+                artists_count=artists_count,
+                wishlist_count=wishlist_count,
+                likes_count=likes['counts'].get(collection_id, 0),
+                cover_url=next(iter(covers.get(collection_id, [])), None),
+            )
+        except AppException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting shared collection: {str(e)}", exc_info=True)
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get the shared collection",
+                details={}
+            )
+
+    async def _shared_items_page(self, collection: Collection, kind: str, page: int) -> Tuple[List[SharedItem], int]:
+        """One page of a shared list, reduced to titles and covers, and the size of the list."""
+        limit = SHARED_ITEMS_PER_PAGE
+        if kind == "records":
+            works, total = await self.collection_album_repository.get_collection_records_paginated(
+                collection.id, page, limit, "newest"
+            )
+            return [SharedItem(title=rows[0][0].title, image_url=rows[0][0].image_url) for _, rows in works], total
+        if kind == "artists":
+            rows, total = await self.repository.get_collection_artists_paginated(collection.id, page, limit)
+            return [SharedItem(title=row[0].title, image_url=row[0].image_url) for row in rows], total
+        works, total = await self.wishlist_repository.get_user_wishlist_paginated(collection.owner_id, page, limit)
+        items = []
+        for _, rows in works:
+            wishlist, _type, album = rows[0]
+            title = (album.title if album else None) or wishlist.title
+            items.append(SharedItem(title=title, image_url=wishlist.image_url))
+        return items, total
+
+    async def get_shared_items(self, share_token: str, kind: str, page: int = 1) -> SharedItemsResponse:
+        """
+        One page of the records, the artists or the wishlist of a shared collection. Records and
+        artists stop at the limit of a visitor, applied here: a page past it gives the last visible
+        one, never more. The wishlist is whole: it is there for whoever wants to offer a record.
+        """
+        try:
+            collection = await self._get_shared(share_token)
+            items, total = await self._shared_items_page(collection, kind, page)
+            visible = total if kind == "wishlist" else shared_visible_items(total)
+            total_pages = max(1, (visible + SHARED_ITEMS_PER_PAGE - 1) // SHARED_ITEMS_PER_PAGE)
+            if page > total_pages:
+                page = total_pages
+                items, _ = await self._shared_items_page(collection, kind, page)
+            return SharedItemsResponse(
+                items=items[:visible - (page - 1) * SHARED_ITEMS_PER_PAGE],
+                total_count=total,
+                visible_count=visible,
+                page=page,
+                total_pages=total_pages,
+            )
+        except AppException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            logger.error(f"Error getting shared items: {str(e)}", exc_info=True)
+            raise ServerError(
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Failed to get the shared collection",
                 details={}
             )
 
@@ -682,6 +799,7 @@ class CollectionService:
             name=collection.name,
             description=collection.description,
             is_public=collection.is_public,
+            share_token=collection.share_token,
             mood_id=collection.mood_id,
             owner=owner,
             likes_count=likes_count,

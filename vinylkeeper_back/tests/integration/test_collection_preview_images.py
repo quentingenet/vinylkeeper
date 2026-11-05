@@ -9,13 +9,17 @@ import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from sqlalchemy import event, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ForbiddenError
 from app.models.album_model import Album
 from app.models.collection_album import CollectionAlbum
 from app.models.collection_model import Collection
+from app.models.reference_data.entity_types import EntityType
 from app.models.reference_data.external_sources import ExternalSource
+from app.models.wishlist_model import Wishlist
 from app.repositories.collection_repository import CollectionRepository
 
 from tests.integration.conftest import make_real_test_user as make_test_user
@@ -181,3 +185,65 @@ class TestCollectionListsPreviewImages:
         small_count = await count_queries(small_owner.id)
         assert small_count > 0, "the listener must actually capture the queries"
         assert await count_queries(big_owner.id) == small_count
+
+
+class TestSharedCollection:
+    async def test_every_collection_gets_its_own_unguessable_token(self, real_session):
+        user = await make_test_user(real_session)
+        first = await make_collection(real_session, user.id)
+        second = await make_collection(real_session, user.id)
+
+        assert len(first.share_token) == 32
+        assert first.share_token != second.share_token
+
+    async def test_shows_forty_percent_of_the_records_and_nothing_private(self, real_session):
+        user = await make_test_user(real_session)
+        collection = await make_collection(real_session, user.id)
+        for i in range(40):
+            await add_album(real_session, collection.id, cover_url(f"share-{i}"), BASE_TIME + timedelta(days=i))
+        service = make_collection_service(real_session)
+
+        shared = await service.get_shared_collection(collection.share_token)
+        first = await service.get_shared_items(collection.share_token, "records")
+        last = await service.get_shared_items(collection.share_token, "records", page=2)
+        past_the_limit = await service.get_shared_items(collection.share_token, "records", page=3)
+
+        assert (shared.records_count, shared.owner_username) == (40, user.username)
+        assert (first.total_count, first.visible_count, first.total_pages) == (40, 16, 2)
+        assert len(first.items) == 10
+        assert len(last.items) == 6
+        assert past_the_limit.items == last.items
+        assert first.items[0].image_url == cover_url("share-39")
+        dumped = shared.model_dump_json() + first.model_dump_json()
+        assert user.email not in dumped
+        assert str(user.user_uuid) not in dumped
+        assert set(first.items[0].model_dump()) == {"title", "image_url"}
+
+    async def test_the_wishlist_of_the_owner_reads_with_titles_and_covers(self, real_session):
+        user = await make_test_user(real_session)
+        collection = await make_collection(real_session, user.id)
+        source_id = (await real_session.execute(select(ExternalSource.id).limit(1))).scalar_one()
+        entity_type_id = (await real_session.execute(select(EntityType.id).limit(1))).scalar_one()
+        real_session.add(Wishlist(
+            user_id=user.id,
+            external_id=f"9{uuid.uuid4().int % 10**15}",
+            entity_type_id=entity_type_id,
+            external_source_id=source_id,
+            title="itest wanted",
+            image_url=cover_url("wanted"),
+        ))
+        await real_session.flush()
+
+        wishlist = await make_collection_service(real_session).get_shared_items(collection.share_token, "wishlist")
+
+        assert [item.title for item in wishlist.items] == ["itest wanted"]
+        assert wishlist.visible_count == wishlist.total_count == 1
+
+    async def test_private_collection_stays_closed(self, real_session):
+        user = await make_test_user(real_session)
+        collection = await make_collection(real_session, user.id, is_public=False)
+
+        with pytest.raises(ForbiddenError):
+            await make_collection_service(real_session).get_shared_collection(collection.share_token)
+        with pytest.raises(ForbiddenError):
+            await make_collection_service(real_session).get_shared_items(collection.share_token, "wishlist")

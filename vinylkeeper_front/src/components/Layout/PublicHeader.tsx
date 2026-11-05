@@ -1,9 +1,14 @@
 import { Link as RouterLink } from "react-router-dom";
 import { Box, Button, Typography } from "@mui/material";
-import { EGlobalUrls, LOGIN_URL, REGISTER_URL } from "@utils/GlobalUrls";
+import { EGlobalUrls, loginUrl, registerUrl } from "@utils/GlobalUrls";
 
-/** The bar of the public Atlas, in place of the menu of the app: visitors have no account. */
-export default function PublicAtlasHeader() {
+interface PublicHeaderProps {
+  /** The page to come back to once logged in */
+  nextPath?: string;
+}
+
+/** The bar of the pages open to visitors, in place of the menu of the app: they have no account. */
+export default function PublicHeader({ nextPath }: PublicHeaderProps) {
   return (
     <Box
       component="header"
@@ -29,10 +34,10 @@ export default function PublicAtlasHeader() {
         Vinyl Keeper
       </Typography>
       <Box sx={{ display: "flex", gap: 1 }}>
-        <Button component={RouterLink} to={LOGIN_URL} size="small" variant="text">
+        <Button component={RouterLink} to={loginUrl(nextPath)} size="small" variant="text">
           Log in
         </Button>
-        <Button component={RouterLink} to={REGISTER_URL} size="small" variant="contained">
+        <Button component={RouterLink} to={registerUrl(nextPath)} size="small" variant="contained">
           Sign up
         </Button>
       </Box>

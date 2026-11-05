@@ -71,9 +71,8 @@ async def test_a_cover_older_than_its_lifetime_is_fetched_again(service, monkeyp
     assert len(fetched) == 2
 
 
-def test_browser_and_disk_lifetimes_stay_within_six_hours_of_discogs():
-    # The endpoint gives the browser the same lifetime as the disk copy
-    assert 2 * ImageProxyService.CACHE_LIFETIME_SECONDS <= 6 * 3600
+def test_a_cover_stays_cached_thirty_days():
+    assert ImageProxyService.CACHE_LIFETIME_SECONDS == 30 * 24 * 3600
 
 
 def test_pruning_removes_expired_covers_and_keeps_fresh_ones(service):

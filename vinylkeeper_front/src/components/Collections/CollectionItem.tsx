@@ -7,6 +7,7 @@ import {
 import { useCollections, useSaveCollectionCopy } from "@hooks/useCollections";
 import { useLikeButton } from "@hooks/useLikeButton";
 import CoverMosaic from "@components/Collections/CoverMosaic";
+import ShareCollectionButton from "@components/Collections/ShareCollectionButton";
 import {
   COLLECTION_CARD_MARGIN,
   COLLECTION_CARD_WIDTH,
@@ -206,6 +207,13 @@ export default function CollectionItem({
         >
           <FavoriteIcon sx={{ fontSize: "30px" }} />
         </IconButton>
+        <ShareCollectionButton
+          shareToken={collection.share_token}
+          name={collection.name}
+          ownerUsername={collection.owner?.username}
+          isPublic={localIsPublic}
+          sx={{ position: "absolute", top: 12, left: 12, zIndex: 2 }}
+        />
 
         <Box
           onClick={() => onCollectionClick(collection)}

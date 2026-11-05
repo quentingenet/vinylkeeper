@@ -32,6 +32,8 @@ interface LoginProps {
   setOpen: (value: boolean) => void;
   openForgotPassword: boolean;
   setOpenForgotPassword: (value: boolean) => void;
+  /** The page to open once logged in, the dashboard by default */
+  nextPath?: string | null;
 }
 
 export default function Login({
@@ -41,6 +43,7 @@ export default function Login({
   setOpen,
   setOpenForgotPassword,
   openForgotPassword,
+  nextPath,
 }: LoginProps) {
   const userContext = useUserContext();
   const navigate = useNavigate();
@@ -79,7 +82,7 @@ export default function Login({
       userContext.setIsUserLoggedIn(response.isLoggedIn);
       const userData = await userApiService.getCurrentUser();
       userContext.setCurrentUser(userData);
-      void navigate("/dashboard");
+      void navigate(nextPath ?? "/dashboard");
     } catch (error: unknown) {
       setLoginError(error instanceof Error ? error.message : "Error while logging in. Try again.");
       setOpenSnackBar(true);

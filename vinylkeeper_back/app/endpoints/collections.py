@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status, Path, Query, Body
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Response, status, Path, Query, Body
 from app.schemas.collection_schema import (
     CollectionCreate,
     CollectionDetailResponse,
@@ -13,6 +15,8 @@ from app.schemas.collection_schema import (
     PaginatedArtistsResponse,
     PaginatedRecordsResponse,
     CollectionSearchResponse,
+    SharedCollectionResponse,
+    SharedItemsResponse,
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
@@ -84,6 +88,37 @@ async def get_public_collections(
         limit=limit,
         total_pages=(total + limit - 1) // limit
     )
+
+
+# The key of a public link: anything else is no link
+SharedCollectionToken = Path(..., pattern="^[0-9a-f]{32}$", title="Share token")
+
+
+@router.get("/shared/{share_token}", status_code=status.HTTP_200_OK, response_model=SharedCollectionResponse)
+@handle_app_exceptions
+async def get_shared_collection(
+    response: Response,
+    share_token: str = SharedCollectionToken,
+    service: CollectionService = Depends(get_collection_service),
+):
+    """Open to everyone: the presentation of a public collection, for the link its owner shares."""
+    # Never kept: a collection made private must stop showing at once
+    response.headers["Cache-Control"] = "no-store"
+    return await service.get_shared_collection(share_token)
+
+
+@router.get("/shared/{share_token}/{kind}", status_code=status.HTTP_200_OK, response_model=SharedItemsResponse)
+@handle_app_exceptions
+async def get_shared_items(
+    response: Response,
+    kind: Literal["records", "artists", "wishlist"],
+    share_token: str = SharedCollectionToken,
+    page: int = Query(1, gt=0, le=10000),
+    service: CollectionService = Depends(get_collection_service),
+):
+    """Open to everyone: one page of the lists of a public collection."""
+    response.headers["Cache-Control"] = "no-store"
+    return await service.get_shared_items(share_token, kind, page)
 
 
 @router.get("/{collection_id}", status_code=status.HTTP_200_OK, response_model=CollectionResponse)

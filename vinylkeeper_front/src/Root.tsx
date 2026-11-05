@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BrowserRouter, useLocation } from "react-router-dom";
+import { BrowserRouter, matchPath, useLocation } from "react-router-dom";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { ThemeProvider } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -37,8 +37,9 @@ const RootContent: React.FC = () => {
   const { isMobile } = useDetectMobile();
   const { isUserLoggedIn } = useUserContext();
   const { pathname } = useLocation();
-  // The public Atlas is a page of the app, shown to visitors: same theme as for members
-  const usesAppTheme = isUserLoggedIn || pathname === EGlobalUrls.ATLAS;
+  // The public Atlas and a shared collection are pages of the app, shown to visitors: same theme as for members
+  const usesAppTheme =
+    isUserLoggedIn || pathname === EGlobalUrls.ATLAS || matchPath(EGlobalUrls.SHARED_COLLECTION, pathname) !== null;
 
   const theme = useMemo(() => {
     return !usesAppTheme

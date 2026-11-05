@@ -1,5 +1,5 @@
 import { logger } from "@utils/logger";
-import { useParams } from "react-router-dom";
+import { Link as RouterLink, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   collectionApiService,
@@ -44,10 +44,14 @@ import ClearIcon from "@mui/icons-material/Clear";
 import PlaybackModal, { PlaybackItem } from "@components/Modals/PlaybackModal";
 import { groupIntoRecords, toRecordCard, type RecordCard } from "@utils/collectionRecords";
 import { queryKeys } from "@utils/queryKeys";
+import { parseCollectionId, retryCollection, unavailableReason } from "@utils/collectionAvailability";
+import { COMMUNITY_COLLECTIONS_URL } from "@utils/GlobalUrls";
 import ConfirmDeleteDialog from "@components/Collections/ConfirmDeleteDialog";
 import CollectionTabs from "@components/Collections/CollectionTabs";
 import CollectionExportMenu from "@components/Collections/CollectionExportMenu";
 import BackToCollectionsButton from "@components/Collections/BackToCollectionsButton";
+import CollectionUnavailable from "@components/Collections/CollectionUnavailable";
+import ShareCollectionButton from "@components/Collections/ShareCollectionButton";
 import CollectionItemGrid from "@components/Collections/CollectionItemGrid";
 import WishlistTabContent from "@components/Collections/WishlistTabContent";
 import LoadingCenter from "@components/UI/LoadingCenter";
@@ -101,7 +105,7 @@ const TAB = {
 
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
-  const collectionId = id ? parseInt(id) : 0;
+  const collectionId = parseCollectionId(id) ?? 0;
   const { isMobile } = useDetectMobile();
   const { currentUser, isUserLoggedIn } = useUserContext();
   const queryClient = useQueryClient();
@@ -153,6 +157,7 @@ export default function CollectionDetails() {
     queryKey: queryKeys.collections.detail(collectionId),
     queryFn: () => collectionApiService.getCollectionDetails(collectionId),
     enabled: !!collectionId,
+    retry: retryCollection,
   });
 
   // Works paginated query: the pressings of one record are a single card
@@ -477,13 +482,13 @@ export default function CollectionDetails() {
     return <LoadingCenter />;
   }
 
-  if (!isLoadingDetails && detailsError) {
+  if (!collectionId || detailsError) {
     return (
-      <Box>
-        <Typography variant="h6" color="error">
-          Collection not found
-        </Typography>
-      </Box>
+      <CollectionUnavailable reason={collectionId ? unavailableReason(detailsError) : "gone"}>
+        <Button component={RouterLink} to={COMMUNITY_COLLECTIONS_URL} variant="contained">
+          Browse community collections
+        </Button>
+      </CollectionUnavailable>
     );
   }
 
@@ -491,10 +496,8 @@ export default function CollectionDetails() {
     return <LoadingCenter />;
   }
 
-  const isOwner = !!(
-    isUserLoggedIn &&
-    currentUser?.user_uuid === collectionDetails?.owner?.user_uuid
-  );
+  // Both ids are needed: two missing ones must not read as the same person
+  const isOwner = !!currentUser?.user_uuid && currentUser.user_uuid === collectionDetails.owner?.user_uuid;
 
   return (
     <Box
@@ -534,6 +537,13 @@ export default function CollectionDetails() {
           }}
         >
           {isOwner && <CollectionExportMenu collectionId={collectionId} />}
+          <ShareCollectionButton
+            variant="text"
+            shareToken={collectionDetails.share_token}
+            name={collectionDetails.name}
+            ownerUsername={collectionDetails.owner?.username}
+            isPublic={collectionDetails.is_public}
+          />
           {isOwner && (
             <Button
               variant="text"
@@ -570,7 +580,7 @@ export default function CollectionDetails() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <TextField
               sx={{ width: isMobile ? "320px" : "400px" }}
-              label={`${getSearchPlaceholder()} in my collection`}
+              label={`${getSearchPlaceholder()} in ${isOwner ? "my" : "this"} collection`}
               variant="outlined"
               value={searchTerm}
               onChange={handleSearchTermChange}
