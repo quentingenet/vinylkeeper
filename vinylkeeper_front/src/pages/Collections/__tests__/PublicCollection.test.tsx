@@ -85,6 +85,9 @@ describe("PublicCollection", () => {
 
     expect(await screen.findByRole("button", { name: "Record of page 1" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "See the whole collection" })).not.toBeInTheDocument();
+    // Every page keeps the place of ten tiles and of the invitation: the page does not change height
+    expect(screen.getAllByTestId("empty-tile")).toHaveLength(9);
+    expect(screen.getByText("See the whole collection")).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "2" }));
 
@@ -108,6 +111,18 @@ describe("PublicCollection", () => {
     expect(screen.getByText("18 more artists in this collection. Join Vinyl Keeper to see them all.")).toBeInTheDocument();
   });
 
+  it("keeps the place of the list while the next tab loads, without a spinner", async () => {
+    answers();
+    renderAt();
+    await screen.findByRole("button", { name: "Art Blakey - Moanin'" });
+
+    api.getSharedItems.mockReturnValue(new Promise(() => undefined));
+    await userEvent.click(screen.getByRole("tab", { name: "Artists" }));
+
+    expect(await screen.findAllByTestId("empty-tile")).toHaveLength(10);
+    expect(screen.queryByRole("button", { name: "Art Blakey - Moanin'" })).not.toBeInTheDocument();
+  });
+
   it("shows the whole wishlist, for who wants to offer a record", async () => {
     answers();
     renderAt();
@@ -119,8 +134,7 @@ describe("PublicCollection", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Wishlist" }));
 
     expect(await screen.findByRole("button", { name: "Wanted record" })).toBeInTheDocument();
-    expect(screen.getByText("Looking for a gift? Here is everything kent is hunting for.")).toBeInTheDocument();
-    expect(screen.queryByText(/Join Vinyl Keeper to see/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "See the whole collection" })).not.toBeInTheDocument();
   });
 
   it("opens a single popup, whatever the visitor clicks", async () => {
@@ -166,6 +180,15 @@ describe("PublicCollection", () => {
     expect(await screen.findByText("Join Vinyl Keeper to see every digger's collection.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Join Vinyl Keeper" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "See the whole collection" })).not.toBeInTheDocument();
+  });
+
+  it("leaves no empty places under a collection of a single page", async () => {
+    answers(shared({ records_count: 3 }), list({ total_count: 3, visible_count: 3, page: 1, total_pages: 1 }));
+    renderAt();
+
+    await screen.findByText("Join Vinyl Keeper to see every digger's collection.");
+
+    expect(screen.queryByTestId("empty-tile")).not.toBeInTheDocument();
   });
 
   it("copes with a collection without records", async () => {

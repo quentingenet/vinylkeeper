@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Box, Button, ButtonBase, Chip, Tab, Tabs, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, Chip, Fade, Tab, Tabs, Typography } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { collectionApiService } from "@services/CollectionApiService";
@@ -23,6 +23,18 @@ import { queryKeys } from "@utils/queryKeys";
 const DISCOGS_URL = "https://www.discogs.com";
 // The footer of a public page is fixed: the end of the page must clear it
 const FOOTER_ROOM = 10;
+// Items of a page of the API
+const ITEMS_PER_PAGE = 10;
+// Two lines, whatever the title: every tile has the same height
+const tileTitleSx = { mt: 0.5, lineHeight: 1.4, minHeight: "2.8em" };
+
+const TAB_FADE_MS = 400;
+// A grid, not a wrapping row: every cover on its line, the last row included
+const tileGridSx = {
+  display: "grid",
+  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))", md: "repeat(5, minmax(0, 1fr))" },
+  gap: 2,
+};
 
 const TABS: { kind: SharedItemsKind; label: string; noun: string; emptyText: string }[] = [
   { kind: "records", label: "Albums", noun: "record", emptyText: "No records in this collection yet." },
@@ -64,7 +76,7 @@ function ItemTile({ item, onClick }: { item: SharedItem; onClick: () => void }) 
         variant="caption"
         component="p"
         sx={{
-          mt: 0.5,
+          ...tileTitleSx,
           color: "text.secondary",
           overflow: "hidden",
           display: "-webkit-box",
@@ -78,19 +90,33 @@ function ItemTile({ item, onClick }: { item: SharedItem; onClick: () => void }) 
   );
 }
 
+/** Keeps the place of a tile on a page that is not full, so that the pages all have the same height. */
+function EmptyTile() {
+  return (
+    <Box data-testid="empty-tile" aria-hidden sx={{ visibility: "hidden" }}>
+      <Box sx={{ aspectRatio: "1" }} />
+      <Typography variant="caption" component="p" sx={tileTitleSx} />
+    </Box>
+  );
+}
+
 interface InvitationProps {
   hiddenCount: number;
   noun: string;
   /** Too small to page through: the invitation is to the other collections */
   isSmall: boolean;
+  /** On the pages before the last one: its place stays, so that the pages keep the same height */
+  isReserved: boolean;
   onJoin: () => void;
 }
 
 /** At the end of what a visitor can see, not before: the pages come first. */
-function Invitation({ hiddenCount, noun, isSmall, onJoin }: InvitationProps) {
+function Invitation({ hiddenCount, noun, isSmall, isReserved, onJoin }: InvitationProps) {
   return (
     <Box
+      aria-hidden={isReserved}
       sx={{
+        visibility: isReserved ? "hidden" : "visible",
         mt: 4,
         p: 3,
         borderRadius: 1,
@@ -108,7 +134,7 @@ function Invitation({ hiddenCount, noun, isSmall, onJoin }: InvitationProps) {
           ? "Join Vinyl Keeper to see every digger's collection."
           : `${formatCount(hiddenCount, `more ${noun}`)} in this collection. Join Vinyl Keeper to see them all.`}
       </Typography>
-      <Button variant="contained" onClick={onJoin}>
+      <Button variant="contained" onClick={onJoin} disabled={isReserved}>
         {isSmall ? "Join Vinyl Keeper" : "See the whole collection"}
       </Button>
     </Box>
@@ -126,20 +152,18 @@ interface SharedListProps {
 
 function SharedList({ kind, noun, emptyText, list, onPageChange, onJoin }: SharedListProps) {
   const isLastPage = list.page >= list.total_pages;
+  // A single page has no other page to match: no empty places under a small collection
+  const emptyTiles = list.total_pages > 1 ? Math.max(0, ITEMS_PER_PAGE - list.items.length) : 0;
 
   return (
     <>
       {list.items.length > 0 ? (
-        <Box
-          // A grid, not a wrapping row: every cover on its line, the last row included
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))", md: "repeat(5, minmax(0, 1fr))" },
-            gap: 2,
-          }}
-        >
+        <Box sx={tileGridSx}>
           {list.items.map((item, index) => (
             <ItemTile key={`${item.title}-${index}`} item={item} onClick={onJoin} />
+          ))}
+          {Array.from({ length: emptyTiles }, (_, index) => (
+            <EmptyTile key={index} />
           ))}
         </Box>
       ) : (
@@ -150,15 +174,14 @@ function SharedList({ kind, noun, emptyText, list, onPageChange, onJoin }: Share
 
       <CollectionsPagination totalPages={list.total_pages} page={list.page} onChange={onPageChange} />
 
-      {/* The wishlist has no limit: nothing to invite to on it */}
-      {isLastPage && kind !== "wishlist" && (
-        <Invitation
-          hiddenCount={list.total_count - list.visible_count}
-          noun={noun}
-          isSmall={list.total_pages <= 1}
-          onJoin={onJoin}
-        />
-      )}
+      {/* The wishlist has no limit: nothing to invite to on it, its place stays like on the other pages */}
+      <Invitation
+        hiddenCount={list.total_count - list.visible_count}
+        noun={noun}
+        isSmall={list.total_pages <= 1}
+        isReserved={!isLastPage || kind === "wishlist"}
+        onJoin={onJoin}
+      />
     </>
   );
 }
@@ -221,24 +244,27 @@ function SharedCollection({ collection, kind, list, onTabChange, onPageChange, o
         </Tabs>
       </Box>
 
-      {kind === "wishlist" && collection.wishlist_count > 0 && (
-        <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", mb: 2 }}>
-          Looking for a gift? Here is everything {collection.owner_username ?? "this digger"} is hunting for.
-        </Typography>
-      )}
-
-      {list ? (
-        <SharedList
-          kind={kind}
-          noun={tab.noun}
-          emptyText={tab.emptyText}
-          list={list}
-          onPageChange={onPageChange}
-          onJoin={onJoin}
-        />
-      ) : (
-        <LoadingCenter />
-      )}
+      {/* key: a new tab fades in. Its place is kept while it loads: nothing below the tabs moves */}
+      <Fade in key={kind} timeout={TAB_FADE_MS}>
+        <Box role="tabpanel">
+          {list ? (
+            <SharedList
+              kind={kind}
+              noun={tab.noun}
+              emptyText={tab.emptyText}
+              list={list}
+              onPageChange={onPageChange}
+              onJoin={onJoin}
+            />
+          ) : (
+            <Box sx={tileGridSx}>
+              {Array.from({ length: ITEMS_PER_PAGE }, (_, index) => (
+                <EmptyTile key={index} />
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Fade>
 
       <Box sx={{ mt: 2, textAlign: "center" }}>
         <DiscogsAttribution href={DISCOGS_URL} />
