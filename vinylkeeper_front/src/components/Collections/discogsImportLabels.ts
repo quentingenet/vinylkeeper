@@ -20,6 +20,12 @@ export function connectionOutcomeMessage(outcome: string | null): { severity: "s
       return { severity: "warning", text: "The connection to Discogs was cancelled." };
     case "expired":
       return { severity: "warning", text: "The connection took too long. Connect your Discogs account again." };
+    case "session":
+      // The browser that came back from Discogs is not logged in as the user who started the connection
+      return {
+        severity: "warning",
+        text: "Connect your Discogs account again from this browser, while logged in to Vinyl Keeper.",
+      };
     default:
       return { severity: "warning", text: "Discogs could not connect your account. Try again in a few minutes." };
   }

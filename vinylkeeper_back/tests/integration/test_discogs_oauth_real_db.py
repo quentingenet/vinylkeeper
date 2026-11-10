@@ -18,6 +18,7 @@ from app.services.discogs_oauth_service import (
     DiscogsOAuthError,
     DiscogsOAuthService,
     decrypt,
+    oauth_configured,
     oauth_header,
 )
 
@@ -81,7 +82,7 @@ class TestConnect:
         oauth = service(real_session, fake)
 
         authorize_url = await oauth.start(user)
-        username = await oauth.complete("req-tok", "the-verifier")
+        username = await oauth.complete("req-tok", "the-verifier", user.id)
 
         assert parse_qs(urlparse(authorize_url).query) == {"oauth_token": ["req-tok"]}
         assert authorize_url.startswith("https://www.discogs.com/oauth/authorize")
@@ -100,10 +101,10 @@ class TestConnect:
         user = await make_test_user(real_session)
         oauth = service(real_session, FakeDiscogs())
         await oauth.start(user)
-        await oauth.complete("req-tok", "v")
+        await oauth.complete("req-tok", "v", user.id)
 
         with pytest.raises(DiscogsOAuthError) as error:
-            await oauth.complete("req-tok", "v")
+            await oauth.complete("req-tok", "v", user.id)
         assert error.value.reason == "expired"
 
     async def test_an_old_request_has_expired(self, real_session):
@@ -114,7 +115,7 @@ class TestConnect:
             "UPDATE discogs_oauth_requests SET created_at = now() - interval '1 hour' WHERE request_token = 'req-tok'"))
 
         with pytest.raises(DiscogsOAuthError):
-            await oauth.complete("req-tok", "v")
+            await oauth.complete("req-tok", "v", user.id)
         assert (await real_session.execute(select(DiscogsOAuthRequest).where(
             DiscogsOAuthRequest.request_token == "req-tok"))).scalar_one_or_none() is None
 
@@ -124,17 +125,17 @@ class TestConnect:
         await oauth.start(user)
 
         with pytest.raises(DiscogsOAuthError) as error:
-            await oauth.complete("req-tok", "bad")
+            await oauth.complete("req-tok", "bad", user.id)
         assert error.value.reason == "refused"
         assert await oauth.repository.get_connection(user.id) is None
 
     async def test_connecting_another_account_replaces_the_first(self, real_session):
         user = await make_test_user(real_session)
         await service(real_session, FakeDiscogs()).start(user)
-        await service(real_session, FakeDiscogs()).complete("req-tok", "v")
+        await service(real_session, FakeDiscogs()).complete("req-tok", "v", user.id)
         second = service(real_session, FakeDiscogs(identity={"id": 7, "username": "other"}))
         await second.start(user)
-        await second.complete("req-tok", "v")
+        await second.complete("req-tok", "v", user.id)
 
         connection = await second.repository.get_connection(user.id)
         assert (connection.discogs_username, connection.discogs_user_id) == ("other", 7)
@@ -152,7 +153,7 @@ class TestDisconnect:
         user = await make_test_user(real_session)
         oauth = service(real_session, FakeDiscogs())
         await oauth.start(user)
-        await oauth.complete("req-tok", "v")
+        await oauth.complete("req-tok", "v", user.id)
 
         await oauth.disconnect(user)
 
@@ -163,7 +164,7 @@ class TestDisconnect:
         user = await make_test_user(real_session)
         oauth = service(real_session, FakeDiscogs())
         await oauth.start(user)
-        await oauth.complete("req-tok", "v")
+        await oauth.complete("req-tok", "v", user.id)
 
         username, authorization = await oauth.authorization_for(user.id)
         params = dict(part.split("=", 1) for part in authorization().removeprefix("OAuth ").split(", "))
@@ -176,9 +177,23 @@ class TestDisconnect:
         user = await make_test_user(real_session)
         oauth = service(real_session, FakeDiscogs())
         await oauth.start(user)
-        await oauth.complete("req-tok", "v")
+        await oauth.complete("req-tok", "v", user.id)
         monkeypatch.setattr(oauth_module.settings, "DISCOGS_TOKEN_KEY", Fernet.generate_key().decode())
 
+        assert await oauth.authorization_for(user.id) is None
+
+    @pytest.mark.parametrize("bad_key", ["not-a-fernet-key", Fernet.generate_key().decode()[:-6]])
+    async def test_a_malformed_encryption_key_makes_the_connection_unavailable(
+        self, real_session, monkeypatch, bad_key
+    ):
+        # A key mistyped or cut when pasted in the .env: "not available" for the user, not a 500
+        user = await make_test_user(real_session)
+        oauth = service(real_session, FakeDiscogs())
+        await oauth.start(user)
+        await oauth.complete("req-tok", "v", user.id)
+        monkeypatch.setattr(oauth_module.settings, "DISCOGS_TOKEN_KEY", bad_key)
+
+        assert oauth_configured() is False
         assert await oauth.authorization_for(user.id) is None
 
 

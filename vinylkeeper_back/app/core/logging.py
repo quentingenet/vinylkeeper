@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from logging.config import dictConfig
 
 # Same levels in every environment
@@ -104,6 +105,14 @@ def log_activity(who: str, what: str) -> None:
     stacklevel=2: the line shows the file and line of the action, not of this helper.
     """
     logger.info(f"Activity: {who} {what}", stacklevel=2)
+
+
+_EMAIL_ADDRESS = re.compile(r"([A-Za-z0-9._%+-]+)@[A-Za-z0-9.-]+")
+
+
+def mask_email(text: str) -> str:
+    """Every email address of a text as john@***: the user stays recognisable, the address never reaches the logs."""
+    return _EMAIL_ADDRESS.sub(r"\1@***", text)
 
 
 def extract_file_info(tb) -> str:

@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.exceptions import AppException
 from app.core.config_env import settings
-from app.core.logging import logger, extract_file_info
+from app.core.logging import logger, extract_file_info, mask_email
 
 
 def register_exception_handlers(app):
@@ -23,7 +23,8 @@ def register_exception_handlers(app):
             error_details = f"AppException (code {exc.detail['code']}): {exc.detail['message']} - File: {file_info}"
             if exc.detail.get('details'):
                 error_details += f" - Details: {exc.detail['details']}"
-            logger.error(error_details)
+            # DuplicateEmailError carries the address: the response gives it back, the log does not
+            logger.error(mask_email(error_details))
         return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
     @app.exception_handler(RequestValidationError)
@@ -31,23 +32,21 @@ def register_exception_handlers(app):
         tb = traceback.extract_tb(exc.__traceback__)
         file_info = extract_file_info(tb)
 
+        # The raw input is never sent back nor logged: for a missing field, Pydantic puts the whole
+        # body in it, password included. Type, location and message tell what to fix.
         errors = []
         for error in exc.errors():
-            loc = error.get("loc", [])
-            # Never echo raw input for sensitive fields (passwords) back to the
-            # client or into log files — only the validation message is safe.
-            is_sensitive = any("password" in str(part).lower() for part in loc)
             error_dict = {
                 "type": str(error.get("type", "")),
-                "loc": loc,
+                "loc": error.get("loc", []),
                 "msg": str(error.get("msg", "")),
-                "input": "[REDACTED]" if is_sensitive else str(error.get("input", ""))
             }
             if "ctx" in error:
                 error_dict["ctx"] = {k: str(v) for k, v in error["ctx"].items()}
             errors.append(error_dict)
 
-        logger.error(f"Validation error: {errors} - File: {file_info}")
+        logged = [{key: error[key] for key in ("type", "loc", "msg")} for error in errors]
+        logger.error(mask_email(f"Validation error: {logged} - File: {file_info}"))
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
@@ -91,7 +90,8 @@ def register_exception_handlers(app):
         tb = traceback.extract_tb(exc.__traceback__)
         file_info = extract_file_info(tb)
 
-        logger.exception(f"Unhandled exception occurred - File: {file_info}")
+        # Called outside of the except block: the exception is passed, or the traceback is lost
+        logger.error(f"Unhandled exception occurred - File: {file_info}", exc_info=exc)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={

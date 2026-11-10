@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic import ConfigDict
 
 from app.schemas import BaseSchema
-from app.core.enums import EntityTypeEnum, VinylStateEnum
-from app.utils.discogs_release import DISCOGS_IMAGE_HOST, is_discogs_image
+from app.core.enums import EntityTypeEnum, ExternalSourceEnum, VinylStateEnum
+from app.utils.discogs_release import DISCOGS_ID_PATTERN, DISCOGS_IMAGE_HOST, is_discogs_image
 
 
 class AlbumStateData(BaseSchema):
@@ -33,9 +33,8 @@ class ExternalReferenceBase(BaseSchema):
     """
     external_id: str = Field(
         ...,
-        min_length=1,
-        max_length=255,
-        description="External ID"
+        pattern=DISCOGS_ID_PATTERN,
+        description="Discogs id of the release or artist: digits only"
     )
     entity_type: EntityTypeEnum = Field(
         ...,
@@ -54,8 +53,16 @@ class ExternalReferenceBase(BaseSchema):
     source: str = Field(
         ...,
         max_length=50,
-        description="Source of the data (e.g., 'DISCOGS')"
+        description="Source of the data: 'discogs', the only one (case ignored)"
     )
+
+    @field_validator("source")
+    @classmethod
+    def discogs_only(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v != ExternalSourceEnum.DISCOGS.value:
+            raise ValueError("source must be 'discogs'")
+        return v
 
     @field_validator("title")
     @classmethod

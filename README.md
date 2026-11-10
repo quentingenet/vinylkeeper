@@ -12,7 +12,7 @@
 
 **VinylKeeper** is a free and open source app to manage your vinyl collection, share it with a community of collectors, and decide what to put on the turntable tonight.
 
-It is **live in production** at **[vinylkeeper.org](https://vinylkeeper.org/)**, on the web and as an Android app.
+It is **live in production** at **[vinylkeeper.org](https://vinylkeeper.org/)** on the web, and an Android app is in progress.
 
 <p align="center">
   <a href="https://vinylkeeper.org/">
@@ -44,7 +44,7 @@ A community map of record shops, flea markets and vinyl spots. New spots go thro
 Your collection at a glance and what the community added recently.
 
 **📱 Web and mobile**
-Responsive web app and Android app built with Capacitor.
+Responsive web app. An Android app built with Capacitor is in progress.
 
 <p align="center">
   <img src="vinylkeeper_front/public/vk_preview/preview_vk_1.webp" alt="Dashboard" width="49%">
@@ -55,7 +55,7 @@ Responsive web app and Android app built with Capacitor.
 
 ### Data enrichment and moods, with no LLM at runtime
 
-Records are enriched once from Discogs (genres, styles, pressing year, original year from the master release), then stored. Features never call Discogs at request time.
+Records are enriched once from Discogs (genres, styles, pressing year, original year from the master release), then stored. Spinning now, the moods and the dashboard never call Discogs at request time; the search and the artist and album pages query Discogs live.
 
 Moods (calm, groovy, laid back, dark...) come from **400+ versioned rules** mapping Discogs styles and genres to moods, kept in [`tag_mood_rules.py`](vinylkeeper_back/app/data/tag_mood_rules.py) and reviewed like code.
 
@@ -76,7 +76,7 @@ Other details:
 ```mermaid
 flowchart LR
     Web["React + TypeScript<br/>(web)"] --> API
-    App["Android app<br/>(Capacitor)"] --> API
+    App["Android app<br/>(Capacitor, in progress)"] --> API
     API["FastAPI<br/>endpoints, services, repositories"] --> DB[("PostgreSQL")]
     API -- "search, enrichment" --> Discogs["Discogs API"]
     Cron["Nightly job"] -- "enrich_albums" --> API
@@ -84,7 +84,7 @@ flowchart LR
 
 - **Backend**: layered architecture (endpoints, services, repositories) with dependency injection through FastAPI `Depends`, async SQLAlchemy 2 with explicit loading (`lazy="raise"`), Alembic migrations.
 - **Frontend**: React 19, TypeScript in strict mode, TanStack Query, MUI, custom hooks for data logic.
-- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint, all run by GitHub Actions on every push.
+- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint. GitHub Actions runs all of them on every push except the real-database tests, which run locally against a copy of the database.
 - **Deployment**: continuous deployment of the API to a Linux VPS with Docker Compose, migrations applied on container start; the web app is deployed by Netlify.
 
 ### Continuous integration and deployment
@@ -97,12 +97,12 @@ flowchart LR
         Front["Web app<br/>ESLint, tsc, Vitest"]
     end
     Back -- "green, on main,<br/>API changed" --> Deploy["SSH, forced command"]
-    Deploy --> VPS["VPS<br/>backup, pull, rebuild,<br/>migrations, health check"]
+    Deploy --> VPS["VPS<br/>pull, rebuild,<br/>migrations, health check"]
     Push --> Netlify["Netlify<br/>web app"]
 ```
 
-- **Every push and pull request** runs the backend and frontend suites in parallel ([workflow](.github/workflows/ci.yml)). A failing API suite blocks the API deployment: production keeps the last version that passed.
-- **The API deploys itself** when `main` changes under `vinylkeeper_back/`: a database backup first, then `git pull`, a Docker rebuild with the Alembic migrations, and a health check that fails the run if the API does not answer.
+- **Every push and pull request** runs the backend and frontend suites in parallel, the real-database tests aside ([workflow](.github/workflows/ci.yml)). A failing API suite blocks the API deployment: production keeps the last version that passed.
+- **The API deploys itself** when `main` changes under `vinylkeeper_back/`: a `git pull`, a Docker rebuild with the Alembic migrations, and a health check that fails the run if the API does not answer.
 - **Least privilege**: GitHub holds an SSH key restricted by a forced command on the server. Whatever it asks, it can only run the deployment script: no shell, no tunnel. The server is pinned by its host key, and the script lives outside the repository, so no commit can change what the deployment key is allowed to run.
 - **One deployment at a time**, and a push that only touches the web app leaves the API running.
 

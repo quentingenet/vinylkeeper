@@ -8,6 +8,10 @@ DISAMBIGUATION_SUFFIX = re.compile(r"\s*\(\d+\)$")
 
 DISCOGS_IMAGE_HOST = "i.discogs.com"
 
+# A Discogs id (release, master, artist): digits only. It goes into the path of API calls made
+# with the token of the application, so nothing else may reach them ("../" for instance).
+DISCOGS_ID_PATTERN = r"^[0-9]{1,12}$"
+
 # Column sizes of the albums table
 COUNTRY_MAX_LENGTH = 100
 LABEL_MAX_LENGTH = 512

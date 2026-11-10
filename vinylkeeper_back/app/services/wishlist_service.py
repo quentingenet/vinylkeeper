@@ -53,25 +53,13 @@ class WishlistService:
                 external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
 
             if request.entity_type == EntityTypeEnum.ALBUM:
-                # Try to find existing album first
-                entity = await self.external_ref_repo.find_album_by_external_id(external_id, external_source_id)
-                if not entity:
-                    # Album doesn't exist, create it
-                    try:
-                        entity = await self.external_ref_repo.create_album(AlbumCreate(
-                            external_album_id=external_id,
-                            title=request.title,
-                            image_url=request.image_url,
-                            external_source_id=external_source_id
-                        ))
-                    except Exception as create_error:
-                        # If creation fails (e.g., due to race condition), try to find again
-                        logger.warning(
-                            f"Failed to create album, trying to find existing: {str(create_error)}")
-                        entity = await self.external_ref_repo.find_album_by_external_id(external_id, external_source_id)
-                        if not entity:
-                            # Still not found, re-raise the original error
-                            raise create_error
+                # Safe against a concurrent creation of the same album (ON CONFLICT DO NOTHING)
+                entity, _ = await self.external_ref_repo.get_or_create_album(AlbumCreate(
+                    external_album_id=external_id,
+                    title=request.title,
+                    image_url=request.image_url,
+                    external_source_id=external_source_id
+                ))
 
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {
@@ -90,27 +78,13 @@ class WishlistService:
                 }
                 return AlbumResponse.model_validate(entity_dict)
             else:
-                # Try to find existing artist first
-                entity = await self.external_ref_repo.find_artist_by_external_id(external_id, external_source_id)
-                if not entity:
-                    # Artist doesn't exist, create it
-                    try:
-                        entity = await self.external_ref_repo.create_artist(ArtistCreate(
-                            external_artist_id=external_id,
-                            title=request.title,
-                            image_url=request.image_url,
-                            external_source_id=external_source_id
-                        ))
-                    except Exception as create_error:
-                        # If creation fails (e.g., due to race condition), try to find again
-                        logger.warning(
-                            f"Failed to create artist, trying to find existing: {str(create_error)}")
-                        entity = await self.external_ref_repo.find_artist_by_external_id(
-                            external_id, external_source_id
-                        )
-                        if not entity:
-                            # Still not found, re-raise the original error
-                            raise create_error
+                # Safe against a concurrent creation of the same artist (ON CONFLICT DO NOTHING)
+                entity, _ = await self.external_ref_repo.get_or_create_artist(ArtistCreate(
+                    external_artist_id=external_id,
+                    title=request.title,
+                    image_url=request.image_url,
+                    external_source_id=external_source_id
+                ))
 
                 # Convert SQLAlchemy object to dict for Pydantic validation
                 entity_dict = {

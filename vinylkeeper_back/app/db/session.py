@@ -6,6 +6,8 @@ async_database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+
 engine = create_async_engine(
     async_database_url,
     echo=False,
+    # Errors logged by the repositories would show the query parameters: emails, password hashes
+    hide_parameters=True,
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_pre_ping=True,

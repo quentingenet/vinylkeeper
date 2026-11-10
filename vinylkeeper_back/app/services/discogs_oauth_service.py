@@ -14,6 +14,7 @@ also remove VinylKeeper from the applications of their Discogs account.
 import secrets
 import time
 from datetime import timedelta
+from functools import lru_cache
 from typing import Optional
 from urllib.parse import parse_qs, quote, urlencode
 
@@ -44,7 +45,23 @@ class DiscogsOAuthError(Exception):
 
 def oauth_configured() -> bool:
     return all((settings.DISCOGS_CONSUMER_KEY, settings.DISCOGS_CONSUMER_SECRET,
-                settings.DISCOGS_TOKEN_KEY, settings.DISCOGS_OAUTH_CALLBACK_URL))
+                settings.DISCOGS_OAUTH_CALLBACK_URL)) and _valid_token_key(settings.DISCOGS_TOKEN_KEY)
+
+
+@lru_cache(maxsize=4)
+def _valid_token_key(key: str) -> bool:
+    """
+    A key Fernet accepts. A mistyped or quoted key in the .env leaves the connection "not available"
+    instead of failing every request that reads a token; said once per key in the logs.
+    """
+    if not key:
+        return False
+    try:
+        Fernet(key.encode())
+    except ValueError:
+        logger.error("DISCOGS_TOKEN_KEY is not a valid Fernet key: connecting a Discogs account is disabled")
+        return False
+    return True
 
 
 def _cipher() -> Fernet:
@@ -124,10 +141,14 @@ class DiscogsOAuthService:
         await self.repository.db.commit()
         return f"{AUTHORIZE_URL}?{urlencode({'oauth_token': values['oauth_token']})}"
 
-    async def complete(self, request_token: str, verifier: str) -> str:
+    async def complete(self, request_token: str, verifier: str, browser_user_id: Optional[int]) -> str:
         """
         The user is back from Discogs: their access token and identity are kept. Returns the
         Discogs username. Raises DiscogsOAuthError: the request is unknown, expired or refused.
+
+        browser_user_id is the Vinyl Keeper user logged in on the browser that came back (None:
+        nobody). It must be the one who started the connection: otherwise the authorization page
+        of an attacker, sent to a victim, would link the victim's Discogs account to the attacker.
         """
         if not oauth_configured():
             raise DiscogsOAuthError("unavailable")
@@ -136,6 +157,12 @@ class DiscogsOAuthService:
         await self.repository.db.commit()
         if pending is None:
             raise DiscogsOAuthError("expired")
+        if browser_user_id != pending.user_id:
+            # Refused before any token is asked for: nothing of this Discogs account is kept
+            logger.warning(
+                f"Discogs OAuth callback refused: request of user {pending.user_id}, "
+                f"browser session of {f'user {browser_user_id}' if browser_user_id else 'nobody'}")
+            raise DiscogsOAuthError("session")
         try:
             request_secret = decrypt(pending.request_secret)
         except InvalidToken as e:
@@ -168,6 +195,9 @@ class DiscogsOAuthService:
 
     async def authorization_for(self, user_id: int):
         """(Discogs username, header factory) of the user's connection, or None."""
+        if not oauth_configured():
+            # Nothing can sign nor decrypt: the connection is "not available", the user is told so
+            return None
         connection = await self.repository.get_connection(user_id)
         if connection is None:
             return None
@@ -181,5 +211,8 @@ class DiscogsOAuthService:
 
 
 def not_connected_error() -> ValidationError:
-    return ValidationError(error_code=ErrorCode.INVALID_RESOURCE_STATE,
-                           message="Connect your Discogs account first", details={"reason": "not_connected"})
+    error = ValidationError(error_code=ErrorCode.INVALID_RESOURCE_STATE,
+                            message="Connect your Discogs account first", details={"reason": "not_connected"})
+    # A normal state, asked again by the dialog right after a disconnection: no error line in the logs
+    error.should_log = False
+    return error

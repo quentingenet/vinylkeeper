@@ -72,46 +72,20 @@ class ExternalReferenceService:
             if external_source_id is None:
                 external_source_id = await self.repository.get_external_source_id(request.source)
 
+            # is_new_entity: true only when this request inserted the row (a concurrent one may have)
             if request.entity_type == EntityTypeEnum.ALBUM:
-                entity = await self.repository.find_album_by_external_id(external_id, external_source_id)
-                is_new_entity = False
-                if not entity:
-                    is_new_entity = True
-                    try:
-                        entity = await self.repository.create_album(AlbumCreate(
-                            external_album_id=external_id,
-                            title=request.title,
-                            image_url=request.image_url,
-                            external_source_id=external_source_id
-                        ))
-                    except Exception as create_error:
-                        logger.warning(f"Failed to create album, trying to find existing: {str(create_error)}")
-                        entity = await self.repository.find_album_by_external_id(external_id, external_source_id)
-                        if not entity:
-                            logger.error(f"Failed to create album and could not find existing: {str(create_error)}")
-                            raise create_error
-                        is_new_entity = False
-                return entity, is_new_entity
-            else:
-                entity = await self.repository.find_artist_by_external_id(external_id, external_source_id)
-                is_new_entity = False
-                if not entity:
-                    is_new_entity = True
-                    try:
-                        entity = await self.repository.create_artist(ArtistCreate(
-                            external_artist_id=external_id,
-                            title=request.title,
-                            image_url=request.image_url,
-                            external_source_id=external_source_id
-                        ))
-                    except Exception as create_error:
-                        logger.warning(f"Failed to create artist, trying to find existing: {str(create_error)}")
-                        entity = await self.repository.find_artist_by_external_id(external_id, external_source_id)
-                        if not entity:
-                            logger.error(f"Failed to create artist and could not find existing: {str(create_error)}")
-                            raise create_error
-                        is_new_entity = False
-                return entity, is_new_entity
+                return await self.repository.get_or_create_album(AlbumCreate(
+                    external_album_id=external_id,
+                    title=request.title,
+                    image_url=request.image_url,
+                    external_source_id=external_source_id
+                ))
+            return await self.repository.get_or_create_artist(ArtistCreate(
+                external_artist_id=external_id,
+                title=request.title,
+                image_url=request.image_url,
+                external_source_id=external_source_id
+            ))
 
         except (ValidationError, ServerError):
             raise
@@ -385,24 +359,19 @@ class ExternalReferenceService:
 
         async with transaction_context(self.repository.db):
             if is_album:
-                album = await self.repository.find_album_by_external_id(item.external_id, item.external_source_id)
-                if album is None:
-                    album = await self.repository.create_album(AlbumCreate(
-                        external_album_id=item.external_id, title=item.title or "",
-                        image_url=item.image_url or "", external_source_id=item.external_source_id,
-                    ))
+                album, _ = await self.repository.get_or_create_album(AlbumCreate(
+                    external_album_id=item.external_id, title=item.title or "",
+                    image_url=item.image_url or "", external_source_id=item.external_source_id,
+                ))
                 _collection_album, is_new = await self.repository.add_album_to_collection(
                     collection, album, None, is_new_entity=False, pressing_confirmed=pressing_confirmed,
                     add_copy=True,
                 )
             else:
-                artist = await self.repository.find_artist_by_external_id(item.external_id, item.external_source_id)
-                is_new_entity = artist is None
-                if artist is None:
-                    artist = await self.repository.create_artist(ArtistCreate(
-                        external_artist_id=item.external_id, title=item.title or "",
-                        image_url=item.image_url or "", external_source_id=item.external_source_id,
-                    ))
+                artist, is_new_entity = await self.repository.get_or_create_artist(ArtistCreate(
+                    external_artist_id=item.external_id, title=item.title or "",
+                    image_url=item.image_url or "", external_source_id=item.external_source_id,
+                ))
                 is_new = await self.repository.find_artist_in_collection(collection.id, artist.id) is None
                 if is_new:
                     await self.repository.add_artist_to_collection(collection, artist, is_new_entity)

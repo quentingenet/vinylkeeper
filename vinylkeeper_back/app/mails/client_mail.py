@@ -2,7 +2,7 @@ from enum import Enum
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from smtplib import SMTP_SSL
-from app.core.logging import logger
+from app.core.logging import logger, mask_email
 from app.mails.templates_mails.new_user import new_user_register_template
 from app.mails.templates_mails.reset_password import reset_password_template
 from app.mails.templates_mails.contact_message import contact_message_template
@@ -81,7 +81,8 @@ async def send_mail(to: str, subject: MailSubject, **kwargs):
         about = f" (about {kwargs['username']})" if kwargs.get("username") else ""
         logger.info(f"Activity: mail sent, {subject.value!r}{about}")
     except Exception as e:
-        logger.error(f"{subject.value} - Error sending mail: {e}")
+        # An SMTP refusal names the recipient: only its user part reaches the log
+        logger.error(mask_email(f"{subject.value} - Error sending mail: {e}"))
         return False
     return True
 

@@ -38,6 +38,7 @@ from app.services.wishlist_export_service import WishlistExportService
 from app.core.enums import EntityTypeEnum, ExternalSourceEnum
 from app.utils.endpoint_utils import handle_app_exceptions
 from app.services.album_enrichment_service import enrich_album_in_background
+from app.utils.discogs_release import DISCOGS_ID_PATTERN
 
 router = APIRouter()
 
@@ -125,8 +126,9 @@ async def add_to_collection(
 @router.get("/collection/owned", response_model=list[OwnedPressingResponse])
 @handle_app_exceptions
 async def find_owned_pressings(
-    external_id: str = Query(..., min_length=1, max_length=255, description="Release searched for"),
-    master_id: Optional[str] = Query(None, max_length=255, description="Its master, to find other pressings"),
+    external_id: str = Query(..., pattern=DISCOGS_ID_PATTERN, description="Release searched for"),
+    master_id: Optional[str] = Query(
+        None, pattern=DISCOGS_ID_PATTERN, description="Its master, to find other pressings"),
     current_user: User = Depends(get_current_user),
     service: ExternalReferenceService = Depends(get_external_reference_service)
 ):
@@ -157,8 +159,8 @@ async def replace_pressing(
 @handle_app_exceptions
 async def remove_from_collection(
     collection_id: int,
-    external_id: str,
     entity_type: str,
+    external_id: str = Query(..., pattern=DISCOGS_ID_PATTERN, description="Discogs id of the record or artist"),
     current_user: User = Depends(get_current_user),
     service: ExternalReferenceService = Depends(get_external_reference_service)
 ):

@@ -12,6 +12,7 @@ import pytest
 import app.services.album_enrichment_service as enrichment_module
 from app.services.album_enrichment_service import (
     AlbumEnrichmentService,
+    DiscogsAccessDeniedError,
     DiscogsClient,
     DiscogsUnavailableError,
     enrich_album_in_background,
@@ -222,6 +223,19 @@ class TestDiscogsClient:
 
         with pytest.raises(DiscogsUnavailableError):
             await make_client(handler).get("/releases/1")
+
+    @pytest.mark.parametrize("path", ["/releases/1/../../oauth/identity", "/releases/..", "/../oauth/identity"])
+    async def test_path_with_dot_dot_is_refused_without_a_request(self, path):
+        # httpx resolves "..": the path would reach another Discogs resource with the application token
+        sent = []
+
+        def handler(request):
+            sent.append(request)
+            return httpx.Response(200, json={})
+
+        with pytest.raises(DiscogsAccessDeniedError):
+            await make_client(handler).get(path)
+        assert sent == []
 
     async def test_pauses_when_rate_limit_nearly_exhausted(self, no_real_sleep):
         handler = lambda r: httpx.Response(200, json={}, headers={"X-Discogs-Ratelimit-Remaining": "1"})  # noqa: E731

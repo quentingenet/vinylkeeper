@@ -94,12 +94,16 @@ class TestEnrichmentScheduling:
         assert resp.status_code == 200
         enrich.assert_not_called()
 
-    async def test_other_source_is_not_enriched(self, client_with_services):
+    async def test_other_source_is_refused_and_not_enriched(self, client_with_services):
+        # Discogs is the only source: anything else is refused before the service is called
         client, reference_service, _, enrich = client_with_services
         reference_service.add_to_collection = AsyncMock(return_value=collection_response())
 
-        await client.post("/api/external-references/collection/1/add", json=add_payload(source="musicbrainz"))
+        resp = await client.post(
+            "/api/external-references/collection/1/add", json=add_payload(source="musicbrainz"))
 
+        assert resp.status_code == 422
+        reference_service.add_to_collection.assert_not_called()
         enrich.assert_not_called()
 
     async def test_failed_addition_schedules_nothing(self, client_with_services):

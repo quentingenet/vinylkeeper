@@ -32,7 +32,8 @@ from app.services.discogs_oauth_service import (
     not_connected_error,
     oauth_configured,
 )
-from app.utils.auth_utils.auth import get_current_user
+from app.core.exceptions import AppException
+from app.utils.auth_utils.auth import get_current_user, get_refresh_user
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
@@ -43,6 +44,18 @@ FRONTEND_RETURN_PATH = "/collections"
 
 def get_oauth_service(request: Request, db=Depends(get_db)) -> DiscogsOAuthService:
     return DiscogsOAuthService(DiscogsConnectionRepository(db), request.app.state.http_client)
+
+
+async def browser_user_id(request: Request, db) -> Optional[int]:
+    """
+    The Vinyl Keeper user logged in on this browser, or None. Read from the refresh token: after a
+    stay on Discogs, the 15 minute access token has often expired, the session has not.
+    """
+    try:
+        return (await get_refresh_user(request, db)).id
+    except AppException:
+        # No session, an invalid one, or a revoked one: the callback is refused
+        return None
 
 
 @router.get("/connection", response_model=DiscogsConnectionStatus)
@@ -73,14 +86,17 @@ async def connect_discogs(
 
 @router.get("/oauth/callback", include_in_schema=False)
 async def discogs_oauth_callback(
+    request: Request,
     oauth_token: Optional[str] = Query(None, max_length=255),
     oauth_verifier: Optional[str] = Query(None, max_length=255),
     denied: Optional[str] = Query(None, max_length=255),
     oauth: DiscogsOAuthService = Depends(get_oauth_service),
+    db=Depends(get_db),
 ):
     """
-    Discogs sends the user back here. The pending request found by its token tells which
-    user asked: no session is needed, and a token works once only. Always redirects to the app.
+    Discogs sends the user back here, a GET navigation from discogs.com: the session cookies come
+    with it. The pending request found by its token tells which user asked, and it is completed
+    only for that user's browser. A token works once only. Always redirects to the app.
     """
     outcome = "error"
     if denied:
@@ -89,7 +105,7 @@ async def discogs_oauth_callback(
         await oauth.repository.db.commit()
     elif oauth_token and oauth_verifier:
         try:
-            await oauth.complete(oauth_token, oauth_verifier)
+            await oauth.complete(oauth_token, oauth_verifier, await browser_user_id(request, db))
             outcome = "connected"
         except DiscogsOAuthError as e:
             outcome = e.reason

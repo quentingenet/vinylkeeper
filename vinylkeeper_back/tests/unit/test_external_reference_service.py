@@ -30,7 +30,7 @@ async def test_add_to_collection_runs_repo_work_inside_transaction_context():
     service = ExternalReferenceService(repo)
 
     request = AddToCollectionRequest(
-        external_id="ext-123",
+        external_id="123",
         entity_type=EntityTypeEnum.ALBUM,
         title="Test Album",
         image_url="https://i.discogs.com/cover.jpg",
@@ -81,7 +81,7 @@ async def test_add_to_collection_unexpected_error_raises_server_error():
     service = ExternalReferenceService(repo)
 
     request = AddToCollectionRequest(
-        external_id="ext-456",
+        external_id="456",
         entity_type=EntityTypeEnum.ALBUM,
         title="Failing Album",
         image_url="https://i.discogs.com/cover.jpg",

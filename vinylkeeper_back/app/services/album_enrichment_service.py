@@ -67,6 +67,9 @@ class DiscogsClient:
 
     async def get(self, path: str) -> Optional[dict[str, Any]]:
         """GET a Discogs resource. Returns None on 404, raises DiscogsUnavailableError otherwise."""
+        # httpx resolves "..": such a path would reach another resource with the same token
+        if ".." in path:
+            raise DiscogsAccessDeniedError(f"Refused Discogs path {path!r}")
         url = f"{settings.DISCOGS_API_URL}{path}"
         for attempt in range(self.max_attempts):
             await self._throttle()

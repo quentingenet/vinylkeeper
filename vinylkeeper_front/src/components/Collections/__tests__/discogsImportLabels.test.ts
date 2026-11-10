@@ -165,4 +165,12 @@ describe("connectionOutcomeMessage", () => {
     expect(connectionOutcomeMessage("expired")?.text).toMatch(/again/);
     expect(connectionOutcomeMessage("refused")?.text).toMatch(/could not connect/);
   });
+
+  it("asks to connect again from the browser logged in, when the callback came back without that session", () => {
+    const message = connectionOutcomeMessage("session");
+    expect(message?.severity).toBe("warning");
+    expect(message?.text).toBe(
+      "Connect your Discogs account again from this browser, while logged in to Vinyl Keeper."
+    );
+  });
 });

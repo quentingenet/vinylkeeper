@@ -170,7 +170,7 @@ class User(Base):
 
     def __repr__(self):
         """String representation of the user."""
-        return f"<User(username={self.username}, email={self.email})>"
+        return f"<User(username={self.username})>"
 
 
 # Event listeners

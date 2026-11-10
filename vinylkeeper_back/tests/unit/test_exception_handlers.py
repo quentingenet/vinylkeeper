@@ -1,9 +1,14 @@
+import logging
+
+import pytest
 from fastapi import FastAPI
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from httpx import AsyncClient, ASGITransport
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.core.handlers import register_exception_handlers
+from app.core.logging import mask_email
+from app.services.discogs_oauth_service import not_connected_error
 from app.core.exceptions import (
     AccountLockedError,
     DuplicateCollectionNameError,
@@ -69,6 +74,55 @@ def make_validation_app_with_password() -> FastAPI:
         return body
 
     return app
+
+
+class _LoginBody(BaseModel):
+    email: str
+    password: str
+
+
+def make_login_validation_app() -> FastAPI:
+    """App whose POST /test requires email and password, like the login form."""
+    app = FastAPI()
+    register_exception_handlers(app)
+
+    @app.post("/test")
+    async def trigger(body: _LoginBody):
+        return body
+
+    return app
+
+
+class _EmailBody(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def refuse_example_domain(cls, v: str) -> str:
+        # A message quoting the address, as some validators do
+        raise ValueError(f"{v} is not accepted")
+
+
+def make_email_validation_app() -> FastAPI:
+    """App whose validation message contains the email address sent."""
+    app = FastAPI()
+    register_exception_handlers(app)
+
+    @app.post("/test")
+    async def trigger(body: _EmailBody):
+        return body
+
+    return app
+
+
+@pytest.fixture
+def app_log(caplog):
+    """The "app" logger does not propagate to the root logger: caplog must listen to it directly."""
+    app_logger = logging.getLogger("app")
+    app_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.INFO, logger="app")
+    yield caplog
+    app_logger.removeHandler(caplog.handler)
 
 
 def make_starlette_app(status_code: int, detail: str) -> FastAPI:
@@ -194,6 +248,19 @@ class TestValidationErrors:
         assert resp.status_code == 400
         assert resp.json()["code"] == ErrorCode.RESOURCE_ALREADY_EXISTS
 
+    async def test_discogs_not_connected_is_answered_but_not_logged(self, app_log):
+        # A normal state (the dialog asks for the preview right after a disconnection), not an error
+        resp = await call(make_app_raising(not_connected_error))
+        assert resp.status_code == 400
+        assert resp.json()["details"] == {"reason": "not_connected"}
+        assert "Connect your Discogs account first" not in app_log.text
+
+    async def test_duplicate_email_masked_in_logs(self, app_log):
+        # Sign up and email change with a taken address: the log line keeps the user part only
+        await call(make_app_raising(lambda: DuplicateEmailError("dup@example.com")))
+        assert "Email already exists: dup@***" in app_log.text
+        assert "example.com" not in app_log.text
+
     async def test_duplicate_collection_name(self):
         resp = await call(make_app_raising(lambda: DuplicateCollectionNameError("My Mix")))
         assert resp.status_code == 400
@@ -265,14 +332,52 @@ class TestRequestValidationError:
         assert resp.status_code == 422
         assert candidate not in str(body)
         error = body["details"]["errors"][0]
-        assert error["input"] == "[REDACTED]"
+        assert "input" not in error
 
-    async def test_password_input_redacted_from_logs(self, caplog):
-        candidate = "s3cr3t-guess"
+    async def test_password_input_redacted_from_logs(self, app_log):
+        # Shorter than min_length=8: the validation fails on it
+        candidate = "s3cr3t"
         await call(
             make_validation_app_with_password(), method="POST", json={"new_password": candidate}
         )
-        assert candidate not in caplog.text
+        assert "Validation error" in app_log.text
+        assert candidate not in app_log.text
+
+    async def test_missing_field_keeps_password_out_of_response(self):
+        # A missing field puts the whole body in "input": the password sent with it must not come back
+        resp = await call(
+            make_login_validation_app(), method="POST", json={"password": "MyS3cretPass", "emial": "a@b.fr"}
+        )
+        assert resp.status_code == 422
+        assert "MyS3cretPass" not in resp.text
+        error = resp.json()["details"]["errors"][0]
+        assert error["loc"] == ["body", "email"]
+        assert error["type"] == "missing"
+        assert "input" not in error
+
+    async def test_missing_field_keeps_password_out_of_logs(self, app_log):
+        await call(
+            make_login_validation_app(), method="POST", json={"password": "MyS3cretPass", "emial": "a@b.fr"}
+        )
+        assert "Validation error" in app_log.text
+        assert "MyS3cretPass" not in app_log.text
+        assert "a@b.fr" not in app_log.text
+
+    async def test_email_masked_in_logs(self, app_log):
+        await call(make_email_validation_app(), method="POST", json={"email": "john@example.fr"})
+        assert "john@***" in app_log.text
+        assert "example.fr" not in app_log.text
+
+
+class TestMaskEmail:
+    def test_masks_the_domain(self):
+        assert mask_email("john@example.fr") == "john@***"
+
+    def test_masks_every_address_of_a_text(self):
+        assert mask_email("from a.b@x.org to c-d@mail.example.com") == "from a.b@*** to c-d@***"
+
+    def test_leaves_text_without_address(self):
+        assert mask_email("Field required") == "Field required"
 
 
 # ---------------------------------------------------------------------------
@@ -317,3 +422,9 @@ class TestUnhandledException:
         assert body["code"] == 9999
         assert body["message"] == "Internal Server Error"
         assert body["details"] == {}
+
+    async def test_traceback_logged(self, app_log):
+        await call_permissive(make_unhandled_app())
+        assert "Unhandled exception occurred" in app_log.text
+        assert "Traceback" in app_log.text
+        assert "RuntimeError: something went wrong" in app_log.text

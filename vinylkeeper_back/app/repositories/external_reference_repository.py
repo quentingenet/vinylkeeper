@@ -2,6 +2,7 @@ from typing import Optional, Dict
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, func, insert, or_, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.wishlist_model import Wishlist
@@ -89,43 +90,62 @@ class ExternalReferenceRepository(TransactionalMixin):
         self._external_source_cache[cache_key] = external_source.id
         return external_source.id
 
-    async def create_album(self, album_data: AlbumCreate) -> Album:
-        """Create a new album"""
+    async def get_or_create_album(self, album_data: AlbumCreate) -> tuple[Album, bool]:
+        """
+        The album of a Discogs release, created if absent: (album, created by this call).
+        INSERT ... ON CONFLICT DO NOTHING: two requests adding the same release at once (a double
+        click) both succeed with a single row, where a plain INSERT left the second session unusable.
+        The album comes back with its external_source loaded, as the callers read it.
+        """
+        album = await self.find_album_by_external_id(album_data.external_album_id, album_data.external_source_id)
+        if album:
+            return album, False
         try:
-            album = Album(
-                external_album_id=album_data.external_album_id,
-                title=album_data.title,
-                image_url=album_data.image_url,
-                external_source_id=album_data.external_source_id
-            )
-            return await self.album_repo.create(album)
+            created = (await self.db.execute(
+                pg_insert(Album)
+                .values(
+                    external_album_id=album_data.external_album_id,
+                    title=album_data.title,
+                    image_url=album_data.image_url,
+                    external_source_id=album_data.external_source_id,
+                )
+                .on_conflict_do_nothing(constraint="uq_external_album_id_source")
+                .returning(Album.id)
+            )).scalar_one_or_none() is not None
         except SQLAlchemyError as e:
             logger.error(
                 f"Error creating album with external ID {album_data.external_album_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to create album",
-                details={}
-            )
+            raise ServerError(error_code=5000, message="Failed to create album", details={})
+        album = await self.find_album_by_external_id(album_data.external_album_id, album_data.external_source_id)
+        if album is None:
+            raise ServerError(error_code=5000, message="Failed to create album", details={})
+        return album, created
 
-    async def create_artist(self, artist_data: ArtistCreate) -> Artist:
-        """Create a new artist"""
+    async def get_or_create_artist(self, artist_data: ArtistCreate) -> tuple[Artist, bool]:
+        """The artist of a Discogs id, created if absent: (artist, created by this call). See get_or_create_album."""
+        artist = await self.find_artist_by_external_id(artist_data.external_artist_id, artist_data.external_source_id)
+        if artist:
+            return artist, False
         try:
-            artist = Artist(
-                external_artist_id=artist_data.external_artist_id,
-                title=artist_data.title,
-                image_url=artist_data.image_url,
-                external_source_id=artist_data.external_source_id
-            )
-            return await self.artist_repo.create(artist)
+            created = (await self.db.execute(
+                pg_insert(Artist)
+                .values(
+                    external_artist_id=artist_data.external_artist_id,
+                    title=artist_data.title,
+                    image_url=artist_data.image_url,
+                    external_source_id=artist_data.external_source_id,
+                )
+                .on_conflict_do_nothing(constraint="uq_external_artist_id_source")
+                .returning(Artist.id)
+            )).scalar_one_or_none() is not None
         except SQLAlchemyError as e:
             logger.error(
                 f"Error creating artist with external ID {artist_data.external_artist_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to create artist",
-                details={}
-            )
+            raise ServerError(error_code=5000, message="Failed to create artist", details={})
+        artist = await self.find_artist_by_external_id(artist_data.external_artist_id, artist_data.external_source_id)
+        if artist is None:
+            raise ServerError(error_code=5000, message="Failed to create artist", details={})
+        return artist, created
 
     async def find_album_by_external_id(self, external_id: str, external_source_id: int) -> Optional[Album]:
         """Find an album by its external ID and source"""

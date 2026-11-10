@@ -44,10 +44,10 @@ def make_wishlist_service(session: AsyncSession) -> WishlistService:
 
 
 def fresh_numeric_external_id() -> str:
-    """A very-unlikely-to-collide numeric external ID (Album/Artist require
-    a purely digit external_album_id/external_artist_id, and this DB is a
-    real copy of prod so we must not reuse an existing one)."""
-    return str(random.randint(10**15, 10**16 - 1))
+    """A very-unlikely-to-collide numeric external ID (Discogs ids are 1 to 12
+    digits, and this DB is a real copy of prod so we must not reuse an existing
+    one: real Discogs ids are far shorter than 12 digits)."""
+    return str(random.randint(10**11, 10**12 - 1))
 
 
 class TestAddToWishlist:
@@ -92,7 +92,7 @@ class TestAddToWishlist:
                 entity_type=EntityTypeEnum.ARTIST,
                 title="Integration Test Artist",
                 image_url="https://i.discogs.com/artist.jpg",
-                source="musicbrainz",
+                source="discogs",
             ),
         )
 
@@ -235,14 +235,14 @@ class TestGetWishlistItemDetail:
                 entity_type=EntityTypeEnum.ARTIST,
                 title="Detail Test Artist",
                 image_url="https://i.discogs.com/artist.jpg",
-                source="musicbrainz",
+                source="discogs",
             ),
         )
 
         detail = await service.get_wishlist_item_detail(added.item.id)
 
         assert detail.entity_type == "artist"
-        assert detail.source == "musicbrainz"
+        assert detail.source == "discogs"
 
 
 class TestWishlistByWork:
