@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from dotenv import dotenv_values
 
 from app.main import app
-from app.deps.deps import get_user_service
+from app.deps.deps import get_session_service, get_user_service
 from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
 from app.core.security import hash_password
 from app.models.user_model import User
@@ -61,12 +61,47 @@ def mock_user():
 
 
 # ---------------------------------------------------------------------------
+# Sessions de refresh token : les endpoints les écrivent en base, les tests HTTP sans base
+# utilisent ce faux service (la vraie logique est testée dans test_refresh_sessions_real_db.py)
+# ---------------------------------------------------------------------------
+
+class FakeSessionService:
+    """Same interface as SessionService, no database: tokens without session, calls recorded."""
+
+    def __init__(self):
+        self.opened: list = []
+        self.rotated: list = []
+        self.revoked: list = []
+
+    @staticmethod
+    def _token(user):
+        return create_token(str(user.user_uuid), TokenType.REFRESH, user.token_version)
+
+    async def open(self, user, client="web"):
+        self.opened.append((user, client))
+        return self._token(user)
+
+    async def rotate(self, user, payload, client="web"):
+        self.rotated.append((user, payload, client))
+        return self._token(user)
+
+    async def revoke(self, payload):
+        self.revoked.append(payload)
+
+
+@pytest.fixture
+def fake_sessions():
+    return FakeSessionService()
+
+
+# ---------------------------------------------------------------------------
 # Client de base (pas d'overrides)
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-async def client():
-    """Client HTTP brut — lifespan DB mockée, aucun override de dépendance."""
+async def client(fake_sessions):
+    """Client HTTP brut — lifespan DB mockée, seul le service de sessions est remplacé (voir plus haut)."""
+    app.dependency_overrides[get_session_service] = lambda: fake_sessions
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             yield c
@@ -147,7 +182,7 @@ async def make_real_test_user(session: AsyncSession, **overrides) -> User:
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-async def auth_client(mock_user):
+async def auth_client(mock_user, fake_sessions):
     """Client avec user_service mocké et current_user résolu sans DB."""
     mock_service = AsyncMock()
     mock_service.get_user_me = AsyncMock(return_value={
@@ -170,6 +205,7 @@ async def auth_client(mock_user):
 
     app.dependency_overrides[get_user_service] = lambda: mock_service
     app.dependency_overrides[get_current_user] = override_current_user
+    app.dependency_overrides[get_session_service] = lambda: fake_sessions
 
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:

@@ -1,24 +1,18 @@
 @use "../../styles/variables.scss";
 
 .resultsContainer {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+    // Cards are 250px wide and flow as many per row as the page area holds, at most 4. The page area
+    // is not the window: the side menu (240px open, 60px folded) takes a different share of a 13"
+    // laptop or a tablet. Centered, so that the last row, if incomplete, sits in the middle.
+    --card-gap: clamp(24px, 3vw, 64px);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--card-gap);
     width: 100%;
+    // 4 cards and their 3 gaps: a wide screen does not fit a fifth
+    max-width: calc(1000px + 3 * var(--card-gap));
     margin: 0 auto;
-
-    @media (max-width: 1200px) {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    @media (max-width: 900px) {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 600px) {
-        grid-template-columns: 1fr;
-        justify-items: center;
-    }
 
     .resultCard {
         cursor: pointer;

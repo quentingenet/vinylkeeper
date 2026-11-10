@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 import re
 from datetime import datetime
 from uuid import UUID
@@ -83,8 +83,13 @@ class UserBase(BaseSchema):
         return v
 
 
+# "native": the Android app keeps its tokens itself, so they come back in the body, without cookies
+ClientKind = Literal["web", "native"]
+
+
 class UserCreate(UserBase):
     """Schema for creating a new user."""
+    client: ClientKind = Field(default="web", description="web: session cookies. native: tokens in the response")
     password: str = Field(
         max_length=1024,
         description="User password",
@@ -134,6 +139,7 @@ class UserAuthSchema(BaseModel):
         description="User's password",
         repr=False
     )
+    client: ClientKind = Field(default="web", description="web: session cookies. native: tokens in the response")
 
     @field_validator("email")
     @classmethod
@@ -296,18 +302,32 @@ class MessageResponse(BaseModel):
     message: str = Field(description="Operation result message")
 
 
-class LoginResponse(BaseModel):
+class SessionTokens(BaseModel):
+    """
+    The tokens of a native client, which has no cookie to keep them in. Left out of the response
+    (None) for the browser, which gets them as cookies.
+    """
+    access_token: Optional[str] = Field(default=None, description="Native client only")
+    refresh_token: Optional[str] = Field(default=None, description="Native client only")
+
+
+class LoginResponse(SessionTokens):
     """Response schema for /auth endpoint."""
     isLoggedIn: bool = Field(description="Whether the user is now logged in")
 
 
-class RegisterResponse(BaseModel):
+class RegisterResponse(SessionTokens):
     """Response schema for /register endpoint."""
     message: str = Field(description="Registration result message")
     isLoggedIn: bool = Field(description="Whether the user is now logged in")
 
 
-class TokenRefreshResponse(BaseModel):
+class TokenRefreshResponse(SessionTokens):
     """Response schema for /refresh-token endpoint."""
     message: str = Field(description="Token refresh result message")
     isLoggedIn: bool = Field(description="Whether the user is still logged in")
+
+
+class PasswordChangeResponse(SessionTokens):
+    """Response schema for /me/password: a native client gets the tokens of the new token_version."""
+    message: str = Field(description="Operation result message")

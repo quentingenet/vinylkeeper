@@ -20,6 +20,14 @@ class DiscogsImportCreate(BaseModel):
     )
 
 
+class DiscogsOAuthComplete(BaseModel):
+    """What Discogs sent back to the app: the request token and the verifier of the authorization."""
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    oauth_token: str = Field(min_length=1, max_length=255)
+    oauth_verifier: str = Field(min_length=1, max_length=255)
+
+
 class DiscogsImportPreview(BaseModel):
     """The collection found on Discogs, before importing it."""
     discogs_username: str

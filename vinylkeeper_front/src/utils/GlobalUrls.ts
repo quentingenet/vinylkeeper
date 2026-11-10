@@ -32,7 +32,11 @@ export enum EGlobalUrls {
   SETTINGS = "/settings",
   ADMIN = "/admin",
   RESET_PASSWORD = "/reset-password",
+  // Where Discogs sends the user back from its authorization page: the Android app opens on it
+  DISCOGS_CALLBACK = "/discogs/callback",
   CONFIRM_EMAIL = "/confirm-email",
+  // Terms of use and privacy notice: a public page with its own address (app stores ask for one)
+  TERMS = "/terms",
   NO_MATCH = "*",
 }
 

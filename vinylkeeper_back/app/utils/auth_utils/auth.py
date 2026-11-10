@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
+from uuid import UUID
 
 from fastapi import Request, Depends, Response
 import jwt
@@ -13,6 +14,7 @@ from typing import Optional
 from app.core.config_env import settings
 from app.db.session import get_db
 from app.models.user_model import User
+from app.repositories.refresh_session_repository import RefreshSessionRepository
 from app.repositories.user_repository import UserRepository
 from app.core.exceptions import (
     RefreshTokenNotFoundError,
@@ -81,6 +83,23 @@ def create_token(user_uuid: str, token_type: TokenType, token_version: int = 0) 
     return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
 
 
+def create_refresh_token(user_uuid: str, token_version: int, session_id: str, jti: str) -> str:
+    """
+    A refresh token of a session (see SessionService). "sid" is the session, "jti" the renewal: only
+    the latest one is good. Neither leads to a user by itself.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+    to_encode = {
+        "sub": user_uuid,
+        "exp": expire,
+        "type": TokenType.REFRESH.value,
+        "ver": token_version,
+        "sid": session_id,
+        "jti": jti,
+    }
+    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+
+
 def decode_token(token: str, expected_type: Optional[TokenType] = None) -> dict:
     """Verify a JWT token and return its payload"""
     try:
@@ -113,16 +132,33 @@ def check_user_session(user: Optional[User], payload: dict) -> User:
     return user
 
 
+def bearer_token(request: Request) -> Optional[str]:
+    """
+    The token of an "Authorization: Bearer <token>" header, None without one. This is how the
+    native app authenticates: it holds its tokens itself, no cookie, so no CSRF to defend against.
+    Another scheme (Basic...) is no token of ours and is ignored.
+    """
+    header = request.headers.get("authorization")
+    if not isinstance(header, str):
+        return None
+    scheme, _, token = header.partition(" ")
+    token = token.strip()
+    return token if scheme.lower() == "bearer" and token else None
+
+
 def verify_access_token(request: Request) -> str:
-    token = request.cookies.get("access_token")
+    token = bearer_token(request) or request.cookies.get("access_token")
     if not token:
         raise UnauthorizedError("Access token not found")
     return verify_token(token, expected_type=TokenType.ACCESS)
 
 
 def decode_refresh_token(request: Request) -> dict:
-    """Verify the refresh token from cookies and return its payload"""
-    refresh_token = request.cookies.get("refresh_token")
+    """
+    Verify the refresh token and return its payload: the Bearer header of the native app, else
+    the cookie of the browser. An access token presented here is refused by the type check.
+    """
+    refresh_token = bearer_token(request) or request.cookies.get("refresh_token")
     if not refresh_token:
         raise RefreshTokenNotFoundError()
 
@@ -144,10 +180,23 @@ async def get_refresh_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """Get the user of the refresh token, still existing, active and not revoked"""
+    """
+    Get the user of the refresh token, still existing, active and not revoked, with a session that
+    is not revoked nor expired. A token older than sessions has none: it is still accepted, and the
+    refresh gives it one.
+    """
     payload = decode_refresh_token(request)
     user = await UserRepository(db).get_user_by_uuid(payload["sub"])
-    return check_user_session(user, payload)
+    user = check_user_session(user, payload)
+    sid = payload.get("sid")
+    if sid:
+        try:
+            live = await RefreshSessionRepository(db).is_live(UUID(str(sid)), user.id, datetime.now(timezone.utc))
+        except ValueError:
+            live = False
+        if not live:
+            raise UnauthorizedError("Session revoked")
+    return user
 
 
 def create_reset_token(user_uuid: str, token_version: int = 0) -> str:
@@ -243,15 +292,21 @@ async def get_current_user(
     response: Response,
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """Get the current user from the access token"""
+    """
+    Get the current user from the access token: the Bearer header (native app) or the cookie
+    (browser). The CSRF check only protects the cookie: a request that carries its token in the
+    header cannot come from another site, and when a header is there the cookie is not looked at.
+    """
     user_repository = UserRepository(db)
-    token = request.cookies.get("access_token")
+    bearer = bearer_token(request)
+    token = bearer or request.cookies.get("access_token")
     if not token:
         raise UnauthorizedError("No access token provided")
     payload = decode_token(token, expected_type=TokenType.ACCESS)
-    verify_csrf(request)
-    if not request.cookies.get("csrf_token"):
-        set_csrf_cookie(response, generate_csrf_token(), REFRESH_TOKEN_EXPIRE_MINUTES * 60)
+    if bearer is None:
+        verify_csrf(request)
+        if not request.cookies.get("csrf_token"):
+            set_csrf_cookie(response, generate_csrf_token(), REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     user = await user_repository.get_user_by_uuid(payload["sub"])
     return check_user_session(user, payload)
 
@@ -266,7 +321,7 @@ async def get_optional_user(
     session. A session that is there but expired is still refused (401), so the frontend
     refreshes it instead of showing a logged-in user the visitor view.
     """
-    if not request.cookies.get("access_token"):
+    if not (bearer_token(request) or request.cookies.get("access_token")):
         return None
     return await get_current_user(request, response, db)
 

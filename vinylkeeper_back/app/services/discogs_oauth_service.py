@@ -43,9 +43,16 @@ class DiscogsOAuthError(Exception):
         self.reason = reason
 
 
-def oauth_configured() -> bool:
-    return all((settings.DISCOGS_CONSUMER_KEY, settings.DISCOGS_CONSUMER_SECRET,
-                settings.DISCOGS_OAUTH_CALLBACK_URL)) and _valid_token_key(settings.DISCOGS_TOKEN_KEY)
+def credentials_configured() -> bool:
+    """What signing and storing tokens needs, whichever client asks."""
+    return all((settings.DISCOGS_CONSUMER_KEY, settings.DISCOGS_CONSUMER_SECRET)) \
+        and _valid_token_key(settings.DISCOGS_TOKEN_KEY)
+
+
+def oauth_configured(native: bool = False) -> bool:
+    """Connecting is possible for this client: the browser has its callback URL, the app has its own."""
+    callback = settings.DISCOGS_OAUTH_NATIVE_CALLBACK_URL if native else settings.DISCOGS_OAUTH_CALLBACK_URL
+    return bool(callback) and credentials_configured()
 
 
 @lru_cache(maxsize=4)
@@ -104,8 +111,8 @@ class DiscogsOAuthService:
         self.repository = repository
         self.http_client = http_client
 
-    def _require_configuration(self) -> None:
-        if not oauth_configured():
+    def _require_configuration(self, native: bool = False) -> None:
+        if not oauth_configured(native):
             raise ServerError(error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                               message="Connecting a Discogs account is not available right now", details={})
 
@@ -127,12 +134,12 @@ class DiscogsOAuthService:
             raise DiscogsOAuthError("unavailable")
         return values
 
-    async def start(self, user: User) -> str:
-        """The Discogs page where the user authorizes VinylKeeper."""
-        self._require_configuration()
+    async def start(self, user: User, native: bool = False) -> str:
+        """The Discogs page where the user authorizes VinylKeeper (it sends them back to their client)."""
+        self._require_configuration(native)
+        callback = settings.DISCOGS_OAUTH_NATIVE_CALLBACK_URL if native else settings.DISCOGS_OAUTH_CALLBACK_URL
         try:
-            values = await self._post(
-                REQUEST_TOKEN_URL, oauth_header(oauth_callback=settings.DISCOGS_OAUTH_CALLBACK_URL))
+            values = await self._post(REQUEST_TOKEN_URL, oauth_header(oauth_callback=callback))
         except DiscogsOAuthError as e:
             raise ServerError(error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
                               message="Discogs is not answering, please try again later", details={}) from e
@@ -146,11 +153,12 @@ class DiscogsOAuthService:
         The user is back from Discogs: their access token and identity are kept. Returns the
         Discogs username. Raises DiscogsOAuthError: the request is unknown, expired or refused.
 
-        browser_user_id is the Vinyl Keeper user logged in on the browser that came back (None:
-        nobody). It must be the one who started the connection: otherwise the authorization page
-        of an attacker, sent to a victim, would link the victim's Discogs account to the attacker.
+        browser_user_id is the Vinyl Keeper user whose session came back (the browser's cookie, or
+        the app's Bearer; None: nobody). It must be the one who started the connection: otherwise
+        the authorization page of an attacker, sent to a victim, would link the victim's Discogs
+        account to the attacker.
         """
-        if not oauth_configured():
+        if not credentials_configured():
             raise DiscogsOAuthError("unavailable")
         # One use: whatever happens next, this request token cannot serve again
         pending = await self.repository.take_request(request_token, REQUEST_LIFETIME)
@@ -195,7 +203,7 @@ class DiscogsOAuthService:
 
     async def authorization_for(self, user_id: int):
         """(Discogs username, header factory) of the user's connection, or None."""
-        if not oauth_configured():
+        if not credentials_configured():
             # Nothing can sign nor decrypt: the connection is "not available", the user is told so
             return None
         connection = await self.repository.get_connection(user_id)

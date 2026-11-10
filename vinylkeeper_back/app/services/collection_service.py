@@ -390,7 +390,7 @@ class CollectionService:
         if await self.like_repository.is_liked_by_user(collection_id, user_id):
             raise DuplicateFieldError(
                 field="like",
-                value=f"collection_{collection_id}_user_{user_id}"
+                value=f"collection_{collection_id}"
             )
 
         try:
@@ -399,7 +399,7 @@ class CollectionService:
         except IntegrityError:
             raise DuplicateFieldError(
                 field="like",
-                value=f"collection_{collection_id}_user_{user_id}"
+                value=f"collection_{collection_id}"
             )
 
         likes_count = await self.like_repository.count_likes(collection_id)
@@ -417,7 +417,7 @@ class CollectionService:
         self._assert_collection_accessible(collection, user_id)
 
         if not await self.like_repository.is_liked_by_user(collection_id, user_id):
-            raise ResourceNotFoundError("Like", f"collection_{collection_id}_user_{user_id}")
+            raise ResourceNotFoundError("Like", f"collection_{collection_id}")
 
         async with transaction_context(self.repository.db):
             await self.like_repository.remove(user_id, collection_id)

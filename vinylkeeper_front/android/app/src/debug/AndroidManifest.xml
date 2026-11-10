@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug builds only (merged into the app by Gradle, never into a release): the app may talk to
+         the API of the developer's computer over plain HTTP (http://localhost:8000 through "adb reverse").
+         A release build keeps Android's default, HTTPS only. -->
+    <application android:usesCleartextTraffic="true" />
+
+</manifest>

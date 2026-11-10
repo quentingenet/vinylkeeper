@@ -8,7 +8,6 @@ export interface ModerationStatus {
 export interface ModerationRequest {
   id: number;
   place_id: number;
-  user_id: number;
   status_id: number;
   created_at: string;
   submitted_at: string;

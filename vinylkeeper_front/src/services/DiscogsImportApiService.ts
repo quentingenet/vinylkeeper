@@ -12,6 +12,14 @@ export class DiscogsImportApiService extends BaseApiService {
     return (await this.post<{ authorize_url: string }>("/discogs-import/connect")).authorize_url;
   }
 
+  /** The Android app is back from Discogs through its App Link: its own session finishes the connection */
+  async completeConnection(oauthToken: string, oauthVerifier: string): Promise<DiscogsConnection> {
+    return this.post<DiscogsConnection>("/discogs-import/oauth/complete", {
+      oauth_token: oauthToken,
+      oauth_verifier: oauthVerifier,
+    });
+  }
+
   async disconnect(): Promise<void> {
     return this.delete<void>("/discogs-import/connection");
   }

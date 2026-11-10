@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     DISCOGS_CONSUMER_SECRET: str = ""
     DISCOGS_TOKEN_KEY: str = ""
     DISCOGS_OAUTH_CALLBACK_URL: str = ""
+    # Same, for the Android app: an https App Link of the site that opens the app, which then finishes
+    # the connection with its own session (POST /discogs-import/oauth/complete). Empty: not available there.
+    DISCOGS_OAUTH_NATIVE_CALLBACK_URL: str = ""
     # Background Discogs enrichment of newly created albums (disabled in tests)
     ALBUM_ENRICHMENT_ENABLED: bool = True
 

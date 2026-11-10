@@ -32,13 +32,11 @@ node_modules
 .claudeignore
 .cursorignore
 
-#Capacitor files
-android/
+#Capacitor files (android/ and capacitor.config.ts are versioned; the generated copy of the config is not)
 ios/
 build/
 dist/
 capacitor.config.json
-capacitor.config.ts
 
 #ENV FILES
 .env.production
@@ -82,13 +80,7 @@ errors_api_vk.log*
 # Node modules (if using Node.js for a frontend)
 node_modules/
 
-# Capacitor files
-android/
-ios/
-build/
-dist/
-capacitor.config.json
-capacitor.config.ts
+# Capacitor files: see above
 
 # Environment variable files
 .env
@@ -163,6 +155,17 @@ cache/
 # Frontend static assets
 !vinylkeeper_front/public/vk_preview/*
 !vinylkeeper_front/src/assets/*
+
+# Android project (vinylkeeper_front/android): the icons and the Gradle wrapper are part of it,
+# the keystores and the machine-specific files never are
+!vinylkeeper_front/android/app/src/main/res/**
+!vinylkeeper_front/resources/*
+!vinylkeeper_front/android/gradle/wrapper/gradle-wrapper.jar
+*.jks
+*.keystore
+keystore.properties
+local.properties
+google-services.json
 
 # Dozzle logins and settings (VPS only)
 vinylkeeper_back/dozzle/

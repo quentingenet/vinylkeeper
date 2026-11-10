@@ -13,6 +13,7 @@ from app.utils.auth_utils.auth import (
     create_token,
     get_current_user,
     set_token_cookie,
+    bearer_token,
     verify_access_token,
     verify_refresh_token,
     verify_reset_token,
@@ -281,3 +282,44 @@ class TestGetOptionalUser:
 
         with pytest.raises(UnauthorizedError):
             await get_optional_user(request, MagicMock(), AsyncMock())
+
+
+# ---------------------------------------------------------------------------
+# Bearer header (native app)
+# ---------------------------------------------------------------------------
+
+def make_bearer_request(authorization, cookies: dict = None, method: str = "GET") -> MagicMock:
+    request = make_request(cookies or {}, method)
+    request.headers.get = lambda key, default=None: authorization if key == "authorization" else default
+    return request
+
+
+class TestBearerToken:
+    def test_reads_the_token(self):
+        assert bearer_token(make_bearer_request("Bearer abc.def")) == "abc.def"
+
+    def test_scheme_is_case_insensitive(self):
+        assert bearer_token(make_bearer_request("bearer abc")) == "abc"
+
+    def test_other_scheme_is_ignored(self):
+        assert bearer_token(make_bearer_request("Basic dXNlcjpwYXNz")) is None
+
+    def test_empty_token_is_ignored(self):
+        assert bearer_token(make_bearer_request("Bearer ")) is None
+
+    def test_no_header(self):
+        assert bearer_token(make_bearer_request(None)) is None
+
+    def test_access_token_read_from_the_header_before_the_cookie(self, regular_user):
+        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        request = make_bearer_request(f"Bearer {token}", {"access_token": "stale"})
+        assert verify_access_token(request) == str(regular_user.user_uuid)
+
+    def test_refresh_token_read_from_the_header(self, regular_user):
+        token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)
+        assert verify_refresh_token(make_bearer_request(f"Bearer {token}")) == str(regular_user.user_uuid)
+
+    def test_access_token_as_bearer_refresh_is_refused(self, regular_user):
+        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        with pytest.raises(UnauthorizedError, match="Invalid token type"):
+            verify_refresh_token(make_bearer_request(f"Bearer {token}"))

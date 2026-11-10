@@ -11,7 +11,7 @@ import {
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { collectionApiService } from "@services/CollectionApiService";
-import { triggerBrowserDownload } from "@utils/DownloadUtils";
+import { deliverFile } from "@utils/DownloadUtils";
 import useDetectMobile from "@hooks/useDetectMobile";
 import {
   collectionActionButtonSx,
@@ -54,7 +54,7 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
     setAnchorEl(null);
     try {
       const { blob, filename } = await collectionApiService.exportCollectionFile(collectionId, pathSuffix);
-      triggerBrowserDownload(blob, filename || fallbackFilename);
+      await deliverFile(blob, filename || fallbackFilename);
     } catch (err) {
       logger.error("Export failed:", err);
     } finally {
@@ -68,7 +68,7 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
     setAnchorEl(null);
     try {
       const { blob, filename } = await collectionApiService.exportMyWishlistFile(format);
-      triggerBrowserDownload(blob, filename || `wishlist.${format}`);
+      await deliverFile(blob, filename || `wishlist.${format}`);
     } catch (err) {
       logger.error("Wishlist export failed:", err);
     } finally {

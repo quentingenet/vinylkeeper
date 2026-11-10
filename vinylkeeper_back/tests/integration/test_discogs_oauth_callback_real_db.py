@@ -154,3 +154,61 @@ async def test_a_replayed_callback_is_refused(real_session, setup):
     assert outcome(await client.get(CALLBACK, params=QUERY)) == "connected"
     assert outcome(await client.get(CALLBACK, params=QUERY)) == "expired"
     assert await connections_of(real_session, user) == 1
+
+
+# ---------------------------------------------------------------------------
+# The native app finishes the connection with its own Bearer session
+# ---------------------------------------------------------------------------
+
+COMPLETE = "/api/discogs-import/oauth/complete"
+BODY = {"oauth_token": "req-tok", "oauth_verifier": "the-verifier"}
+
+
+def bearer_of(user) -> dict:
+    return {"Authorization": f"Bearer {create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version)}"}
+
+
+async def test_the_app_completes_with_its_own_session(real_session, setup):
+    client, fake = setup
+    user = await make_real_test_user(real_session)
+    await service(real_session, fake).start(user, native=False)
+
+    response = await client.post(COMPLETE, json=BODY, headers=bearer_of(user))
+
+    assert response.status_code == 200
+    assert (response.json()["connected"], response.json()["discogs_username"]) == (True, "digger")
+    assert await connections_of(real_session, user) == 1
+
+
+async def test_another_user_cannot_complete_the_authorization_of_the_first(real_session, setup):
+    client, fake = setup
+    starter = await make_real_test_user(real_session)
+    victim = await make_real_test_user(real_session)
+    await service(real_session, fake).start(starter)
+
+    response = await client.post(COMPLETE, json=BODY, headers=bearer_of(victim))
+
+    assert response.status_code == 400 and response.json()["details"]["reason"] == "session"
+    assert await connections_of(real_session, victim) == 0 and await connections_of(real_session, starter) == 0
+    assert await pending_requests(real_session) == 0, "the request is consumed"
+    assert not exchanged_tokens(fake), "no Discogs token is asked for"
+
+
+async def test_completing_needs_a_session(real_session, setup):
+    client, fake = setup
+    user = await make_real_test_user(real_session)
+    await service(real_session, fake).start(user)
+
+    assert (await client.post(COMPLETE, json=BODY)).status_code == 401
+    assert await pending_requests(real_session) == 1, "an anonymous call does not consume the request"
+
+
+async def test_a_token_completes_once_only(real_session, setup):
+    client, fake = setup
+    user = await make_real_test_user(real_session)
+    await service(real_session, fake).start(user)
+
+    assert (await client.post(COMPLETE, json=BODY, headers=bearer_of(user))).status_code == 200
+    again = await client.post(COMPLETE, json=BODY, headers=bearer_of(user))
+
+    assert again.status_code == 400 and again.json()["details"]["reason"] == "expired"

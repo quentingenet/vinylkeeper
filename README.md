@@ -67,7 +67,9 @@ Other details:
 - **Resilient to Discogs rate limits**: requests are throttled to the 60/min limit with backoff, the backfill is resumable, and a nightly job catches up anything that failed.
 
 ### Security
-- JWT (RS256) in **HttpOnly cookies**, with refresh tokens and **CSRF double-submit** protection
+- JWT (RS256) in **HttpOnly cookies**, with refresh tokens and **CSRF double-submit** protection on the web. The Android app has no cookie to trust: it sends its token as `Authorization: Bearer` (so there is nothing to forge across sites) and keeps it in the Android Keystore.
+- **Refresh tokens rotate**: every login is a session, every refresh issues the next token, and a copied token presented again revokes the session. Logging out ends the session on the server.
+- People are identified by `user_uuid` outside the API, never by their internal id
 - Argon2 password hashing
 - Image proxy with a domain allowlist and size limits (SSRF protection), with on-disk caching
 
@@ -153,6 +155,25 @@ npm run dev
 ```
 
 Open **http://localhost:5173**. The API URL is set in [`.env.development`](vinylkeeper_front/.env.development).
+
+### Android app (in progress)
+
+The Capacitor project is in [`vinylkeeper_front/android`](vinylkeeper_front/android) and its configuration in [`capacitor.config.ts`](vinylkeeper_front/capacitor.config.ts). You need Java 21 and the Android SDK, and a phone with USB debugging on.
+
+```bash
+cd vinylkeeper/vinylkeeper_front
+npm run adb:tunnel        # the phone's localhost:8000 reaches the API of this computer, over USB
+npm run build:mobile      # the API URL comes from .env.mobile, written into the bundle
+npx cap sync android
+npx cap run android       # or: npx cap open android
+```
+
+The four commands in one: `npm run development:mobile`.
+
+- Debug builds may talk to the API over plain HTTP (`android/app/src/debug`); a release build is HTTPS only.
+- Icons and splash screens come from [`resources/`](vinylkeeper_front/resources): `npm run assets:android` regenerates them (ImageMagick).
+- Links of `vinylkeeper.org` (a shared collection, the return from Discogs) open the app once `/.well-known/assetlinks.json` lists the signing certificate of the app. Connecting Discogs from the app also needs `DISCOGS_OAUTH_NATIVE_CALLBACK_URL` in the API settings (see the template).
+- Signing keystores and their passwords never go in the repository: `keystore.properties`, `*.jks` and `*.keystore` are ignored.
 
 ### Tests
 

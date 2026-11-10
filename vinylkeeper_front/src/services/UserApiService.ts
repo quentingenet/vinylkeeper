@@ -3,6 +3,9 @@ import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
 import { isApiError } from "@utils/apiError";
+import { capacitorHttpService } from "@utils/CapacitorHttpService";
+import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { nativeSession } from "@utils/NativeSession";
 
 export interface UserResponse {
   username: string;
@@ -20,6 +23,12 @@ export interface UserSettingsResponse {
   is_accepted_terms: boolean;
   is_email_confirmed: boolean;
   preferred_currency: "EUR" | "USD";
+}
+
+/** The tokens the API gives the Android app in the body: kept in the Keystore, never passed on. */
+interface NativeTokensInBody {
+  access_token?: string;
+  refresh_token?: string;
 }
 
 export interface LoginResponse {
@@ -88,30 +97,63 @@ export function loginErrorMessage(error: unknown): string {
 }
 
 export class UserApiService extends BaseApiService {
+  /** The Android app asks for its tokens in the body: it has no cookie to hold them. */
+  private clientFields(): { client?: "native" } {
+    return isCapacitorPlatform() ? { client: "native" } : {};
+  }
+
+  /** Puts the tokens of a native response in the Keystore and gives back the rest of it. */
+  private async keepSession<T extends NativeTokensInBody>(
+    response: T
+  ): Promise<Omit<T, keyof NativeTokensInBody>> {
+    const { access_token, refresh_token, ...rest } = response;
+    if (isCapacitorPlatform() && access_token && refresh_token) {
+      await nativeSession.save({ accessToken: access_token, refreshToken: refresh_token });
+    }
+    return rest;
+  }
+
   async refreshToken(): Promise<{ isLoggedIn: boolean }> {
+    if (isCapacitorPlatform()) {
+      await capacitorHttpService.refreshSession();
+      return { isLoggedIn: true };
+    }
     return this.post<{ isLoggedIn: boolean }>("/users/refresh-token", undefined, true);
   }
 
   async logout(): Promise<void> {
-    await this.post("/users/logout");
+    try {
+      if (isCapacitorPlatform()) await capacitorHttpService.revokeSession();
+      else await this.post("/users/logout");
+    } finally {
+      // Whatever the server answered, this device keeps no session
+      if (isCapacitorPlatform()) await nativeSession.clear();
+    }
   }
 
   async login(data: ILoginForm): Promise<LoginResponse> {
     try {
-      return await this.post<LoginResponse>("/users/auth", { email: data.email, password: data.password }, true);
+      const response = await this.post<LoginResponse & NativeTokensInBody>(
+        "/users/auth",
+        { email: data.email, password: data.password, ...this.clientFields() },
+        true
+      );
+      return await this.keepSession(response);
     } catch (error: unknown) {
       throw new Error(loginErrorMessage(error), { cause: error });
     }
   }
 
   async register(data: IRegisterForm): Promise<RegisterResponse> {
-    return this.post<RegisterResponse>("/users/register", {
+    const response = await this.post<RegisterResponse & NativeTokensInBody>("/users/register", {
       username: data.username,
       email: data.email,
       password: data.password,
       is_accepted_terms: data.isAcceptedTerms,
       timezone: data.timezone,
+      ...this.clientFields(),
     }, true);
+    return this.keepSession(response);
   }
 
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
@@ -191,10 +233,12 @@ export class UserApiService extends BaseApiService {
 
   async changePassword(data: PasswordChangeData): Promise<{ message: string }> {
     try {
-      return await this.put<{ message: string }>("/users/me/password", {
+      // Every other session is revoked: the app receives the tokens of the new version
+      const response = await this.put<{ message: string } & NativeTokensInBody>("/users/me/password", {
         current_password: data.currentPassword,
         new_password: data.newPassword,
       }, true);
+      return await this.keepSession(response);
     } catch (error: unknown) {
       const message = isApiError(error) && error.code === 1000
         ? "Wrong current password."
@@ -205,7 +249,8 @@ export class UserApiService extends BaseApiService {
 
   async deleteAccount(): Promise<void> {
     try {
-      return await this.delete<void>("/users/me");
+      await this.delete<void>("/users/me");
+      if (isCapacitorPlatform()) await nativeSession.clear();
     } catch {
       throw new Error("Failed to delete account. Please try again.");
     }

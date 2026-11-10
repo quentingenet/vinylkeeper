@@ -20,7 +20,6 @@ const UPDATED_AT = "2026-10-31T09:15:00Z";
 const request: ModerationRequest = {
   id: 4,
   place_id: 12,
-  user_id: 1,
   status_id: 2,
   created_at: "2025-06-28T14:20:00Z",
   submitted_at: "2025-06-28T14:20:00Z",

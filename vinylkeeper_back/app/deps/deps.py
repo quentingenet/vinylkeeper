@@ -19,6 +19,7 @@ from app.repositories.moderation_request_repository import ModerationRequestRepo
 from app.repositories.spinning_now_repository import SpinningNowRepository
 from app.repositories.place_report_repository import PlaceReportRepository
 from app.repositories.discogs_import_repository import DiscogsImportRepository
+from app.repositories.refresh_session_repository import RefreshSessionRepository
 
 # Services
 from app.services.user_service import UserService
@@ -33,6 +34,7 @@ from app.services.export_service import ExportService
 from app.services.wishlist_export_service import WishlistExportService
 from app.services.spinning_now_service import SpinningNowService
 from app.services.place_report_service import PlaceReportService
+from app.services.session_service import SessionService
 
 # Database
 from app.db.session import get_db
@@ -102,6 +104,10 @@ def get_place_report_service(db: AsyncSession = Depends(get_db)) -> PlaceReportS
 def get_moderation_request_repository(db: AsyncSession = Depends(get_db)) -> ModerationRequestRepository:
     """Get moderation request repository instance."""
     return ModerationRequestRepository(db)
+
+
+def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
+    return SessionService(RefreshSessionRepository(db))
 
 
 def get_discogs_import_repository(db: AsyncSession = Depends(get_db)) -> DiscogsImportRepository:

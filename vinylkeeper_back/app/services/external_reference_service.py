@@ -50,8 +50,8 @@ class ExternalReferenceService:
         if collection.owner_id != user_id:
             raise ForbiddenError(
                 error_code=4030,
-                message=f"Collection {collection_id} is not owned by user {user_id}",
-                details={"collection_id": collection_id, "user_id": user_id}
+                message=f"You don't own collection {collection_id}",
+                details={"collection_id": collection_id}
             )
         return collection
 

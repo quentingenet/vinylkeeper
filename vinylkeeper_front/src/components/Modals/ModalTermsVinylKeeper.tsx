@@ -8,7 +8,7 @@ import { DISCOGS_DISCLAIMER } from "@utils/discogsLinks";
 const readableLink = { color: "inherit", underline: "always", sx: { fontWeight: 600 } } as const;
 
 export const TERMS_LAST_UPDATED = "10/11/2026";
-const CONTACT_EMAIL = "vinylkeeper@quentingenet.fr";
+export const CONTACT_EMAIL = "vinylkeeper@quentingenet.fr";
 
 const ExternalLink = ({ href, children }: { href: string; children: ReactNode }) => (
   <Link {...readableLink} href={href} target="_blank" rel="noopener noreferrer">
@@ -135,6 +135,43 @@ const SECTIONS: TermsSection[] = [
   },
 ];
 
+/**
+ * The terms and the privacy notice, as one text: shown in the popup of the footer and, for whoever
+ * needs an address to link to (the app stores ask for one), on the public page /terms.
+ */
+export function TermsContent() {
+  return (
+    <>
+      <Typography sx={{ color: "black", fontWeight: 700 }}>
+        Vinyl Keeper is a free and open-source application licensed under GPLv3, developed by Quentin Genet, to
+        manage, share and discover vinyl collections while promoting the freedom to share and modify the software.
+      </Typography>
+
+      <Typography sx={{ mt: 2, textAlign: "center", color: "black" }}>
+        Available at <ExternalLink href="https://vinylkeeper.org">vinylkeeper.org</ExternalLink>
+        <br />
+        <ExternalLink href="https://github.com/quentingenet/vinylkeeper">Source code (GitHub)</ExternalLink>
+      </Typography>
+      <Typography sx={{ mt: 1, textAlign: "center", color: "black", fontStyle: "italic" }}>
+        Last updated: {TERMS_LAST_UPDATED}
+      </Typography>
+
+      {SECTIONS.map((section) => (
+        <Box key={section.title} component="section" sx={{ mt: 2.5 }}>
+          <Typography component="h3" sx={{ color: "black", fontWeight: 700 }}>
+            {section.title}
+          </Typography>
+          {section.paragraphs.map((paragraph, index) => (
+            <Typography key={index} variant="body2" sx={{ color: "black", mt: 0.75 }}>
+              {paragraph}
+            </Typography>
+          ))}
+        </Box>
+      ))}
+    </>
+  );
+}
+
 interface ModalTermsVinylKeeperProps {
   setOpenTermsModal: (value: boolean) => void;
   openTermsModal: boolean;
@@ -181,32 +218,7 @@ export default function ModalTermsVinylKeeper(props: ModalTermsVinylKeeperProps)
         </Typography>
 
         <Box id="terms-modal-description" sx={{ mt: 2, color: "black" }}>
-          <Typography sx={{ color: "black", fontWeight: 700 }}>
-            Vinyl Keeper is a free and open-source application licensed under GPLv3, developed by Quentin Genet, to
-            manage, share and discover vinyl collections while promoting the freedom to share and modify the software.
-          </Typography>
-
-          <Typography sx={{ mt: 2, textAlign: "center", color: "black" }}>
-            Available at <ExternalLink href="https://vinylkeeper.org">vinylkeeper.org</ExternalLink>
-            <br />
-            <ExternalLink href="https://github.com/quentingenet/vinylkeeper">Source code (GitHub)</ExternalLink>
-          </Typography>
-          <Typography sx={{ mt: 1, textAlign: "center", color: "black", fontStyle: "italic" }}>
-            Last updated: {TERMS_LAST_UPDATED}
-          </Typography>
-
-          {SECTIONS.map((section) => (
-            <Box key={section.title} component="section" sx={{ mt: 2.5 }}>
-              <Typography component="h3" sx={{ color: "black", fontWeight: 700 }}>
-                {section.title}
-              </Typography>
-              {section.paragraphs.map((paragraph, index) => (
-                <Typography key={index} variant="body2" sx={{ color: "black", mt: 0.75 }}>
-                  {paragraph}
-                </Typography>
-              ))}
-            </Box>
-          ))}
+          <TermsContent />
         </Box>
 
         <Box sx={{ mt: 3, display: "flex", justifyContent: "center", alignItems: "center" }}>

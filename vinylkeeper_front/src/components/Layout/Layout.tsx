@@ -32,12 +32,16 @@ import { DISCOGS_HOME_URL } from "@utils/discogsLinks";
  * @property {React.ReactNode} children - Child components to be rendered within the layout
  */
 
+const MENU_OPEN_MIN_WIDTH = 1024;
+
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [open, setOpen] = useState(true);
+  // Folded to icons on a narrow window (tablet held upright): the open menu is 240px of it. The user
+  // can still open it with the arrow.
+  const [open, setOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= MENU_OPEN_MIN_WIDTH);
   const theme = useTheme();
   const { isMobile } = useDetectMobile();
   const toggleMenu = () => setOpen((prev) => !prev);
@@ -75,6 +79,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Box
         sx={{
           flexGrow: 1,
+          // A flex child cannot shrink below its content by default: wide content pushed the page
+          // past the window when the menu opened, and the overflow was cut
+          minWidth: 0,
           transition: theme.transitions.create(["margin"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, BackgroundTasks, Response, Depends, status
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Request, Response, Depends, status
 from app.schemas.user_schema import (
     UserAuthSchema,
     UserCreate,
@@ -7,6 +9,7 @@ from app.schemas.user_schema import (
     UserMeResponse,
     UserSettingsResponse,
     PasswordChangeSchema,
+    PasswordChangeResponse,
     EmailChangeRequest,
     ConfirmEmailRequest,
     ContactMessageRequest,
@@ -17,6 +20,7 @@ from app.schemas.user_schema import (
     MessageResponse,
     TokenRefreshResponse,
 )
+from app.services.session_service import SessionService
 from app.services.user_service import UserService
 from app.utils.auth_utils.auth import (
     create_token,
@@ -25,12 +29,15 @@ from app.utils.auth_utils.auth import (
     set_csrf_cookie,
 )
 from app.core.config_env import settings
-from app.deps.deps import get_user_service
+from app.deps.deps import get_session_service, get_user_service
 from app.core.logging import log_activity
-from app.utils.auth_utils.auth import TokenType, get_current_user, get_refresh_user
+from app.utils.auth_utils.auth import (
+    TokenType, bearer_token, decode_refresh_token, get_current_user, get_refresh_user,
+)
 from app.models.user_model import User
 from app.core.exceptions import (
     AccountLockedError,
+    AppException,
     TermsNotAcceptedError,
     UserNotFoundError,
 )
@@ -39,21 +46,43 @@ from app.utils.endpoint_utils import handle_app_exceptions
 router = APIRouter()
 
 
-def set_session_cookies(response: Response, user: User) -> None:
-    """Issue fresh access, refresh and CSRF cookies for the user's current token_version"""
+def set_session_cookies(response: Response, user: User, refresh_token: str) -> None:
+    """Fresh access and CSRF cookies for the user's token_version, and the refresh token of the session"""
     access_token = create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version)
-    refresh_token = create_token(str(user.user_uuid), TokenType.REFRESH, user.token_version)
     set_token_cookie(response, access_token, TokenType.ACCESS)
     set_token_cookie(response, refresh_token, TokenType.REFRESH)
     set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
 
 
-@router.post("/auth", response_model=LoginResponse, status_code=status.HTTP_200_OK)
+async def start_session(
+    response: Response, user: User, native: bool, sessions: SessionService, renewing: Optional[dict] = None
+) -> dict[str, str]:
+    """
+    A session for the user. Without `renewing`, a new login opens one. With the payload of the refresh
+    token just presented, that session moves on to its next refresh token (see SessionService).
+    The browser gets cookies (nothing to add to the body). The native app has no cookie jar to trust:
+    it gets its tokens in the body, and no cookie is set.
+    """
+    client = "native" if native else "web"
+    refresh_token = (
+        await sessions.rotate(user, renewing, client) if renewing is not None else await sessions.open(user, client)
+    )
+    if not native:
+        set_session_cookies(response, user, refresh_token)
+        return {}
+    return {
+        "access_token": create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version),
+        "refresh_token": refresh_token,
+    }
+
+
+@router.post("/auth", response_model=LoginResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def login(
     response: Response,
     user_data: UserAuthSchema,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    sessions: SessionService = Depends(get_session_service),
 ) -> LoginResponse:
     user = await user_service.authenticate(user_data.email, user_data.password)
     if not user.is_active:
@@ -61,26 +90,28 @@ async def login(
     if not user.is_accepted_terms:
         raise TermsNotAcceptedError()
 
-    set_session_cookies(response, user)
+    tokens = await start_session(response, user, user_data.client == "native", sessions)
     log_activity(user.username, "logged in")
-    return LoginResponse(isLoggedIn=True)
+    return LoginResponse(isLoggedIn=True, **tokens)
 
 
-@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=RegisterResponse, response_model_exclude_none=True,
+             status_code=status.HTTP_201_CREATED)
 @handle_app_exceptions
 async def register(
     response: Response,
     new_user: UserCreate,
     background_tasks: BackgroundTasks,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    sessions: SessionService = Depends(get_session_service),
 ) -> RegisterResponse:
     user = await user_service.create_user(new_user)
-    set_session_cookies(response, user)
+    tokens = await start_session(response, user, new_user.client == "native", sessions)
     log_activity(user.username, "signed up")
     # After the response: a slow or failing SMTP never delays nor fails the registration
     background_tasks.add_task(user_service.send_welcome_email, user)
     await user_service.send_new_user_registered_email(user)
-    return RegisterResponse(message="User registered successfully", isLoggedIn=True)
+    return RegisterResponse(message="User registered successfully", isLoggedIn=True, **tokens)
 
 
 @router.post("/forgot-password", response_model=MessageResponse, status_code=status.HTTP_200_OK)
@@ -103,21 +134,39 @@ async def reset_password(
     return MessageResponse(message="Password reset successfully")
 
 
-@router.post("/refresh-token", response_model=TokenRefreshResponse, status_code=status.HTTP_200_OK)
+@router.post("/refresh-token", response_model=TokenRefreshResponse, response_model_exclude_none=True,
+             status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def refresh_token(
+    request: Request,
     response: Response,
     user: User = Depends(get_refresh_user),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    sessions: SessionService = Depends(get_session_service),
 ) -> TokenRefreshResponse:
-    set_session_cookies(response, user)
+    """
+    The browser sends its refresh cookie. The native app sends its refresh token as a Bearer. Either way
+    the response carries the next refresh token: the one just used is good for a minute more, no longer.
+    """
+    tokens = await start_session(
+        response, user, bearer_token(request) is not None, sessions, renewing=decode_refresh_token(request))
     # A visit too: the user is back without the login form
     await user_service.mark_seen(user)
-    return TokenRefreshResponse(message="Tokens refreshed", isLoggedIn=True)
+    return TokenRefreshResponse(message="Tokens refreshed", isLoggedIn=True, **tokens)
 
 
 @router.post("/logout", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-async def logout(response: Response) -> MessageResponse:
+async def logout(
+    request: Request,
+    response: Response,
+    sessions: SessionService = Depends(get_session_service),
+) -> MessageResponse:
+    # This device's session ends for good, not only its cookies. A request without a valid refresh
+    # token (already logged out, expired) has no session to end: logging out works anyway.
+    try:
+        await sessions.revoke(decode_refresh_token(request))
+    except AppException:
+        pass
     set_token_cookie(response, "", TokenType.ACCESS, custom_max_age=0)
     set_token_cookie(response, "", TokenType.REFRESH, custom_max_age=0)
     set_csrf_cookie(response, "", max_age=0)
@@ -158,14 +207,17 @@ async def set_my_currency(
     return MessageResponse(message=f"Collection value shown in {currency_data.currency}")
 
 
-@router.put("/me/password", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+@router.put("/me/password", response_model=PasswordChangeResponse, response_model_exclude_none=True,
+            status_code=status.HTTP_200_OK)
 @handle_app_exceptions
 async def change_my_password(
+    request: Request,
     response: Response,
     password_data: PasswordChangeSchema,
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service)
-) -> MessageResponse:
+    user_service: UserService = Depends(get_user_service),
+    sessions: SessionService = Depends(get_session_service),
+) -> PasswordChangeResponse:
     await user_service.change_password(
         current_user,
         password_data.current_password,
@@ -173,8 +225,8 @@ async def change_my_password(
     )
     log_activity(current_user.username, "changed their password")
     # Other sessions are revoked; this one gets tokens for the new token_version
-    set_session_cookies(response, current_user)
-    return MessageResponse(message="Password changed successfully")
+    tokens = await start_session(response, current_user, bearer_token(request) is not None, sessions)
+    return PasswordChangeResponse(message="Password changed successfully", **tokens)
 
 
 @router.post("/confirm-email", response_model=MessageResponse, status_code=status.HTTP_200_OK)

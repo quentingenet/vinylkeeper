@@ -242,7 +242,6 @@ export default function CollectionDetails() {
   const wishlistItemsAsResponse: WishlistItemResponse[] = useMemo(() => {
     return ownerWishlistItems.map((item) => ({
       id: item.id,
-      user_id: 0,
       external_id: item.external_id,
       entity_type_id: item.entity_type === "album" ? 1 : 2,
       external_source_id: 0,
@@ -504,7 +503,9 @@ export default function CollectionDetails() {
       sx={{
         padding: isMobile ? "16px" : "32px",
         maxWidth: isMobile ? "100%" : "1500px",
-        minWidth: isMobile ? "100%" : "1200px",
+        // Never wider than the page area: a fixed minimum overflowed (and was cut) next to the side menu
+        minWidth: 0,
+        boxSizing: "border-box",
         margin: isMobile ? "0" : "0 auto",
         width: "100%",
       }}

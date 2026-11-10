@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vinyl Keeper</string>
+    <string name="title_activity_main">Vinyl Keeper</string>
+    <string name="package_name">org.vinylkeeper.app</string>
+    <string name="custom_url_scheme">org.vinylkeeper.app</string>
+</resources>

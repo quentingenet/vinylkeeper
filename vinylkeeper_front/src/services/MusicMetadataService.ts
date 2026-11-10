@@ -2,6 +2,8 @@ import { logger } from "@utils/logger";
 import { useQuery } from "@tanstack/react-query";
 import { AlbumMetadata, ArtistMetadata } from "@models/IRequestProxy";
 import { queryKeys } from "@utils/queryKeys";
+import { isApiError } from "@utils/apiError";
+import { BaseApiService } from "./BaseApiService";
 
 export interface AlbumMetadataParams {
   id: string;
@@ -9,25 +11,31 @@ export interface AlbumMetadataParams {
   title: string;
 }
 
-// Direct fetch (not BaseApiService) so the query key/retry config here stays
-// independent from BaseApiService's own refresh-token flow. /request-proxy/*
-// now requires auth (login-gated Discogs search) — credentials must be sent explicitly.
+// /request-proxy/* requires a session (login-gated Discogs search): the common client sends it,
+// cookies in the browser, Bearer in the Android app, and renews an expired one.
+class MusicMetadataApiService extends BaseApiService {
+  getAlbum(id: string): Promise<AlbumMetadata> {
+    return this.get<AlbumMetadata>(`/request-proxy/music-metadata/album/${encodeURIComponent(id)}`);
+  }
+
+  getArtist(id: string): Promise<ArtistMetadata> {
+    return this.get<ArtistMetadata>(`/request-proxy/music-metadata/artist/${encodeURIComponent(id)}`);
+  }
+}
+
+const musicMetadataApiService = new MusicMetadataApiService();
+
 export const fetchAlbumMetadata = async (
   params: AlbumMetadataParams
 ): Promise<AlbumMetadata> => {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_VK_URL}/request-proxy/music-metadata/album/${
-      params.id
-    }`,
-    { credentials: "include" }
-  );
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Album with ID ${params.id} not found`);
+  try {
+    return await musicMetadataApiService.getAlbum(params.id);
+  } catch (error: unknown) {
+    if (isApiError(error) && error.code === 404) {
+      throw new Error(`Album with ID ${params.id} not found`, { cause: error });
     }
-    throw new Error("Failed to fetch album metadata");
+    throw new Error("Failed to fetch album metadata", { cause: error });
   }
-  return await response.json() as AlbumMetadata;
 };
 
 export const fetchArtistMetadata = async (
@@ -46,29 +54,10 @@ export const fetchArtistMetadata = async (
   }
 
   try {
-    const response = await fetch(
-      `${
-        import.meta.env.VITE_API_VK_URL
-      }/request-proxy/music-metadata/artist/${artistId}`,
-      { credentials: "include" }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error(
-        "Artist metadata fetch failed:",
-        response.status,
-        errorText
-      );
-      throw new Error(
-        `Failed to fetch artist metadata: ${response.status} ${errorText}`
-      );
-    }
-
-    return await response.json() as ArtistMetadata;
+    return await musicMetadataApiService.getArtist(artistId);
   } catch (error) {
     logger.error("Error fetching artist metadata:", error);
-    throw error;
+    throw new Error("Failed to fetch artist metadata", { cause: error });
   }
 };
 

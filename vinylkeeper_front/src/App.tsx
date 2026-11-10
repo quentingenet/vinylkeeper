@@ -21,6 +21,8 @@ const OpenSharedCollection = lazy(() => import("@pages/Collections/OpenSharedCol
 const SpinningNow = lazy(() => import("@pages/SpinningNow/SpinningNow"));
 const Admin = lazy(() => import("@pages/Admin/Admin"));
 const ConfirmEmail = lazy(() => import("@pages/ConfirmEmail/ConfirmEmail"));
+const DiscogsCallback = lazy(() => import("@pages/Discogs/DiscogsCallback"));
+const Terms = lazy(() => import("@pages/Terms/Terms"));
 
 function App() {
   const userContext = useUserContext();
@@ -142,6 +144,8 @@ function App() {
             />
             {/* Not protected: the link of the email is opened logged in or not */}
             <Route path={EGlobalUrls.CONFIRM_EMAIL} element={<ConfirmEmail />} />
+            <Route path={EGlobalUrls.DISCOGS_CALLBACK} element={<DiscogsCallback />} />
+            <Route path={EGlobalUrls.TERMS} element={<Terms />} />
             <Route path="*" element={<Landpage />} />
           </Routes>
         </Layout>
@@ -161,6 +165,8 @@ function App() {
             element={<ResetPassword />}
           />
           <Route path={EGlobalUrls.CONFIRM_EMAIL} element={<ConfirmEmail />} />
+          <Route path={EGlobalUrls.DISCOGS_CALLBACK} element={<DiscogsCallback />} />
+          <Route path={EGlobalUrls.TERMS} element={<Terms standalone />} />
           <Route path={EGlobalUrls.NO_MATCH} element={<Landpage />} />
         </Routes>
       )}

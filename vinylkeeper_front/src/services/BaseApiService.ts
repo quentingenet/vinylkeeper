@@ -44,6 +44,9 @@ export abstract class BaseApiService {
   }
 
   protected async blobGet(endpoint: string): Promise<{ blob: Blob; filename: string }> {
+    if (isCapacitorPlatform()) {
+      return capacitorHttpService.getBlob(endpoint);
+    }
     const url = `${this.baseUrl}${endpoint}`;
 
     const execute = async (retrying = false): Promise<Response> => {

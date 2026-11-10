@@ -26,6 +26,8 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { DISCOGS_DISCLAIMER, discogsCollectionUrl } from "@utils/discogsLinks";
+import { Browser } from "@capacitor/browser";
+import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
 import { collectionApiService, type PaginatedCollectionListResponse } from "@services/CollectionApiService";
@@ -146,7 +148,12 @@ export default function DiscogsImportDialog({
   const connect = useMutation<string, ApiError>({
     mutationFn: () => discogsImportApiService.connect(),
     // Discogs asks the user to authorize VinylKeeper, then sends them back to the collections
-    onSuccess: (authorizeUrl) => window.location.assign(authorizeUrl),
+    onSuccess: (authorizeUrl) => {
+      // In the app, a Custom Tab over it: the WebView would be left for Discogs and could not come back.
+      // Discogs then sends the user to the App Link of the site, which reopens the app.
+      if (isCapacitorPlatform()) void Browser.open({ url: authorizeUrl });
+      else window.location.assign(authorizeUrl);
+    },
   });
 
   const disconnect = useMutation<void, ApiError>({

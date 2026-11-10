@@ -4,10 +4,12 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from cryptography.fernet import Fernet
 
 from app.core.exceptions import ValidationError
 from app.endpoints import discogs_import as endpoints
 from app.main import app
+from app.services import discogs_oauth_service as oauth_module
 from app.services.discogs_oauth_service import DiscogsOAuthError
 
 
@@ -52,6 +54,26 @@ class TestConnection:
 
         assert response.json() == {"authorize_url": "https://www.discogs.com/oauth/authorize?oauth_token=t"}
 
+    async def test_the_app_asks_for_its_own_callback(self, auth_client, oauth):
+        client, *_ = auth_client
+        await client.post("/api/discogs-import/connect", headers={"Authorization": "Bearer t"})
+        await client.post("/api/discogs-import/connect")
+
+        assert [call.kwargs["native"] for call in oauth.start.await_args_list] == [True, False]
+
+    async def test_availability_depends_on_the_callback_of_the_client(self, auth_client, oauth, monkeypatch):
+        monkeypatch.setattr(oauth_module.settings, "DISCOGS_CONSUMER_KEY", "k")
+        monkeypatch.setattr(oauth_module.settings, "DISCOGS_CONSUMER_SECRET", "s")
+        monkeypatch.setattr(oauth_module.settings, "DISCOGS_TOKEN_KEY", Fernet.generate_key().decode())
+        monkeypatch.setattr(oauth_module.settings, "DISCOGS_OAUTH_CALLBACK_URL", "https://api.example.com/cb")
+        monkeypatch.setattr(oauth_module.settings, "DISCOGS_OAUTH_NATIVE_CALLBACK_URL", "")
+        client, *_ = auth_client
+
+        web = (await client.get("/api/discogs-import/connection")).json()
+        app_ = (await client.get("/api/discogs-import/connection", headers={"Authorization": "Bearer t"})).json()
+
+        assert (web["available"], app_["available"]) == (True, False)
+
     async def test_disconnect(self, auth_client, oauth):
         client, *_ = auth_client
         assert (await client.delete("/api/discogs-import/connection")).status_code == 204
@@ -59,6 +81,41 @@ class TestConnection:
 
     async def test_visitors_cannot_connect(self, client, oauth):
         assert (await client.post("/api/discogs-import/connect")).status_code == 401
+
+
+class TestComplete:
+    BODY = {"oauth_token": "t", "oauth_verifier": "v"}
+
+    async def test_finishes_the_connection_for_the_user_of_the_session(self, auth_client, oauth):
+        oauth.repository.get_connection.return_value = connection()
+        client, _, user = auth_client
+
+        response = await client.post("/api/discogs-import/oauth/complete", json=self.BODY)
+
+        assert response.status_code == 200 and response.json()["discogs_username"] == "digger"
+        oauth.complete.assert_awaited_once_with("t", "v", user.id)
+
+    async def test_a_refused_authorization_is_a_400_with_its_reason(self, auth_client, oauth):
+        oauth.complete.side_effect = DiscogsOAuthError("session")
+        client, *_ = auth_client
+
+        response = await client.post("/api/discogs-import/oauth/complete", json=self.BODY)
+
+        assert response.status_code == 400 and response.json()["details"] == {"reason": "session"}
+
+    async def test_discogs_down_is_a_server_error(self, auth_client, oauth):
+        oauth.complete.side_effect = DiscogsOAuthError("unavailable")
+        client, *_ = auth_client
+
+        assert (await client.post("/api/discogs-import/oauth/complete", json=self.BODY)).status_code == 500
+
+    async def test_unknown_fields_are_rejected(self, auth_client, oauth):
+        client, *_ = auth_client
+        response = await client.post("/api/discogs-import/oauth/complete", json={**self.BODY, "user_id": 2})
+        assert response.status_code == 422
+
+    async def test_visitors_cannot_complete(self, client, oauth):
+        assert (await client.post("/api/discogs-import/oauth/complete", json=self.BODY)).status_code == 401
 
 
 class TestCallback:

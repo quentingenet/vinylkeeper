@@ -8,6 +8,9 @@ interface ImportMetaEnv {
   readonly VITE_SPOTIFY_WEB_URL: string;
   readonly VITE_DEEZER_WEB_URL: string;
   readonly VITE_YOUTUBE_MUSIC_URL: string;
+  // Links of the music apps, for the Android app only (.env.mobile)
+  readonly VITE_SPOTIFY_MOBILE_URL?: string;
+  readonly VITE_DEEZER_MOBILE_URL?: string;
 }
 
 interface ImportMeta {

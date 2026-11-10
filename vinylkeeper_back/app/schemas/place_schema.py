@@ -62,8 +62,8 @@ class PlaceBase(BaseModel):
 
 class PlaceCreate(PlaceBase):
     """Schema for creating a new place."""
+    # No submitted_by_id: the author is the user of the session, never what the client says
     place_type_id: int = Field(gt=0)
-    submitted_by_id: int | None = Field(None, gt=0)
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
 

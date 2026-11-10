@@ -15,6 +15,7 @@ from app.repositories.discogs_import_repository import DiscogsImportRepository
 from app.schemas.discogs_import_schema import (
     DiscogsAuthorizeResponse,
     DiscogsConnectionStatus,
+    DiscogsOAuthComplete,
     DiscogsImportCreate,
     DiscogsImportPreview,
     DiscogsImportResponse,
@@ -32,8 +33,8 @@ from app.services.discogs_oauth_service import (
     not_connected_error,
     oauth_configured,
 )
-from app.core.exceptions import AppException
-from app.utils.auth_utils.auth import get_current_user, get_refresh_user
+from app.core.exceptions import AppException, ErrorCode, ServerError, ValidationError
+from app.utils.auth_utils.auth import bearer_token, get_current_user, get_refresh_user
 from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
@@ -61,13 +62,14 @@ async def browser_user_id(request: Request, db) -> Optional[int]:
 @router.get("/connection", response_model=DiscogsConnectionStatus)
 @handle_app_exceptions
 async def get_discogs_connection(
+    request: Request,
     current_user: User = Depends(get_current_user),
     oauth: DiscogsOAuthService = Depends(get_oauth_service),
 ):
     """The Discogs account the user connected, if any. No token ever leaves the server."""
     connection = await oauth.repository.get_connection(current_user.id)
     return DiscogsConnectionStatus(
-        available=oauth_configured(),
+        available=oauth_configured(native=bearer_token(request) is not None),
         connected=connection is not None,
         discogs_username=connection.discogs_username if connection else None,
         connected_at=connection.connected_at if connection else None,
@@ -77,11 +79,44 @@ async def get_discogs_connection(
 @router.post("/connect", response_model=DiscogsAuthorizeResponse)
 @handle_app_exceptions
 async def connect_discogs(
+    request: Request,
     current_user: User = Depends(get_current_user),
     oauth: DiscogsOAuthService = Depends(get_oauth_service),
 ):
-    """Start the connection: the frontend sends the user to the returned Discogs page."""
-    return DiscogsAuthorizeResponse(authorize_url=await oauth.start(current_user))
+    """
+    Start the connection: the frontend sends the user to the returned Discogs page. The native app
+    (Bearer) gets Discogs to send the user back to its own App Link instead of the browser callback.
+    """
+    native = bearer_token(request) is not None
+    return DiscogsAuthorizeResponse(authorize_url=await oauth.start(current_user, native=native))
+
+
+@router.post("/oauth/complete", response_model=DiscogsConnectionStatus)
+@handle_app_exceptions
+async def complete_discogs_connection(
+    data: DiscogsOAuthComplete,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    oauth: DiscogsOAuthService = Depends(get_oauth_service),
+):
+    """
+    The app is back from Discogs through its App Link and finishes the connection with its own
+    session: the authorization must have been started by this very user. A token works once only.
+    """
+    try:
+        await oauth.complete(data.oauth_token, data.oauth_verifier, current_user.id)
+    except DiscogsOAuthError as e:
+        if e.reason == "unavailable":
+            raise ServerError(error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+                              message="Discogs is not answering, please try again later",
+                              details={"reason": e.reason}) from e
+        # An expired or refused authorization is a normal outcome (the service logged a refused session)
+        error = ValidationError(error_code=ErrorCode.INVALID_INPUT,
+                                message="The Discogs connection could not be completed, please start it again",
+                                details={"reason": e.reason})
+        error.should_log = False
+        raise error from e
+    return await get_discogs_connection(request, current_user, oauth)
 
 
 @router.get("/oauth/callback", include_in_schema=False)

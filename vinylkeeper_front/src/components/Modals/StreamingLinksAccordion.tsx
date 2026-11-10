@@ -3,6 +3,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { streamingHref, streamingPlatforms, streamingQuery } from "@services/MusicStreamingService";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { openInMusicApp } from "@utils/StreamingLauncher";
 import { colors } from "@styles/colors";
 
 interface StreamingLinksAccordionProps {
@@ -18,8 +19,10 @@ export default function StreamingLinksAccordion({
 }: StreamingLinksAccordionProps) {
   const { isMobile } = useDetectMobile();
   const query = streamingQuery(itemTitle, itemArtist, itemType);
-  // Intent links are for mobile browsers: the WebView of the native app does not open them
-  const userAgent = isCapacitorPlatform() ? "" : navigator.userAgent;
+  // Intent links are for mobile browsers: the WebView of the native app does not open them, the app
+  // asks the system itself (see openInMusicApp)
+  const isNativeApp = isCapacitorPlatform();
+  const userAgent = isNativeApp ? "" : navigator.userAgent;
 
   return (
     <Accordion
@@ -50,6 +53,12 @@ export default function StreamingLinksAccordion({
               key={platform.name}
               component="a"
               href={streamingHref(platform, query, userAgent)}
+              {...(isNativeApp && {
+                onClick: (event: React.MouseEvent) => {
+                  event.preventDefault();
+                  void openInMusicApp(platform, query);
+                },
+              })}
               {...(!isMobile && { target: "_blank", rel: "noopener noreferrer" })}
               variant="contained"
               fullWidth

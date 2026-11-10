@@ -8,6 +8,7 @@ import { enUS } from "date-fns/locale";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { UserContextProvider, useUserContext } from "@contexts/UserContext";
 import App from "./App";
+import NativeLinkHandler from "@components/Native/NativeLinkHandler";
 import MobileThemeLandpageVinylKeeper from "@styles/themes/landpage/MobileThemeLandpageVinylKeeper";
 import DesktopThemeLandpageVinylKeeper from "@styles/themes/landpage/DesktopThemeLandpageVinylKeeper";
 import DesktopThemeAppVinylKeeper from "@styles/themes/app/DesktopThemeAppVinylKeeper";
@@ -37,9 +38,12 @@ const RootContent: React.FC = () => {
   const { isMobile } = useDetectMobile();
   const { isUserLoggedIn } = useUserContext();
   const { pathname } = useLocation();
-  // The public Atlas and a shared collection are pages of the app, shown to visitors: same theme as for members
+  // The public Atlas, a shared collection and the terms are pages of the app, shown to visitors: same theme as for members
   const usesAppTheme =
-    isUserLoggedIn || pathname === EGlobalUrls.ATLAS || matchPath(EGlobalUrls.SHARED_COLLECTION, pathname) !== null;
+    isUserLoggedIn ||
+    pathname === EGlobalUrls.ATLAS ||
+    pathname === EGlobalUrls.TERMS ||
+    matchPath(EGlobalUrls.SHARED_COLLECTION, pathname) !== null;
 
   const theme = useMemo(() => {
     return !usesAppTheme
@@ -66,6 +70,7 @@ const Root: React.FC = () => (
       {/* Above the user context: it clears the cache when the session ends */}
       <QueryClientProvider client={queryClient}>
         <UserContextProvider>
+          <NativeLinkHandler />
           <RootContent />
         </UserContextProvider>
       </QueryClientProvider>

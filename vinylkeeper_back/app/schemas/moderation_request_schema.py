@@ -76,6 +76,8 @@ class ModerationRequestInDB(ModerationRequestBase):
 
 class ModerationRequestResponse(ModerationRequestInDB):
     """Schema for moderation request data in API responses."""
+    # Read by the service, never sent: the API shows people by user_uuid (see `user`), not by internal id
+    user_id: int = Field(gt=0, exclude=True)
     place: Optional[PlaceMiniResponse] = Field(
         None,
         description="Place data associated with this request"
