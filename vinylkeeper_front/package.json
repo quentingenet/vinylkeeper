@@ -32,6 +32,7 @@
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/ios": "^8.3.0",
     "@capacitor/share": "^8.0.3",
+    "@capawesome/capacitor-app-update": "^8.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^6.0.2",

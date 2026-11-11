@@ -9,6 +9,7 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { UserContextProvider, useUserContext } from "@contexts/UserContext";
 import App from "./App";
 import NativeLinkHandler from "@components/Native/NativeLinkHandler";
+import NativeUpdatePrompt from "@components/Native/NativeUpdatePrompt";
 import MobileThemeLandpageVinylKeeper from "@styles/themes/landpage/MobileThemeLandpageVinylKeeper";
 import DesktopThemeLandpageVinylKeeper from "@styles/themes/landpage/DesktopThemeLandpageVinylKeeper";
 import DesktopThemeAppVinylKeeper from "@styles/themes/app/DesktopThemeAppVinylKeeper";
@@ -71,6 +72,7 @@ const Root: React.FC = () => (
       <QueryClientProvider client={queryClient}>
         <UserContextProvider>
           <NativeLinkHandler />
+          <NativeUpdatePrompt />
           <RootContent />
         </UserContextProvider>
       </QueryClientProvider>

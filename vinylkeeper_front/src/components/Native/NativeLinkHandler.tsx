@@ -43,7 +43,10 @@ export default function NativeLinkHandler() {
       }
       let outcome = "connected";
       try {
-        await discogsImportApiService.completeConnection(target.oauthToken, target.oauthVerifier);
+        await discogsImportApiService.completeConnection(
+          target.oauthToken,
+          target.oauthVerifier,
+        );
         await queryClient.invalidateQueries({ queryKey: ["discogsImport"] });
       } catch (error) {
         // The reason of a refused authorization (expired, session...) is what the dialog tells
@@ -54,7 +57,10 @@ export default function NativeLinkHandler() {
       if (active) void navigate(discogsOutcomeUrl(outcome));
     };
 
-    const listener = CapacitorApp.addListener("appUrlOpen", ({ url }) => void handle(url));
+    const listener = CapacitorApp.addListener(
+      "appUrlOpen",
+      ({ url }) => void handle(url),
+    );
     void CapacitorApp.getLaunchUrl().then((launch) => {
       if (launch?.url) void handle(launch.url);
     });

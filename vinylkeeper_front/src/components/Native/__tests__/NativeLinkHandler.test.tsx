@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 const native = vi.hoisted(() => ({ value: true }));
-vi.mock("@utils/CapacitorUtils", () => ({ isCapacitorPlatform: () => native.value }));
+vi.mock("@utils/CapacitorUtils", () => ({
+  isCapacitorPlatform: () => native.value,
+}));
 
 const appPlugin = vi.hoisted(() => ({
   listeners: [] as Array<(event: { url: string }) => void>,
@@ -13,11 +15,17 @@ const appPlugin = vi.hoisted(() => ({
 }));
 vi.mock("@capacitor/app", () => ({
   App: {
-    addListener: vi.fn((_event: string, callback: (event: { url: string }) => void) => {
-      appPlugin.listeners.push(callback);
-      return Promise.resolve({ remove: appPlugin.remove });
-    }),
-    getLaunchUrl: vi.fn(() => Promise.resolve(appPlugin.launchUrl ? { url: appPlugin.launchUrl } : undefined)),
+    addListener: vi.fn(
+      (_event: string, callback: (event: { url: string }) => void) => {
+        appPlugin.listeners.push(callback);
+        return Promise.resolve({ remove: appPlugin.remove });
+      },
+    ),
+    getLaunchUrl: vi.fn(() =>
+      Promise.resolve(
+        appPlugin.launchUrl ? { url: appPlugin.launchUrl } : undefined,
+      ),
+    ),
   },
 }));
 
@@ -25,7 +33,9 @@ const browser = vi.hoisted(() => ({ close: vi.fn(() => Promise.resolve()) }));
 vi.mock("@capacitor/browser", () => ({ Browser: browser }));
 
 const api = vi.hoisted(() => ({ completeConnection: vi.fn() }));
-vi.mock("@services/DiscogsImportApiService", () => ({ discogsImportApiService: api }));
+vi.mock("@services/DiscogsImportApiService", () => ({
+  discogsImportApiService: api,
+}));
 vi.mock("@utils/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
 
 import NativeLinkHandler from "../NativeLinkHandler";
@@ -46,11 +56,13 @@ const renderHandler = () =>
           <Route path="*" element={<Where />} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
-const open = (url: string) => appPlugin.listeners.forEach((listener) => listener({ url }));
-const where = (container: HTMLElement) => container.querySelector("[data-testid=where]")?.textContent;
+const open = (url: string) =>
+  appPlugin.listeners.forEach((listener) => listener({ url }));
+const where = (container: HTMLElement) =>
+  container.querySelector("[data-testid=where]")?.textContent;
 
 describe("NativeLinkHandler", () => {
   beforeEach(() => {
@@ -98,21 +110,33 @@ describe("NativeLinkHandler", () => {
     const { container } = renderHandler();
     await waitFor(() => expect(appPlugin.listeners).toHaveLength(1));
 
-    open("https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v");
+    open(
+      "https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v",
+    );
 
-    await waitFor(() => expect(where(container)).toBe("/collections?discogs=connected"));
+    await waitFor(() =>
+      expect(where(container)).toBe("/collections?discogs=connected"),
+    );
     expect(api.completeConnection).toHaveBeenCalledWith("t", "v");
     expect(browser.close).toHaveBeenCalled();
   });
 
   it("tells the reason when the connection is refused", async () => {
-    api.completeConnection.mockRejectedValue({ code: 4000, message: "x", details: { reason: "session" } });
+    api.completeConnection.mockRejectedValue({
+      code: 4000,
+      message: "x",
+      details: { reason: "session" },
+    });
     const { container } = renderHandler();
     await waitFor(() => expect(appPlugin.listeners).toHaveLength(1));
 
-    open("https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v");
+    open(
+      "https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v",
+    );
 
-    await waitFor(() => expect(where(container)).toBe("/collections?discogs=session"));
+    await waitFor(() =>
+      expect(where(container)).toBe("/collections?discogs=session"),
+    );
   });
 
   it("falls back to a generic error", async () => {
@@ -120,9 +144,13 @@ describe("NativeLinkHandler", () => {
     const { container } = renderHandler();
     await waitFor(() => expect(appPlugin.listeners).toHaveLength(1));
 
-    open("https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v");
+    open(
+      "https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v",
+    );
 
-    await waitFor(() => expect(where(container)).toBe("/collections?discogs=error"));
+    await waitFor(() =>
+      expect(where(container)).toBe("/collections?discogs=error"),
+    );
   });
 
   it("says the connection was cancelled without asking the API", async () => {
@@ -131,7 +159,9 @@ describe("NativeLinkHandler", () => {
 
     open("https://vinylkeeper.org/discogs/callback?denied=t");
 
-    await waitFor(() => expect(where(container)).toBe("/collections?discogs=denied"));
+    await waitFor(() =>
+      expect(where(container)).toBe("/collections?discogs=denied"),
+    );
     expect(api.completeConnection).not.toHaveBeenCalled();
   });
 
@@ -140,10 +170,16 @@ describe("NativeLinkHandler", () => {
     renderHandler();
     await waitFor(() => expect(appPlugin.listeners).toHaveLength(1));
 
-    open("https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v");
-    open("https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v");
+    open(
+      "https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v",
+    );
+    open(
+      "https://vinylkeeper.org/discogs/callback?oauth_token=t&oauth_verifier=v",
+    );
 
-    await waitFor(() => expect(api.completeConnection).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(api.completeConnection).toHaveBeenCalledTimes(1),
+    );
   });
 
   it("stops listening when it leaves", async () => {
