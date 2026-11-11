@@ -114,6 +114,7 @@ const Register = ({
       <Modal
         open={open}
         onClose={handleClose}
+        aria-labelledby="register-title"
         sx={{
           display: "flex",
           alignItems: isMobile ? "flex-start" : "center",
@@ -139,7 +140,7 @@ const Register = ({
             mt: isMobile ? "5dvh" : 0,
             mb: isMobile ? "5dvh" : 0,
             p: isMobile ? 2 : 4,
-            opacity: isMobile ? 0.9 : 0.7,
+            opacity: 0.92,
           }}
         >
           <form
@@ -147,6 +148,14 @@ const Register = ({
             className={styles.globalForm}
             style={{ width: "100%" }}
           >
+            <Typography
+              id="register-title"
+              variant="h6"
+              component="h2"
+              sx={{ color: colors.slate, textAlign: "center", mb: 2, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
+            >
+              Create your account
+            </Typography>
             <Grid sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth

@@ -103,11 +103,11 @@ export default function ForgotPasswordModal({
             id="forgot-password-title"
             variant="h6"
             component="h2"
-            sx={{ color: "common.black", textAlign: "center", mb: 1, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
+            sx={{ color: colors.slate, textAlign: "center", mb: 1, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
           >
             Forgot your password?
           </Typography>
-          <Typography variant="body2" sx={{ color: "common.black", textAlign: "center", mb: 2.5 }}>
+          <Typography variant="body2" sx={{ color: colors.slate, textAlign: "center", mb: 2.5 }}>
             Enter the email of your account: we send you a link to choose a new password.
           </Typography>
           <TextField
@@ -151,12 +151,12 @@ export default function ForgotPasswordModal({
               sx={{
                 mx: 0,
                 opacity: 1,
-                color: "common.black",
+                color: colors.slate,
                 backgroundColor: "transparent",
                 border: "none",
                 boxShadow: "none",
                 textShadow: "none",
-                "&:hover": { backgroundColor: "action.hover", color: "common.black", border: "none" },
+                "&:hover": { backgroundColor: "action.hover", color: colors.slate, border: "none" },
               }}
             >
               Cancel

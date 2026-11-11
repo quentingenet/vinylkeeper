@@ -9,6 +9,7 @@ import {
   InputAdornment,
   Snackbar,
   TextField,
+  Typography,
 } from "@mui/material";
 import { useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
@@ -41,13 +42,14 @@ export default function ResetPasswordForm() {
     alignItems: "center",
     justifyContent: "center",
     margin: "5% auto",
-    height: isMobile ? "280px" : "300px",
+    // A minimum, not a fixed height: error messages and the strength indicator make the form taller
+    minHeight: isMobile ? "280px" : "300px",
     width: "300px",
     bgcolor: colors.textLight,
     border: "2px solid black",
     borderRadius: "5px",
     padding: "20px",
-    opacity: isMobile ? 0.9 : 0.7,
+    opacity: 0.92,
     boxShadow: 6,
   };
   const location = useLocation();
@@ -93,7 +95,11 @@ export default function ResetPasswordForm() {
 
   const submitResetPassword = (data: IResetPassword) => {
     if (!isValid) return;
-    if (!token) return;
+    // A link without its token (cut by the mail app, for instance) must not fail silently
+    if (!token) {
+      setOpenSnackBar(true);
+      return;
+    }
     const resetData: IResetPasswordToBackend = {
       token: token,
       new_password: data.password,
@@ -118,6 +124,14 @@ export default function ResetPasswordForm() {
         sx={styleResetPassword}
         className={styles.globalForm}
       >
+        <Typography
+          id="reset-password-title"
+          variant="h6"
+          component="h2"
+          sx={{ color: colors.slate, textAlign: "center", mb: 2, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
+        >
+          Choose a new password
+        </Typography>
         <Grid container spacing={2}>
           <Grid>
             <Controller

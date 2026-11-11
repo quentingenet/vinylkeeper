@@ -1,3 +1,4 @@
+import { colors } from "@styles/colors";
 import { Link, Typography } from "@mui/material";
 
 interface AuthSwitchLinkProps {
@@ -8,7 +9,7 @@ interface AuthSwitchLinkProps {
 
 export default function AuthSwitchLink({ prompt, actionLabel, onClick }: AuthSwitchLinkProps) {
   return (
-    <Typography variant="caption" sx={{ color: "black", display: "block", textAlign: "center", mt: 1 }}>
+    <Typography variant="caption" sx={{ color: colors.slate, display: "block", textAlign: "center", mt: 1 }}>
       {prompt}{" "}
       <Link
         component="button"

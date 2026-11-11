@@ -1,5 +1,6 @@
 import {
   Alert,
+  Box,
   Button,
   Grid,
   IconButton,
@@ -95,6 +96,7 @@ export default function Login({
     <Modal
       open={open}
       onClose={handleClose}
+      aria-labelledby="login-title"
       sx={{
         display: "flex",
         alignItems: isMobile ? "flex-start" : "center",
@@ -120,7 +122,7 @@ export default function Login({
           mt: isMobile ? "10dvh" : 0,
           mb: isMobile ? "5dvh" : 0,
           p: isMobile ? 2 : 4,
-          opacity: isMobile ? 0.9 : 0.7,
+          opacity: 0.92,
         }}
       >
         <form
@@ -128,6 +130,22 @@ export default function Login({
           className={styles.globalForm}
           style={{ width: "100%" }}
         >
+          <Typography
+            id="login-title"
+            variant="h6"
+            component="h2"
+            sx={{ color: colors.slate, textAlign: "center", mb: 2, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
+          >
+            Log in to your account
+          </Typography>
+          {/* Right under the title: someone without an account sees at once how to create one */}
+          <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
+            <AuthSwitchLink
+              prompt="No account yet?"
+              actionLabel="Sign up"
+              onClick={switchToRegister}
+            />
+          </Box>
           <ForgotPasswordModal
             setForgotPassword={setOpenForgotPassword}
             setOpenForgotPassword={setOpenForgotPassword}
@@ -193,7 +211,7 @@ export default function Login({
               onClick={() => setOpenForgotPassword(true)}
               variant="caption"
               sx={{
-                color: "black",
+                color: colors.slate,
                 textAlign: "center",
                 mb: 1,
                 cursor: "pointer",
@@ -202,11 +220,6 @@ export default function Login({
             >
               Forgot password?
             </Typography>
-            <AuthSwitchLink
-              prompt="No account yet?"
-              actionLabel="Sign up"
-              onClick={switchToRegister}
-            />
           </Grid>
           {openSnackBar && (
             <Snackbar
