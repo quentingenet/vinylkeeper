@@ -34,7 +34,7 @@
     "@capawesome/capacitor-app-update": "^8.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@hookform/resolvers": "^6.0.2",
+    "@hookform/resolvers": "^7.0.3",
     "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "@mui/system": "^9.5.0",
