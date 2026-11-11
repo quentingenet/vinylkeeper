@@ -17,6 +17,10 @@ class SearchQuery(BaseModel):
         description="Whether to search for artists instead of albums"
     )
     page: int = Field(default=1, ge=1, le=SEARCH_MAX_PAGES, description="Page of results, from 1")
+    barcode: bool = Field(
+        False,
+        description="Whether the query is a barcode (EAN or UPC) of a release"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

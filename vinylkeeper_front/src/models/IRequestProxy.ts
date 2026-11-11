@@ -2,6 +2,8 @@ export interface SearchQuery {
   query: string;
   is_artist: boolean;
   page?: number;
+  /** The query is the barcode (EAN or UPC) of a release */
+  barcode?: boolean;
 }
 
 export interface SearchResultsPage {

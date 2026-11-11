@@ -24,6 +24,9 @@ from app.schemas.request_proxy.request_proxy_schema import (
 
 # 4 columns x 3 rows on desktop
 SEARCH_PAGE_SIZE = 12
+# EAN-8 to GTIN-14: the lengths of the barcodes printed on records
+BARCODE_MIN_DIGITS = 8
+BARCODE_MAX_DIGITS = 14
 
 
 class SearchService:
@@ -66,7 +69,8 @@ class SearchService:
         return re.sub(r"/h:\d+/w:\d+/", "/h:300/w:300/", url)
 
     async def _search_discogs(
-        self, query: str, entity: str, page: int = 1, client: Optional[httpx.AsyncClient] = None
+        self, query: str, entity: str, page: int = 1, client: Optional[httpx.AsyncClient] = None,
+        barcode: bool = False
     ) -> Dict[str, Any]:
         """Perform Discogs database search for artist or release: the raw results and pagination."""
         client_to_use = client or self.http_client
@@ -76,7 +80,8 @@ class SearchService:
                 message="HTTP client not available"
             )
         params: Dict[str, Any] = {
-            "q": query,
+            # A barcode is looked up on its own field, free text goes to the general query
+            ("barcode" if barcode else "q"): query,
             "type": entity,
             "per_page": SEARCH_PAGE_SIZE,
             "page": page,
@@ -171,14 +176,25 @@ class SearchService:
         q = search_query.query.strip()
         entity = "artist" if search_query.is_artist else "release"
 
+        if search_query.barcode:
+            # Scanners and typing add spaces or dashes: only the digits of an EAN/UPC are kept
+            q = re.sub(r"\D", "", q)
+            if not BARCODE_MIN_DIGITS <= len(q) <= BARCODE_MAX_DIGITS:
+                raise ValidationError(
+                    error_code=ErrorCode.INVALID_INPUT,
+                    message=f"A barcode has {BARCODE_MIN_DIGITS} to {BARCODE_MAX_DIGITS} digits",
+                    details={"min_length": BARCODE_MIN_DIGITS, "max_length": BARCODE_MAX_DIGITS}
+                )
+            entity = "release"
+
         # Validate search query
-        if len(q) < 2:
+        if not search_query.barcode and len(q) < 2:
             raise ValidationError(
                 error_code=ErrorCode.INVALID_INPUT,
                 message="Search query must be at least 2 characters long",
                 details={"query": q, "min_length": 2}
             )
-        if len(q) > 100:
+        if not search_query.barcode and len(q) > 100:
             raise ValidationError(
                 error_code=ErrorCode.INVALID_INPUT,
                 message="Search query must be at most 100 characters long",
@@ -187,7 +203,8 @@ class SearchService:
 
         try:
             # Make HTTP request using shared client
-            response = await self._search_discogs(q, entity, search_query.page)
+            response = await self._search_discogs(
+                q, entity, search_query.page, barcode=search_query.barcode)
             response_data = response.get("results") or []
             total_pages = min(response.get("pagination", {}).get("pages") or 1, SEARCH_MAX_PAGES)
 

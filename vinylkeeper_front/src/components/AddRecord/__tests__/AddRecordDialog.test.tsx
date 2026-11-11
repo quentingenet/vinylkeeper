@@ -27,6 +27,9 @@ vi.mock("@services/ExternalReferenceService", () => ({
     replacePressing: api.replacePressing,
   },
 }));
+const native = vi.hoisted(() => ({ isNative: false, scan: vi.fn() }));
+vi.mock("@utils/CapacitorUtils", () => ({ isCapacitorPlatform: () => native.isNative }));
+vi.mock("@utils/BarcodeScanner", () => ({ scanRecordBarcode: native.scan }));
 vi.mock("@hooks/useDetectMobile", () => ({ default: () => ({ isMobile: false }) }));
 vi.mock("@contexts/UserContext", () => ({ useUserContext: () => ({ currentUser: { user_uuid: "u-1" } }) }));
 // Needs the date pickers localization context of the app; not what is tested here
@@ -288,5 +291,52 @@ describe("Closing", () => {
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
 
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("AddRecordDialog barcode scan", () => {
+  beforeEach(() => {
+    native.isNative = false;
+    native.scan.mockReset();
+    api.searchMusicPage.mockReset();
+    api.getCollections.mockResolvedValue([]);
+  });
+  afterEach(cleanup);
+
+  it("is disabled on the web, with the coming soon tooltip", async () => {
+    renderDialog();
+
+    expect(screen.getByRole("button", { name: /scan barcode/i })).toBeDisabled();
+    await userEvent.setup().hover(screen.getByRole("button", { name: /scan barcode/i }).parentElement as HTMLElement);
+    expect(await screen.findByText("Coming soon with mobile android app")).toBeTruthy();
+  });
+
+  it("searches the scanned barcode in the app", async () => {
+    native.isNative = true;
+    native.scan.mockResolvedValue("0074646382004");
+    api.searchMusicPage.mockResolvedValue(page([release("1", "Kind Of Blue")]));
+    renderDialog();
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /scan barcode/i }));
+
+    await waitFor(() =>
+      expect(api.searchMusicPage).toHaveBeenCalledWith({
+        query: "0074646382004",
+        is_artist: false,
+        page: 1,
+        barcode: true,
+      })
+    );
+    expect(await screen.findByText("Kind Of Blue")).toBeTruthy();
+  });
+
+  it("does nothing when the scanner is closed", async () => {
+    native.isNative = true;
+    native.scan.mockResolvedValue(null);
+    renderDialog();
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /scan barcode/i }));
+
+    expect(api.searchMusicPage).not.toHaveBeenCalled();
   });
 });

@@ -75,6 +75,7 @@ export const queryKeys = {
     preview: (userUuid: string | undefined) => ["discogsImport", "preview", userUuid] as const,
   },
   search: {
-    page: (query: string, isArtist: boolean, page: number) => ["musicSearch", query, isArtist, page] as const,
+    page: (query: string, isArtist: boolean, page: number, barcode = false) =>
+      ["musicSearch", query, isArtist, page, barcode] as const,
   },
 };

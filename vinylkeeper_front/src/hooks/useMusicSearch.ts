@@ -17,9 +17,14 @@ export function useMusicSearch() {
   const [inputError, setInputError] = useState<string | null>(null);
 
   const resultsQuery = useQuery({
-    queryKey: queryKeys.search.page(request?.query ?? "", request?.is_artist ?? false, request?.page ?? 1),
-    queryFn: async ({ queryKey: [, query, is_artist, page] }) => {
-      const results = await searchApiService.searchMusicPage({ query, is_artist, page });
+    queryKey: queryKeys.search.page(
+      request?.query ?? "",
+      request?.is_artist ?? false,
+      request?.page ?? 1,
+      request?.barcode ?? false
+    ),
+    queryFn: async ({ queryKey: [, query, is_artist, page, barcode] }) => {
+      const results = await searchApiService.searchMusicPage({ query, is_artist, page, ...(barcode && { barcode }) });
       // Kept with the data: previous results stay on screen while a search of the other type loads
       return { ...results, items: results.items.map(withTitle), isArtist: is_artist, query };
     },
@@ -31,14 +36,14 @@ export function useMusicSearch() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const search = useCallback((query: string, isArtist: boolean) => {
+  const search = useCallback((query: string, isArtist: boolean, barcode = false) => {
     const trimmed = query.trim();
-    if (trimmed.length < MIN_QUERY_LENGTH) {
+    if (!barcode && trimmed.length < MIN_QUERY_LENGTH) {
       setInputError(`Type at least ${MIN_QUERY_LENGTH} characters to search.`);
       return;
     }
     setInputError(null);
-    setRequest({ query: trimmed, is_artist: isArtist, page: 1 });
+    setRequest({ query: trimmed, is_artist: isArtist, page: 1, barcode });
   }, []);
 
   const goToPage = (page: number) => setRequest((current) => (current ? { ...current, page } : current));

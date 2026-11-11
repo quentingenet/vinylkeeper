@@ -321,3 +321,34 @@ class TestAlbumMetadataEdition:
         assert metadata.barcode == "8 88837 16861 8"
         assert metadata.matrix == ["AL88883716861-2 A2", "BL88883716861-2 B1"]
         assert metadata.released == "2013-05-17"
+
+
+class TestSearchByBarcode:
+    async def test_barcode_is_sent_on_its_own_field_with_digits_only(self):
+        sent: list = []
+        service, _ = discogs([release_hit(1, "Miles Davis - Kind Of Blue")], sent_params=sent)
+
+        page = await service.search_music_page(SearchQuery(query="0 74646 38200-4", barcode=True))
+
+        assert [item.id for item in page.items] == ["1"]
+        assert sent[0]["barcode"] == "074646382004"
+        assert "q" not in sent[0]
+        assert sent[0]["type"] == "release"
+
+    @pytest.mark.parametrize("code", ["1234567", "123456789012345", "abcdefgh", "1234 567"])
+    async def test_wrong_length_is_refused_before_any_request(self, code):
+        service, requests = discogs([])
+
+        with pytest.raises(ValidationError):
+            await service.search_music_page(SearchQuery(query=code, barcode=True))
+
+        assert requests == []
+
+    async def test_free_text_search_still_uses_q(self):
+        sent: list = []
+        service, _ = discogs([release_hit(1, "Miles Davis - Kind Of Blue")], sent_params=sent)
+
+        await service.search_music_page(SearchQuery(query="kind of blue"))
+
+        assert sent[0]["q"] == "kind of blue"
+        assert "barcode" not in sent[0]
