@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Grid,
   IconButton,
   InputAdornment,
@@ -207,19 +208,26 @@ export default function Login({
                 Login
               </Button>
             )}
-            <Typography
+            <ButtonBase
+              type="button"
               onClick={() => setOpenForgotPassword(true)}
-              variant="caption"
               sx={{
                 color: colors.slate,
                 textAlign: "center",
-                mb: 1,
-                cursor: "pointer",
-                display: openForgotPassword ? "none" : "block",
+                mt: 1,
+                display: openForgotPassword ? "none" : "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                borderRadius: 1,
               }}
             >
-              Forgot password?
-            </Typography>
+              <Typography variant="caption" sx={{ lineHeight: 1.3, color: colors.slate }}>
+                Forgot password?
+              </Typography>
+              <Typography variant="caption" sx={{ lineHeight: 1.3, fontWeight: "bold", color: colors.slate }}>
+                Send me a recovery link!
+              </Typography>
+            </ButtonBase>
           </Grid>
           {openSnackBar && (
             <Snackbar

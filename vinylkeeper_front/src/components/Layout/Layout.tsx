@@ -7,6 +7,7 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { Typography } from "@mui/material";
 import { usePageTitle } from "@hooks/usePageTitle";
 import AddRecordProvider from "@components/AddRecord/AddRecordProvider";
+import ScrollToTop from "@components/Layout/ScrollToTop";
 import AddRecordFab from "@components/AddRecord/AddRecordFab";
 import { colors } from "@styles/colors";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
@@ -65,6 +66,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <AddRecordProvider>
+    <ScrollToTop />
     <Box sx={{ display: "flex", minHeight: "100vh", overflow: "hidden" }}>
       {isMobile ? (
         <MobileNavBar setTitlePage={setTitlePage} titlePage={titlePage} />
