@@ -15,6 +15,7 @@
     "mobile:prod:sync": "npx cap sync android",
     "mobile:prod": "npm run build:prod && npm run mobile:prod:sync && npx cap open android",
     "development:mobile": "npm run adb:tunnel && npm run build:mobile && npx cap sync android && npx cap run android",
+    "release:android": "npm run build:prod && npx cap sync android && cd android && ./gradlew bundleRelease",
     "adb:tunnel": "adb reverse tcp:8000 tcp:8000 && adb reverse --list",
     "assets:android": "bash scripts/generate-android-assets.sh",
     "cap:sync": "npx cap sync",

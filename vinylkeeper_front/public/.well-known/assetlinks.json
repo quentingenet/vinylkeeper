@@ -1,0 +1,15 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "org.vinylkeeper.app",
+      "sha256_cert_fingerprints": [
+        "25:21:D0:5D:84:17:07:AC:EE:09:A3:8A:90:52:0F:95:59:37:EA:0D:E5:6C:E0:8C:6B:1B:EA:2A:8B:32:C2:D5",
+        "11:87:2A:1F:AD:DA:46:38:8A:11:FD:5F:2E:9A:57:7B:5B:21:07:DC:E9:D9:E6:0E:3A:3D:D2:FE:C0:1C:F3:BF",
+        "41:3A:64:82:D2:B9:28:E0:F6:0E:E2:6E:6C:19:CB:AE:3B:4D:D8:BD:A3:FB:16:66:6F:48:37:07:6B:B2:2C:28",
+        "B4:82:03:93:05:EC:F4:BC:0D:24:25:4A:9C:40:3B:BB:B2:12:13:99:90:12:9C:84:3A:27:CF:A7:2A:24:2D:E3"
+      ]
+    }
+  }
+]

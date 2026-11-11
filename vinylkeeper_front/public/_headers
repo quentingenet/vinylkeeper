@@ -6,3 +6,8 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), payment=(), usb=(), geolocation=(self)
   Strict-Transport-Security: max-age=31536000
+
+# Android App Links: read by Google's verifier, which wants JSON and no redirect
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600

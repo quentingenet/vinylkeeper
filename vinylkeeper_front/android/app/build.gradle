@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+// Signature of a release build: the upload key and its passwords, from (in this order) android/keystore.properties
+// (storeFile, storePassword, keyAlias, keyPassword), or the environment variables VK_KEYSTORE_FILE,
+// VK_KEYSTORE_PASSWORD, VK_KEY_ALIAS and VK_KEY_PASSWORD (also read as Gradle properties). None of them is in the
+// repository. Without any, debug builds are unaffected and a release build is refused (an unsigned bundle cannot
+// be sent to Google Play).
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+def signingValue = { String key, String envName ->
+    keystoreProperties.getProperty(key) ?: System.getenv(envName) ?: project.findProperty(envName)
+}
+def signingConfigured = keystorePropertiesFile.exists() ||
+    (signingValue('storeFile', 'VK_KEYSTORE_FILE') != null && signingValue('storePassword', 'VK_KEYSTORE_PASSWORD') != null)
+
 android {
     namespace = "org.vinylkeeper.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +23,9 @@ android {
         applicationId "org.vinylkeeper.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        // versionCode: an integer that must grow with every upload to Google Play. versionName: what users see.
         versionCode 1
-        versionName "1.0"
+        versionName "0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +33,36 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (signingConfigured) {
+                storeFile file(signingValue('storeFile', 'VK_KEYSTORE_FILE'))
+                storePassword signingValue('storePassword', 'VK_KEYSTORE_PASSWORD')
+                keyAlias signingValue('keyAlias', 'VK_KEY_ALIAS') ?: 'upload'
+                // One password is often used for both the store and the key
+                keyPassword signingValue('keyPassword', 'VK_KEY_PASSWORD') ?: signingValue('storePassword', 'VK_KEYSTORE_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def releaseBuild = graph.allTasks.any {
+        it.project == project && it.name ==~ /(bundle|assemble)Release/
+    }
+    if (releaseBuild && !signingConfigured) {
+        throw new GradleException(
+            "No signing key: a release build needs the upload key, from android/keystore.properties " +
+            "(storeFile, storePassword, keyAlias, keyPassword) or from the environment variables " +
+            "VK_KEYSTORE_FILE and VK_KEYSTORE_PASSWORD (VK_KEY_ALIAS and VK_KEY_PASSWORD are optional)."
+        )
     }
 }
 
