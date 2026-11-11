@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
-import { Avatar, Box, Collapse, ListItemButton, Typography } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  Collapse,
+  ListItemButton,
+  Typography,
+} from "@mui/material";
 import { Album as AlbumIcon, Person as PersonIcon } from "@mui/icons-material";
 import EditionChips from "@components/Records/EditionChips";
 import PressingMoreInfo from "@components/Records/PressingMoreInfo";
@@ -19,22 +25,55 @@ interface RecordResultRowProps {
 }
 
 /** A compact search result: small cover, title and pressing details, unfolding to its actions. */
-export default function RecordResultRow({ item, isArtist, expanded, onToggle, children }: RecordResultRowProps) {
+export default function RecordResultRow({
+  item,
+  isArtist,
+  expanded,
+  onToggle,
+  children,
+}: RecordResultRowProps) {
   return (
-    <Box component="li" sx={{ listStyle: "none", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-      <ListItemButton onClick={onToggle} selected={expanded} aria-expanded={expanded} sx={{ gap: 2, py: 1 }}>
+    <Box
+      component="li"
+      sx={{
+        listStyle: "none",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+      }}
+    >
+      <ListItemButton
+        onClick={onToggle}
+        selected={expanded}
+        aria-expanded={expanded}
+        sx={{ gap: 2, py: 1 }}
+      >
         <Avatar
           key={item.picture}
           variant="rounded"
-          src={item.picture ? buildProxyImageUrl(item.picture, 128, 128, 75, false) : undefined}
+          src={
+            item.picture
+              ? buildProxyImageUrl(item.picture, 128, 128, 75, false)
+              : undefined
+          }
           alt=""
           slotProps={{ img: { onLoad: revealImage, style: fadeInImageStyle } }}
-          sx={{ width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE, bgcolor: colors.panel, color: "primary.main" }}
+          sx={{
+            width: THUMBNAIL_SIZE,
+            height: THUMBNAIL_SIZE,
+            bgcolor: colors.panel,
+            color: "primary.main",
+          }}
         >
           {isArtist ? <PersonIcon /> : <AlbumIcon />}
         </Avatar>
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-          <Typography sx={{ color: "text.primary", fontWeight: 500, mb: isArtist ? 0 : 0.5 }} noWrap>
+          <Typography
+            sx={{
+              color: "text.primary",
+              fontWeight: 500,
+              mb: isArtist ? 0 : 0.5,
+            }}
+            noWrap
+          >
             {item.title || item.name || "Unknown"}
           </Typography>
           {!isArtist && <EditionChips album={item} centered={false} />}

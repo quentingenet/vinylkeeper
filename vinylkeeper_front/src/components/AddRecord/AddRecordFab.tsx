@@ -16,7 +16,8 @@ export default function AddRecordFab() {
   const { pathname } = useLocation();
   const { isMobile } = useDetectMobile();
 
-  if (isAddRecordOpen || PAGES_WITH_THEIR_OWN_ADD_BUTTON.includes(pathname)) return null;
+  if (isAddRecordOpen || PAGES_WITH_THEIR_OWN_ADD_BUTTON.includes(pathname))
+    return null;
 
   return (
     <Tooltip title={isMobile ? "Add a record" : ""} placement="left">

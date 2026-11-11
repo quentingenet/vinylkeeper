@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -31,6 +31,7 @@ import { useMusicSearch } from "@hooks/useMusicSearch";
 import useDetectMobile from "@hooks/useDetectMobile";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { discogsSearchUrl } from "@utils/discogsLinks";
+import { App as CapacitorApp } from "@capacitor/app";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { scanRecordBarcode } from "@utils/BarcodeScanner";
 import { logger } from "@utils/logger";
@@ -65,6 +66,22 @@ export default function AddRecordDialog({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [details, setDetails] = useState<PlaybackItem | null>(null);
+
+  // In the Android app the phone's back button closes what is on top: the details, then this dialog.
+  // While a listener exists, Capacitor no longer goes back in the history or leaves the app.
+  const onBack = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    onBack.current = () => (details ? setDetails(null) : onClose());
+  });
+  useEffect(() => {
+    if (!isCapacitorPlatform()) return;
+    const listener = CapacitorApp.addListener("backButton", () =>
+      onBack.current(),
+    );
+    return () => {
+      void listener.then((handle) => handle.remove());
+    };
+  }, []);
 
   // Opened with a query ("Find my pressing"): its pressings are listed right away
   useEffect(() => {

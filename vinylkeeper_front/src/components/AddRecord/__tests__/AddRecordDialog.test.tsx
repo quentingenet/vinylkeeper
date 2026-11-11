@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, waitFor, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -17,8 +23,12 @@ const api = vi.hoisted(() => ({
   replacePressing: vi.fn(),
 }));
 
-vi.mock("@services/SearchApiService", () => ({ searchApiService: { searchMusicPage: api.searchMusicPage } }));
-vi.mock("@services/CollectionApiService", () => ({ collectionApiService: { getCollections: api.getCollections } }));
+vi.mock("@services/SearchApiService", () => ({
+  searchApiService: { searchMusicPage: api.searchMusicPage },
+}));
+vi.mock("@services/CollectionApiService", () => ({
+  collectionApiService: { getCollections: api.getCollections },
+}));
 vi.mock("@services/ExternalReferenceService", () => ({
   externalReferenceApiService: {
     addToCollection: api.addToCollection,
@@ -28,31 +38,71 @@ vi.mock("@services/ExternalReferenceService", () => ({
   },
 }));
 const native = vi.hoisted(() => ({ isNative: false, scan: vi.fn() }));
-vi.mock("@utils/CapacitorUtils", () => ({ isCapacitorPlatform: () => native.isNative }));
+vi.mock("@utils/CapacitorUtils", () => ({
+  isCapacitorPlatform: () => native.isNative,
+}));
+const appPlugin = vi.hoisted(() => ({
+  onBack: undefined as undefined | (() => void),
+  remove: vi.fn(),
+}));
+vi.mock("@capacitor/app", () => ({
+  App: {
+    addListener: vi.fn((_event: string, callback: () => void) => {
+      appPlugin.onBack = callback;
+      return Promise.resolve({ remove: appPlugin.remove });
+    }),
+  },
+}));
 vi.mock("@utils/BarcodeScanner", () => ({ scanRecordBarcode: native.scan }));
-vi.mock("@hooks/useDetectMobile", () => ({ default: () => ({ isMobile: false }) }));
-vi.mock("@contexts/UserContext", () => ({ useUserContext: () => ({ currentUser: { user_uuid: "u-1" } }) }));
+vi.mock("@hooks/useDetectMobile", () => ({
+  default: () => ({ isMobile: false }),
+}));
+vi.mock("@contexts/UserContext", () => ({
+  useUserContext: () => ({ currentUser: { user_uuid: "u-1" } }),
+}));
 // Needs the date pickers localization context of the app; not what is tested here
 vi.mock("@components/Records/AlbumStateForm", () => ({ default: () => null }));
 vi.mock("@components/Modals/PlaybackModal", () => ({
-  default: ({ isOpen, item }: { isOpen: boolean; item: { title: string; itemType: string } | null }) =>
-    isOpen ? <div data-testid="details">{`${item?.itemType}: ${item?.title}`}</div> : null,
+  default: ({
+    isOpen,
+    item,
+  }: {
+    isOpen: boolean;
+    item: { title: string; itemType: string } | null;
+  }) =>
+    isOpen ? (
+      <div data-testid="details">{`${item?.itemType}: ${item?.title}`}</div>
+    ) : null,
 }));
 
-const release = (id: string, title: string, year = "1959"): DiscogsData => ({ uuid: id, id, title, type: "album", year });
-const page = (items: DiscogsData[], pageNumber = 1, totalPages = 1): SearchResultsPage => ({
+const release = (id: string, title: string, year = "1959"): DiscogsData => ({
+  uuid: id,
+  id,
+  title,
+  type: "album",
+  year,
+});
+const page = (
+  items: DiscogsData[],
+  pageNumber = 1,
+  totalPages = 1,
+): SearchResultsPage => ({
   items,
   page: pageNumber,
   total_pages: totalPages,
 });
 
-const renderDialog = (options: AddRecordOptions = {}, queryClient = new QueryClient(), onClose = vi.fn()) => {
+const renderDialog = (
+  options: AddRecordOptions = {},
+  queryClient = new QueryClient(),
+  onClose = vi.fn(),
+) => {
   render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <AddRecordDialog options={options} onClose={onClose} />
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return onClose;
 };
@@ -85,19 +135,34 @@ describe("Searching", () => {
   });
 
   it("lists the results of the first page with their pressing", async () => {
-    api.searchMusicPage.mockResolvedValue(page([release("1", "Miles Davis - Kind Of Blue")]));
+    api.searchMusicPage.mockResolvedValue(
+      page([release("1", "Miles Davis - Kind Of Blue")]),
+    );
     renderDialog();
 
     await searchFor("kind of blue");
 
-    expect(await screen.findByText("Miles Davis - Kind Of Blue")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Miles Davis - Kind Of Blue"),
+    ).toBeInTheDocument();
     expect(screen.getByText("1959")).toBeInTheDocument();
-    expect(api.searchMusicPage).toHaveBeenCalledWith({ query: "kind of blue", is_artist: false, page: 1 });
+    expect(api.searchMusicPage).toHaveBeenCalledWith({
+      query: "kind of blue",
+      is_artist: false,
+      page: 1,
+    });
   });
 
   it("loads the next page, and starts again from the first one on a new search", async () => {
-    api.searchMusicPage.mockImplementation(({ page: requested }: { page: number }) =>
-      Promise.resolve(page([release(String(requested), `Pressing ${requested}`)], requested, 3))
+    api.searchMusicPage.mockImplementation(
+      ({ page: requested }: { page: number }) =>
+        Promise.resolve(
+          page(
+            [release(String(requested), `Pressing ${requested}`)],
+            requested,
+            3,
+          ),
+        ),
     );
     renderDialog();
 
@@ -109,7 +174,11 @@ describe("Searching", () => {
     await user.clear(screen.getByLabelText("Search by album"));
     await user.type(screen.getByLabelText("Search by album"), "brel{Enter}");
     await waitFor(() =>
-      expect(api.searchMusicPage).toHaveBeenLastCalledWith({ query: "brel", is_artist: false, page: 1 })
+      expect(api.searchMusicPage).toHaveBeenLastCalledWith({
+        query: "brel",
+        is_artist: false,
+        page: 1,
+      }),
     );
   });
 
@@ -121,7 +190,13 @@ describe("Searching", () => {
     await user.click(screen.getByRole("button", { name: "Artist" }));
     await user.type(screen.getByLabelText("Search by artist"), "brel{Enter}");
 
-    await waitFor(() => expect(api.searchMusicPage).toHaveBeenCalledWith({ query: "brel", is_artist: true, page: 1 }));
+    await waitFor(() =>
+      expect(api.searchMusicPage).toHaveBeenCalledWith({
+        query: "brel",
+        is_artist: true,
+        page: 1,
+      }),
+    );
     expect(await screen.findByText("No artist found")).toBeInTheDocument();
   });
 
@@ -131,7 +206,9 @@ describe("Searching", () => {
     await searchFor(" ");
 
     expect(api.searchMusicPage).not.toHaveBeenCalled();
-    expect(screen.getByText("Type at least 2 characters to search.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Type at least 2 characters to search."),
+    ).toBeInTheDocument();
   });
 
   it("reports a failed search", async () => {
@@ -140,7 +217,9 @@ describe("Searching", () => {
 
     await searchFor("kind of blue");
 
-    expect(await screen.findByText("Failed to search music")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Failed to search music"),
+    ).toBeInTheDocument();
   });
 
   it("ignores an error cached under the key of the idle search", async () => {
@@ -155,13 +234,17 @@ describe("Searching", () => {
 
     renderDialog({}, queryClient);
 
-    expect(screen.queryByText("Failed to search music")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Failed to search music"),
+    ).not.toBeInTheDocument();
   });
 });
 
 describe("Adding a result", () => {
   const openFirstResult = async (options: AddRecordOptions = {}) => {
-    api.searchMusicPage.mockResolvedValue(page([release("1353040", "Miles Davis - Kind Of Blue")]));
+    api.searchMusicPage.mockResolvedValue(
+      page([release("1353040", "Miles Davis - Kind Of Blue")]),
+    );
     renderDialog(options);
     const user = await searchFor("kind of blue");
     await user.click(await screen.findByText("Miles Davis - Kind Of Blue"));
@@ -178,44 +261,75 @@ describe("Adding a result", () => {
 
     await waitFor(() => expect(api.addToCollection).toHaveBeenCalled());
     expect(api.addToCollection.mock.calls[0][0]).toBe(8);
-    expect(api.addToCollection.mock.calls[0][1]).toMatchObject({ external_id: "1353040", pressing_confirmed: true });
+    expect(api.addToCollection.mock.calls[0][1]).toMatchObject({
+      external_id: "1353040",
+      pressing_confirmed: true,
+    });
   });
 
   it("preselects the collection it was opened from, other ones staying available", async () => {
     const user = await openFirstResult({ presetCollectionId: 8 });
 
-    expect(screen.getByRole("combobox", { name: "Collection" })).toHaveTextContent("Sundays");
+    expect(
+      screen.getByRole("combobox", { name: "Collection" }),
+    ).toHaveTextContent("Sundays");
     await user.click(screen.getByRole("button", { name: "Add to collection" }));
 
     await waitFor(() => expect(api.addToCollection.mock.calls[0][0]).toBe(8));
   });
 
   it("adds to the wishlist from the same place", async () => {
-    api.addToWishlist.mockResolvedValue({ is_new: true, message: "Added to wishlist" });
+    api.addToWishlist.mockResolvedValue({
+      is_new: true,
+      message: "Added to wishlist",
+    });
     const user = await openFirstResult({ presetCollectionId: 8 });
 
     await user.click(screen.getByRole("button", { name: "Add to wishlist" }));
 
-    await waitFor(() => expect(api.addToWishlist).toHaveBeenCalledWith(expect.objectContaining({ external_id: "1353040" })));
+    await waitFor(() =>
+      expect(api.addToWishlist).toHaveBeenCalledWith(
+        expect.objectContaining({ external_id: "1353040" }),
+      ),
+    );
   });
 
   it("asks before adding a pressing already owned, then adds another copy", async () => {
     api.findOwnedPressings.mockResolvedValue([
-      { collection_id: 7, collection_name: "Jazz shelf", album_id: 3, external_album_id: "1353040",
-        same_release: true, pressing_confirmed: true, copies_count: 1, formats: [] },
+      {
+        collection_id: 7,
+        collection_name: "Jazz shelf",
+        album_id: 3,
+        external_album_id: "1353040",
+        same_release: true,
+        pressing_confirmed: true,
+        copies_count: 1,
+        formats: [],
+      },
     ]);
     const user = await openFirstResult();
 
     await user.click(screen.getByRole("button", { name: "Add to collection" }));
-    expect(screen.getByText("You already have this pressing in Jazz shelf. Add another copy?")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "You already have this pressing in Jazz shelf. Add another copy?",
+      ),
+    ).toBeInTheDocument();
     expect(api.addToCollection).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Add another copy" }));
 
-    await waitFor(() => expect(api.addToCollection.mock.calls[0][1]).toMatchObject({ add_copy: true }));
+    await waitFor(() =>
+      expect(api.addToCollection.mock.calls[0][1]).toMatchObject({
+        add_copy: true,
+      }),
+    );
   });
 
   it("shows what the API says when the record was already there, as a warning", async () => {
-    api.addToCollection.mockResolvedValue({ is_new: false, message: "Already have album 'Kind Of Blue'" });
+    api.addToCollection.mockResolvedValue({
+      is_new: false,
+      message: "Already have album 'Kind Of Blue'",
+    });
     const user = await openFirstResult();
 
     await user.click(screen.getByRole("button", { name: "Add to collection" }));
@@ -226,20 +340,28 @@ describe("Adding a result", () => {
   });
 
   it("says when adding failed", async () => {
-    api.addToCollection.mockRejectedValue(new Error("Failed to add item to collection"));
+    api.addToCollection.mockRejectedValue(
+      new Error("Failed to add item to collection"),
+    );
     const user = await openFirstResult();
 
     await user.click(screen.getByRole("button", { name: "Add to collection" }));
 
-    expect(await screen.findByText("Could not add the record. Please try again.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Could not add the record. Please try again."),
+    ).toBeInTheDocument();
   });
 
   it("opens the details of a result", async () => {
     const user = await openFirstResult();
 
-    await user.click(screen.getByRole("button", { name: "View album details" }));
+    await user.click(
+      screen.getByRole("button", { name: "View album details" }),
+    );
 
-    expect(screen.getByTestId("details")).toHaveTextContent("album: Miles Davis - Kind Of Blue");
+    expect(screen.getByTestId("details")).toHaveTextContent(
+      "album: Miles Davis - Kind Of Blue",
+    );
   });
 });
 
@@ -251,22 +373,39 @@ describe("Finding the right pressing", () => {
     renderDialog({ replaceTarget, initialQuery: "Brel - Brel" });
 
     expect(await screen.findByText("Brel - Brel")).toBeInTheDocument();
-    expect(api.searchMusicPage).toHaveBeenCalledWith({ query: "Brel - Brel", is_artist: false, page: 1 });
-    expect(screen.getByText(/Pick the pressing on your shelf/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Artist" })).not.toBeInTheDocument();
+    expect(api.searchMusicPage).toHaveBeenCalledWith({
+      query: "Brel - Brel",
+      is_artist: false,
+      page: 1,
+    });
+    expect(
+      screen.getByText(/Pick the pressing on your shelf/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Artist" }),
+    ).not.toBeInTheDocument();
   });
 
   it("replaces the pressing once confirmed and closes", async () => {
     api.searchMusicPage.mockResolvedValue(page([release("2", "Brel - Brel")]));
     api.replacePressing.mockResolvedValue({ id: 2 });
     const user = userEvent.setup();
-    const onClose = renderDialog({ replaceTarget, initialQuery: "Brel - Brel" });
+    const onClose = renderDialog({
+      replaceTarget,
+      initialQuery: "Brel - Brel",
+    });
 
     await user.click(await screen.findByText("Brel - Brel"));
-    await user.click(screen.getByRole("button", { name: "This is my pressing" }));
+    await user.click(
+      screen.getByRole("button", { name: "This is my pressing" }),
+    );
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(api.replacePressing).toHaveBeenCalledWith(7, 10, expect.objectContaining({ external_id: "2" }));
+    expect(api.replacePressing).toHaveBeenCalledWith(
+      7,
+      10,
+      expect.objectContaining({ external_id: "2" }),
+    );
     expect(api.addToCollection).not.toHaveBeenCalled();
   });
 
@@ -274,12 +413,21 @@ describe("Finding the right pressing", () => {
     api.searchMusicPage.mockResolvedValue(page([release("2", "Brel - Brel")]));
     api.replacePressing.mockRejectedValue(new Error("Failed"));
     const user = userEvent.setup();
-    const onClose = renderDialog({ replaceTarget, initialQuery: "Brel - Brel" });
+    const onClose = renderDialog({
+      replaceTarget,
+      initialQuery: "Brel - Brel",
+    });
 
     await user.click(await screen.findByText("Brel - Brel"));
-    await user.click(screen.getByRole("button", { name: "This is my pressing" }));
+    await user.click(
+      screen.getByRole("button", { name: "This is my pressing" }),
+    );
 
-    expect(await screen.findByText("Could not replace the pressing. Please try again.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Could not replace the pressing. Please try again.",
+      ),
+    ).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });
@@ -288,7 +436,9 @@ describe("Closing", () => {
   it("closes from its close button", async () => {
     const onClose = renderDialog();
 
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }),
+    );
 
     expect(onClose).toHaveBeenCalled();
   });
@@ -306,9 +456,18 @@ describe("AddRecordDialog barcode scan", () => {
   it("is disabled on the web, with the coming soon tooltip", async () => {
     renderDialog();
 
-    expect(screen.getByRole("button", { name: /scan barcode/i })).toBeDisabled();
-    await userEvent.setup().hover(screen.getByRole("button", { name: /scan barcode/i }).parentElement as HTMLElement);
-    expect(await screen.findByText("Coming soon with mobile android app")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /scan barcode/i }),
+    ).toBeDisabled();
+    await userEvent
+      .setup()
+      .hover(
+        screen.getByRole("button", { name: /scan barcode/i })
+          .parentElement as HTMLElement,
+      );
+    expect(
+      await screen.findByText("Coming soon with mobile android app"),
+    ).toBeTruthy();
   });
 
   it("searches the scanned barcode in the app", async () => {
@@ -317,7 +476,9 @@ describe("AddRecordDialog barcode scan", () => {
     api.searchMusicPage.mockResolvedValue(page([release("1", "Kind Of Blue")]));
     renderDialog();
 
-    await userEvent.setup().click(screen.getByRole("button", { name: /scan barcode/i }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: /scan barcode/i }));
 
     await waitFor(() =>
       expect(api.searchMusicPage).toHaveBeenCalledWith({
@@ -325,7 +486,7 @@ describe("AddRecordDialog barcode scan", () => {
         is_artist: false,
         page: 1,
         barcode: true,
-      })
+      }),
     );
     expect(await screen.findByText("Kind Of Blue")).toBeTruthy();
   });
@@ -335,8 +496,30 @@ describe("AddRecordDialog barcode scan", () => {
     native.scan.mockResolvedValue(null);
     renderDialog();
 
-    await userEvent.setup().click(screen.getByRole("button", { name: /scan barcode/i }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: /scan barcode/i }));
 
     expect(api.searchMusicPage).not.toHaveBeenCalled();
+  });
+
+  it("closes with the phone's back button in the app, and stops listening afterwards", async () => {
+    native.isNative = true;
+    appPlugin.onBack = undefined;
+    const onClose = renderDialog();
+
+    await waitFor(() => expect(appPlugin.onBack).toBeDefined());
+    (appPlugin.onBack as (() => void) | undefined)?.();
+
+    expect(onClose).toHaveBeenCalled();
+    cleanup();
+    await waitFor(() => expect(appPlugin.remove).toHaveBeenCalled());
+  });
+
+  it("does not listen to the back button in a browser", () => {
+    appPlugin.onBack = undefined;
+    renderDialog();
+
+    expect(appPlugin.onBack).toBeUndefined();
   });
 });

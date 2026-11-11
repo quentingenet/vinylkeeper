@@ -11,7 +11,13 @@ const opened = vi.hoisted(() => ({ options: [] as AddRecordOptions[] }));
 
 // The dialog itself is tested on its own: here, only what opens it and with which options
 vi.mock("@components/AddRecord/AddRecordDialog", () => ({
-  default: ({ options, onClose }: { options: AddRecordOptions; onClose: () => void }) => {
+  default: ({
+    options,
+    onClose,
+  }: {
+    options: AddRecordOptions;
+    onClose: () => void;
+  }) => {
     opened.options.push(options);
     return (
       <div role="dialog">
@@ -20,7 +26,9 @@ vi.mock("@components/AddRecord/AddRecordDialog", () => ({
     );
   },
 }));
-vi.mock("@hooks/useDetectMobile", () => ({ default: () => ({ isMobile: false }) }));
+vi.mock("@hooks/useDetectMobile", () => ({
+  default: () => ({ isMobile: false }),
+}));
 
 afterEach(() => {
   cleanup();
@@ -38,7 +46,7 @@ const renderAt = (path: string) =>
         </Routes>
         <AddRecordFab />
       </AddRecordProvider>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
 describe("AddRecordFab", () => {
@@ -48,15 +56,21 @@ describe("AddRecordFab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Add a record" }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add a record" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add a record" }),
+    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(screen.getByRole("button", { name: "Add a record" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add a record" }),
+    ).toBeInTheDocument();
   });
 
   it("is not shown on the Atlas, which has its own add button", () => {
     renderAt("/atlas");
 
-    expect(screen.queryByRole("button", { name: "Add a record" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add a record" }),
+    ).not.toBeInTheDocument();
   });
 });
 
