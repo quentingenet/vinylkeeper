@@ -36,7 +36,7 @@ describe("ResetPasswordForm", () => {
   it("cannot be sent with two different passwords", async () => {
     renderForm();
 
-    await fill("secret1", "other1");
+    await fill("secret12", "other1");
 
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
   });
@@ -53,12 +53,12 @@ describe("ResetPasswordForm", () => {
     api.resetPassword.mockResolvedValue({ message: "ok" });
     renderForm();
 
-    await fill("secret1", "secret1");
+    await fill("secret12", "secret12");
     await vi.waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled());
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
     await vi.waitFor(() =>
-      expect(api.resetPassword).toHaveBeenCalledWith({ token: "tok-1", new_password: "secret1" })
+      expect(api.resetPassword).toHaveBeenCalledWith({ token: "tok-1", new_password: "secret12" })
     );
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
   });
@@ -67,7 +67,7 @@ describe("ResetPasswordForm", () => {
     api.resetPassword.mockRejectedValue(new Error("expired"));
     renderForm();
 
-    await fill("secret1", "secret1");
+    await fill("secret12", "secret12");
     await vi.waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled());
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 

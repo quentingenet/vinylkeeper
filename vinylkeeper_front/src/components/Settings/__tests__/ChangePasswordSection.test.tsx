@@ -32,7 +32,7 @@ describe("ChangePasswordSection", () => {
   it("keeps the button off while the confirmation differs", async () => {
     renderSection();
 
-    await fill("secret1", "secret2");
+    await fill("secret12", "secret2");
 
     expect(await screen.findByText("It must be the same as the new password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Change Password" })).toBeDisabled();
@@ -42,14 +42,14 @@ describe("ChangePasswordSection", () => {
     api.changePassword.mockResolvedValue({ message: "ok" });
     renderSection();
 
-    await fill("secret1", "secret1");
+    await fill("secret12", "secret12");
     await userEvent.click(screen.getByRole("button", { name: "Change Password" }));
 
     expect(await screen.findByText("Password changed successfully!")).toBeInTheDocument();
     expect(api.changePassword.mock.calls[0][0]).toEqual({
       currentPassword: "old1",
-      newPassword: "secret1",
-      confirmPassword: "secret1",
+      newPassword: "secret12",
+      confirmPassword: "secret12",
     });
     expect(field("newPassword")).toHaveValue("");
   });
@@ -58,7 +58,7 @@ describe("ChangePasswordSection", () => {
     api.changePassword.mockRejectedValue(new Error("Wrong current password."));
     renderSection();
 
-    await fill("secret1", "secret1");
+    await fill("secret12", "secret12");
     await userEvent.click(screen.getByRole("button", { name: "Change Password" }));
 
     expect(await screen.findByText("Wrong current password.")).toBeInTheDocument();

@@ -44,10 +44,10 @@ const renderRegister = (setErrorSnackbar = vi.fn()) => {
   return setErrorSnackbar;
 };
 
-const fillForm = async (passwordBis = "secret1") => {
+const fillForm = async (passwordBis = "secret12") => {
   await userEvent.type(screen.getByLabelText("Username"), "jane");
   await userEvent.type(screen.getByLabelText("Email"), "jane@example.com");
-  await userEvent.type(screen.getByLabelText("Password"), "secret1");
+  await userEvent.type(screen.getByLabelText("Password"), "secret12");
   await userEvent.type(screen.getByLabelText("Password confirmation"), passwordBis);
   await userEvent.click(screen.getByRole("checkbox", { name: "I agree" }));
 };
@@ -84,7 +84,7 @@ describe("Register form", () => {
       expect.objectContaining({
         username: "jane",
         email: "jane@example.com",
-        password: "secret1",
+        password: "secret12",
         isAcceptedTerms: true,
       })
     );

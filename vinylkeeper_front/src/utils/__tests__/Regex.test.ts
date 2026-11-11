@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   emailValidator,
-  passwordAtLeast4,
+  passwordAtLeast8,
   passwordWithLetter,
   passwordWithNumber,
 } from "@utils/Regex";
@@ -28,13 +28,28 @@ describe("emailValidator", () => {
   });
 });
 
-describe("passwordAtLeast4", () => {
-  it("accepts a 4-character string", () => {
-    expect(passwordAtLeast4.test("abcd")).toBe(true);
+describe("passwordAtLeast8", () => {
+  it("accepts an 8-character string", () => {
+    expect(passwordAtLeast8.test("abcdef12")).toBe(true);
   });
 
-  it("rejects a 3-character string", () => {
-    expect(passwordAtLeast4.test("abc")).toBe(false);
+  it("rejects a 7-character string", () => {
+    expect(passwordAtLeast8.test("abcdef1")).toBe(false);
+  });
+
+  it("does not forbid symbols, spaces nor accents", () => {
+    expect(passwordAtLeast8.test("p@ss w0rd!")).toBe(true);
+    expect(passwordAtLeast8.test("été-2026-Ça")).toBe(true);
+  });
+});
+
+describe("passwordWithLetter (accents included, as in the API)", () => {
+  it("accepts a password whose only letters are accented", () => {
+    expect(passwordWithLetter.test("éèàç1234")).toBe(true);
+  });
+
+  it("rejects digits and symbols only", () => {
+    expect(passwordWithLetter.test("1234!@#$")).toBe(false);
   });
 });
 

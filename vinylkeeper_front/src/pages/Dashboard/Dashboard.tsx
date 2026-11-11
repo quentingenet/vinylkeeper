@@ -28,6 +28,8 @@ import { toPlaybackItem } from "@utils/toPlaybackItem";
 import { COMMUNITY_COLLECTIONS_URL, EGlobalUrls } from "@utils/GlobalUrls";
 import CollectionStatsCard from "@components/Dashboard/CollectionStatsCard";
 import CollectionValueCard from "@components/Dashboard/CollectionValueCard";
+import NewMemberCards from "@components/Dashboard/NewMemberCards";
+import { useAddRecord } from "@contexts/AddRecordContext";
 import { colors } from "@styles/colors";
 
 const LatestAdditionCard = ({
@@ -123,6 +125,7 @@ export default function Dashboard() {
   const { currentUser } = useUserContext();
   const [showTutorial, setShowTutorial] = useState(false);
   const navigate = useNavigate();
+  const { openAddRecord } = useAddRecord();
   const [playbackModalOpen, setPlaybackModalOpen] = useState(false);
   const [selectedPlaybackItem, setSelectedPlaybackItem] =
     useState<PlaybackItem | null>(null);
@@ -167,6 +170,9 @@ export default function Dashboard() {
     return <LoadingCenter />;
   }
 
+  // Nothing in the collections yet: a new member
+  const isNewMember = (data.user_albums_total ?? 0) === 0 && (data.user_artists_total ?? 0) === 0;
+
   const renderStatCard = (
     title: string,
     value: number,
@@ -194,26 +200,39 @@ export default function Dashboard() {
   return (
     <Box sx={{ p: 3, backgroundColor: colors.raised, color: colors.textMuted }}>
       <div className={styles.dashboard}>
-        {renderStatCard(
-          "My albums",
-          data?.user_albums_total ?? 0,
-          1000,
-          "",
-          data?.user_albums_total > 0 ? "/collections" : "/add-vinyls"
-        )}
-        {renderStatCard(
-          "My artists",
-          data?.user_artists_total ?? 0,
-          1200,
-          "",
-          data?.user_artists_total > 0 ? "/collections" : "/add-vinyls"
-        )}
-        {renderStatCard(
-          "Atlas spots",
-          data?.moderated_places_total ?? 0,
-          900,
-          "",
-          EGlobalUrls.ATLAS
+        {isNewMember ? (
+          // No record and no artist yet: the two empty counters give way to the Atlas and an invitation
+          <div className={styles.rowCenter}>
+            <NewMemberCards
+              spotsCount={data.moderated_places_total ?? 0}
+              onOpenAtlas={() => void navigate(EGlobalUrls.ATLAS)}
+              onAddRecord={openAddRecord}
+            />
+          </div>
+        ) : (
+          <>
+          {renderStatCard(
+            "My albums",
+            data?.user_albums_total ?? 0,
+            1000,
+            "",
+            data?.user_albums_total > 0 ? "/collections" : "/add-vinyls"
+          )}
+          {renderStatCard(
+            "My artists",
+            data?.user_artists_total ?? 0,
+            1200,
+            "",
+            data?.user_artists_total > 0 ? "/collections" : "/add-vinyls"
+          )}
+          {renderStatCard(
+            "Atlas spots",
+            data?.moderated_places_total ?? 0,
+            900,
+            "",
+            EGlobalUrls.ATLAS
+          )}
+          </>
         )}
 
         <div className={styles.rowCenter}>

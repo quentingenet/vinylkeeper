@@ -13,7 +13,7 @@ import {
 import { useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -24,11 +24,12 @@ import {
 } from "@models/IResetPassword";
 import { userApiService } from "@services/UserApiService";
 import {
-  passwordAtLeast4,
+  passwordAtLeast8,
   passwordWithLetter,
   passwordWithNumber,
 } from "@utils/Regex";
 import { colors } from "@styles/colors";
+import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate();
@@ -70,8 +71,8 @@ export default function ResetPasswordForm() {
       .matches(passwordWithLetter, "Your password must contain a letter")
       .matches(passwordWithNumber, "Your password must contain a number")
       .matches(
-        passwordAtLeast4,
-        "Your password must contain at least 4 characters"
+        passwordAtLeast8,
+        "Your password must contain at least 8 characters"
       ),
     passwordBis: yup
       .string()
@@ -87,6 +88,8 @@ export default function ResetPasswordForm() {
     defaultValues: { password: "", passwordBis: "" },
     resolver: yupResolver(validationSchema),
   });
+
+  const password = useWatch({ control, name: "password" }) ?? "";
 
   const submitResetPassword = (data: IResetPassword) => {
     if (!isValid) return;
@@ -147,6 +150,7 @@ export default function ResetPasswordForm() {
                 />
               )}
             />
+            <PasswordStrengthIndicator password={password} onLight />
           </Grid>
 
           <Grid>

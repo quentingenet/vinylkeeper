@@ -25,6 +25,7 @@ import styles from "../../styles/pages/Landpage.module.scss";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import AuthSwitchLink from "@components/Auth/AuthSwitchLink";
 import { colors } from "@styles/colors";
+import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
 
 interface RegisterProps {
   setRegister: (value: boolean) => void;
@@ -62,6 +63,7 @@ const Register = ({
     resolver: yupResolver(registerValidationSchema),
   });
   const isAcceptedTerms = useWatch({ control, name: "isAcceptedTerms" });
+  const password = useWatch({ control, name: "password" }) ?? "";
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
   const handleMouseDownPassword = (
@@ -212,6 +214,7 @@ const Register = ({
                     ),
                   },
                 }} />
+              <PasswordStrengthIndicator password={password} onLight />
             </Grid>
 
             <Grid sx={{ width: "100%", mb: 2 }}>

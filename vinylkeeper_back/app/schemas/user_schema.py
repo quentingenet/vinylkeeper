@@ -33,11 +33,17 @@ def _validate_username_value(v: str) -> str:
     return v
 
 
+# For a password being created or changed. Never checked at login: accounts made when the minimum was 4
+# characters keep working, until their owner chooses a new password.
+PASSWORD_MIN_LENGTH = 8
+
+
 def _validate_password_complexity(v: str) -> str:
+    """A letter and a number, 8 characters at least. Any other character (symbols, spaces, accents) is allowed."""
     if not v:
         raise ValueError("New password cannot be empty")
-    if len(v) < 4:
-        raise ValueError("Password must contain at least 4 characters")
+    if len(v) < PASSWORD_MIN_LENGTH:
+        raise ValueError(f"Password must contain at least {PASSWORD_MIN_LENGTH} characters")
     if not any(c.isalpha() for c in v):
         raise ValueError("Password must contain at least one letter")
     if not any(c.isdigit() for c in v):

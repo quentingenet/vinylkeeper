@@ -1,7 +1,7 @@
 import * as yup from "yup";
 import {
   emailValidator,
-  passwordAtLeast4,
+  passwordAtLeast8,
   passwordWithLetter,
   passwordWithNumber,
 } from "@utils/Regex";
@@ -24,7 +24,7 @@ export const registerValidationSchema = yup.object({
     .test("email", "Email not valid", (value) =>
       value ? emailValidator.test(value) : false
     )
-    .min(3, "Email must contain at least 4 characters.")
+    .min(3, "Email must contain at least 8 characters.")
     .required("You must enter your Email."),
   isAcceptedTerms: yup
     .boolean()
@@ -38,8 +38,8 @@ export const registerValidationSchema = yup.object({
     .matches(passwordWithLetter, "Your password must contain a letter")
     .matches(passwordWithNumber, "Your password must contain a number")
     .matches(
-      passwordAtLeast4,
-      "Your password must contain at least 4 characters"
+      passwordAtLeast8,
+      "Your password must contain at least 8 characters"
     ),
   passwordBis: yup
     .string()

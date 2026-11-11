@@ -1,6 +1,6 @@
 import * as yup from "yup";
 import {
-  passwordAtLeast4,
+  passwordAtLeast8,
   passwordWithLetter,
   passwordWithNumber,
 } from "@utils/Regex";
@@ -13,8 +13,8 @@ export const passwordChangeValidationSchema = yup.object({
     .matches(passwordWithLetter, "Your password must contain a letter")
     .matches(passwordWithNumber, "Your password must contain a number")
     .matches(
-      passwordAtLeast4,
-      "Your password must contain at least 4 characters"
+      passwordAtLeast8,
+      "Your password must contain at least 8 characters"
     ),
   confirmPassword: yup
     .string()
