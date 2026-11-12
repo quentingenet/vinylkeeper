@@ -71,7 +71,8 @@ class AtlasService:
                     place_dict["latitude"] = coordinates[0]
                     place_dict["longitude"] = coordinates[1]
                 else:
-                    logger.error(
+                    # A city that does not exist is a wrong entry of the user, not a failure of the service
+                    logger.warning(
                         f"Failed to geocode {place_data.city}, {place_data.country}."
                         " Cannot create place without valid coordinates."
                     )

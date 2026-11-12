@@ -17,6 +17,7 @@ import {
 } from "@models/IExternalReference";
 import MoveToCollectionDialog, { type WantedRecord } from "@components/Collections/MoveToCollectionDialog";
 import { useWishlist } from "@hooks/useWishlist";
+import { useLastPageWhenEmpty } from "@hooks/useLastPageWhenEmpty";
 import {
   Typography,
   Box,
@@ -178,12 +179,8 @@ export default function CollectionDetails() {
   });
   const recordCards = useMemo(() => albumsData?.items.map(toRecordCard) ?? [], [albumsData]);
 
-  // Removing the last record of a page leaves it empty: show the previous one instead
-  useEffect(() => {
-    if (albumsData && albumsData.items.length === 0 && albumsPage > 1) {
-      setAlbumsPage((page) => page - 1);
-    }
-  }, [albumsData, albumsPage]);
+  // Removing the last record of a page leaves it empty: show the last page that still exists instead
+  useLastPageWhenEmpty(albumsPage, setAlbumsPage, albumsData?.items.length, albumsData?.total_pages);
 
   // Artists paginated query
   const {
@@ -202,6 +199,9 @@ export default function CollectionDetails() {
     enabled: !!collectionId && tabValue === TAB.ARTISTS,
   });
 
+  // Same for the artists: the page left behind by the removal of its last artist shows nothing
+  useLastPageWhenEmpty(artistsPage, setArtistsPage, artistsData?.items.length, artistsData?.total_pages);
+
   // Wishlist query - load collection owner's wishlist with pagination (public)
   const shouldLoadWishlist = tabValue === TAB.WISHLIST && !!collectionDetails?.owner_uuid;
   const ownerUuid = collectionDetails?.owner_uuid != null ? collectionDetails.owner_uuid : undefined;
@@ -214,6 +214,15 @@ export default function CollectionDetails() {
     total: wishlistTotal,
     wishlistLoading: isLoadingWishlist,
   } = useWishlist(wishlistPage, wishlistLimit, shouldLoadWishlist, ownerUuid, sortOrder, wishlistSearch);
+
+  // Whatever emptied the last page of the wishlist (a removal, or a move to a collection from the
+  // pressings dialog), the page left behind shows nothing: go back to the last page that still exists
+  useLastPageWhenEmpty(
+    wishlistPage,
+    setWishlistPage,
+    shouldLoadWishlist && !isLoadingWishlist ? ownerWishlistItems.length : undefined,
+    wishlistTotalPages
+  );
 
   // Search query with debounced term (albums and artists only — wishlist uses server-side search)
   const searchType = tabValue === TAB.ALBUMS ? "album" : "artist";
