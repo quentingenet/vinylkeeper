@@ -283,6 +283,13 @@ class UserService:
         await self._update_password(user, new_password)
         log_activity(user.username, "reset their password with the emailed link")
 
+    async def check_reset_token(self, token: str) -> None:
+        """Whether a reset link can still be used, without changing anything: raises when it cannot"""
+        user_uuid, token_version = verify_reset_token(token)
+        user = await self.repository.get_user_by_uuid(user_uuid)
+        if not user or token_version != user.token_version:
+            raise InvalidResetTokenError()
+
     async def change_password(self, user: User, current_password: str, new_password: str) -> None:
         """Change user password and revoke every session (the caller issues new tokens)"""
         if not await verify_password_async(user.password, current_password):

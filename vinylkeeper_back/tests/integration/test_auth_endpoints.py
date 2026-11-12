@@ -296,7 +296,8 @@ class TestResetPassword:
         assert resp.status_code == 200
         assert resp.json() == {"message": "Password reset successfully"}
 
-    async def test_invalid_token_returns_401(self, client):
+    async def test_invalid_token_returns_400(self, client):
+        # 400, not 401: the link is opened without a session, a 401 would trigger a token refresh
         mock_service = AsyncMock()
         mock_service.reset_password = AsyncMock(side_effect=InvalidResetTokenError())
         app.dependency_overrides[get_user_service] = lambda: mock_service
@@ -306,7 +307,27 @@ class TestResetPassword:
             "new_password": "NewPass1"
         })
 
-        assert resp.status_code == 401
+        assert resp.status_code == 400
+        assert resp.json()["code"] == 1004  # ErrorCode.INVALID_TOKEN
+
+    async def test_check_valid_link(self, client):
+        mock_service = AsyncMock()
+        mock_service.check_reset_token = AsyncMock(return_value=None)
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
+        resp = await client.post("/api/users/reset-password/check", json={"token": "good-token"})
+
+        assert resp.status_code == 200
+        mock_service.check_reset_token.assert_awaited_once_with("good-token")
+
+    async def test_check_used_or_expired_link_returns_400(self, client):
+        mock_service = AsyncMock()
+        mock_service.check_reset_token = AsyncMock(side_effect=InvalidResetTokenError())
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+
+        resp = await client.post("/api/users/reset-password/check", json={"token": "used-token"})
+
+        assert resp.status_code == 400
         assert resp.json()["code"] == 1004  # ErrorCode.INVALID_TOKEN
 
 

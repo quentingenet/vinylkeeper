@@ -6,6 +6,7 @@ from app.schemas.user_schema import (
     UserCreate,
     ForgotPasswordSchema,
     ResetPasswordSchema,
+    ResetTokenSchema,
     UserMeResponse,
     UserSettingsResponse,
     PasswordChangeSchema,
@@ -122,6 +123,17 @@ async def forgot_password(
 ) -> MessageResponse:
     await user_service.send_password_reset_email(data.email)
     return MessageResponse(message="If an account exists with this email, a password reset link has been sent")
+
+
+@router.post("/reset-password/check", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+@handle_app_exceptions
+async def check_reset_token(
+    data: ResetTokenSchema,
+    user_service: UserService = Depends(get_user_service)
+) -> MessageResponse:
+    """Whether the link of a reset email still works, so the page can say so before asking for a password."""
+    await user_service.check_reset_token(data.token)
+    return MessageResponse(message="Reset link is valid")
 
 
 @router.post("/reset-password", response_model=MessageResponse, status_code=status.HTTP_200_OK)

@@ -182,6 +182,46 @@ class TestSendPasswordResetEmail:
 
 
 # ---------------------------------------------------------------------------
+# check_reset_token()
+# ---------------------------------------------------------------------------
+
+class TestCheckResetToken:
+    async def test_valid_link_passes_and_changes_nothing(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        token = create_reset_token(str(regular_user.user_uuid), 0)
+
+        await service.check_reset_token(token)
+
+        repo.update_user_password.assert_not_awaited()
+        assert regular_user.token_version == 0
+
+    async def test_used_link_raises(self, regular_user):
+        service, _, _ = make_service(regular_user)
+        token = create_reset_token(str(regular_user.user_uuid), 0)
+        regular_user.token_version = 1
+
+        with pytest.raises(InvalidResetTokenError):
+            await service.check_reset_token(token)
+
+    async def test_garbage_link_raises(self):
+        service, _, _ = make_service()
+        with pytest.raises(InvalidResetTokenError):
+            await service.check_reset_token("garbage-token")
+
+    async def test_unknown_user_raises(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        repo.get_user_by_uuid = AsyncMock(return_value=None)
+        token = create_reset_token(str(regular_user.user_uuid))
+
+        with pytest.raises(InvalidResetTokenError):
+            await service.check_reset_token(token)
+
+    async def test_invalid_link_is_a_400_not_a_401(self):
+        # A 401 would make the browser try to refresh a session the visitor does not have
+        assert InvalidResetTokenError().status_code == 400
+
+
+# ---------------------------------------------------------------------------
 # reset_password()
 # ---------------------------------------------------------------------------
 

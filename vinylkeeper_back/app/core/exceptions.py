@@ -103,11 +103,13 @@ class TermsNotAcceptedError(AuthenticationError):
         )
 
 
-class InvalidResetTokenError(AuthenticationError):
+class InvalidResetTokenError(AppException):
+    """400, not 401: the link is opened without a session, and a 401 would trigger a token refresh"""
     def __init__(self):
         super().__init__(
             error_code=ErrorCode.INVALID_TOKEN,
-            message="Invalid or expired reset token"
+            message="Invalid or expired reset token",
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
 
 

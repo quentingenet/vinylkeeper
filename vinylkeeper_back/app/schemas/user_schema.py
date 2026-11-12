@@ -166,6 +166,11 @@ class ForgotPasswordSchema(BaseModel):
         return _normalize_email_lookup(v)
 
 
+class ResetTokenSchema(BaseModel):
+    """Schema to ask whether a reset link can still be used."""
+    token: str = Field(max_length=2048, description="Reset password token")
+
+
 class ResetPasswordSchema(BaseModel):
     """Schema for password reset."""
     token: str = Field(

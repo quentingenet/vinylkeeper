@@ -3,6 +3,7 @@ import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
 import { isApiError } from "@utils/apiError";
+import { RESET_LINK_UNUSABLE } from "@utils/resetLink";
 import { capacitorHttpService } from "@utils/CapacitorHttpService";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { nativeSession } from "@utils/NativeSession";
@@ -43,6 +44,9 @@ export interface RegisterResponse {
 export interface ForgotPasswordResponse {
   message: string;
 }
+
+// Code the API gives to a link or token that is wrong, expired or already used (ErrorCode.INVALID_TOKEN)
+const INVALID_TOKEN_CODE = 1004;
 
 export interface ResetPasswordResponse {
   message: string;
@@ -171,9 +175,23 @@ export class UserApiService extends BaseApiService {
 
   async resetPassword(data: IResetPasswordToBackend): Promise<ResetPasswordResponse> {
     try {
-      return await this.post<ResetPasswordResponse>("/users/reset-password", data);
-    } catch {
-      throw new Error("Failed to reset password. Please try again.");
+      // Opened from an email, without a session: a refresh of the session has nothing to refresh
+      return await this.post<ResetPasswordResponse>("/users/reset-password", data, true);
+    } catch (error) {
+      throw new Error(isApiError(error) && error.code === INVALID_TOKEN_CODE
+        ? RESET_LINK_UNUSABLE
+        : "Failed to reset password. Please try again.", { cause: error });
+    }
+  }
+
+  /** Whether the link of a reset email still works; resolves when it does, rejects (with the reason) when not */
+  async checkResetToken(token: string): Promise<void> {
+    try {
+      await this.post<ResetPasswordResponse>("/users/reset-password/check", { token }, true);
+    } catch (error) {
+      throw new Error(isApiError(error) && error.code === INVALID_TOKEN_CODE
+        ? RESET_LINK_UNUSABLE
+        : "The link could not be checked. Please try again.", { cause: error });
     }
   }
 
@@ -277,6 +295,7 @@ export const userApiService = {
   register: (data: IRegisterForm) => userApiServiceInstance.register(data),
   forgotPassword: (email: string) => userApiServiceInstance.forgotPassword(email),
   resetPassword: (data: IResetPasswordToBackend) => userApiServiceInstance.resetPassword(data),
+  checkResetToken: (token: string) => userApiServiceInstance.checkResetToken(token),
   getCurrentUser: () => userApiServiceInstance.getCurrentUser(),
   getCurrentUserSettings: () => userApiServiceInstance.getCurrentUserSettings(),
   confirmEmail: (token: string) => userApiServiceInstance.confirmEmail(token),

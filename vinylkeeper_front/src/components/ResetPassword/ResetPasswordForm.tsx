@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "../../styles/pages/Landpage.module.scss";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -24,6 +24,7 @@ import {
   IResetPasswordToBackend,
 } from "@models/IResetPassword";
 import { userApiService } from "@services/UserApiService";
+import { RESET_LINK_UNUSABLE } from "@utils/resetLink";
 import {
   passwordAtLeast8,
   passwordWithLetter,
@@ -59,6 +60,21 @@ export default function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [openSnackBar, setOpenSnackBar] = useState(false);
+  // Why the link cannot be used, known before the person types anything (null: it can, or not checked yet)
+  const [linkProblem, setLinkProblem] = useState<string | null>(token ? null : RESET_LINK_UNUSABLE);
+  const [errorMessage, setErrorMessage] = useState("Error while resetting password. Try again.");
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    userApiService.checkResetToken(token).catch((error: unknown) => {
+      // Only a link that is really unusable closes the form: a network error must not
+      if (active && error instanceof Error && error.message === RESET_LINK_UNUSABLE) setLinkProblem(RESET_LINK_UNUSABLE);
+    });
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   const handleCloseSnackBar = () => setOpenSnackBar(false);
   const handleClickShowPassword = () => setShowPassword((show) => !show);
@@ -109,8 +125,13 @@ export default function ResetPasswordForm() {
     userApiService
       .resetPassword(resetData)
       .then(() => navigate("/"))
-      .catch((error) => {
+      .catch((error: unknown) => {
         logger.error("Error while resetting password:", error);
+        if (error instanceof Error && error.message === RESET_LINK_UNUSABLE) {
+          setLinkProblem(RESET_LINK_UNUSABLE);
+          return;
+        }
+        setErrorMessage("Error while resetting password. Try again.");
         setOpenSnackBar(true);
       })
       .finally(() => setIsLoading(false));
@@ -132,6 +153,15 @@ export default function ResetPasswordForm() {
         >
           Choose a new password
         </Typography>
+        {linkProblem ? (
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+            <Alert severity="warning">{linkProblem}</Alert>
+            <Button variant="contained" onClick={() => void navigate("/")}>
+              Back to login
+            </Button>
+          </Box>
+        ) : (
+        <>
         <Grid container spacing={2}>
           <Grid>
             <Controller
@@ -221,6 +251,9 @@ export default function ResetPasswordForm() {
           </Grid>
         </Grid>
 
+        </>
+        )}
+
         <Snackbar
           open={openSnackBar}
           autoHideDuration={3000}
@@ -231,7 +264,7 @@ export default function ResetPasswordForm() {
             severity="error"
             sx={{ width: "100%" }}
           >
-            Error while resetting password. Try again.
+            {errorMessage}
           </Alert>
         </Snackbar>
       </Box>

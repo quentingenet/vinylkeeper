@@ -197,7 +197,7 @@ class TestAuthenticationErrors:
 
     async def test_invalid_reset_token(self):
         resp = await call(make_app_raising(InvalidResetTokenError))
-        assert resp.status_code == 401
+        assert resp.status_code == 400
         assert resp.json()["code"] == ErrorCode.INVALID_TOKEN
 
     async def test_refresh_token_not_found(self):

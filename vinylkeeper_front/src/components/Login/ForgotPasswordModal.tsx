@@ -47,7 +47,7 @@ export default function ForgotPasswordModal({
         await userApiService.forgotPassword(email.toLowerCase());
         // Same answer whether the account exists or not: nobody can test who has an account
         setMessage(
-          "If an account exists with this email, a link to choose a new password has been sent. Check your inbox and your spam folder."
+          "If an account exists with this email, a link to choose a new password has been sent. Check your inbox and your spam folder. The link is valid for 15 minutes."
         );
         setMessageType("success");
       } catch (error: unknown) {
