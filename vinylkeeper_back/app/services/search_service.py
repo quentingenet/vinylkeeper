@@ -8,7 +8,8 @@ from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
 from app.utils.discogs_release import (
-    DISCOGS_IMAGE_HOST, clean_artist_name, format_values, parse_release_edition, parse_release_marks,
+    DISCOGS_IMAGE_HOST, clean_artist_name, clean_discogs_markup, format_values, parse_release_edition,
+    parse_release_marks,
 )
 from app.schemas.request_proxy.request_proxy_schema import (
     AlbumMetadata,
@@ -365,7 +366,7 @@ class SearchService:
             image_url=data.get("images", [{}])[0].get("uri", "") if data.get("images") else "",
             external_url=data.get("uri", ""),
             source="discogs",
-            biography=data.get("profile", ""),
+            biography=clean_discogs_markup(data.get("profile")),
             genres=data.get("genres", []),
             country=data.get("country", ""),
             wikipedia_url=None,

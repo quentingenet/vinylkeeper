@@ -24,6 +24,50 @@ def clean_artist_name(name: str) -> str:
     return DISAMBIGUATION_SUFFIX.sub("", name).rstrip("*").strip()
 
 
+# Discogs markup in free text (an artist's profile)
+MARKUP_LINK = re.compile(r"\[url=[^\]]*\](.*?)\[/url\]", re.IGNORECASE | re.DOTALL)
+MARKUP_ORPHAN_LINK_TAG = re.compile(r"\[url=[^\]]*\]|\[/url\]", re.IGNORECASE)
+MARKUP_NAMED_REFERENCE = re.compile(r"\[[almrg]=([^\[\]]+)\]", re.IGNORECASE)
+MARKUP_ID_REFERENCE = re.compile(r"\[[almrg]\d+\]", re.IGNORECASE)
+MARKUP_FORMATTING = re.compile(r"\[/?[biu]\]", re.IGNORECASE)
+# Where a reference by id was: a character no profile contains, so the tidying only touches those places
+REMOVED = "\x00"
+REMOVED_LIST = re.compile(r"\x00(?:\s*(?:,|and|&)\s*\x00)+")
+REMOVED_BEFORE_OTHERS = re.compile(r"\x00,?\s+and others")
+REMOVED_IN_PARENTHESES = re.compile(r"\s*\([^()\x00]*\x00[^()]*\)")
+REMOVED_WITH_SPACES = re.compile(r"[ \t]*\x00")
+
+
+def clean_discogs_markup(text: Optional[str]) -> str:
+    """
+    Discogs markup of a profile as plain text: '[a=Freeman (3)]' -> 'Freeman', '[url=...]site[/url]' ->
+    'site', '[i]x[/i]' -> 'x'. A reference by id alone ('[a123456]') has no text to keep: it goes, with
+    what it leaves behind ('Worked with [a1], [a2] and others' -> 'Worked with others').
+    Line breaks stay (the app shows the paragraphs), runs of spaces collapse.
+    """
+    if not text:
+        return ""
+    text = MARKUP_LINK.sub(r"\1", text)
+    text = MARKUP_ORPHAN_LINK_TAG.sub("", text)
+    text = MARKUP_NAMED_REFERENCE.sub(lambda match: clean_artist_name(match.group(1)), text)
+    text = MARKUP_FORMATTING.sub("", text)
+    if MARKUP_ID_REFERENCE.search(text):
+        text = _drop_id_references(text)
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def _drop_id_references(text: str) -> str:
+    """Remove the references by id, then the list commas, parentheses and spaces they leave empty."""
+    text = MARKUP_ID_REFERENCE.sub(REMOVED, text)
+    text = REMOVED_LIST.sub(REMOVED, text)
+    text = REMOVED_BEFORE_OTHERS.sub("others", text)
+    text = REMOVED_IN_PARENTHESES.sub("", text)
+    # A space or comma left right before punctuation, where a reference was
+    text = re.sub(r"[ \t]*\x00[ \t]*,?(?=[,.;:!?)])", "", text)
+    return REMOVED_WITH_SPACES.sub("", text)
+
+
 def join_artist_credit(artists: Any) -> Optional[str]:
     """
     Artists of a release as Discogs credits them: 'Billy Preston & Syreeta',

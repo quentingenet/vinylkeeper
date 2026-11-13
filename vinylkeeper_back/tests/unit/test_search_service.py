@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from app.services.search_service import SEARCH_PAGE_SIZE, SearchService
 from app.core.exceptions import ServerError
@@ -28,6 +28,34 @@ class TestGetArtistMetadataErrorLeak:
         assert details == {"artist_id": "123"}
         assert "secret" not in str(details)
         assert "internal-host" not in str(details)
+
+
+class TestArtistBiography:
+    async def test_the_biography_comes_without_discogs_markup(self):
+        def response(payload):
+            reply = MagicMock()
+            reply.json.return_value = payload
+            return reply
+
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=[
+            response({"id": 15, "name": "IAM", "profile": "Rapper [a=Akhenaton] and [a=Freeman (3)]."}),
+            response({"releases": []}),
+        ])
+
+        metadata = await SearchService(http_client=client).get_artist_metadata("15")
+
+        assert metadata.biography == "Rapper Akhenaton and Freeman."
+
+    async def test_no_profile_gives_an_empty_biography(self):
+        reply = MagicMock()
+        reply.json.side_effect = [{"id": 15, "name": "IAM", "profile": None}, {"releases": []}]
+        client = AsyncMock()
+        client.get = AsyncMock(return_value=reply)
+
+        metadata = await SearchService(http_client=client).get_artist_metadata("15")
+
+        assert metadata.biography == ""
 
 
 class TestGetAlbumMetadataErrorLeak:
