@@ -1,7 +1,9 @@
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import List, Tuple
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 
+from app.utils.pagination import page_count
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
 from app.repositories.collection_album_repository import CollectionAlbumRepository
@@ -33,17 +35,20 @@ from app.core.exceptions import (
     ForbiddenError,
     DuplicateFieldError,
     DuplicateCollectionNameError,
-    ServerError,
     ValidationError,
-    ErrorCode
+    ErrorCode,
 )
 from app.core.logging import logger
 from app.core.transaction import transaction_context
 
 
+# The day written in the name of a save, the one the container clock gave so far
+SAVE_NAME_TIMEZONE = ZoneInfo("Europe/Paris")
+
+
 def saved_copy_name(name: str) -> str:
-    """Explicit name of a saved copy: "SAVE Jazz shelf (2026-10-29)"."""
-    return f"SAVE {name} ({date.today().isoformat()})"
+    """Explicit name of a saved copy: "SAVE Jazz shelf (2026-10-29)", dated in Paris time."""
+    return f"SAVE {name} ({datetime.now(SAVE_NAME_TIMEZONE).date().isoformat()})"
 
 
 async def save_collection_copy(repository: CollectionRepository, source: Collection) -> Collection:
@@ -153,15 +158,10 @@ class CollectionService:
             created_collection = await self.repository.get_by_id(created_collection.id, load_relations=True)
             return await self._build_collection_response(created_collection, user_id)
 
-    async def get_collection(self, collection_id: int) -> CollectionResponse:
-        """Get a collection by ID"""
-        collection = await self.repository.get_by_id(collection_id, load_relations=True)
-        return await self._build_collection_response(collection)
-
     async def update_collection(
         self, user_id: int, collection_id: int, collection_data: CollectionUpdate
-    ) -> CollectionResponse:
-        """Update a collection"""
+    ) -> None:
+        """Update the name, description, visibility or mood of a collection. Its records are not loaded."""
         async with transaction_context(self.repository.db):
             collection = await self._get_owned_collection(user_id, collection_id)
             if collection_data.name is not None and collection_data.name != collection.name:
@@ -173,10 +173,7 @@ class CollectionService:
             for field, value in update_data.items():
                 setattr(collection, field, value)
 
-            updated_collection = await self.repository.update(collection)
-            await self.repository.refresh(updated_collection)
-
-        return await self.get_collection(collection_id)
+            await self.repository.update(collection)
 
     async def delete_collection(self, user_id: int, collection_id: int) -> bool:
         """Delete a collection"""
@@ -276,55 +273,9 @@ class CollectionService:
         self, user_id: int, page: int = 1, limit: int = 10
     ) -> Tuple[List[CollectionListItemResponse], int]:
         """Get user's collections with pagination (optimized list view, lightweight response)."""
-        try:
-            collections, total = await self.repository.get_user_collections(user_id, page, limit)
-
-            if not collections:
-                return [], total
-
-            collection_ids = [collection.id for collection in collections]
-
-            likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
-            likes_counts = likes_info['counts']
-            user_likes = likes_info['user_likes']
-            preview_images = await self.repository.get_preview_images_batch(collection_ids)
-            # The owner sees which collections are saved already (one save each)
-            saves = await self.repository.saves_of(collection_ids)
-
-            collection_responses = []
-            dropped = 0
-            for collection in collections:
-                try:
-                    response = self._build_collection_list_item(
-                        collection,
-                        user_id,
-                        likes_counts.get(collection.id, 0),
-                        user_likes.get(collection.id, False),
-                        collection.albums_count,
-                        collection.artists_count,
-                        preview_images.get(collection.id, []),
-                        save=saves.get(collection.id),
-                    )
-                    collection_responses.append(response)
-                except AppException:
-                    raise
-                except Exception as collection_error:
-                    logger.error(
-                        f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
-                    dropped += 1
-
-            # Keep total consistent with what's actually returned: a dropped
-            # item must not inflate total/total_pages beyond the rendered page.
-            return collection_responses, max(0, total - dropped)
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting user collections: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get user collections",
-                details={}
-            )
+        collections, total = await self.repository.get_user_collections(user_id, page, limit)
+        # The owner sees which collections are saved already (one save each)
+        return await self._list_items(collections, total, user_id, with_saves=True)
 
     async def get_public_collections(
         self,
@@ -335,49 +286,48 @@ class CollectionService:
         sort_by: str = "updated_at"
     ) -> Tuple[List[CollectionListItemResponse], int]:
         """Get public collections with pagination (optimized list view, lightweight response)."""
-        try:
-            collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id, sort_by)
+        collections, total = await self.repository.get_public_collections(page, limit, exclude_user_id, sort_by)
+        return await self._list_items(collections, total, user_id, with_saves=False)
 
-            if not collections:
-                return [], total
+    async def _list_items(
+        self, collections: List[Collection], total: int, user_id: int | None, with_saves: bool
+    ) -> Tuple[List[CollectionListItemResponse], int]:
+        """The cards of a page of collections, with likes and preview images read in batch."""
+        if not collections:
+            return [], total
 
-            collection_ids = [collection.id for collection in collections]
-            likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
-            likes_counts = likes_info['counts']
-            user_likes = likes_info['user_likes']
-            preview_images = await self.repository.get_preview_images_batch(collection_ids)
+        collection_ids = [collection.id for collection in collections]
+        likes_info = await self.repository.get_collections_likes_info_batch(user_id, collection_ids)
+        likes_counts = likes_info['counts']
+        user_likes = likes_info['user_likes']
+        preview_images = await self.repository.get_preview_images_batch(collection_ids)
+        saves = await self.repository.saves_of(collection_ids) if with_saves else {}
 
-            collection_responses = []
-            dropped = 0
-            for collection in collections:
-                try:
-                    response = self._build_collection_list_item(
-                        collection,
-                        user_id,
-                        likes_counts.get(collection.id, 0),
-                        user_likes.get(collection.id, False),
-                        collection.albums_count,
-                        collection.artists_count,
-                        preview_images.get(collection.id, []),
-                    )
-                    collection_responses.append(response)
-                except AppException:
-                    raise
-                except Exception as collection_error:
-                    logger.error(
-                        f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
-                    dropped += 1
+        collection_responses = []
+        dropped = 0
+        for collection in collections:
+            try:
+                response = self._build_collection_list_item(
+                    collection,
+                    user_id,
+                    likes_counts.get(collection.id, 0),
+                    user_likes.get(collection.id, False),
+                    collection.albums_count,
+                    collection.artists_count,
+                    preview_images.get(collection.id, []),
+                    save=saves.get(collection.id),
+                )
+                collection_responses.append(response)
+            except AppException:
+                raise
+            except Exception as collection_error:
+                logger.error(
+                    f"Error processing collection {collection.id}: {str(collection_error)}", exc_info=True)
+                dropped += 1
 
-            return collection_responses, max(0, total - dropped)
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting public collections: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get public collections",
-                details={}
-            )
+        # Keep total consistent with what's actually returned: a dropped
+        # item must not inflate total/total_pages beyond the rendered page.
+        return collection_responses, max(0, total - dropped)
 
     async def like_collection(self, user_id: int, collection_id: int) -> dict:
         """Like a collection"""
@@ -429,72 +379,39 @@ class CollectionService:
             "is_liked": False
         }
 
-    async def get_collection_by_id(self, collection_id: int, user_id: int) -> CollectionResponse:
-        """Get a collection by ID with proper access control"""
-        try:
-            collection = await self.repository.get_by_id(collection_id, load_relations=True)
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
-            self._assert_collection_accessible(collection, user_id)
-            return await self._build_collection_response(collection, user_id)
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-            raise e
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting collection by ID: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection",
-                details={}
-            )
-
     async def get_collection_details_lightweight(self, collection_id: int, user_id: int) -> CollectionDetailResponse:
         """
         Get lightweight collection details (optimized - no albums/artists loaded).
         Uses aggregated queries for counts and likes.
         """
-        try:
-            collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
+        collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
+        if not collection:
+            raise ResourceNotFoundError("Collection", collection_id)
 
-            self._assert_collection_accessible(collection, user_id)
+        self._assert_collection_accessible(collection, user_id)
 
-            likes_info = await self.like_repository.get_likes_info(collection_id, user_id)
+        likes_info = await self.like_repository.get_likes_info(collection_id, user_id)
 
-            owner = None
-            owner_uuid = None
-            if is_loaded(collection, 'owner') and collection.owner:
-                owner = collection_mapper.user_to_mini_response(collection.owner)
-                owner_uuid = collection.owner.user_uuid
+        owner = None
+        owner_uuid = None
+        if is_loaded(collection, 'owner') and collection.owner:
+            owner = collection_mapper.user_to_mini_response(collection.owner)
+            owner_uuid = collection.owner.user_uuid
 
-            return CollectionDetailResponse(
-                id=collection.id,
-                name=collection.name,
-                description=collection.description,
-                is_public=collection.is_public,
-                share_token=collection.share_token,
-                mood_id=collection.mood_id,
-                owner_uuid=owner_uuid,
-                owner=owner,
-                likes_count=likes_info["count"],
-                is_liked_by_user=likes_info["is_liked"],
-                created_at=collection.created_at,
-                updated_at=collection.updated_at
-            )
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-            raise e
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(
-                f"Error getting collection details lightweight: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection details",
-                details={}
-            )
+        return CollectionDetailResponse(
+            id=collection.id,
+            name=collection.name,
+            description=collection.description,
+            is_public=collection.is_public,
+            share_token=collection.share_token,
+            mood_id=collection.mood_id,
+            owner_uuid=owner_uuid,
+            owner=owner,
+            likes_count=likes_info["count"],
+            is_liked_by_user=likes_info["is_liked"],
+            created_at=collection.created_at,
+            updated_at=collection.updated_at
+        )
 
     async def _get_shared(self, share_token: str) -> Collection:
         """
@@ -515,38 +432,28 @@ class CollectionService:
 
     async def get_shared_collection(self, share_token: str) -> SharedCollectionResponse:
         """The presentation of a public collection for anyone with its link, no account needed."""
-        try:
-            collection = await self._get_shared(share_token)
-            collection_id = collection.id
-            _, records_count = await self.collection_album_repository.get_collection_records_paginated(
-                collection_id, 1, 1, "newest"
-            )
-            _, artists_count = await self.repository.get_collection_artists_paginated(collection_id, 1, 1)
-            _, wishlist_count = await self.wishlist_repository.get_user_wishlist_paginated(collection.owner_id, 1, 1)
-            likes = await self.repository.get_collections_likes_info_batch(None, [collection_id])
-            covers = await self.repository.get_preview_images_batch([collection_id], limit=1)
+        collection = await self._get_shared(share_token)
+        collection_id = collection.id
+        _, records_count = await self.collection_album_repository.get_collection_records_paginated(
+            collection_id, 1, 1, "newest"
+        )
+        _, artists_count = await self.repository.get_collection_artists_paginated(collection_id, 1, 1)
+        _, wishlist_count = await self.wishlist_repository.get_user_wishlist_paginated(collection.owner_id, 1, 1)
+        likes = await self.repository.get_collections_likes_info_batch(None, [collection_id])
+        covers = await self.repository.get_preview_images_batch([collection_id], limit=1)
 
-            owner = collection.owner if is_loaded(collection, 'owner') else None
-            return SharedCollectionResponse(
-                id=collection.id,
-                name=collection.name,
-                description=collection.description,
-                owner_username=owner.username if owner else None,
-                records_count=records_count,
-                artists_count=artists_count,
-                wishlist_count=wishlist_count,
-                likes_count=likes['counts'].get(collection_id, 0),
-                cover_url=next(iter(covers.get(collection_id, [])), None),
-            )
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting shared collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get the shared collection",
-                details={}
-            )
+        owner = collection.owner if is_loaded(collection, 'owner') else None
+        return SharedCollectionResponse(
+            id=collection.id,
+            name=collection.name,
+            description=collection.description,
+            owner_username=owner.username if owner else None,
+            records_count=records_count,
+            artists_count=artists_count,
+            wishlist_count=wishlist_count,
+            likes_count=likes['counts'].get(collection_id, 0),
+            cover_url=next(iter(covers.get(collection_id, [])), None),
+        )
 
     async def _shared_items_page(self, collection: Collection, kind: str, page: int) -> Tuple[List[SharedItem], int]:
         """One page of a shared list, reduced to titles and covers, and the size of the list."""
@@ -573,163 +480,114 @@ class CollectionService:
         artists stop at the limit of a visitor, applied here: a page past it gives the last visible
         one, never more. The wishlist is whole: it is there for whoever wants to offer a record.
         """
-        try:
-            collection = await self._get_shared(share_token)
-            items, total = await self._shared_items_page(collection, kind, page)
-            visible = total if kind == "wishlist" else shared_visible_items(total)
-            total_pages = max(1, (visible + SHARED_ITEMS_PER_PAGE - 1) // SHARED_ITEMS_PER_PAGE)
-            if page > total_pages:
-                page = total_pages
-                items, _ = await self._shared_items_page(collection, kind, page)
-            return SharedItemsResponse(
-                items=items[:visible - (page - 1) * SHARED_ITEMS_PER_PAGE],
-                total_count=total,
-                visible_count=visible,
-                page=page,
-                total_pages=total_pages,
-            )
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting shared items: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get the shared collection",
-                details={}
-            )
+        collection = await self._get_shared(share_token)
+        items, total = await self._shared_items_page(collection, kind, page)
+        visible = total if kind == "wishlist" else shared_visible_items(total)
+        total_pages = max(1, page_count(visible, SHARED_ITEMS_PER_PAGE))
+        if page > total_pages:
+            page = total_pages
+            items, _ = await self._shared_items_page(collection, kind, page)
+        return SharedItemsResponse(
+            items=items[:visible - (page - 1) * SHARED_ITEMS_PER_PAGE],
+            total_count=total,
+            visible_count=visible,
+            page=page,
+            total_pages=total_pages,
+        )
 
     async def get_collection_records_paginated(
         self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
     ) -> PaginatedRecordsResponse:
         """Get a page of works of a collection, each with all its pressings and their copies"""
-        try:
-            collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
-            self._assert_collection_accessible(collection, user_id)
+        collection = await self.repository.get_by_id(collection_id, load_relations=False, load_minimal=True)
+        if not collection:
+            raise ResourceNotFoundError("Collection", collection_id)
+        self._assert_collection_accessible(collection, user_id)
 
-            works, total = await self.collection_album_repository.get_collection_records_paginated(
-                collection_id, page, limit, sort_order
-            )
-            return PaginatedRecordsResponse(
-                items=[collection_mapper.pressings_to_record_response(key, pressings) for key, pressings in works],
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=(total + limit - 1) // limit,
-            )
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-            raise e
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting collection records paginated: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection records",
-                details={}
-            )
+        works, total = await self.collection_album_repository.get_collection_records_paginated(
+            collection_id, page, limit, sort_order
+        )
+        return PaginatedRecordsResponse(
+            items=[collection_mapper.pressings_to_record_response(key, pressings) for key, pressings in works],
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=page_count(total, limit),
+        )
 
     async def get_collection_artists_paginated(
         self, collection_id: int, user_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
     ) -> PaginatedArtistsResponse:
         """Get paginated artists from a collection"""
-        try:
-            collection = await self.repository.get_by_id(collection_id)
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
+        collection = await self.repository.get_by_id(collection_id)
+        if not collection:
+            raise ResourceNotFoundError("Collection", collection_id)
 
-            self._assert_collection_accessible(collection, user_id)
+        self._assert_collection_accessible(collection, user_id)
 
-            artists_data, total = await self.repository.get_collection_artists_paginated(
-                collection_id, page, limit, sort_order
-            )
+        artists_data, total = await self.repository.get_collection_artists_paginated(
+            collection_id, page, limit, sort_order
+        )
 
-            artist_responses = [
-                collection_mapper.artist_to_collection_artist_response(artist, collection_artist)
-                for artist, collection_artist in artists_data
-            ]
+        artist_responses = [
+            collection_mapper.artist_to_collection_artist_response(artist, collection_artist)
+            for artist, collection_artist in artists_data
+        ]
 
-            return PaginatedArtistsResponse(
-                items=artist_responses,
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=(total + limit - 1) // limit,
-            )
-
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-            raise e
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(
-                f"Error getting collection artists paginated: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection artists",
-                details={}
-            )
+        return PaginatedArtistsResponse(
+            items=artist_responses,
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=page_count(total, limit),
+        )
 
     async def search_collection_items(
         self, collection_id: int, user_id: int, query: str, search_type: str = "both"
     ) -> dict:
         """Search for items in a collection"""
-        try:
-            collection = await self.repository.get_by_id(collection_id)
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
+        collection = await self.repository.get_by_id(collection_id)
+        if not collection:
+            raise ResourceNotFoundError("Collection", collection_id)
 
-            self._assert_collection_accessible(collection, user_id)
+        self._assert_collection_accessible(collection, user_id)
 
-            search_type_mapping = {
-                "album": "albums",
-                "artist": "artists",
-                "albums": "albums",
-                "artists": "artists",
-                "both": "both"
-            }
+        search_type_mapping = {
+            "album": "albums",
+            "artist": "artists",
+            "albums": "albums",
+            "artists": "artists",
+            "both": "both"
+        }
 
-            if search_type not in search_type_mapping:
-                raise ValidationError(
-                    error_code=4000,
-                    message="Search type must be 'album', 'artist', 'albums', 'artists', or 'both'",
-                    details={"field": "search_type", "value": search_type}
-                )
-
-            normalized_search_type = search_type_mapping[search_type]
-
-            results = await self.repository.search_collection_items(collection_id, query, normalized_search_type)
-
-            albums = []
-            artists = []
-
-            if "albums" in results:
-                for album, collection_album in results["albums"]:
-                    albums.append(collection_mapper.album_to_collection_album_response(album, collection_album))
-
-            if "artists" in results:
-                for artist in results["artists"]:
-                    artists.append(collection_mapper.artist_to_collection_artist_response(artist))
-
-            return CollectionSearchResponse(
-                albums=albums,
-                artists=artists,
-                query=query,
-                search_type=search_type,
+        if search_type not in search_type_mapping:
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_REQUEST,
+                message="Search type must be 'album', 'artist', 'albums', 'artists', or 'both'",
+                details={"field": "search_type", "value": search_type}
             )
 
-        except (ResourceNotFoundError, ForbiddenError, ValidationError) as e:
-            raise e
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error searching collection items: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to search collection items",
-                details={}
-            )
+        normalized_search_type = search_type_mapping[search_type]
+
+        results = await self.repository.search_collection_items(collection_id, query, normalized_search_type)
+
+        albums = []
+        artists = []
+
+        if "albums" in results:
+            for album, collection_album in results["albums"]:
+                albums.append(collection_mapper.album_to_collection_album_response(album, collection_album))
+
+        if "artists" in results:
+            for artist in results["artists"]:
+                artists.append(collection_mapper.artist_to_collection_artist_response(artist))
+
+        return CollectionSearchResponse(
+            albums=albums,
+            artists=artists,
+            query=query,
+            search_type=search_type,
+        )
 
     async def _build_collection_response(
         self, collection, user_id=None, likes_count=None, is_liked=None

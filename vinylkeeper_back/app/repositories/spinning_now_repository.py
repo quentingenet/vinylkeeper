@@ -3,13 +3,10 @@ from typing import Any, Iterable, Sequence
 
 from sqlalchemy import distinct, func, select
 from sqlalchemy.dialects.postgresql import distinct_on
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Executable, Subquery
 
-from app.core.exceptions import ServerError
-from app.core.logging import logger
 from app.models.album_model import Album
 from app.models.album_mood_model import AlbumMood
 from app.models.collection_album import CollectionAlbum
@@ -34,11 +31,7 @@ class SpinningNowRepository:
         self.db = db
 
     async def _rows(self, query: Executable, operation: str) -> list[Any]:
-        try:
-            return list((await self.db.execute(query)).all())
-        except SQLAlchemyError as e:
-            logger.error(f"Spinning now: failed to {operation}: {str(e)}", exc_info=True)
-            raise ServerError(error_code=5000, message=f"Failed to {operation}", details={})
+        return list((await self.db.execute(query)).all())
 
     @staticmethod
     def _year():

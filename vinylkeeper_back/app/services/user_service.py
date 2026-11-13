@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from fastapi import BackgroundTasks
 from app.repositories.user_repository import UserRepository
 from app.core.security import verify_password_async, hash_password_async
 from sqlalchemy.exc import IntegrityError
@@ -8,6 +9,7 @@ from app.utils.auth_utils.auth import (
     create_email_confirmation_token,
     create_reset_token,
     decode_email_token,
+    is_admin,
     token_version_of,
     verify_reset_token,
 )
@@ -22,7 +24,6 @@ from app.mails.client_mail import send_mail, MailSubject
 from app.core.exceptions import (
     InvalidCredentialsError,
     InvalidResetTokenError,
-    ResourceNotFoundError,
     PasswordUpdateError,
     UserNotFoundError,
     DuplicateEmailError,
@@ -80,13 +81,6 @@ class UserService:
                 log_activity(user.username, "came back (session restored)")
         except Exception as e:
             logger.warning(f"last_seen_at not updated for user {user.id}: {str(e)}")
-
-    async def get_user_by_id(self, user_id: int) -> User:
-        """Get a user by ID"""
-        user = await self.repository.get_user_by_id(user_id)
-        if not user:
-            raise ResourceNotFoundError("User", user_id)
-        return user
 
     async def get_user_by_uuid(self, user_uuid: str) -> User:
         """Get a user by UUID"""
@@ -253,22 +247,24 @@ class UserService:
             logger.error(f"Failed to send {label}")
         return sent
 
-    async def send_password_reset_email(self, email: str) -> None:
-        """Send password reset email"""
+    async def send_password_reset_email(self, email: str, background_tasks: BackgroundTasks) -> None:
+        """
+        Reset link for an existing account, sent after the response: the time to answer must not
+        tell whether the account exists, and a slow SMTP must not hold the request.
+        """
         user = await self.repository.get_user_by_email(email)
         if not user:
             return
 
         reset_token = create_reset_token(str(user.user_uuid), user.token_version)
-        email_sent = await send_mail(
-            to=user.email,
-            subject=MailSubject.PasswordReset,
-            token=reset_token
-        )
-        if not email_sent:
-            logger.error(f"Failed to send password reset email for user {user.username}")
-        else:
-            log_activity(user.username, "asked for a password reset link")
+        background_tasks.add_task(self._send_password_reset_email, user.email, user.username, reset_token)
+
+    @classmethod
+    async def _send_password_reset_email(cls, to: str, username: str, token: str) -> None:
+        """Background task: plain values only, the request session is closed by then."""
+        if await cls._send_safely(to, MailSubject.PasswordReset, f"password reset email for user {username}",
+                                  token=token):
+            log_activity(username, "asked for a password reset link")
 
     async def reset_password(self, token: str, new_password: str) -> None:
         """Reset user password, then revoke every session and this reset link"""
@@ -307,27 +303,16 @@ class UserService:
                 raise PasswordUpdateError()
         user.token_version = new_token_version
 
-    async def send_new_user_registered_email(self, user: User) -> None:
-        """Send email to admin about new user registration. Skipped in dev or for admin users."""
+    def send_new_user_registered_email(self, user: User, background_tasks: BackgroundTasks) -> None:
+        """Email the admin about a new member, after the response. Skipped in dev or for admin users."""
         is_dev = settings.APP_ENV == "development"
-        is_admin = user.role and user.role.name == RoleEnum.ADMIN.value and user.is_superuser
-        if is_dev or is_admin:
+        if is_dev or is_admin(user):
             return
-        try:
-            email_sent = await send_mail(
-                to=settings.EMAIL_ADMIN,
-                subject=MailSubject.NewUserRegistered,
-                username=user.username,
-                user_email=user.email
-            )
-            if not email_sent:
-                logger.error(
-                    f"Failed to send new user email to admin for user {user.username}")
-            else:
-                logger.info(
-                    f"New user email sent to admin for user {user.username}")
-        except Exception as e:
-            logger.error(f"Failed to send new user email: {str(e)}", exc_info=True)
+        background_tasks.add_task(
+            self._send_safely, settings.EMAIL_ADMIN, MailSubject.NewUserRegistered,
+            f"new user email to admin for user {user.username}",
+            username=user.username, user_email=user.email,
+        )
 
     async def delete_user(self, user: User) -> bool:
         """Delete a user"""
@@ -337,16 +322,11 @@ class UserService:
 
     async def get_user_me(self, user: User) -> dict:
         """Get current user information (optimized - no expensive calculations)"""
-        is_admin = (
-            user.role and
-            user.role.name == "admin" and
-            user.is_superuser
-        )
         is_tutorial_seen = user.number_of_connections > 2
         return {
             "username": user.username,
             "user_uuid": str(user.user_uuid),
-            "is_admin": is_admin,
+            "is_admin": is_admin(user),
             "is_tutorial_seen": is_tutorial_seen,
             "number_of_connections": user.number_of_connections
         }
@@ -372,9 +352,11 @@ class UserService:
     async def send_contact_message(self, user: User, message_data: ContactMessageRequest) -> ContactMessageResponse:
         """Send contact message"""
         sent_at = datetime.now(timezone.utc)
-        await send_mail(
-            to=settings.EMAIL_ADMIN,
-            subject=MailSubject.ContactMessage,
+        # Sent within the request: the member is told whether the message really left
+        sent = await self._send_safely(
+            settings.EMAIL_ADMIN,
+            MailSubject.ContactMessage,
+            f"contact message of user {user.username}",
             username=user.username,
             email=user.email,
             user_id=user.id,
@@ -382,6 +364,11 @@ class UserService:
             message=message_data.message,
             sent_at=sent_at.strftime("%Y-%m-%d %H:%M:%S UTC")
         )
+        if not sent:
+            raise ServerError(
+                error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+                message="Your message could not be sent, please try again later",
+            )
         log_activity(user.username, "sent a contact message")
         return ContactMessageResponse(
             message="Contact message sent successfully",

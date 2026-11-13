@@ -70,7 +70,26 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from app.core.security import hash_password
-from app.utils.auth_utils.auth import create_token, TokenType
+from datetime import datetime, timedelta, timezone
+
+import jwt
+
+from app.utils.auth_utils.auth import (
+    ALGORITHM, PRIVATE_KEY, REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, TokenType,
+)
+
+
+def make_legacy_refresh_token(user_uuid: str, token_version: int = 0) -> str:
+    """
+    A refresh token as issued before sessions existed: no "sid" nor "jti". The app no longer issues
+    any (create_refresh_token always ties one to a session) but still accepts them until they expire.
+    """
+    return jwt.encode({
+        "sub": user_uuid,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
+        "type": TokenType.REFRESH.value,
+        "ver": token_version,
+    }, PRIVATE_KEY, algorithm=ALGORITHM)
 
 
 # ---------------------------------------------------------------------------
@@ -147,14 +166,14 @@ def admin_user_not_superuser():
 
 @pytest.fixture
 def access_token(regular_user):
-    return create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+    return create_access_token(str(regular_user.user_uuid))
 
 
 @pytest.fixture
 def refresh_token_fixture(regular_user):
-    return create_token(str(regular_user.user_uuid), TokenType.REFRESH)
+    return make_legacy_refresh_token(str(regular_user.user_uuid))
 
 
 @pytest.fixture
 def admin_access_token(admin_user):
-    return create_token(str(admin_user.user_uuid), TokenType.ACCESS)
+    return create_access_token(str(admin_user.user_uuid))

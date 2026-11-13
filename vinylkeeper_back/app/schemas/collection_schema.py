@@ -18,7 +18,6 @@ class CollectionAlbumResponse(AlbumBase):
     created_at: datetime
     updated_at: datetime
     collections_count: int = Field(default=0)
-    loans_count: int = Field(default=0)
     wishlist_count: int = Field(default=0)
     copies: List[CollectionAlbumCopyResponse] = Field(default_factory=list)
     copies_count: int = Field(default=0)
@@ -298,6 +297,3 @@ class CollectionCopyResponse(BaseSchema):
     name: str
 
 
-class MessageResponse(BaseSchema):
-    """Generic response schema for operations that return only a message."""
-    message: str

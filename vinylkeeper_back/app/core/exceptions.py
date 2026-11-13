@@ -5,12 +5,9 @@ from typing import Optional, Dict, Any
 class ErrorCode:
     # Authentication errors (1000-1999)
     INVALID_CREDENTIALS = 1000
-    EMAIL_ALREADY_EXISTS = 1001
-    USERNAME_ALREADY_EXISTS = 1002
     ACCOUNT_LOCKED = 1003
     INVALID_TOKEN = 1004
     USER_NOT_FOUND = 1005
-    EMAIL_NOT_FOUND = 1006
     PASSWORD_UPDATE_FAILED = 1007
     TERMS_NOT_ACCEPTED = 1008
     REFRESH_TOKEN_NOT_FOUND = 1009
@@ -22,10 +19,10 @@ class ErrorCode:
 
     # Validation errors (3000-3999)
     INVALID_INPUT = 3000
-    MISSING_REQUIRED_FIELD = 3001
     INVALID_FORMAT = 3002
 
-    # Authorization errors (4000-4999)
+    # Request and authorization errors (4000-4999)
+    INVALID_REQUEST = 4000
     FORBIDDEN = 4030
     FORBIDDEN_OWNER = 4003
     CSRF_TOKEN_INVALID = 4004
@@ -145,15 +142,6 @@ class UserNotFoundError(AuthenticationError):
         super().__init__(
             error_code=ErrorCode.USER_NOT_FOUND,
             message="User not found",
-            details={}
-        )
-
-
-class EmailNotFoundError(AuthenticationError):
-    def __init__(self, email: str = ""):
-        super().__init__(
-            error_code=ErrorCode.EMAIL_NOT_FOUND,
-            message="Invalid email or password",
             details={}
         )
 

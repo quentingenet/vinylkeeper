@@ -9,13 +9,11 @@ from app.schemas.request_proxy.request_proxy_schema import (
 )
 from app.services.search_service import SearchService
 from app.utils.auth_utils.auth import get_current_user
-from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
 
 @router.post("/search-music/page", response_model=SearchResultsPage, status_code=200)
-@handle_app_exceptions
 async def search_page(
     search_query: SearchQuery,
     service: SearchService = Depends(get_search_service),
@@ -26,7 +24,6 @@ async def search_page(
 
 
 @router.get("/music-metadata/artist/{artist_id}", response_model=ArtistMetadata, status_code=200)
-@handle_app_exceptions
 async def get_artist_metadata(
     artist_id: str,
     service: SearchService = Depends(get_search_service),
@@ -50,7 +47,6 @@ async def get_artist_metadata(
 
 
 @router.get("/music-metadata/album/{album_id}", response_model=AlbumMetadata, status_code=200)
-@handle_app_exceptions
 async def get_album_metadata(
     album_id: str,
     service: SearchService = Depends(get_search_service),

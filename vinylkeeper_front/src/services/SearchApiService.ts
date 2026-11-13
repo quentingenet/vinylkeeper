@@ -2,8 +2,6 @@ import { logger } from "@utils/logger";
 import { BaseApiService } from "./BaseApiService";
 import {
   IRequestToSend,
-  AlbumMetadata,
-  ArtistMetadata,
   SearchResultsPage,
 } from "@models/IRequestProxy";
 
@@ -19,51 +17,6 @@ export class SearchApiService extends BaseApiService {
       throw new Error("Failed to search music", { cause: error });
     }
   }
-
-  async getArtistMetadata(artistId: string): Promise<ArtistMetadata> {
-    if (!artistId || artistId.trim() === "") {
-      logger.warn("Invalid artist ID provided:", artistId);
-      throw new Error("Invalid artist ID provided");
-    }
-
-    // Validate that artistId is numeric
-    if (!/^\d+$/.test(artistId)) {
-      logger.warn("Non-numeric artist ID provided:", artistId);
-      throw new Error("Artist ID must be numeric");
-    }
-
-    try {
-      return await this.get<ArtistMetadata>(
-        `/request-proxy/music-metadata/artist/${artistId}`
-      );
-    } catch (error) {
-      logger.error("Failed to fetch artist metadata:", error);
-      throw new Error("Failed to fetch artist metadata", { cause: error });
-    }
-  }
-
-  async getAlbumMetadata(albumId: string): Promise<AlbumMetadata> {
-    if (!albumId || albumId.trim() === "") {
-      logger.warn("Invalid album ID provided:", albumId);
-      throw new Error("Invalid album ID provided");
-    }
-
-    // Validate that albumId is numeric
-    if (!/^\d+$/.test(albumId)) {
-      logger.warn("Non-numeric album ID provided:", albumId);
-      throw new Error("Album ID must be numeric");
-    }
-
-    try {
-      return await this.get<AlbumMetadata>(
-        `/request-proxy/music-metadata/album/${albumId}`
-      );
-    } catch (error) {
-      logger.error("Failed to fetch album metadata:", error);
-      throw new Error("Failed to fetch album metadata", { cause: error });
-    }
-  }
-
 }
 
 const searchApiServiceInstance = new SearchApiService();
@@ -71,10 +24,6 @@ const searchApiServiceInstance = new SearchApiService();
 export const searchApiService = {
   searchMusicPage: (requestToSend: IRequestToSend) =>
     searchApiServiceInstance.searchMusicPage(requestToSend),
-  getArtistMetadata: (artistId: string) =>
-    searchApiServiceInstance.getArtistMetadata(artistId),
-  getAlbumMetadata: (albumId: string) =>
-    searchApiServiceInstance.getAlbumMetadata(albumId),
 };
 
 export default searchApiService;

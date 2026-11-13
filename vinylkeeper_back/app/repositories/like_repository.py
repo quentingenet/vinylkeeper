@@ -1,9 +1,8 @@
 from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from app.models.like_model import Like
-from app.core.exceptions import ServerError
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
 
@@ -14,19 +13,10 @@ class LikeRepository(TransactionalMixin):
 
     async def get(self, user_id: int, collection_id: int) -> Optional[Like]:
         """Return the Like if it exists, else None."""
-        try:
-            query = select(Like).filter_by(
-                user_id=user_id, collection_id=collection_id)
-            result = await self.db.execute(query)
-            return result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error retrieving like for user {user_id} and collection {collection_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get like",
-                details={}
-            )
+        query = select(Like).filter_by(
+            user_id=user_id, collection_id=collection_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
     async def create_like(self, user_id: int, collection_id: int) -> Like:
         """Add a like for the user and collection without committing (transaction managed by service)."""
@@ -48,63 +38,28 @@ class LikeRepository(TransactionalMixin):
             # (collection_service.like_collection) turn this into a
             # DuplicateFieldError instead of masking it as a 500.
             raise
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error creating like for user {user_id} and collection {collection_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to create like",
-                details={}
-            )
 
     async def remove(self, user_id: int, collection_id: int) -> None:
         """Remove the like if it exists without committing (transaction managed by service)."""
-        try:
-            like = await self.get(user_id, collection_id)
-            if like:
-                # No flush needed for deletion
-                await self._delete_entity(like, flush=False)
-            else:
-                logger.warning(
-                    f"Like not found for user {user_id} and collection {collection_id}")
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error removing like for user {user_id} and collection {collection_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to remove like",
-                details={}
-            )
+        like = await self.get(user_id, collection_id)
+        if like:
+            # No flush needed for deletion
+            await self._delete_entity(like, flush=False)
+        else:
+            logger.warning(
+                f"Like not found for user {user_id} and collection {collection_id}")
 
     async def count_likes(self, collection_id: int) -> int:
         """Return the total number of likes for a collection."""
-        try:
-            query = select(func.count()).select_from(
-                Like).filter_by(collection_id=collection_id)
-            result = await self.db.execute(query)
-            return result.scalar()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error counting likes for collection {collection_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to count likes",
-                details={}
-            )
+        query = select(func.count()).select_from(
+            Like).filter_by(collection_id=collection_id)
+        result = await self.db.execute(query)
+        return result.scalar()
 
     async def is_liked_by_user(self, collection_id: int, user_id: int) -> bool:
         """Check if a collection is liked by a user."""
-        try:
-            like = await self.get(user_id, collection_id)
-            return like is not None
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error checking if collection {collection_id} is liked by user {user_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to check like status",
-                details={}
-            )
+        like = await self.get(user_id, collection_id)
+        return like is not None
 
     async def get_likes_info(self, collection_id: int, user_id: int | None = None) -> Dict[str, Any]:
         """
@@ -113,30 +68,21 @@ class LikeRepository(TransactionalMixin):
         Returns:
             dict: {"count": int, "is_liked": bool}
         """
-        try:
-            # Single query with aggregation and conditional check
-            query = select(
-                func.count(Like.id).label("count"),
-                func.max(
-                    case(
-                        (Like.user_id == user_id, 1),
-                        else_=0
-                    )
-                ).label("is_liked")
-            ).filter(Like.collection_id == collection_id)
+        # Single query with aggregation and conditional check
+        query = select(
+            func.count(Like.id).label("count"),
+            func.max(
+                case(
+                    (Like.user_id == user_id, 1),
+                    else_=0
+                )
+            ).label("is_liked")
+        ).filter(Like.collection_id == collection_id)
 
-            result = await self.db.execute(query)
-            row = result.one()
+        result = await self.db.execute(query)
+        row = result.one()
 
-            return {
-                "count": row.count or 0,
-                "is_liked": bool(row.is_liked) if user_id is not None else False
-            }
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error getting likes info for collection {collection_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get likes info",
-                details={}
-            )
+        return {
+            "count": row.count or 0,
+            "is_liked": bool(row.is_liked) if user_id is not None else False
+        }

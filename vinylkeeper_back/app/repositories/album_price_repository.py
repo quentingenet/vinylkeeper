@@ -82,9 +82,6 @@ class AlbumPriceRepository:
     async def delete_request(self, album_id: int) -> None:
         await self.db.execute(delete(AlbumPriceRequest).where(AlbumPriceRequest.album_id == album_id))
 
-    async def has_requests(self) -> bool:
-        return (await self.db.execute(select(AlbumPriceRequest.album_id).limit(1))).first() is not None
-
     async def recent_refreshes(self, user_id: int, window: timedelta) -> list[datetime]:
         """When the user re-evaluated a collection within the window, oldest first."""
         query = (

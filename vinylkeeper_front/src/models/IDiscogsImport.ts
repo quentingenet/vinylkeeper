@@ -1,4 +1,4 @@
-export type DiscogsImportStatus = "queued" | "running" | "done" | "failed";
+type DiscogsImportStatus = "queued" | "running" | "done" | "failed";
 
 /** The Discogs account connected with OAuth: imports read it, never a typed username */
 export interface DiscogsConnection {

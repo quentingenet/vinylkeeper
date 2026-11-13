@@ -10,12 +10,7 @@ from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.repositories.work_queries import work_key, works_count_in_collection
 from app.models.association_tables import CollectionArtist
 from app.models.like_model import Like
-from app.core.exceptions import (
-    ResourceNotFoundError,
-    DuplicateFieldError,
-    ServerError,
-    ErrorCode
-)
+from app.core.exceptions import ResourceNotFoundError, DuplicateFieldError
 from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
 from datetime import datetime, timezone
@@ -96,13 +91,6 @@ class CollectionRepository(TransactionalMixin):
             logger.error(
                 f"Database integrity error creating collection: {str(e)}", exc_info=True)
             raise DuplicateFieldError("name", collection.name)
-        except SQLAlchemyError as e:
-            logger.error(f"Unexpected error creating collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to create collection",
-                details={}
-            )
 
     async def get_by_id(
         self, collection_id: int, load_relations: bool = True, load_minimal: bool = False
@@ -114,94 +102,57 @@ class CollectionRepository(TransactionalMixin):
             load_relations: If True, load all relations (albums, artists, likes, etc.)
             load_minimal: If True, load only owner (optimized for lightweight responses)
         """
-        try:
-            query = select(Collection).filter(Collection.id == collection_id)
+        query = select(Collection).filter(Collection.id == collection_id)
 
-            if load_minimal:
-                # Only load owner for lightweight responses
-                query = query.options(selectinload(Collection.owner))
-            elif load_relations:
-                query = query.options(
-                    selectinload(Collection.owner),
-                    selectinload(Collection.collection_albums).selectinload(
-                        CollectionAlbum.album).selectinload(Album.external_source),
-                    selectinload(Collection.collection_albums).selectinload(
-                        CollectionAlbum.copies),
-                    selectinload(Collection.collection_artists).selectinload(
-                        CollectionArtist.artist).selectinload(Artist.external_source),
-                    selectinload(Collection.mood),
-                )
-
-            result = await self.db.execute(query)
-            collection = result.scalar_one_or_none()
-            if not collection:
-                raise ResourceNotFoundError("Collection", collection_id)
-            return collection
-        except ResourceNotFoundError:
-            raise
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error retrieving collection {collection_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to retrieve collection",
-                details={}
+        if load_minimal:
+            # Only load owner for lightweight responses
+            query = query.options(selectinload(Collection.owner))
+        elif load_relations:
+            query = query.options(
+                selectinload(Collection.owner),
+                selectinload(Collection.collection_albums).selectinload(
+                    CollectionAlbum.album).selectinload(Album.external_source),
+                selectinload(Collection.collection_albums).selectinload(
+                    CollectionAlbum.copies),
+                selectinload(Collection.collection_artists).selectinload(
+                    CollectionArtist.artist).selectinload(Artist.external_source),
+                selectinload(Collection.mood),
             )
+
+        result = await self.db.execute(query)
+        collection = result.scalar_one_or_none()
+        if not collection:
+            raise ResourceNotFoundError("Collection", collection_id)
+        return collection
 
     async def find_by_share_token(self, share_token: str) -> Optional[Collection]:
         """The collection of a public link, with its owner."""
-        try:
-            result = await self.db.execute(
-                select(Collection)
-                .filter(Collection.share_token == share_token)
-                .options(selectinload(Collection.owner))
-            )
-            return result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            logger.error(f"Error retrieving a shared collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to retrieve collection",
-                details={}
-            )
+        result = await self.db.execute(
+            select(Collection)
+            .filter(Collection.share_token == share_token)
+            .options(selectinload(Collection.owner))
+        )
+        return result.scalar_one_or_none()
 
     async def find_by_name_and_owner(self, name: str, owner_id: int) -> Optional[Collection]:
         """Find a collection by name and owner ID."""
-        try:
-            query = select(Collection).filter(
-                Collection.name == name,
-                Collection.owner_id == owner_id
-            )
-            result = await self.db.execute(query)
-            return result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error finding collection by name and owner: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to find collection",
-                details={}
-            )
+        query = select(Collection).filter(
+            Collection.name == name,
+            Collection.owner_id == owner_id
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
     async def count_public_by_owner(self, owner_id: int) -> int:
         """Count public collections owned by a user."""
-        try:
-            query = select(func.count(Collection.id)).filter(
-                and_(
-                    Collection.owner_id == owner_id,
-                    Collection.is_public.is_(True)
-                )
+        query = select(func.count(Collection.id)).filter(
+            and_(
+                Collection.owner_id == owner_id,
+                Collection.is_public.is_(True)
             )
-            result = await self.db.execute(query)
-            return result.scalar() or 0
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error counting public collections for owner {owner_id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to count public collections by owner",
-                details={}
-            )
+        )
+        result = await self.db.execute(query)
+        return result.scalar() or 0
 
     async def update(self, collection: Collection) -> Collection:
         """Update an existing collection without committing (transaction managed by service)."""
@@ -213,267 +164,218 @@ class CollectionRepository(TransactionalMixin):
             logger.error(
                 f"Database integrity error updating collection: {str(e)}", exc_info=True)
             raise DuplicateFieldError("name", collection.name)
-        except SQLAlchemyError as e:
-            logger.error(f"Unexpected error updating collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to update collection",
-                details={}
-            )
 
     async def delete(self, collection: Collection) -> bool:
         """Delete a collection without committing (transaction managed by service)."""
-        try:
-            await self._delete_entity(collection)
-            return True
-        except SQLAlchemyError as e:
-            logger.error(f"Error deleting collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to delete collection",
-                details={}
-            )
+        await self._delete_entity(collection)
+        return True
 
     async def add_albums(self, collection: Collection, album_ids: List[int]) -> None:
         """Add albums to a collection using batch operations (optimized)."""
-        try:
-            if not album_ids:
-                return
+        if not album_ids:
+            return
 
-            existing_query = select(CollectionAlbum.album_id).filter(
-                CollectionAlbum.collection_id == collection.id,
-                CollectionAlbum.album_id.in_(album_ids)
-            )
-            existing_result = await self.db.execute(existing_query)
-            existing_album_ids = {row[0] for row in existing_result.all()}
+        existing_query = select(CollectionAlbum.album_id).filter(
+            CollectionAlbum.collection_id == collection.id,
+            CollectionAlbum.album_id.in_(album_ids)
+        )
+        existing_result = await self.db.execute(existing_query)
+        existing_album_ids = {row[0] for row in existing_result.all()}
 
-            new_album_ids = [
-                album_id for album_id in album_ids if album_id not in existing_album_ids]
+        new_album_ids = [
+            album_id for album_id in album_ids if album_id not in existing_album_ids]
 
-            if not new_album_ids:
-                existing_associations = await self.db.execute(
-                    select(CollectionAlbum).filter(
-                        CollectionAlbum.collection_id == collection.id,
-                        CollectionAlbum.album_id.in_(album_ids)
-                    )
+        if not new_album_ids:
+            existing_associations = await self.db.execute(
+                select(CollectionAlbum).filter(
+                    CollectionAlbum.collection_id == collection.id,
+                    CollectionAlbum.album_id.in_(album_ids)
                 )
-                for assoc in existing_associations.scalars():
-                    # Update only updated_at - never modify created_at
-                    assoc.updated_at = datetime.now(timezone.utc)
-                    if assoc.created_at is None:
-                        assoc.created_at = assoc.updated_at
-                await self.db.flush()
-                return
-
-            albums_query = select(Album.id).filter(Album.id.in_(new_album_ids))
-            albums_result = await self.db.execute(albums_query)
-            valid_album_ids = {row[0] for row in albums_result.all()}
-
-            if valid_album_ids:
-                collection_albums = [CollectionAlbum.new(collection.id, album_id) for album_id in valid_album_ids]
-                self.db.add_all(collection_albums)
-                await self.db.flush()
-
-        except SQLAlchemyError as e:
-            logger.error(f"Error adding albums to collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to add albums to collection",
-                details={}
             )
+            for assoc in existing_associations.scalars():
+                # Update only updated_at - never modify created_at
+                assoc.updated_at = datetime.now(timezone.utc)
+                if assoc.created_at is None:
+                    assoc.created_at = assoc.updated_at
+            await self.db.flush()
+            return
+
+        albums_query = select(Album.id).filter(Album.id.in_(new_album_ids))
+        albums_result = await self.db.execute(albums_query)
+        valid_album_ids = {row[0] for row in albums_result.all()}
+
+        if valid_album_ids:
+            collection_albums = [CollectionAlbum.new(collection.id, album_id) for album_id in valid_album_ids]
+            self.db.add_all(collection_albums)
+            await self.db.flush()
 
     async def add_artists(self, collection: Collection, artist_ids: List[int]) -> None:
         """Add artists to a collection using batch operations (optimized)."""
-        try:
-            if not artist_ids:
-                return
+        if not artist_ids:
+            return
 
-            existing_query = select(CollectionArtist.artist_id).filter(
-                CollectionArtist.collection_id == collection.id,
-                CollectionArtist.artist_id.in_(artist_ids)
-            )
-            existing_result = await self.db.execute(existing_query)
-            existing_artist_ids = {row[0] for row in existing_result.all()}
+        existing_query = select(CollectionArtist.artist_id).filter(
+            CollectionArtist.collection_id == collection.id,
+            CollectionArtist.artist_id.in_(artist_ids)
+        )
+        existing_result = await self.db.execute(existing_query)
+        existing_artist_ids = {row[0] for row in existing_result.all()}
 
-            new_artist_ids = [
-                artist_id for artist_id in artist_ids if artist_id not in existing_artist_ids]
+        new_artist_ids = [
+            artist_id for artist_id in artist_ids if artist_id not in existing_artist_ids]
 
-            if not new_artist_ids:
-                existing_associations = await self.db.execute(
-                    select(CollectionArtist).filter(
-                        CollectionArtist.collection_id == collection.id,
-                        CollectionArtist.artist_id.in_(artist_ids)
-                    )
+        if not new_artist_ids:
+            existing_associations = await self.db.execute(
+                select(CollectionArtist).filter(
+                    CollectionArtist.collection_id == collection.id,
+                    CollectionArtist.artist_id.in_(artist_ids)
                 )
-                for assoc in existing_associations.scalars():
-                    # Update only updated_at - never modify created_at
-                    assoc.updated_at = datetime.now(timezone.utc)
-                    if assoc.created_at is None:
-                        assoc.created_at = assoc.updated_at
-                await self.db.flush()
-                return
-
-            artists_query = select(Artist.id).filter(
-                Artist.id.in_(new_artist_ids))
-            artists_result = await self.db.execute(artists_query)
-            valid_artist_ids = {row[0] for row in artists_result.all()}
-
-            if valid_artist_ids:
-                now = datetime.now(timezone.utc)
-                collection_artists = [
-                    CollectionArtist(
-                        collection_id=collection.id,
-                        artist_id=artist_id,
-                        created_at=now,
-                        updated_at=now
-                    )
-                    for artist_id in valid_artist_ids
-                ]
-                self.db.add_all(collection_artists)
-                await self.db.flush()
-
-        except SQLAlchemyError as e:
-            logger.error(f"Error adding artists to collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to add artists to collection",
-                details={}
             )
+            for assoc in existing_associations.scalars():
+                # Update only updated_at - never modify created_at
+                assoc.updated_at = datetime.now(timezone.utc)
+                if assoc.created_at is None:
+                    assoc.created_at = assoc.updated_at
+            await self.db.flush()
+            return
+
+        artists_query = select(Artist.id).filter(
+            Artist.id.in_(new_artist_ids))
+        artists_result = await self.db.execute(artists_query)
+        valid_artist_ids = {row[0] for row in artists_result.all()}
+
+        if valid_artist_ids:
+            now = datetime.now(timezone.utc)
+            collection_artists = [
+                CollectionArtist(
+                    collection_id=collection.id,
+                    artist_id=artist_id,
+                    created_at=now,
+                    updated_at=now
+                )
+                for artist_id in valid_artist_ids
+            ]
+            self.db.add_all(collection_artists)
+            await self.db.flush()
 
     async def remove_artist(self, collection: Collection, artist_id: int) -> bool:
         """Remove a specific artist from a collection."""
-        try:
-            # Delete from association model
-            query = select(CollectionArtist).filter(
-                CollectionArtist.collection_id == collection.id,
-                CollectionArtist.artist_id == artist_id
-            )
-            result = await self.db.execute(query)
-            collection_artist_obj = result.scalar_one_or_none()
+        # Delete from association model
+        query = select(CollectionArtist).filter(
+            CollectionArtist.collection_id == collection.id,
+            CollectionArtist.artist_id == artist_id
+        )
+        result = await self.db.execute(query)
+        collection_artist_obj = result.scalar_one_or_none()
 
-            if collection_artist_obj:
-                await self.db.delete(collection_artist_obj)
-                return True
-            return False
-        except SQLAlchemyError as e:
-            logger.error(f"Error removing artist from collection: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to remove artist from collection",
-                details={}
-            )
+        if collection_artist_obj:
+            await self.db.delete(collection_artist_obj)
+            return True
+        return False
 
     async def get_public_collections(
         self, page: int = 1, limit: int = 10, exclude_user_id: int | None = None, sort_by: str = "updated_at"
     ) -> Tuple[List[Collection], int]:
         """Get all public collections with pagination and sorting.
         Only returns collections with at least one album, artist, or wishlist item."""
-        try:
-            from app.models.like_model import Like
+        from app.models.like_model import Like
 
-            # Build base query
-            query = select(Collection).filter(Collection.is_public.is_(True))
+        # Build base query
+        query = select(Collection).filter(Collection.is_public.is_(True))
 
-            if exclude_user_id:
-                query = query.filter(Collection.owner_id != exclude_user_id)
+        if exclude_user_id:
+            query = query.filter(Collection.owner_id != exclude_user_id)
 
-            # Add subqueries for filtering collections with content
-            # Collections must have at least one album, artist, or wishlist item
-            has_albums = select(1).where(
-                CollectionAlbum.collection_id == Collection.id
-            ).exists()
+        # Add subqueries for filtering collections with content
+        # Collections must have at least one album, artist, or wishlist item
+        has_albums = select(1).where(
+            CollectionAlbum.collection_id == Collection.id
+        ).exists()
 
-            has_artists = select(1).where(
-                CollectionArtist.collection_id == Collection.id
-            ).exists()
+        has_artists = select(1).where(
+            CollectionArtist.collection_id == Collection.id
+        ).exists()
 
-            # For wishlist, we need to check if the owner has any wishlist items
-            # This is more complex as wishlist is user-scoped, not collection-scoped
-            # We'll simplify by checking if collection has albums or artists
+        # For wishlist, we need to check if the owner has any wishlist items
+        # This is more complex as wishlist is user-scoped, not collection-scoped
+        # We'll simplify by checking if collection has albums or artists
 
-            # Combine filters: collection must have albums OR artists
-            query = query.filter(has_albums | has_artists)
+        # Combine filters: collection must have albums OR artists
+        query = query.filter(has_albums | has_artists)
 
-            # Get total count BEFORE applying grouping for likes_count
-            from sqlalchemy import distinct
-            count_query = select(func.count(distinct(Collection.id)))
-            count_query = count_query.filter(Collection.is_public.is_(True))
-            if exclude_user_id:
-                count_query = count_query.filter(
-                    Collection.owner_id != exclude_user_id)
-            count_query = count_query.filter(has_albums | has_artists)
+        # Get total count BEFORE applying grouping for likes_count
+        from sqlalchemy import distinct
+        count_query = select(func.count(distinct(Collection.id)))
+        count_query = count_query.filter(Collection.is_public.is_(True))
+        if exclude_user_id:
+            count_query = count_query.filter(
+                Collection.owner_id != exclude_user_id)
+        count_query = count_query.filter(has_albums | has_artists)
 
-            count_result = await self.db.execute(count_query)
-            total = count_result.scalar()
+        count_result = await self.db.execute(count_query)
+        total = count_result.scalar()
 
-            # Add subqueries for counting albums and artists (optimized for list view)
-            # Works, not pressings: what the collection grid shows
-            albums_count_subq = works_count_in_collection(Collection.id)
+        # Add subqueries for counting albums and artists (optimized for list view)
+        # Works, not pressings: what the collection grid shows
+        albums_count_subq = works_count_in_collection(Collection.id)
 
-            artists_count_subq = (
-                select(func.count(CollectionArtist.artist_id))
-                .where(CollectionArtist.collection_id == Collection.id)
-                .scalar_subquery()
+        artists_count_subq = (
+            select(func.count(CollectionArtist.artist_id))
+            .where(CollectionArtist.collection_id == Collection.id)
+            .scalar_subquery()
+        )
+
+        # Add counts to query (only for list view, not loading full relations)
+        query = query.add_columns(
+            albums_count_subq.label('albums_count'),
+            artists_count_subq.label('artists_count')
+        )
+
+        # Apply sorting based on sort_by parameter
+        if sort_by == "likes_count":
+            # Use LEFT JOIN with likes and COUNT to get all collections (even with 0 likes)
+            query = query.outerjoin(
+                Like,
+                Collection.id == Like.collection_id
             )
-
-            # Add counts to query (only for list view, not loading full relations)
-            query = query.add_columns(
-                albums_count_subq.label('albums_count'),
-                artists_count_subq.label('artists_count')
+            # Group by collection id and scalar subqueries (required by PostgreSQL when using add_columns)
+            # Scalar subqueries depend only on Collection.id, so they're functionally dependent
+            query = query.group_by(
+                Collection.id,
+                albums_count_subq,
+                artists_count_subq
+            ).order_by(
+                func.coalesce(func.count(Like.id), 0).desc()
             )
+        elif sort_by == "created_at":
+            query = query.order_by(Collection.created_at.desc())
+        else:  # default to updated_at
+            query = query.order_by(Collection.updated_at.desc())
 
-            # Apply sorting based on sort_by parameter
-            if sort_by == "likes_count":
-                # Use LEFT JOIN with likes and COUNT to get all collections (even with 0 likes)
-                query = query.outerjoin(
-                    Like,
-                    Collection.id == Like.collection_id
-                )
-                # Group by collection id and scalar subqueries (required by PostgreSQL when using add_columns)
-                # Scalar subqueries depend only on Collection.id, so they're functionally dependent
-                query = query.group_by(
-                    Collection.id,
-                    albums_count_subq,
-                    artists_count_subq
-                ).order_by(
-                    func.coalesce(func.count(Like.id), 0).desc()
-                )
-            elif sort_by == "created_at":
-                query = query.order_by(Collection.created_at.desc())
-            else:  # default to updated_at
-                query = query.order_by(Collection.updated_at.desc())
+        # Apply pagination
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
 
-            # Apply pagination
-            offset = (page - 1) * limit
-            query = query.offset(offset).limit(limit)
+        # Only preload owner (not albums/artists for list view performance)
+        query = query.options(
+            selectinload(Collection.owner)
+        )
 
-            # Only preload owner (not albums/artists for list view performance)
-            query = query.options(
-                selectinload(Collection.owner)
-            )
+        result = await self.db.execute(query)
+        # Handle result with counts: result is a list of tuples (Collection, albums_count, artists_count)
+        rows = result.all()
 
-            result = await self.db.execute(query)
-            # Handle result with counts: result is a list of tuples (Collection, albums_count, artists_count)
-            rows = result.all()
+        if not rows:
+            return [], total
 
-            if not rows:
-                return [], total
+        collections = [row[0] for row in rows]
 
-            collections = [row[0] for row in rows]
+        # Attach counts to collection objects for easy access
+        for collection, albums_count, artists_count in rows:
+            collection.albums_count = albums_count or 0
+            collection.artists_count = artists_count or 0
 
-            # Attach counts to collection objects for easy access
-            for collection, albums_count, artists_count in rows:
-                collection.albums_count = albums_count or 0
-                collection.artists_count = artists_count or 0
-
-            return collections, total
-        except SQLAlchemyError as e:
-            logger.error(f"Error retrieving public collections: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to retrieve public collections",
-                details={}
-            )
+        return collections, total
 
     async def get_preview_images_batch(
         self, collection_ids: List[int], limit: int = 6
@@ -486,53 +388,45 @@ class CollectionRepository(TransactionalMixin):
         """
         if not collection_ids:
             return {}
-        try:
-            # One cover per work: the pressings of a record never show twice in a mosaic
-            covers = (
-                select(
-                    CollectionAlbum.collection_id.label("collection_id"),
-                    CollectionAlbum.album_id.label("album_id"),
-                    Album.image_url.label("image_url"),
-                )
-                .join(Album, Album.id == CollectionAlbum.album_id)
-                .where(
-                    CollectionAlbum.collection_id.in_(collection_ids),
-                    Album.image_url.isnot(None),
-                    Album.image_url != "",
-                )
-                .ext(distinct_on(CollectionAlbum.collection_id, work_key()))
-                .order_by(CollectionAlbum.collection_id, work_key(), CollectionAlbum.album_id)
-                .subquery()
+        # One cover per work: the pressings of a record never show twice in a mosaic
+        covers = (
+            select(
+                CollectionAlbum.collection_id.label("collection_id"),
+                CollectionAlbum.album_id.label("album_id"),
+                Album.image_url.label("image_url"),
             )
-            ranked = (
-                select(
-                    covers.c.collection_id,
-                    covers.c.image_url,
-                    func.row_number().over(
-                        partition_by=covers.c.collection_id,
-                        order_by=func.md5(func.concat(covers.c.album_id, ":", func.current_date())),
-                    ).label("position"),
-                )
-                .subquery()
+            .join(Album, Album.id == CollectionAlbum.album_id)
+            .where(
+                CollectionAlbum.collection_id.in_(collection_ids),
+                Album.image_url.isnot(None),
+                Album.image_url != "",
             )
-            query = (
-                select(ranked.c.collection_id, ranked.c.image_url)
-                .where(ranked.c.position <= limit)
-                .order_by(ranked.c.collection_id, ranked.c.position)
+            .ext(distinct_on(CollectionAlbum.collection_id, work_key()))
+            .order_by(CollectionAlbum.collection_id, work_key(), CollectionAlbum.album_id)
+            .subquery()
+        )
+        ranked = (
+            select(
+                covers.c.collection_id,
+                covers.c.image_url,
+                func.row_number().over(
+                    partition_by=covers.c.collection_id,
+                    order_by=func.md5(func.concat(covers.c.album_id, ":", func.current_date())),
+                ).label("position"),
             )
-            result = await self.db.execute(query)
+            .subquery()
+        )
+        query = (
+            select(ranked.c.collection_id, ranked.c.image_url)
+            .where(ranked.c.position <= limit)
+            .order_by(ranked.c.collection_id, ranked.c.position)
+        )
+        result = await self.db.execute(query)
 
-            preview_images: Dict[int, List[str]] = {}
-            for collection_id, image_url in result.all():
-                preview_images.setdefault(collection_id, []).append(image_url)
-            return preview_images
-        except SQLAlchemyError as e:
-            logger.error(f"Error retrieving collection preview images: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to retrieve collection preview images",
-                details={}
-            )
+        preview_images: Dict[int, List[str]] = {}
+        for collection_id, image_url in result.all():
+            preview_images.setdefault(collection_id, []).append(image_url)
+        return preview_images
 
     async def get_collections_likes_info_batch(self, user_id: int | None, collection_ids: List[int]) -> dict:
         """Get both likes counts and user likes status in a single optimized query."""
@@ -573,139 +467,112 @@ class CollectionRepository(TransactionalMixin):
 
     async def get_user_collections(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Collection], int]:
         """Get user's collections with pagination and optimized relation loading (list view)."""
-        try:
-            # Build base query
-            query = select(Collection).filter(Collection.owner_id == user_id)
+        # Build base query
+        query = select(Collection).filter(Collection.owner_id == user_id)
 
-            # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
-            count_result = await self.db.execute(count_query)
-            total = count_result.scalar()
+        # Get total count
+        count_query = select(func.count()).select_from(query.subquery())
+        count_result = await self.db.execute(count_query)
+        total = count_result.scalar()
 
-            # Add subqueries for counting albums and artists (optimized for list view)
-            # Works, not pressings: what the collection grid shows
-            albums_count_subq = works_count_in_collection(Collection.id)
+        # Add subqueries for counting albums and artists (optimized for list view)
+        # Works, not pressings: what the collection grid shows
+        albums_count_subq = works_count_in_collection(Collection.id)
 
-            artists_count_subq = (
-                select(func.count(CollectionArtist.artist_id))
-                .where(CollectionArtist.collection_id == Collection.id)
-                .scalar_subquery()
-            )
+        artists_count_subq = (
+            select(func.count(CollectionArtist.artist_id))
+            .where(CollectionArtist.collection_id == Collection.id)
+            .scalar_subquery()
+        )
 
-            # Add counts to query (only for list view, not loading full relations)
-            query = query.add_columns(
-                albums_count_subq.label('albums_count'),
-                artists_count_subq.label('artists_count')
-            )
+        # Add counts to query (only for list view, not loading full relations)
+        query = query.add_columns(
+            albums_count_subq.label('albums_count'),
+            artists_count_subq.label('artists_count')
+        )
 
-            # Apply pagination
-            offset = (page - 1) * limit
-            query = query.order_by(Collection.created_at.desc()).offset(
-                offset).limit(limit)
+        # Apply pagination
+        offset = (page - 1) * limit
+        query = query.order_by(Collection.created_at.desc()).offset(
+            offset).limit(limit)
 
-            # Only preload owner (not albums/artists for list view performance)
-            query = query.options(
-                selectinload(Collection.owner)
-            )
+        # Only preload owner (not albums/artists for list view performance)
+        query = query.options(
+            selectinload(Collection.owner)
+        )
 
-            result = await self.db.execute(query)
-            # Handle result with counts: result is a list of tuples (Collection, albums_count, artists_count)
-            rows = result.all()
+        result = await self.db.execute(query)
+        # Handle result with counts: result is a list of tuples (Collection, albums_count, artists_count)
+        rows = result.all()
 
-            if not rows:
-                return [], total
+        if not rows:
+            return [], total
 
-            collections = [row[0] for row in rows]
+        collections = [row[0] for row in rows]
 
-            # Attach counts to collection objects for easy access
-            for collection, albums_count, artists_count in rows:
-                collection.albums_count = albums_count or 0
-                collection.artists_count = artists_count or 0
+        # Attach counts to collection objects for easy access
+        for collection, albums_count, artists_count in rows:
+            collection.albums_count = albums_count or 0
+            collection.artists_count = artists_count or 0
 
-            return collections, total
-        except SQLAlchemyError as e:
-            logger.error(f"Error retrieving user collections: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to retrieve user collections",
-                details={}
-            )
+        return collections, total
 
     async def get_collection_artists_paginated(
         self, collection_id: int, page: int = 1, limit: int = 12, sort_order: str = "newest"
     ) -> Tuple[List[tuple], int]:
         """Get paginated artists from a collection with optimized relation loading."""
-        try:
-            # Determine sort order
-            if sort_order == "oldest":
-                order_clause = CollectionArtist.created_at.asc().nullslast()
-            else:  # default to newest
-                order_clause = CollectionArtist.created_at.desc().nullslast()
+        # Determine sort order
+        if sort_order == "oldest":
+            order_clause = CollectionArtist.created_at.asc().nullslast()
+        else:  # default to newest
+            order_clause = CollectionArtist.created_at.desc().nullslast()
 
-            # Query to get artists with collection_artist metadata, sorted by collection_artist.created_at
-            query = (
-                select(Artist, CollectionArtist)
-                .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
-                .filter(CollectionArtist.collection_id == collection_id)
-                .options(
-                    selectinload(Artist.external_source),
-                )
-                .order_by(order_clause)
+        # Query to get artists with collection_artist metadata, sorted by collection_artist.created_at
+        query = (
+            select(Artist, CollectionArtist)
+            .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
+            .filter(CollectionArtist.collection_id == collection_id)
+            .options(
+                selectinload(Artist.external_source),
             )
+            .order_by(order_clause)
+        )
 
-            # Get total count
-            count_query = select(func.count(CollectionArtist.artist_id)).filter(
-                CollectionArtist.collection_id == collection_id
-            )
-            count_result = await self.db.execute(count_query)
-            total = count_result.scalar()
+        # Get total count
+        count_query = select(func.count(CollectionArtist.artist_id)).filter(
+            CollectionArtist.collection_id == collection_id
+        )
+        count_result = await self.db.execute(count_query)
+        total = count_result.scalar()
 
-            # Apply pagination
-            offset = (page - 1) * limit
-            query = query.offset(offset).limit(limit)
+        # Apply pagination
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
 
-            result = await self.db.execute(query)
-            artists_with_association = result.all()
+        result = await self.db.execute(query)
+        artists_with_association = result.all()
 
-            return artists_with_association, total
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error getting collection artists paginated for collection {collection_id}: {str(e)}",
-                exc_info=True
-            )
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection artists",
-                details={},
-            )
+        return artists_with_association, total
 
     async def get_collection_artists(self, collection_id: int, sort_order: str = "newest") -> List[tuple]:
         """Get all artists from a collection with association metadata (for exports)."""
-        try:
-            if sort_order == "oldest":
-                order_clause = CollectionArtist.created_at.asc().nullslast()
-            else:
-                order_clause = CollectionArtist.created_at.desc().nullslast()
+        if sort_order == "oldest":
+            order_clause = CollectionArtist.created_at.asc().nullslast()
+        else:
+            order_clause = CollectionArtist.created_at.desc().nullslast()
 
-            query = (
-                select(Artist, CollectionArtist)
-                .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
-                .filter(CollectionArtist.collection_id == collection_id)
-                .options(
-                    selectinload(Artist.external_source),
-                )
-                .order_by(order_clause)
+        query = (
+            select(Artist, CollectionArtist)
+            .join(CollectionArtist, Artist.id == CollectionArtist.artist_id)
+            .filter(CollectionArtist.collection_id == collection_id)
+            .options(
+                selectinload(Artist.external_source),
             )
+            .order_by(order_clause)
+        )
 
-            result = await self.db.execute(query)
-            return result.all()
-        except SQLAlchemyError as e:
-            logger.error(f"Error getting collection artists: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to get collection artists",
-                details={},
-            )
+        result = await self.db.execute(query)
+        return result.all()
 
     async def search_collection_items(self, collection_id: int, query: str, search_type: str = "both") -> dict:
         """Search items in a collection. Returns (Album, CollectionAlbum) tuples for albums."""
@@ -748,14 +615,5 @@ class CollectionRepository(TransactionalMixin):
 
     async def refresh(self, collection: Collection) -> Collection:
         """Refresh a collection object from the database."""
-        try:
-            await self.db.refresh(collection)
-            return collection
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error refreshing collection {collection.id}: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=ErrorCode.SERVER_ERROR,
-                message="Failed to refresh collection",
-                details={}
-            )
+        await self.db.refresh(collection)
+        return collection

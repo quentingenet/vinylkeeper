@@ -52,4 +52,3 @@ class AlbumInDB(AlbumBase):
 class AlbumResponse(AlbumInDB):
     """Schema for album data in API responses."""
     collections_count: int = Field(default=0)
-    loans_count: int = Field(default=0)

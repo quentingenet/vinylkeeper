@@ -7,6 +7,7 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import BackgroundTasks
 from sqlalchemy import select
 
 from app.core.exceptions import QuotaExceededError, ResourceNotFoundError, ValidationError
@@ -46,14 +47,18 @@ class TestReportSpot:
     async def test_a_member_reports_and_the_admins_get_an_email(self, real_session, mail):
         user = await make_test_user(real_session)
         spot = await make_spot(real_session)
+        tasks = BackgroundTasks()
 
         await make_service(real_session).report_place(
-            user, spot.id, PlaceReportCreate(issues=["website", "closed"], comment="  Shop closed in 2025  "))
+            user, spot.id, PlaceReportCreate(issues=["website", "closed"], comment="  Shop closed in 2025  "), tasks)
 
         report = (await real_session.execute(
             select(PlaceReport).where(PlaceReport.place_id == spot.id))).scalar_one()
         assert (report.issues, report.comment, report.status, report.user_id) == (
             ["website", "closed"], "Shop closed in 2025", "open", user.id)
+        # The email leaves after the response
+        mail.assert_not_awaited()
+        await tasks()
         assert mail.await_args.kwargs["issues"] == ["website", "closed"]
         assert mail.await_args.kwargs["place_name"] == spot.name
 
@@ -61,27 +66,30 @@ class TestReportSpot:
         user = await make_test_user(real_session)
         spot = await make_spot(real_session)
         service = make_service(real_session)
-        await service.report_place(user, spot.id, PlaceReportCreate(issues=["name"]))
+        await service.report_place(user, spot.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
 
         with pytest.raises(ValidationError, match="already reported"):
-            await service.report_place(user, spot.id, PlaceReportCreate(issues=["address"]))
+            await service.report_place(user, spot.id, PlaceReportCreate(issues=["address"]), BackgroundTasks())
 
     async def test_a_spot_not_on_the_map_cannot_be_reported(self, real_session):
         user = await make_test_user(real_session)
         pending = await make_spot(real_session, moderated=False)
 
         with pytest.raises(ResourceNotFoundError):
-            await make_service(real_session).report_place(user, pending.id, PlaceReportCreate(issues=["name"]))
+            await make_service(real_session).report_place(
+                user, pending.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
 
     async def test_ten_reports_a_day_at_most(self, real_session, monkeypatch):
         monkeypatch.setattr(service_module, "MAX_REPORTS_PER_DAY", 2)
         user = await make_test_user(real_session)
         service = make_service(real_session)
         for _ in range(2):
-            await service.report_place(user, (await make_spot(real_session)).id, PlaceReportCreate(issues=["name"]))
+            await service.report_place(
+                user, (await make_spot(real_session)).id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
 
         with pytest.raises(QuotaExceededError):
-            await service.report_place(user, (await make_spot(real_session)).id, PlaceReportCreate(issues=["name"]))
+            await service.report_place(
+                user, (await make_spot(real_session)).id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
 
     async def test_unknown_issues_are_refused_by_the_database_too(self, real_session):
         spot = await make_spot(real_session)
@@ -98,8 +106,8 @@ class TestAdminHandlesReports:
                                 await make_test_user(real_session))
         spot = await make_spot(real_session)
         service = make_service(real_session)
-        await service.report_place(first, spot.id, PlaceReportCreate(issues=["name"]))
-        await service.report_place(second, spot.id, PlaceReportCreate(issues=["address"]))
+        await service.report_place(first, spot.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
+        await service.report_place(second, spot.id, PlaceReportCreate(issues=["address"]), BackgroundTasks())
         listed = await service.list_reports("open", 1, 50)
         mine = [r for r in listed.items if r.place.id == spot.id]
 
@@ -115,8 +123,8 @@ class TestAdminHandlesReports:
                                 await make_test_user(real_session))
         spot = await make_spot(real_session)
         service = make_service(real_session)
-        await service.report_place(first, spot.id, PlaceReportCreate(issues=["name"]))
-        await service.report_place(second, spot.id, PlaceReportCreate(issues=["name"]))
+        await service.report_place(first, spot.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
+        await service.report_place(second, spot.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
         ids = [r.id for r in (await service.list_reports("open", 1, 500)).items if r.place.id == spot.id]
 
         dismissed = await service.dismiss(ids[0], admin)
@@ -130,7 +138,8 @@ class TestAdminHandlesReports:
         user = await make_test_user(real_session)
         spot = await make_spot(real_session, description="Old text", source_url="https://old.example.com")
         service = make_service(real_session)
-        await service.report_place(user, spot.id, PlaceReportCreate(issues=["description"], comment="New owner"))
+        await service.report_place(
+            user, spot.id, PlaceReportCreate(issues=["description"], comment="New owner"), BackgroundTasks())
 
         [report] = [r for r in (await service.list_reports("open", 1, 500)).items if r.place.id == spot.id]
 
@@ -172,7 +181,7 @@ class TestAdminFixesSpot:
         admin, user = await make_test_user(real_session), await make_test_user(real_session)
         spot = await make_spot(real_session)
         service = make_service(real_session)
-        await service.report_place(user, spot.id, PlaceReportCreate(issues=["closed"]))
+        await service.report_place(user, spot.id, PlaceReportCreate(issues=["closed"]), BackgroundTasks())
 
         await service.remove_place(admin, spot.id)
 

@@ -62,8 +62,8 @@ async def coll_client(mock_user, mock_collection_service):
 
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-            from app.utils.auth_utils.auth import create_token, TokenType
-            c.cookies.set("access_token", create_token(str(mock_user.user_uuid), TokenType.ACCESS))
+            from app.utils.auth_utils.auth import create_access_token
+            c.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
             yield c, mock_collection_service, mock_user
 
     app.dependency_overrides.clear()
@@ -128,45 +128,6 @@ class TestCreateCollection:
         client, *_ = coll_client
         resp = await client.post("/api/collections/add", json={})
         assert resp.status_code == 422
-
-
-# ---------------------------------------------------------------------------
-# GET /api/collections/{collection_id}
-# ---------------------------------------------------------------------------
-
-class TestGetCollectionById:
-    async def test_success_returns_200(self, coll_client):
-        client, service, user = coll_client
-        col = _make_collection(owner_id=user.id, is_public=True)
-        service.get_collection_by_id = AsyncMock(return_value=col)
-
-        resp = await client.get("/api/collections/1")
-
-        assert resp.status_code == 200
-
-    async def test_not_found_returns_404(self, coll_client):
-        client, service, _ = coll_client
-        service.get_collection_by_id = AsyncMock(
-            side_effect=ResourceNotFoundError("Collection", 99)
-        )
-
-        resp = await client.get("/api/collections/99")
-
-        assert resp.status_code == 404
-        assert resp.json()["code"] == 2000
-
-    async def test_private_foreign_returns_403(self, coll_client):
-        client, service, _ = coll_client
-        service.get_collection_by_id = AsyncMock(side_effect=ForbiddenError())
-
-        resp = await client.get("/api/collections/5")
-
-        assert resp.status_code == 403
-        assert resp.json()["code"] == 4030
-
-    async def test_no_auth_returns_401(self, client):
-        resp = await client.get("/api/collections/1")
-        assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -266,8 +227,7 @@ class TestLikeUnlikeCollection:
 class TestUpdateCollection:
     async def test_success_returns_200(self, coll_client):
         client, service, _ = coll_client
-        updated = _make_collection()
-        service.update_collection = AsyncMock(return_value=updated)
+        service.update_collection = AsyncMock(return_value=None)
 
         resp = await client.patch("/api/collections/update/1", json={
             "name": "Renamed Collection",
@@ -524,3 +484,30 @@ class TestSharedCollection:
 
         for path in ("/api/collections/7/details", "/api/collections/7/records", "/api/collections/7/artists"):
             assert (await client.get(path)).status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Unexpected errors: one 500 body, from the global handler
+# ---------------------------------------------------------------------------
+
+class TestUnexpectedErrors:
+    async def test_a_database_failure_in_a_service_answers_the_generic_500(self, mock_user, mock_collection_service):
+        from httpx import AsyncClient, ASGITransport
+        from sqlalchemy.exc import OperationalError
+        from app.utils.auth_utils.auth import create_access_token
+
+        mock_collection_service.delete_collection = AsyncMock(
+            side_effect=OperationalError("DELETE", {}, Exception("connection lost")))
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_collection_service] = lambda: mock_collection_service
+        try:
+            # raise_app_exceptions=False: Starlette re-raises after sending the 500, as in production
+            transport = ASGITransport(app=app, raise_app_exceptions=False)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                client.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
+                resp = await client.delete("/api/collections/1")
+        finally:
+            app.dependency_overrides.clear()
+
+        assert resp.status_code == 500
+        assert resp.json() == {"code": 5000, "message": "An unexpected error occurred", "details": {}}

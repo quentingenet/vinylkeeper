@@ -22,7 +22,6 @@ from app.services.moderation_service import ModerationService
 from app.services.place_report_service import PlaceReportService
 from app.deps.deps import get_moderation_service, get_place_report_service, require_admin
 from app.models.user_model import User
-from app.utils.endpoint_utils import handle_app_exceptions
 from app.core.logging import log_activity
 
 router = APIRouter()
@@ -34,7 +33,6 @@ def _spot(request: ModerationRequestResponse) -> str:
 
 
 @router.get("/moderation-requests", response_model=ModerationRequestListResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def get_moderation_requests(
     user: User = Depends(require_admin),
     service: ModerationService = Depends(get_moderation_service),
@@ -50,7 +48,6 @@ async def get_moderation_requests(
     response_model=PaginatedModerationRequestResponse,
     status_code=status.HTTP_200_OK
 )
-@handle_app_exceptions
 async def get_pending_moderation_requests(
     user: User = Depends(require_admin),
     service: ModerationService = Depends(get_moderation_service),
@@ -66,7 +63,6 @@ async def get_pending_moderation_requests(
     response_model=ModerationRequestResponse,
     status_code=status.HTTP_200_OK
 )
-@handle_app_exceptions
 async def get_moderation_request_by_id(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
     user: User = Depends(require_admin),
@@ -82,7 +78,6 @@ async def get_moderation_request_by_id(
     response_model=ModerationRequestResponse,
     status_code=status.HTTP_200_OK
 )
-@handle_app_exceptions
 async def approve_moderation_request(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
     user: User = Depends(require_admin),
@@ -99,7 +94,6 @@ async def approve_moderation_request(
     response_model=ModerationRequestResponse,
     status_code=status.HTTP_200_OK
 )
-@handle_app_exceptions
 async def reject_moderation_request(
     request_id: int = Path(..., gt=0, title="Moderation Request ID"),
     user: User = Depends(require_admin),
@@ -112,7 +106,6 @@ async def reject_moderation_request(
 
 
 @router.get("/moderation-stats", response_model=ModerationStatsResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def get_moderation_stats(
     user: User = Depends(require_admin),
     service: ModerationService = Depends(get_moderation_service)
@@ -123,7 +116,6 @@ async def get_moderation_stats(
 
 
 @router.get("/place-reports", response_model=PlaceReportListResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def get_place_reports(
     report_status: Literal["open", "resolved", "dismissed", "all"] = Query("open", alias="status"),
     page: int = Query(1, gt=0),
@@ -136,7 +128,6 @@ async def get_place_reports(
 
 
 @router.post("/place-reports/{report_id}/resolve", response_model=PlaceReportResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def resolve_place_report(
     report_id: int = Path(..., gt=0),
     user: User = Depends(require_admin),
@@ -150,7 +141,6 @@ async def resolve_place_report(
 
 
 @router.post("/place-reports/{report_id}/dismiss", response_model=PlaceReportResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def dismiss_place_report(
     report_id: int = Path(..., gt=0),
     user: User = Depends(require_admin),
@@ -163,7 +153,6 @@ async def dismiss_place_report(
 
 
 @router.patch("/places/{place_id}", response_model=ReportedPlace, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def update_place_as_admin(
     place_id: int = Path(..., gt=0),
     data: PlaceUpdate = Body(...),
@@ -175,7 +164,6 @@ async def update_place_as_admin(
 
 
 @router.delete("/places/{place_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
 async def remove_place_as_admin(
     place_id: int = Path(..., gt=0),
     user: User = Depends(require_admin),

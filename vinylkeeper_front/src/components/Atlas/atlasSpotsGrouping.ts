@@ -1,6 +1,6 @@
 import type { PlaceMapResponse } from "@services/AtlasApiService";
 
-export interface CityGroup {
+interface CityGroup {
   city: string;
   spots: PlaceMapResponse[];
 }

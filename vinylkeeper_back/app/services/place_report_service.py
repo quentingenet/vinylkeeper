@@ -2,6 +2,7 @@
 Members report wrong information on an Atlas spot; the admin fixes the spot from the admin panel,
 without touching the database by hand.
 """
+from fastapi import BackgroundTasks
 from datetime import timedelta
 from typing import Optional
 
@@ -53,7 +54,9 @@ class PlaceReportService:
         self.repository = repository
         self.atlas_repository = atlas_repository
 
-    async def report_place(self, user: User, place_id: int, data: PlaceReportCreate) -> None:
+    async def report_place(
+        self, user: User, place_id: int, data: PlaceReportCreate, background_tasks: BackgroundTasks
+    ) -> None:
         """A member reports a spot of the Atlas; the admins get an email."""
         place = await self.atlas_repository.get_place_by_id(place_id)
         if not place.is_moderated:
@@ -70,7 +73,12 @@ class PlaceReportService:
             # The same member reporting twice at once: the unique open report wins
             raise self._already_reported()
         log_activity(user.username, f"reported Atlas spot #{place_id} {place.name!r} ({', '.join(data.issues)})")
-        await self._notify_admin(place, user, data)
+        # After the response: a slow SMTP must not hold the request
+        background_tasks.add_task(
+            self._notify_admin, place.id,
+            place_name=place.name, place_city=place.city, place_country=place.country,
+            issues=data.issues, username=user.username, user_email=user.email, comment=data.comment,
+        )
 
     @staticmethod
     def _already_reported() -> ValidationError:
@@ -79,18 +87,15 @@ class PlaceReportService:
             message="You already reported this spot: an admin will check it.",
         )
 
-    async def _notify_admin(self, place: Place, user: User, data: PlaceReportCreate) -> None:
-        """Never raises: the report is already saved and listed in the admin panel."""
+    @staticmethod
+    async def _notify_admin(place_id: int, **mail_fields) -> None:
+        """Background task, plain values only. Never raises: the report is already saved and listed."""
         try:
-            sent = await send_mail(
-                to=settings.EMAIL_ADMIN, subject=MailSubject.AtlasSpotReported,
-                place_name=place.name, place_city=place.city, place_country=place.country,
-                issues=data.issues, username=user.username, user_email=user.email, comment=data.comment,
-            )
+            sent = await send_mail(to=settings.EMAIL_ADMIN, subject=MailSubject.AtlasSpotReported, **mail_fields)
             if not sent:
-                logger.warning("Atlas spot report email could not be sent for place_id=%s", place.id)
+                logger.warning("Atlas spot report email could not be sent for place_id=%s", place_id)
         except Exception as mail_error:
-            logger.error("Atlas spot report email failed for place_id=%s: %s", place.id, mail_error)
+            logger.error("Atlas spot report email failed for place_id=%s: %s", place_id, mail_error)
 
     async def list_reports(self, status: Optional[str], page: int, limit: int) -> PlaceReportListResponse:
         reports, total = await self.repository.list_reports(status, page, limit)

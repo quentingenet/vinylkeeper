@@ -16,7 +16,7 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.db.session import get_db
-from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
+from app.utils.auth_utils.auth import get_current_user, create_access_token
 
 from tests.integration.conftest import make_real_test_user as make_test_user
 from tests.integration.test_real_db_relationships import make_test_collection
@@ -37,7 +37,7 @@ async def make_http_client(real_session, current_user):
     app.dependency_overrides[get_current_user] = override_current_user
 
     client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
-    token = create_token(str(current_user.user_uuid), TokenType.ACCESS)
+    token = create_access_token(str(current_user.user_uuid))
     client.cookies.set("access_token", token)
     return client
 

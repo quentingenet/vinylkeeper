@@ -1,11 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import SQLAlchemyError
 from app.models.album_model import Album
 from typing import Optional
-from app.core.exceptions import ServerError
-from app.core.logging import logger
 from app.core.transaction import TransactionalMixin
 
 
@@ -15,81 +12,13 @@ class AlbumRepository(TransactionalMixin):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, album_id: int) -> Optional[Album]:
-        """Get an album by ID"""
-        try:
-            query = select(Album).filter(Album.id == album_id)
-            result = await self.db.execute(query)
-            return result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            logger.error(f"Error retrieving album {album_id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get album by id",
-                details={}
-            )
-
     async def get_by_external_id(self, external_album_id: str, external_source_id: int) -> Optional[Album]:
         """Get an album by external ID and source with relations loaded"""
-        try:
-            query = select(Album).options(
-                selectinload(Album.external_source)
-            ).filter(
-                Album.external_album_id == external_album_id,
-                Album.external_source_id == external_source_id
-            )
-            result = await self.db.execute(query)
-            return result.scalar_one_or_none()
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error retrieving album by external ID {external_album_id} from source {external_source_id}: {str(e)}"
-            )
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get album by external id",
-                details={}
-            )
-
-    async def create(self, album: Album) -> Album:
-        """Create a new album without committing (transaction managed by service)."""
-        try:
-            await self._add_entity(album, flush=True)
-            await self._refresh_entity(album)
-            # external_source is lazy="raise"; callers (wishlist_service,
-            # external_reference_service) read it right after create().
-            await self.db.refresh(album, attribute_names=["external_source"])
-            return album
-        except SQLAlchemyError as e:
-            logger.error(f"Error creating album: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to create album",
-                details={}
-            )
-
-    async def update(self, album: Album) -> Album:
-        """Update an album without committing (transaction managed by service)."""
-        try:
-            await self._add_entity(album, flush=True)
-            await self._refresh_entity(album)
-            return album
-        except SQLAlchemyError as e:
-            logger.error(f"Error updating album {album.id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to update album",
-                details={}
-            )
-
-    async def delete(self, album: Album) -> bool:
-        """Delete an album without committing (transaction managed by service)."""
-        try:
-            await self._delete_entity(album)
-            return True
-        except SQLAlchemyError as e:
-            logger.error(f"Error deleting album {album.id}: {str(e)}")
-            raise ServerError(
-                error_code=5000,
-                message="Failed to delete album",
-                details={}
-            )
+        query = select(Album).options(
+            selectinload(Album.external_source)
+        ).filter(
+            Album.external_album_id == external_album_id,
+            Album.external_source_id == external_source_id
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()

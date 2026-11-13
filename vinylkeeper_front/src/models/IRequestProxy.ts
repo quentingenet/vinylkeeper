@@ -1,4 +1,4 @@
-export interface SearchQuery {
+interface SearchQuery {
   query: string;
   is_artist: boolean;
   page?: number;
@@ -12,7 +12,7 @@ export interface SearchResultsPage {
   total_pages: number;
 }
 
-export interface Artist {
+interface Artist {
   uuid: string;
   id: string;
   title?: string;
@@ -57,7 +57,7 @@ export interface DiscogsData {
   master_id?: string | null;
 }
 
-export interface Track {
+interface Track {
   position: string;
   title: string;
   duration: string;

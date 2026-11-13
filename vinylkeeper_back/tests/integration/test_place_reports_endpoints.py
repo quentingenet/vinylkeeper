@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 from app.deps.deps import get_place_report_service, require_admin
 from app.main import app
 from app.schemas.place_report_schema import PlaceReportListResponse, PlaceReportResponse, ReportedPlace
-from app.utils.auth_utils.auth import TokenType, create_token, get_current_user
+from app.utils.auth_utils.auth import create_access_token, get_current_user
 
 SPOT = ReportedPlace(id=3, name="Shop", address="1 Street", city="Paris", country="France",
                      place_type_id=1, place_type="record_store", is_valid=True, is_moderated=True)
@@ -30,7 +30,7 @@ async def member_client(mock_user, service):
     app.dependency_overrides[get_place_report_service] = lambda: service
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            client.cookies.set("access_token", create_token(str(mock_user.user_uuid), TokenType.ACCESS))
+            client.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
             yield client
     app.dependency_overrides.clear()
 
@@ -48,7 +48,7 @@ class TestMemberReports:
 
         assert response.status_code == 201
         assert response.json() == {"message": "Thanks, an admin will check this spot."}
-        user, place_id, data = service.report_place.await_args.args
+        user, place_id, data, _background_tasks = service.report_place.await_args.args
         assert (user, place_id, data.issues, data.comment) == (mock_user, 3, ["website", "closed"], "Closed")
 
     @pytest.mark.parametrize("payload", [{"issues": []}, {"issues": ["price"]}, {"issues": ["name"], "x": 1},

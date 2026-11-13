@@ -1,6 +1,6 @@
 import { VinylStateEnum } from "@utils/GlobalUtils";
 
-export interface AlbumStateData {
+interface AlbumStateData {
   state_cover?: VinylStateEnum | null;
   state_record?: VinylStateEnum | null;
   acquisition_month_year?: string | null;
@@ -75,7 +75,7 @@ export interface WishlistItemResponse {
 }
 
 /** A card of the wishlist: a work (the pressings of one Discogs master), or an artist */
-export interface WishlistItemListResponse {
+interface WishlistItemListResponse {
   id: number;
   entity_type: string;
   external_id: string;
@@ -104,7 +104,7 @@ export interface PaginatedWishlistResponse {
   total_pages: number;
 }
 
-export interface CollectionItemResponse {
+interface CollectionItemResponse {
   id: number;
   external_id: string;
   entity_type: string;

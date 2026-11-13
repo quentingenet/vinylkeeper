@@ -35,7 +35,6 @@ from app.services.discogs_oauth_service import (
 )
 from app.core.exceptions import AppException, ErrorCode, ServerError, ValidationError
 from app.utils.auth_utils.auth import bearer_token, get_current_user, get_refresh_user
-from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
@@ -60,7 +59,6 @@ async def browser_user_id(request: Request, db) -> Optional[int]:
 
 
 @router.get("/connection", response_model=DiscogsConnectionStatus)
-@handle_app_exceptions
 async def get_discogs_connection(
     request: Request,
     current_user: User = Depends(get_current_user),
@@ -77,7 +75,6 @@ async def get_discogs_connection(
 
 
 @router.post("/connect", response_model=DiscogsAuthorizeResponse)
-@handle_app_exceptions
 async def connect_discogs(
     request: Request,
     current_user: User = Depends(get_current_user),
@@ -92,7 +89,6 @@ async def connect_discogs(
 
 
 @router.post("/oauth/complete", response_model=DiscogsConnectionStatus)
-@handle_app_exceptions
 async def complete_discogs_connection(
     data: DiscogsOAuthComplete,
     request: Request,
@@ -151,7 +147,6 @@ async def discogs_oauth_callback(
 
 
 @router.delete("/connection", status_code=status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
 async def disconnect_discogs(
     current_user: User = Depends(get_current_user),
     oauth: DiscogsOAuthService = Depends(get_oauth_service),
@@ -163,7 +158,6 @@ async def disconnect_discogs(
 
 
 @router.get("/preview", response_model=DiscogsImportPreview)
-@handle_app_exceptions
 async def preview_discogs_collection(
     request: Request,
     current_user: User = Depends(get_current_user),
@@ -190,7 +184,6 @@ async def preview_discogs_collection(
 
 
 @router.post("/", response_model=DiscogsImportResponse, status_code=status.HTTP_202_ACCEPTED)
-@handle_app_exceptions
 async def start_discogs_import(
     data: DiscogsImportCreate,
     background_tasks: BackgroundTasks,
@@ -212,7 +205,6 @@ async def start_discogs_import(
 
 
 @router.get("/latest", response_model=Optional[DiscogsImportResponse])
-@handle_app_exceptions
 async def get_latest_discogs_import(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),

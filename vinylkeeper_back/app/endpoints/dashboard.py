@@ -11,13 +11,11 @@ from app.services.album_price_service import run_price_requests
 from app.services.dashboard_service import DashboardService
 from app.deps.deps import get_dashboard_service
 from app.utils.auth_utils.auth import get_current_user
-from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
 
 @router.get("/stats", response_model=DashboardStatsResponse)
-@handle_app_exceptions
 async def get_dashboard_stats(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
     user=Depends(get_current_user)
@@ -26,7 +24,6 @@ async def get_dashboard_stats(
 
 
 @router.get("/breakdown", response_model=CollectionBreakdownResponse)
-@handle_app_exceptions
 async def get_collection_breakdown(
     collection_id: Optional[int] = Query(None, gt=0, description="One of the user's collections, all if omitted"),
     dashboard_service: DashboardService = Depends(get_dashboard_service),
@@ -37,7 +34,6 @@ async def get_collection_breakdown(
 
 
 @router.get("/value", response_model=CollectionValueResponse)
-@handle_app_exceptions
 async def get_collection_value(
     collection_id: Optional[int] = Query(None, gt=0, description="One of the user's collections"),
     all_collections: bool = Query(False, alias="all", description="Every collection of the user"),
@@ -49,7 +45,6 @@ async def get_collection_value(
 
 
 @router.post("/value/refresh", response_model=ValueRefreshResponse)
-@handle_app_exceptions
 async def refresh_collection_value(
     background_tasks: BackgroundTasks,
     dashboard_service: DashboardService = Depends(get_dashboard_service),

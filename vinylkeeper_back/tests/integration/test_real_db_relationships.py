@@ -15,13 +15,10 @@ though the application code under test calls session.commit() internally via
 transaction_context(), that only releases the SAVEPOINT, not the outer transaction.
 """
 import uuid
-import pytest
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.collection_model import Collection
-from app.models.collection_album import CollectionAlbum
-from app.models.association_tables import CollectionArtist
 from app.models.album_model import Album
 
 from app.repositories.collection_repository import CollectionRepository
@@ -34,9 +31,8 @@ from app.repositories.artist_repository import ArtistRepository
 
 from app.services.collection_service import CollectionService
 from app.services.external_reference_service import ExternalReferenceService
-
-
-from tests.integration.conftest import make_real_test_user as make_test_user
+# Shared with the other real-database test modules, which import it from here
+from tests.integration.conftest import make_real_test_user as make_test_user  # noqa: F401
 
 
 def make_collection_service(session: AsyncSession) -> CollectionService:
@@ -82,71 +78,3 @@ async def pick_existing_album_id(session: AsyncSession) -> int:
     return (await session.execute(select(Album.id).limit(1))).scalar_one()
 
 
-class TestGetCollectionByIdRealData:
-    async def test_existing_collection_with_albums_and_artists_loads_without_crashing(self, real_session):
-        """Regression test for the whole lazy="raise" migration: finds a real
-        collection that already has both albums and artists, and confirms
-        CollectionService.get_collection_by_id builds a full response without
-        InvalidRequestError/MissingGreenlet on any relation."""
-        candidate_id = (
-            await real_session.execute(
-                select(Collection.id)
-                .join(CollectionAlbum, CollectionAlbum.collection_id == Collection.id)
-                .join(CollectionArtist, CollectionArtist.collection_id == Collection.id)
-                .group_by(Collection.id)
-                .having(func.count(func.distinct(CollectionAlbum.album_id)) > 0)
-                .having(func.count(func.distinct(CollectionArtist.artist_id)) > 0)
-                .limit(1)
-            )
-        ).scalar_one_or_none()
-
-        if candidate_id is None:
-            pytest.skip("No collection with both non-empty albums and artists found in this dataset")
-
-        collection_row = (
-            await real_session.execute(select(Collection).filter(Collection.id == candidate_id))
-        ).scalar_one()
-
-        service = make_collection_service(real_session)
-        response = await service.get_collection_by_id(collection_id=candidate_id, user_id=collection_row.owner_id)
-
-        assert response.id == candidate_id
-        assert len(response.albums) > 0
-        assert len(response.artists) > 0
-        # exercises collection_artist.artist and album.external_source specifically
-        assert response.artists[0].external_source is not None
-        assert response.albums[0].external_source is not None
-
-
-class TestRemoveFromCollectionRealData:
-    async def test_remove_album_from_collection(self, real_session):
-        user = await make_test_user(real_session)
-        collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
-        external_album_id = (
-            await real_session.execute(select(Album.external_album_id).filter(Album.id == album_id))
-        ).scalar_one()
-
-        await put_album_in_collection(real_session, collection.id, album_id)
-
-        from app.core.enums import EntityTypeEnum
-
-        ext_service = make_external_reference_service(real_session)
-        result = await ext_service.remove_from_collection(
-            user_id=user.id,
-            collection_id=collection.id,
-            external_id=external_album_id,
-            entity_type=EntityTypeEnum.ALBUM,
-        )
-
-        assert result is True
-
-        remaining = (
-            await real_session.execute(
-                select(CollectionAlbum).filter(
-                    CollectionAlbum.collection_id == collection.id,
-                    CollectionAlbum.album_id == album_id,
-                )
-            )
-        ).scalar_one_or_none()
-        assert remaining is None

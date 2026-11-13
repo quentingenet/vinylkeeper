@@ -64,7 +64,6 @@ def album_to_collection_album_response(album, collection_album=None) -> Collecti
         created_at=created_at,
         updated_at=updated_at,
         collections_count=album.collections_count,
-        loans_count=album.loans_count,
         wishlist_count=album.wishlist_count,
         copies=copies,
         copies_count=len(copies),

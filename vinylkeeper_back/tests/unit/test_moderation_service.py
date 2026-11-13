@@ -115,14 +115,14 @@ class TestUpdateModerationRequestStatus:
 
         place_repo.update_place.assert_not_awaited()
 
-    async def test_generic_exception_raises_server_error(self):
+    async def test_unexpected_error_reaches_the_global_handler(self):
         service, mod_repo, place_repo = make_service()
         req = make_request_model(place_id=42)
         mod_repo.get_request_by_id = AsyncMock(return_value=req)
         mod_repo.get_moderation_status_by_name = AsyncMock(return_value=make_status())
         mod_repo.update_request = AsyncMock(side_effect=RuntimeError("DB failure"))
 
-        with pytest.raises(ServerError, match="Failed to update moderation request status"):
+        with pytest.raises(RuntimeError, match="DB failure"):
             await service.update_moderation_request_status(1, ModerationStatusEnum.APPROVED.value, admin_user_id=1)
 
 

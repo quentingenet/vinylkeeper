@@ -1,26 +1,25 @@
 import { logger } from "@utils/logger";
 import { userApiService, type UserResponse } from "@services/UserApiService";
+import { isSessionRefused } from "@utils/apiError";
 import {
   createContext,
   useContext,
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SESSION_KEY = "vk_has_session";
+const STARTUP_RETRY_MS = 5000;
 
 interface IUserContext {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
   isUserLoggedIn: boolean | null;
   setIsUserLoggedIn: (isLoggedIn: boolean) => void;
-  isFirstConnection: boolean;
-  setIsFirstConnection: (isFirstConnection: boolean) => void;
-  openDialog: boolean;
-  setOpenDialog: (openDialog: boolean) => void;
   logout: () => void;
   currentUser: UserResponse | null;
   setCurrentUser: (user: UserResponse | null) => void;
@@ -37,10 +36,6 @@ export const UserContext = createContext<IUserContext>({
   setIsLoading: () => {},
   isUserLoggedIn: null,
   setIsUserLoggedIn: () => {},
-  isFirstConnection: false,
-  setIsFirstConnection: () => {},
-  openDialog: false,
-  setOpenDialog: () => {},
   logout: () => {},
   currentUser: null,
   setCurrentUser: () => {},
@@ -59,35 +54,53 @@ export function UserContextProvider({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
-  const [isFirstConnection, setIsFirstConnection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
 
-  const checkUserLoggedIn = useCallback(async () => {
+  // Latest login state, read by checkUserLoggedIn without making it change on every login change
+  const isUserLoggedInRef = useRef<boolean | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped to check the session again when the first check could not reach the server
+  const [startupAttempt, setStartupAttempt] = useState(0);
+
+  useEffect(() => {
+    isUserLoggedInRef.current = isUserLoggedIn;
+  }, [isUserLoggedIn]);
+
+  useEffect(
+    () => () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    },
+    []
+  );
+
+  const checkUserLoggedIn = useCallback(async (): Promise<void> => {
     if (!localStorage.getItem(SESSION_KEY)) {
       setIsUserLoggedIn(false);
       return;
     }
     try {
       const { isLoggedIn } = await userApiService.refreshToken();
-      setIsUserLoggedIn(isLoggedIn);
-      if (isLoggedIn) {
-        try {
-          const user = await userApiService.getCurrentUser();
-          setCurrentUser(user);
-        } catch (error) {
-          logger.error("Error fetching current user:", error);
-          setIsUserLoggedIn(false);
-          setCurrentUser(null);
-        }
-      } else {
+      if (!isLoggedIn) {
+        setIsUserLoggedIn(false);
         setCurrentUser(null);
+        return;
       }
+      const user = await userApiService.getCurrentUser();
+      setCurrentUser(user);
+      setIsUserLoggedIn(true);
     } catch (error) {
       logger.error("Error while checking user logged in:", error);
-      setIsUserLoggedIn(false);
-      setCurrentUser(null);
+      if (isSessionRefused(error)) {
+        setIsUserLoggedIn(false);
+        setCurrentUser(null);
+        return;
+      }
+      // Offline or server down: the session may still be valid, so the current state stays. At
+      // startup that state is still unknown (the loader): try again shortly
+      if (isUserLoggedInRef.current === null) {
+        retryTimerRef.current = setTimeout(() => setStartupAttempt((n) => n + 1), STARTUP_RETRY_MS);
+      }
     }
   }, []);
 
@@ -120,7 +133,7 @@ export function UserContextProvider({
 
   useEffect(() => {
     void checkUserLoggedIn();
-  }, [checkUserLoggedIn]);
+  }, [checkUserLoggedIn, startupAttempt]);
 
   // Token refresh interval, active only while logged in
   useEffect(() => {
@@ -134,10 +147,6 @@ export function UserContextProvider({
     setIsLoading,
     isUserLoggedIn,
     setIsUserLoggedIn,
-    isFirstConnection,
-    setIsFirstConnection,
-    openDialog,
-    setOpenDialog,
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     logout,
     currentUser,

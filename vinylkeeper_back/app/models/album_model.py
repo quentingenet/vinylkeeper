@@ -81,11 +81,10 @@ class Album(Base):
 
     # Non-mapped aggregated counts, populated by repository queries
     collections_count = 0
-    loans_count = 0
     wishlist_count = 0
 
     # raise: dead relation (0 read sites), the other end of the
-    # Collection <-> Album reload loop. AlbumRepository.delete() is unused,
+    # Collection <-> Album reload loop. Albums are never deleted by the app,
     # so the delete-orphan cascade never needs this loaded.
     album_collections = relationship(
         "CollectionAlbum",

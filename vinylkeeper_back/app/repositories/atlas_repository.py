@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, or_, select, func, case
+from sqlalchemy import and_, select, func, case
 from sqlalchemy.orm import selectinload
 
 from app.models.place_model import Place
@@ -15,46 +15,6 @@ class AtlasRepository(TransactionalMixin):
 
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    async def get_all_places(self, limit: int | None = None, offset: int | None = None) -> List[Place]:
-        """Get all places with optional pagination."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(Place.is_valid.is_(True))
-
-        if offset:
-            query = query.offset(offset)
-        if limit:
-            query = query.limit(limit)
-
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def count_all_moderated_places(self) -> int:
-        """Count all moderated places."""
-        query = select(func.count(Place.id)).filter(
-            and_(Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one()
-
-    async def get_all_moderated_places(self, limit: int | None = None, offset: int | None = None) -> List[Place]:
-        """Get all moderated places with optional pagination."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        ).order_by(Place.name)
-
-        if offset is not None and offset > 0:
-            query = query.offset(offset)
-        if limit is not None:
-            query = query.limit(limit)
-
-        result = await self.db.execute(query)
-        return result.scalars().all()
 
     async def get_map_places(self) -> List[tuple]:
         """
@@ -163,117 +123,6 @@ class AtlasRepository(TransactionalMixin):
         place.is_valid = False
         await self._add_entity(place)
         return True
-
-    async def count_moderated_places_by_type(self, place_type_id: int) -> int:
-        """Count all moderated places of a specific type."""
-        query = select(func.count(Place.id)).filter(
-            and_(Place.place_type_id == place_type_id,
-                 Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one()
-
-    async def get_moderated_places_by_type(
-        self, place_type_id: int, limit: int | None = None, offset: int | None = None
-    ) -> List[Place]:
-        """Get all moderated places of a specific type."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(Place.place_type_id == place_type_id,
-                 Place.is_valid.is_(True), Place.is_moderated.is_(True))
-        ).order_by(Place.name)
-        if offset is not None and offset > 0:
-            query = query.offset(offset)
-        if limit is not None:
-            query = query.limit(limit)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def count_moderated_places_by_search(self, search_term: str) -> int:
-        """Count moderated places matching a search term."""
-        query = select(func.count(Place.id)).filter(
-            and_(
-                Place.is_valid.is_(True),
-                Place.is_moderated.is_(True),
-                or_(
-                    Place.name.ilike(f"%{search_term}%"),
-                    Place.city.ilike(f"%{search_term}%"),
-                    Place.country.ilike(f"%{search_term}%")
-                )
-            )
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one()
-
-    async def search_moderated_places(
-        self, search_term: str, limit: int | None = None, offset: int | None = None
-    ) -> List[Place]:
-        """Search moderated places by name, city, or country."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(
-                Place.is_valid.is_(True),
-                Place.is_moderated.is_(True),
-                or_(
-                    Place.name.ilike(f"%{search_term}%"),
-                    Place.city.ilike(f"%{search_term}%"),
-                    Place.country.ilike(f"%{search_term}%")
-                )
-            )
-        ).order_by(Place.name)
-        if offset is not None and offset > 0:
-            query = query.offset(offset)
-        if limit is not None:
-            query = query.limit(limit)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def count_moderated_places_in_region(
-        self, min_lat: float, max_lat: float, min_lng: float, max_lng: float
-    ) -> int:
-        """Count moderated places within a geographic region."""
-        query = select(func.count(Place.id)).filter(
-            and_(
-                Place.is_valid.is_(True),
-                Place.is_moderated.is_(True),
-                Place.latitude >= min_lat,
-                Place.latitude <= max_lat,
-                Place.longitude >= min_lng,
-                Place.longitude <= max_lng
-            )
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one()
-
-    async def get_moderated_places_in_region(
-        self,
-        min_lat: float, max_lat: float, min_lng: float, max_lng: float,
-        limit: int | None = None, offset: int | None = None
-    ) -> List[Place]:
-        """Get moderated places within a geographic region."""
-        query = select(Place).options(
-            selectinload(Place.place_type),
-            selectinload(Place.submitted_by)
-        ).filter(
-            and_(
-                Place.is_valid.is_(True),
-                Place.is_moderated.is_(True),
-                Place.latitude >= min_lat,
-                Place.latitude <= max_lat,
-                Place.longitude >= min_lng,
-                Place.longitude <= max_lng
-            )
-        ).order_by(Place.name)
-        if offset is not None and offset > 0:
-            query = query.offset(offset)
-        if limit is not None:
-            query = query.limit(limit)
-        result = await self.db.execute(query)
-        return result.scalars().all()
 
     async def like_place(self, user_id: int, place_id: int) -> PlaceLike:
         """Like a place for a user without committing (transaction managed by service)."""

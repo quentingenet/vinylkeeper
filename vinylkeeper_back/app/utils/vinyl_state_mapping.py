@@ -44,22 +44,4 @@ class VinylStateMapping:
             return None
         return cls._ID_TO_NAME.get(state_id)
 
-    @classmethod
-    def get_all_names(cls) -> list[str]:
-        """Get all available vinyl state names"""
-        return list(cls._NAME_TO_ID.keys())
 
-    @classmethod
-    def get_all_ids(cls) -> list[int]:
-        """Get all available vinyl state IDs"""
-        return list(cls._ID_TO_NAME.keys())
-
-    @classmethod
-    def is_valid_name(cls, name: str) -> bool:
-        """Check if a vinyl state name is valid"""
-        return name.lower() in cls._NAME_TO_ID
-
-    @classmethod
-    def is_valid_id(cls, state_id: int) -> bool:
-        """Check if a vinyl state ID is valid"""
-        return state_id in cls._ID_TO_NAME

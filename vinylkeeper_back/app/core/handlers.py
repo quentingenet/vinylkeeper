@@ -3,7 +3,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from app.core.exceptions import AppException
+from app.core.exceptions import AppException, ErrorCode
 from app.core.config_env import settings
 from app.core.logging import logger, extract_file_info, mask_email
 
@@ -50,7 +50,7 @@ def register_exception_handlers(app):
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
-                "code": 3000,
+                "code": ErrorCode.INVALID_INPUT,
                 "message": "Validation error",
                 "details": {"errors": errors}
             }
@@ -90,13 +90,16 @@ def register_exception_handlers(app):
         tb = traceback.extract_tb(exc.__traceback__)
         file_info = extract_file_info(tb)
 
-        # Called outside of the except block: the exception is passed, or the traceback is lost
-        logger.error(f"Unhandled exception occurred - File: {file_info}", exc_info=exc)
+        # Called outside of the except block: the exception is passed, or the traceback is lost.
+        # The one place where an unexpected error (a database error included) becomes a 500
+        # The route template, not the path: a path can carry a share token
+        route = getattr(request.scope.get("route"), "path", "?")
+        logger.error(f"Unhandled exception occurred on {request.method} {route} - File: {file_info}", exc_info=exc)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "code": 9999,
-                "message": "Internal Server Error",
+                "code": ErrorCode.SERVER_ERROR,
+                "message": "An unexpected error occurred",
                 "details": {}
             }
         )

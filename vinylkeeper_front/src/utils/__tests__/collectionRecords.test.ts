@@ -9,7 +9,6 @@ const album = (id: number, overrides: Partial<CollectionAlbumResponse> = {}): Co
   created_at: `2024-01-0${id}T00:00:00Z`,
   updated_at: `2024-01-0${id}T00:00:00Z`,
   collections_count: 1,
-  loans_count: 0,
   wishlist_count: 0,
   copies_count: 1,
   ...overrides,

@@ -13,7 +13,6 @@ from app.core.exceptions import (
     AccountLockedError,
     DuplicateCollectionNameError,
     DuplicateEmailError,
-    EmailNotFoundError,
     ForbiddenError,
     InvalidCredentialsError,
     InvalidResetTokenError,
@@ -209,11 +208,6 @@ class TestAuthenticationErrors:
         resp = await call(make_app_raising(lambda: UnauthorizedError("test")))
         assert resp.status_code == 401
         assert resp.json()["code"] == ErrorCode.INVALID_TOKEN
-
-    async def test_email_not_found(self):
-        resp = await call(make_app_raising(lambda: EmailNotFoundError("x@x.com")))
-        assert resp.status_code == 401
-        assert resp.json()["code"] == ErrorCode.EMAIL_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
@@ -417,11 +411,18 @@ class TestUnhandledException:
         assert resp.status_code == 500
 
     async def test_body_shape(self):
+        """The body the endpoints answered when @handle_app_exceptions wrapped them, unchanged."""
         resp = await call_permissive(make_unhandled_app())
         body = resp.json()
-        assert body["code"] == 9999
-        assert body["message"] == "Internal Server Error"
-        assert body["details"] == {}
+        assert body == {"code": ErrorCode.SERVER_ERROR, "message": "An unexpected error occurred", "details": {}}
+
+    async def test_a_database_error_is_an_unexpected_error_too(self):
+        from sqlalchemy.exc import OperationalError
+
+        resp = await call_permissive(make_app_raising(lambda: OperationalError("SELECT 1", {}, Exception("gone"))))
+
+        assert resp.status_code == 500
+        assert resp.json() == {"code": ErrorCode.SERVER_ERROR, "message": "An unexpected error occurred", "details": {}}
 
     async def test_traceback_logged(self, app_log):
         await call_permissive(make_unhandled_app())

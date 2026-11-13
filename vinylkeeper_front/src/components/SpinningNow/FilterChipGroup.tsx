@@ -2,7 +2,7 @@ import { useId } from "react";
 import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Tooltip, Typography } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 
-export interface FilterChipOption<T extends string | number> {
+interface FilterChipOption<T extends string | number> {
   value: T;
   label: string;
   count: number;

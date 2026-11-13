@@ -23,10 +23,7 @@ from app.schemas.collection_schema import CollectionAlbumResponse
 from app.schemas.wishlist_schema import (
     PaginatedWishlistResponse
 )
-from app.core.exceptions import (
-    ValidationError,
-    ForbiddenError,
-)
+from app.core.exceptions import ErrorCode, ForbiddenError
 from app.deps.deps import (
     get_external_reference_service,
     get_wishlist_service,
@@ -36,7 +33,6 @@ from app.deps.deps import (
 )
 from app.services.wishlist_export_service import WishlistExportService
 from app.core.enums import EntityTypeEnum, ExternalSourceEnum
-from app.utils.endpoint_utils import handle_app_exceptions
 from app.services.album_enrichment_service import enrich_album_in_background
 from app.utils.discogs_release import DISCOGS_ID_PATTERN
 
@@ -54,7 +50,6 @@ def schedule_album_enrichment(
 
 
 @router.post("/wishlist/add", response_model=AddToWishlistResponse)
-@handle_app_exceptions
 async def add_to_wishlist(
     request: AddToWishlistRequest,
     background_tasks: BackgroundTasks,
@@ -71,7 +66,6 @@ async def add_to_wishlist(
 
 
 @router.delete("/wishlist/{wishlist_id}", status_code=http_status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
 async def remove_from_wishlist(
     wishlist_id: int,
     current_user: User = Depends(get_current_user),
@@ -83,7 +77,6 @@ async def remove_from_wishlist(
 
 
 @router.post("/wishlist/{wishlist_id}/move-to-collection", response_model=MoveToCollectionResponse)
-@handle_app_exceptions
 async def move_wishlist_item_to_collection(
     data: MoveToCollectionRequest,
     background_tasks: BackgroundTasks,
@@ -104,7 +97,6 @@ async def move_wishlist_item_to_collection(
 
 
 @router.post("/collection/{collection_id}/add", response_model=AddToCollectionResponse)
-@handle_app_exceptions
 async def add_to_collection(
     request: AddToCollectionRequest,
     collection_id: int,
@@ -124,7 +116,6 @@ async def add_to_collection(
 
 
 @router.get("/collection/owned", response_model=list[OwnedPressingResponse])
-@handle_app_exceptions
 async def find_owned_pressings(
     external_id: str = Query(..., pattern=DISCOGS_ID_PATTERN, description="Release searched for"),
     master_id: Optional[str] = Query(
@@ -137,7 +128,6 @@ async def find_owned_pressings(
 
 
 @router.post("/collection/{collection_id}/albums/{album_id}/replace", response_model=CollectionAlbumResponse)
-@handle_app_exceptions
 async def replace_pressing(
     request: ReplacePressingRequest,
     collection_id: int,
@@ -155,32 +145,7 @@ async def replace_pressing(
     return album
 
 
-@router.delete("/collection/{collection_id}/remove", status_code=http_status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
-async def remove_from_collection(
-    collection_id: int,
-    entity_type: str,
-    external_id: str = Query(..., pattern=DISCOGS_ID_PATTERN, description="Discogs id of the record or artist"),
-    current_user: User = Depends(get_current_user),
-    service: ExternalReferenceService = Depends(get_external_reference_service)
-):
-    """Remove an item from user's collection"""
-    try:
-        entity_type_enum = EntityTypeEnum(entity_type)
-    except ValueError:
-        raise ValidationError(
-            error_code=3002,
-            message=f"Invalid entity_type: {entity_type}"
-        )
-
-    await service.remove_from_collection(current_user.id, collection_id, external_id, entity_type_enum)
-    log_activity(current_user.username,
-                 f"removed {entity_type_enum.value} {external_id} from collection #{collection_id}")
-    return Response(status_code=http_status.HTTP_204_NO_CONTENT)
-
-
 @router.get("/wishlist", response_model=PaginatedWishlistResponse)
-@handle_app_exceptions
 async def get_user_wishlist_paginated(
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(8, gt=0, le=50, description="Number of items per page"),
@@ -210,7 +175,7 @@ async def get_user_wishlist_paginated(
             if not await collection_service.has_public_collections(target_user_id):
                 # All collections are private, so wishlist is private
                 raise ForbiddenError(
-                    error_code=4003,
+                    error_code=ErrorCode.FORBIDDEN_OWNER,
                     message="You don't have permission to view this wishlist (user has no public collections)",
                     details={"user_uuid": user_uuid}
                 )
@@ -221,7 +186,6 @@ async def get_user_wishlist_paginated(
 
 
 @router.get("/wishlist/export/csv")
-@handle_app_exceptions
 async def export_my_wishlist_csv(
     current_user: User = Depends(get_current_user),
     export_service: WishlistExportService = Depends(get_wishlist_export_service),
@@ -230,7 +194,6 @@ async def export_my_wishlist_csv(
 
 
 @router.get("/wishlist/export/ods")
-@handle_app_exceptions
 async def export_my_wishlist_ods(
     current_user: User = Depends(get_current_user),
     export_service: WishlistExportService = Depends(get_wishlist_export_service),
@@ -239,7 +202,6 @@ async def export_my_wishlist_ods(
 
 
 @router.get("/wishlist/{wishlist_id}", response_model=WishlistItemResponse)
-@handle_app_exceptions
 async def get_wishlist_item_detail(
     wishlist_id: int = Path(..., gt=0, title="Wishlist Item ID"),
     current_user: User = Depends(get_current_user),
@@ -256,7 +218,7 @@ async def get_wishlist_item_detail(
     if owner_id != current_user.id:
         if not await collection_service.has_public_collections(owner_id):
             raise ForbiddenError(
-                error_code=4003,
+                error_code=ErrorCode.FORBIDDEN_OWNER,
                 message="You don't have permission to view this wishlist item (owner has no public collections)",
                 details={"wishlist_id": wishlist_id}
             )

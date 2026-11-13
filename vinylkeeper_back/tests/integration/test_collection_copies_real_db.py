@@ -95,13 +95,6 @@ class TestReadPaths:
 
         assert [states(item) for item in page.items] == [("near_mint", None, "2020-01")]
 
-    async def test_collection_detail(self, real_session):
-        user, collection, _ = await owned_collection_with_album(real_session, state_cover="fair")
-
-        response = await make_collection_service(real_session).get_collection_by_id(collection.id, user.id)
-
-        assert [states(item) for item in response.albums] == [(None, "fair", None)]
-
     async def test_search_in_collection(self, real_session):
         user, collection, album = await owned_collection_with_album(real_session, state_record="poor")
 
@@ -271,11 +264,10 @@ class TestCopies:
         await service.add_album_copy(user.id, collection.id, album.id, CollectionAlbumCopyData())
         real_session.expunge_all()
 
-        page = await albums_page(service, collection.id, user.id)
-        detail = await service.get_collection_by_id(collection.id, user.id)
+        records = await service.get_collection_records_paginated(collection.id, user.id, 1, 12, "newest")
 
-        assert (page.total, len(page.items), len(detail.albums)) == (1, 1, 1)
-        assert detail.albums[0].copies_count == 2
+        assert (records.total, len(records.items)) == (1, 1)
+        assert records.items[0].copies_count == 2
 
 
 class TestCollectionLevelResponses:
@@ -296,9 +288,13 @@ class TestCollectionLevelResponses:
         service = make_collection_service(real_session)
         await service.add_album_copy(user.id, collection.id, album.id, CollectionAlbumCopyData())
 
-        response = await service.update_collection(user.id, collection.id, CollectionUpdate(description="itest"))
+        await service.update_collection(user.id, collection.id, CollectionUpdate(description="itest"))
 
-        assert [(a.copies_count, states(a)) for a in response.albums] == [(2, ("good", None, None))]
+        # Saved without loading the records, which stay as they were
+        details = await service.get_collection_details_lightweight(collection.id, user.id)
+        page = await albums_page(service, collection.id, user.id)
+        assert details.description == "itest"
+        assert [(a.copies_count, states(a)) for a in page.items] == [(2, ("good", None, None))]
 
 
 class TestPressingConfirmation:

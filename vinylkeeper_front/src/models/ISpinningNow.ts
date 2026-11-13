@@ -1,21 +1,21 @@
-export interface MoodOption {
+interface MoodOption {
   name: string;
   description: string | null;
   albums_count: number;
 }
 
-export interface EraOption {
+interface EraOption {
   /** First year of the decade, e.g. 1970 */
   decade: number;
   albums_count: number;
 }
 
-export interface GenreOption {
+interface GenreOption {
   name: string;
   albums_count: number;
 }
 
-export interface CollectionOption {
+interface CollectionOption {
   id: number;
   name: string;
   albums_count: number;
@@ -36,7 +36,7 @@ export interface SpinningNowFilters {
   collections: number[];
 }
 
-export interface CollectionRef {
+interface CollectionRef {
   id: number;
   name: string;
 }

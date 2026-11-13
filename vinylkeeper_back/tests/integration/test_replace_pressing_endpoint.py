@@ -9,7 +9,7 @@ from app.core.exceptions import ForbiddenError
 from app.deps.deps import get_external_reference_service
 from app.main import app
 from app.schemas.collection_schema import CollectionAlbumResponse
-from app.utils.auth_utils.auth import TokenType, create_token, get_current_user
+from app.utils.auth_utils.auth import create_access_token, get_current_user
 
 URL = "/api/external-references/collection/1/albums/10/replace"
 BODY = {"external_id": "1353040", "entity_type": "album", "title": "Kind Of Blue", "image_url": "",
@@ -24,7 +24,7 @@ async def ref_client(mock_user):
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True), \
             patch("app.endpoints.external_references.enrich_album_in_background", new=AsyncMock()):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            client.cookies.set("access_token", create_token(str(mock_user.user_uuid), TokenType.ACCESS))
+            client.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
             yield client, service, mock_user
     app.dependency_overrides.clear()
 

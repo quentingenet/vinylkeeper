@@ -1,12 +1,12 @@
 import { PaginatedResponse } from "./BaseTypes";
 import { VinylStateEnum } from "@utils/GlobalUtils";
 
-export interface UserMiniResponse {
+interface UserMiniResponse {
   username: string;
   user_uuid: string;
 }
 
-export interface AlbumBase {
+interface AlbumBase {
   external_album_id: string;
   title: string;
   image_url?: string;
@@ -16,7 +16,7 @@ export interface AlbumBase {
   };
 }
 
-export interface ArtistBase {
+interface ArtistBase {
   external_artist_id: string;
   title: string;
   image_url?: string;
@@ -40,7 +40,6 @@ export interface CollectionAlbumResponse extends AlbumBase {
   created_at: string;
   updated_at: string;
   collections_count: number;
-  loans_count: number;
   wishlist_count: number;
   copies?: CollectionAlbumCopy[];
   copies_count?: number;
@@ -62,7 +61,7 @@ export interface CollectionArtistResponse extends ArtistBase {
   collections_count: number;
 }
 
-export interface CollectionBase {
+interface CollectionBase {
   name: string;
   description?: string;
   is_public: boolean;
@@ -79,12 +78,6 @@ export interface CollectionUpdate {
   description?: string;
   is_public?: boolean;
   mood_id?: number;
-}
-
-export interface CollectionInDB extends CollectionBase {
-  id: number;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CollectionResponse {
@@ -210,5 +203,4 @@ export interface CollectionAlbumCopyData {
   acquisition_month_year?: string | null;
 }
 export type PaginatedArtistsResponse = PaginatedResponse<CollectionArtistResponse>;
-export type PaginatedCollectionResponse = PaginatedResponse<CollectionResponse>;
 export type PaginatedCollectionListResponse = PaginatedResponse<CollectionListItemResponse>;

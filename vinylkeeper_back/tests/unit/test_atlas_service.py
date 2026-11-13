@@ -1,10 +1,11 @@
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+from fastapi import BackgroundTasks
 from pydantic import ValidationError as PydanticValidationError
 
 from app.services.atlas_service import AtlasService
-from app.schemas.place_schema import PlaceCreate, PlaceUpdate, PaginatedPlaceResponse
+from app.schemas.place_schema import PlaceCreate, PlaceUpdate
 from app.core.exceptions import ForbiddenError, ServerError, ValidationError
 
 from tests.conftest import make_user
@@ -123,7 +124,7 @@ class TestCreatePlace:
         user = make_user()
 
         with pytest.raises(ValidationError, match="not found"):
-            await service.create_place(make_place_data(), user)
+            await service.create_place(make_place_data(), user, BackgroundTasks())
 
     async def test_valid_coordinates_skip_geocoding(self):
         service, repo, mod_repo = make_service()
@@ -139,7 +140,7 @@ class TestCreatePlace:
         with patch("app.services.atlas_service.geocode_city") as mock_geocode, \
                 patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True), \
                 patch.object(service, "_create_place_response", return_value=MagicMock()):
-            await service.create_place(make_place_data(latitude=48.8566, longitude=2.3522), user)
+            await service.create_place(make_place_data(latitude=48.8566, longitude=2.3522), user, BackgroundTasks())
 
         mock_geocode.assert_not_called()
 
@@ -161,7 +162,7 @@ class TestCreatePlace:
         send_mail_patch = patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True)
         resp_patch = patch.object(service, "_create_place_response", return_value=MagicMock())
         with geocode_patch as mock_geocode, send_mail_patch, resp_patch:
-            await service.create_place(make_place_data(latitude=None, longitude=None), user)
+            await service.create_place(make_place_data(latitude=None, longitude=None), user, BackgroundTasks())
 
         mock_geocode.assert_awaited_once()
 
@@ -173,7 +174,7 @@ class TestCreatePlace:
 
         with patch("app.services.atlas_service.geocode_city", new_callable=AsyncMock, return_value=None):
             with pytest.raises(ValidationError, match="Could not find coordinates"):
-                await service.create_place(make_place_data(latitude=None, longitude=None), user)
+                await service.create_place(make_place_data(latitude=None, longitude=None), user, BackgroundTasks())
 
     async def test_success_creates_moderation_request(self):
         service, repo, mod_repo = make_service()
@@ -188,7 +189,7 @@ class TestCreatePlace:
 
         with patch("app.services.atlas_service.send_mail", new_callable=AsyncMock, return_value=True), \
                 patch.object(service, "_create_place_response", return_value=MagicMock()):
-            await service.create_place(make_place_data(), user)
+            await service.create_place(make_place_data(), user, BackgroundTasks())
 
         mod_repo.create_request.assert_awaited_once()
 
@@ -207,8 +208,13 @@ class TestCreatePlace:
             "app.services.atlas_service.send_mail",
             new_callable=AsyncMock, side_effect=Exception("SMTP down")
         )
-        with send_mail_patch, patch.object(service, "_create_place_response", return_value=MagicMock()):
-            await service.create_place(make_place_data(), user)
+        tasks = BackgroundTasks()
+        with send_mail_patch as send_mail, patch.object(service, "_create_place_response", return_value=MagicMock()):
+            await service.create_place(make_place_data(), user, tasks)
+            # Sent after the response: nothing yet while the request runs
+            send_mail.assert_not_awaited()
+            await tasks()
+        send_mail.assert_awaited_once()
 
 
 class TestUpdatePlace:
@@ -218,7 +224,8 @@ class TestUpdatePlace:
         user = make_user(user_id=1)
 
         with pytest.raises(ForbiddenError):
-            await service.update_place(user, place_id=1, place_data=PlaceUpdate(name="New name"))
+            await service.update_place(user, place_id=1, place_data=PlaceUpdate(name="New name"),
+                                       background_tasks=BackgroundTasks())
 
     async def _update(self, place, data: PlaceUpdate):
         service, repo, mod_repo = make_service()
@@ -228,9 +235,13 @@ class TestUpdatePlace:
         repo.is_place_liked_by_user = AsyncMock(return_value=False)
         send_mail = AsyncMock(return_value=True)
 
+        tasks = BackgroundTasks()
         with patch("app.services.atlas_service.send_mail", send_mail), \
                 patch.object(service, "_create_place_response", return_value=MagicMock()) as mock_resp:
-            await service.update_place(make_user(user_id=1), place_id=1, place_data=data)
+            await service.update_place(make_user(user_id=1), place_id=1, place_data=data, background_tasks=tasks)
+            # Sent after the response only
+            send_mail.assert_not_awaited()
+            await tasks()
 
         mock_resp.assert_called_once()
         return repo, mod_repo, send_mail
@@ -267,26 +278,6 @@ class TestPlaceUpdateSchema:
 
     def test_text_fields_are_trimmed(self):
         assert PlaceUpdate(city="  Lyon ").city == "Lyon"
-
-
-class TestDeletePlace:
-    async def test_not_owner_raises(self):
-        service, repo, *_ = make_service()
-        repo.get_place_by_id = AsyncMock(return_value=make_place(submitted_by_id=2))
-        user = make_user(user_id=1)
-
-        with pytest.raises(ForbiddenError):
-            await service.delete_place(user, place_id=1)
-
-    async def test_success_returns_true(self):
-        service, repo, *_ = make_service()
-        repo.get_place_by_id = AsyncMock(return_value=make_place(submitted_by_id=1))
-        repo.delete_place = AsyncMock(return_value=True)
-        user = make_user(user_id=1)
-
-        result = await service.delete_place(user, place_id=1)
-        assert result is True
-        repo.delete_place.assert_awaited_once_with(1)
 
 
 class TestLikePlace:
@@ -381,184 +372,6 @@ class TestCreateModerationRequest:
         assert call_kwargs["place_id"] == 5
         assert call_kwargs["user_id"] == 2
         assert call_kwargs["status_id"] == 1
-
-
-class TestGetAllPlaces:
-    async def test_returns_paginated_response(self):
-        service, repo, *_ = make_service()
-        repo.count_all_moderated_places = AsyncMock(return_value=2)
-        repo.get_all_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_all_places(user, page=1, limit=20)
-
-        assert isinstance(result, PaginatedPlaceResponse)
-        assert result.total == 2
-        assert result.page == 1
-        assert result.limit == 20
-        assert result.total_pages == 1
-
-    async def test_offset_calculated_from_page(self):
-        service, repo, *_ = make_service()
-        repo.count_all_moderated_places = AsyncMock(return_value=100)
-        repo.get_all_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            await service.get_all_places(user, page=3, limit=10)
-
-        repo.get_all_moderated_places.assert_awaited_once_with(10, 20)
-
-    async def test_total_pages_ceiling_division(self):
-        service, repo, *_ = make_service()
-        repo.count_all_moderated_places = AsyncMock(return_value=21)
-        repo.get_all_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_all_places(user, page=1, limit=20)
-
-        assert result.total_pages == 2
-
-    async def test_empty_result_returns_page_one(self):
-        service, repo, *_ = make_service()
-        repo.count_all_moderated_places = AsyncMock(return_value=0)
-        repo.get_all_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_all_places(user, page=1, limit=20)
-
-        assert result.total == 0
-
-    async def test_dropped_item_decrements_total_and_total_pages(self):
-        """Regression test: a place that fails to map into a response must
-        not inflate total/total_pages beyond what's actually rendered."""
-        service, repo, *_ = make_service()
-        repo.count_all_moderated_places = AsyncMock(return_value=21)
-        repo.get_all_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(
-            service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 1)
-        ):
-            result = await service.get_all_places(user, page=1, limit=20)
-
-        assert result.total == 20
-        assert result.total_pages == 1
-        assert result.total_pages == 1
-        assert result.items == []
-
-
-class TestSearchPlaces:
-    async def test_returns_paginated_response(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_by_search = AsyncMock(return_value=3)
-        repo.search_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.search_places("vinyl", user, page=1, limit=20)
-
-        assert isinstance(result, PaginatedPlaceResponse)
-        assert result.total == 3
-        assert result.page == 1
-
-    async def test_offset_calculated_from_page(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_by_search = AsyncMock(return_value=50)
-        repo.search_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            await service.search_places("vinyl", user, page=2, limit=10)
-
-        repo.search_moderated_places.assert_awaited_once_with("vinyl", 10, 10)
-
-    async def test_total_pages_ceiling_division(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_by_search = AsyncMock(return_value=11)
-        repo.search_moderated_places = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.search_places("vinyl", user, page=1, limit=10)
-
-        assert result.total_pages == 2
-
-
-class TestGetPlacesByType:
-    async def test_returns_paginated_response(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_by_type = AsyncMock(return_value=5)
-        repo.get_moderated_places_by_type = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_places_by_type(1, user, page=1, limit=20)
-
-        assert isinstance(result, PaginatedPlaceResponse)
-        assert result.total == 5
-
-    async def test_offset_calculated_from_page(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_by_type = AsyncMock(return_value=30)
-        repo.get_moderated_places_by_type = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            await service.get_places_by_type(2, user, page=4, limit=5)
-
-        repo.get_moderated_places_by_type.assert_awaited_once_with(2, 5, 15)
-
-    async def test_total_pages_exact_division(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_by_type = AsyncMock(return_value=20)
-        repo.get_moderated_places_by_type = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_places_by_type(1, user, page=1, limit=20)
-
-        assert result.total_pages == 1
-
-
-class TestGetPlacesInRegion:
-    async def test_returns_paginated_response(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_in_region = AsyncMock(return_value=4)
-        repo.get_moderated_places_in_region = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=1, limit=20)
-
-        assert isinstance(result, PaginatedPlaceResponse)
-        assert result.total == 4
-        assert result.page == 1
-
-    async def test_offset_calculated_from_page(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_in_region = AsyncMock(return_value=40)
-        repo.get_moderated_places_in_region = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=2, limit=20)
-
-        repo.get_moderated_places_in_region.assert_awaited_once_with(40.0, 50.0, 0.0, 10.0, 20, 20)
-
-    async def test_total_pages_ceiling_division(self):
-        service, repo, *_ = make_service()
-        repo.count_moderated_places_in_region = AsyncMock(return_value=41)
-        repo.get_moderated_places_in_region = AsyncMock(return_value=[])
-        user = make_user()
-
-        with patch.object(service, "_build_public_place_responses", new_callable=AsyncMock, return_value=([], 0)):
-            result = await service.get_places_in_region(40.0, 50.0, 0.0, 10.0, user, page=1, limit=20)
-
-        assert result.total_pages == 3
 
 
 class TestBuildPublicPlaceResponses:

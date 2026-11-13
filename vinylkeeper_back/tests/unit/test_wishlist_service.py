@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.services.wishlist_service import WishlistService
 from app.schemas.external_reference_schema import AddToWishlistRequest
 from app.core.enums import EntityTypeEnum
-from app.core.exceptions import ResourceNotFoundError, ValidationError, ServerError
+from app.core.exceptions import ResourceNotFoundError, ValidationError
 
 
 # ---------------------------------------------------------------------------
@@ -100,12 +100,12 @@ class TestAddToWishlist:
 
         wishlist_repo.add_to_wishlist.assert_awaited_once()
 
-    async def test_repo_failure_raises_server_error(self):
+    async def test_repo_failure_reaches_the_global_handler(self):
         service, wishlist_repo, external_ref_repo = make_service()
         wishlist_repo.find_by_user_and_external_id = AsyncMock(return_value=None)
         external_ref_repo.get_external_source_id = AsyncMock(side_effect=RuntimeError("DB down"))
 
-        with pytest.raises(ServerError):
+        with pytest.raises(RuntimeError, match="DB down"):
             await service.add_to_wishlist(user_id=1, request=make_request())
 
 

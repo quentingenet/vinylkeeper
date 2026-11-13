@@ -30,7 +30,6 @@ const pressing = (id: number, overrides: Partial<CollectionAlbumResponse> = {}):
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
   collections_count: 1,
-  loans_count: 0,
   wishlist_count: 0,
   pressing_confirmed: true,
   copies: [copy(10 * id, { state_record: VinylStateEnum.MINT })],

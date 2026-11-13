@@ -1,25 +1,18 @@
 import { BaseApiService } from "./BaseApiService";
 import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import type {
-  UserMiniResponse,
-  AlbumBase,
-  ArtistBase,
   CollectionAlbumResponse,
   CollectionArtistResponse,
-  CollectionBase,
   CollectionCreate,
   CollectionUpdate,
-  CollectionInDB,
   CollectionResponse,
   CollectionListItemResponse,
   CollectionDetailResponse,
   LikeStatusResponse,
   CollectionSearchResponse,
   PaginatedArtistsResponse,
-  PaginatedCollectionResponse,
   PaginatedCollectionListResponse,
   PaginatedRecordsResponse,
-  CollectionRecordResponse,
   CollectionAlbumCopyData,
   SharedCollectionResponse,
   SharedItemsKind,
@@ -27,25 +20,16 @@ import type {
 } from "@models/Collection";
 
 export type {
-  UserMiniResponse,
-  AlbumBase,
-  ArtistBase,
   CollectionAlbumResponse,
   CollectionArtistResponse,
-  CollectionBase,
   CollectionCreate,
   CollectionUpdate,
-  CollectionInDB,
   CollectionResponse,
   CollectionListItemResponse,
   CollectionDetailResponse,
-  LikeStatusResponse,
-  CollectionSearchResponse,
   PaginatedArtistsResponse,
-  PaginatedCollectionResponse,
   PaginatedCollectionListResponse,
   PaginatedRecordsResponse,
-  CollectionRecordResponse,
   CollectionAlbumCopyData,
 };
 
@@ -61,7 +45,6 @@ export class CollectionApiService extends BaseApiService {
     // Bind methods to preserve 'this' context
     this.createCollection = this.createCollection.bind(this);
     this.getCollections = this.getCollections.bind(this);
-    this.getCollectionById = this.getCollectionById.bind(this);
     this.getPublicCollections = this.getPublicCollections.bind(this);
     this.switchCollectionVisibility =
       this.switchCollectionVisibility.bind(this);
@@ -106,10 +89,6 @@ export class CollectionApiService extends BaseApiService {
       `/collections/area/${collectionId}`,
       { is_public: isPublic }
     );
-  }
-
-  async getCollectionById(collectionId: number): Promise<CollectionResponse> {
-    return this.get<CollectionResponse>(`/collections/${collectionId}`);
   }
 
   /** Open to everyone: the preview of a public collection */
@@ -290,8 +269,6 @@ export const collectionApiService = {
       itemsPerPage,
       sortBy
     ),
-  getCollectionById: (collectionId: number) =>
-    collectionApiServiceInstance.getCollectionById(collectionId),
   switchCollectionVisibility: (collectionId: number, isPublic: boolean) =>
     collectionApiServiceInstance.switchCollectionVisibility(
       collectionId,

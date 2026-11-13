@@ -1,17 +1,17 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Response, status, Path, Query, Body
+from app.utils.pagination import page_count
+from app.schemas.user_schema import MessageResponse
 from app.schemas.collection_schema import (
     CollectionCreate,
     CollectionDetailResponse,
     CollectionUpdate,
-    CollectionResponse,
     CollectionVisibilityUpdate,
     PaginatedCollectionListResponse,
     CollectionAlbumResponse,
     CollectionCreateResponse,
     CollectionCopyResponse,
-    MessageResponse,
     PaginatedArtistsResponse,
     PaginatedRecordsResponse,
     CollectionSearchResponse,
@@ -25,15 +25,12 @@ from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.export_service import ExportService
 from app.schemas.collection_album_schema import CollectionAlbumCopyData
-from app.utils.endpoint_utils import handle_app_exceptions
-from app.core.exceptions import ValidationError
 from app.core.logging import log_activity
 
 router = APIRouter()
 
 
 @router.post("/add", status_code=status.HTTP_201_CREATED, response_model=CollectionCreateResponse)
-@handle_app_exceptions
 async def create_collection(
     data: CollectionCreate,
     user=Depends(get_current_user),
@@ -49,7 +46,6 @@ async def create_collection(
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=PaginatedCollectionListResponse)
-@handle_app_exceptions
 async def get_user_collections(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
@@ -63,12 +59,11 @@ async def get_user_collections(
         total=total,
         page=page,
         limit=limit,
-        total_pages=(total + limit - 1) // limit
+        total_pages=page_count(total, limit)
     )
 
 
 @router.get("/public", status_code=status.HTTP_200_OK, response_model=PaginatedCollectionListResponse)
-@handle_app_exceptions
 async def get_public_collections(
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
@@ -86,7 +81,7 @@ async def get_public_collections(
         total=total,
         page=page,
         limit=limit,
-        total_pages=(total + limit - 1) // limit
+        total_pages=page_count(total, limit)
     )
 
 
@@ -95,7 +90,6 @@ SharedCollectionToken = Path(..., pattern="^[0-9a-f]{32}$", title="Share token")
 
 
 @router.get("/shared/{share_token}", status_code=status.HTTP_200_OK, response_model=SharedCollectionResponse)
-@handle_app_exceptions
 async def get_shared_collection(
     response: Response,
     share_token: str = SharedCollectionToken,
@@ -108,7 +102,6 @@ async def get_shared_collection(
 
 
 @router.get("/shared/{share_token}/{kind}", status_code=status.HTTP_200_OK, response_model=SharedItemsResponse)
-@handle_app_exceptions
 async def get_shared_items(
     response: Response,
     kind: Literal["records", "artists", "wishlist"],
@@ -121,52 +114,29 @@ async def get_shared_items(
     return await service.get_shared_items(share_token, kind, page)
 
 
-@router.get("/{collection_id}", status_code=status.HTTP_200_OK, response_model=CollectionResponse)
-@handle_app_exceptions
-async def get_collection_by_id(
-    collection_id: int = Path(..., gt=0, title="Collection ID"),
-    user=Depends(get_current_user),
-    service: CollectionService = Depends(get_collection_service),
-):
-    collection = await service.get_collection_by_id(collection_id, user.id)
-    return CollectionResponse.model_validate(collection)
-
-
 @router.patch("/area/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
-@handle_app_exceptions
 async def switch_area_collection(
     collection_id: int = Path(..., gt=0),
     data: CollectionVisibilityUpdate = Body(...),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    updated = await service.update_collection(
+    await service.update_collection(
         user.id,
         collection_id,
         CollectionUpdate(is_public=data.is_public)
     )
-    if not updated:
-        raise ValidationError(
-            error_code=4000,
-            message="Failed to update collection visibility"
-        )
     return MessageResponse(message="Collection visibility updated successfully")
 
 
 @router.patch("/update/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
-@handle_app_exceptions
 async def update_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     data: CollectionUpdate = Body(...),
     user=Depends(get_current_user),
     service: CollectionService = Depends(get_collection_service),
 ):
-    updated = await service.update_collection(user.id, collection_id, data)
-    if not updated:
-        raise ValidationError(
-            error_code=4000,
-            message="Failed to update collection"
-        )
+    await service.update_collection(user.id, collection_id, data)
     changes = data.model_dump(exclude_unset=True)
     if "is_public" in changes:
         visibility = "public" if changes["is_public"] else "private"
@@ -175,7 +145,6 @@ async def update_collection(
 
 
 @router.delete("/{collection_id}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
-@handle_app_exceptions
 async def delete_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -187,7 +156,6 @@ async def delete_collection(
 
 
 @router.post("/{collection_id}/save-copy", status_code=status.HTTP_201_CREATED, response_model=CollectionCopyResponse)
-@handle_app_exceptions
 async def save_collection_copy(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -200,7 +168,6 @@ async def save_collection_copy(
 
 
 @router.get("/{collection_id}/details", status_code=status.HTTP_200_OK, response_model=CollectionDetailResponse)
-@handle_app_exceptions
 async def get_collection_details(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -212,7 +179,6 @@ async def get_collection_details(
 
 
 @router.get("/{collection_id}/records", status_code=status.HTTP_200_OK, response_model=PaginatedRecordsResponse)
-@handle_app_exceptions
 async def get_collection_records_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     page: int = Query(1, gt=0, description="Page number"),
@@ -226,7 +192,6 @@ async def get_collection_records_paginated(
 
 
 @router.get("/{collection_id}/artists", status_code=status.HTTP_200_OK, response_model=PaginatedArtistsResponse)
-@handle_app_exceptions
 async def get_collection_artists_paginated(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     page: int = Query(1, gt=0, description="Page number"),
@@ -240,7 +205,6 @@ async def get_collection_artists_paginated(
 
 
 @router.delete("/{collection_id}/albums/{album_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
 async def remove_album_from_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     album_id: int = Path(..., gt=0, title="Album ID"),
@@ -252,7 +216,6 @@ async def remove_album_from_collection(
 
 
 @router.delete("/{collection_id}/artists/{artist_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
 async def remove_artist_from_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     artist_id: int = Path(..., gt=0, title="Artist ID"),
@@ -264,7 +227,6 @@ async def remove_artist_from_collection(
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def like_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -280,7 +242,6 @@ async def like_collection(
 
 
 @router.delete("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def unlike_collection(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -296,7 +257,6 @@ async def unlike_collection(
 
 @router.post("/{collection_id}/albums/{album_id}/copies", status_code=status.HTTP_201_CREATED,
              response_model=CollectionAlbumResponse)
-@handle_app_exceptions
 async def add_album_copy(
     collection_id: int,
     album_id: int,
@@ -309,7 +269,6 @@ async def add_album_copy(
 
 
 @router.patch("/{collection_id}/albums/{album_id}/copies/{copy_id}", response_model=CollectionAlbumResponse)
-@handle_app_exceptions
 async def update_album_copy(
     collection_id: int,
     album_id: int,
@@ -323,7 +282,6 @@ async def update_album_copy(
 
 
 @router.delete("/{collection_id}/albums/{album_id}/copies/{copy_id}", response_model=CollectionAlbumResponse)
-@handle_app_exceptions
 async def delete_album_copy(
     collection_id: int,
     album_id: int,
@@ -336,7 +294,6 @@ async def delete_album_copy(
 
 
 @router.post("/{collection_id}/albums/{album_id}/pressing/confirm", response_model=CollectionAlbumResponse)
-@handle_app_exceptions
 async def confirm_album_pressing(
     collection_id: int,
     album_id: int,
@@ -348,7 +305,6 @@ async def confirm_album_pressing(
 
 
 @router.get("/{collection_id}/search", response_model=CollectionSearchResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def search_collection_items(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     q: str = Query(..., min_length=1, description="Search term"),
@@ -361,7 +317,6 @@ async def search_collection_items(
 
 
 @router.get("/{collection_id}/export/albums.csv", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def export_collection_albums_csv(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -371,7 +326,6 @@ async def export_collection_albums_csv(
 
 
 @router.get("/{collection_id}/export/artists.csv", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def export_collection_artists_csv(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -381,7 +335,6 @@ async def export_collection_artists_csv(
 
 
 @router.get("/{collection_id}/export/albums.ods", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def export_collection_albums_ods(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),
@@ -391,7 +344,6 @@ async def export_collection_albums_ods(
 
 
 @router.get("/{collection_id}/export/artists.ods", status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def export_collection_artists_ods(
     collection_id: int = Path(..., gt=0, title="Collection ID"),
     user=Depends(get_current_user),

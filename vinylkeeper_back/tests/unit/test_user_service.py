@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+from fastapi import BackgroundTasks
 
 from datetime import datetime, timezone
 
@@ -166,19 +167,53 @@ class TestSendPasswordResetEmail:
         """Anti-énumération : aucune exception si l'email n'existe pas."""
         service, repo, _ = make_service(user=None)
         repo.get_user_by_email = AsyncMock(return_value=None)
-        await service.send_password_reset_email("ghost@example.com")
+        tasks = BackgroundTasks()
+        await service.send_password_reset_email("ghost@example.com", tasks)
+        assert tasks.tasks == []
 
-    async def test_sends_mail_when_user_exists(self, regular_user):
+    async def test_sends_mail_after_the_response_when_user_exists(self, regular_user):
+        """The request does not wait for the SMTP: its duration tells nothing about the account."""
         service, _, _ = make_service(regular_user)
+        tasks = BackgroundTasks()
         with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=True) as mock_mail:
-            await service.send_password_reset_email("test@example.com")
+            await service.send_password_reset_email("test@example.com", tasks)
+            mock_mail.assert_not_awaited()
+            await tasks()
             mock_mail.assert_awaited_once()
+        assert mock_mail.await_args.kwargs["to"] == regular_user.email
 
     async def test_smtp_failure_does_not_raise(self, regular_user):
         """Échec SMTP : on logue, on ne plante pas."""
         service, _, _ = make_service(regular_user)
-        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=False):
-            await service.send_password_reset_email("test@example.com")
+        tasks = BackgroundTasks()
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, side_effect=Exception("SMTP down")):
+            await service.send_password_reset_email("test@example.com", tasks)
+            await tasks()
+
+
+class TestNewUserRegisteredEmail:
+    def _member(self, regular_user):
+        regular_user.role = MagicMock()
+        regular_user.role.name = "user"
+        regular_user.is_superuser = False
+        return regular_user
+
+    async def test_the_admin_is_told_after_the_response(self, regular_user, monkeypatch):
+        monkeypatch.setattr("app.services.user_service.settings.APP_ENV", "production")
+        service, _, _ = make_service(regular_user)
+        tasks = BackgroundTasks()
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, return_value=True) as send_mail:
+            service.send_new_user_registered_email(self._member(regular_user), tasks)
+            send_mail.assert_not_awaited()
+            await tasks()
+        assert send_mail.await_args.kwargs["username"] == regular_user.username
+
+    async def test_nothing_in_development(self, regular_user, monkeypatch):
+        monkeypatch.setattr("app.services.user_service.settings.APP_ENV", "development")
+        service, _, _ = make_service(regular_user)
+        tasks = BackgroundTasks()
+        service.send_new_user_registered_email(self._member(regular_user), tasks)
+        assert tasks.tasks == []
 
 
 # ---------------------------------------------------------------------------
@@ -523,6 +558,17 @@ class TestSendContactMessage:
         # The send date, not the account creation date
         assert not kwargs["sent_at"].startswith("2020")
         assert kwargs["sent_at"].startswith(response.sent_at.strftime("%Y-%m-%d"))
+
+    @pytest.mark.parametrize("failure", [{"return_value": False}, {"side_effect": Exception("SMTP down")}])
+    async def test_an_unsent_message_is_an_error_not_a_success(self, regular_user, failure):
+        service, *_ = make_service(regular_user)
+        data = ContactMessageRequest(subject="Bug on the map", message="Hello")
+
+        with patch("app.services.user_service.send_mail", new_callable=AsyncMock, **failure):
+            with pytest.raises(ServerError) as exc:
+                await service.send_contact_message(regular_user, data)
+
+        assert exc.value.detail["code"] == 5002  # ErrorCode.EXTERNAL_SERVICE_ERROR
 
 
 class TestEmailCase:

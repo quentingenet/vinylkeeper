@@ -2,7 +2,7 @@ from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user_model import User
 from app.core.exceptions import ForbiddenError, ErrorCode
-from app.utils.auth_utils.auth import get_current_user
+from app.utils.auth_utils.auth import get_current_user, is_admin
 
 # Repositories
 from app.repositories.user_repository import UserRepository
@@ -41,7 +41,7 @@ from app.db.session import get_db
 
 
 def require_admin(user: User = Depends(get_current_user)) -> User:
-    if not (user.role and user.role.name == "admin" and user.is_superuser):
+    if not is_admin(user):
         raise ForbiddenError(error_code=ErrorCode.FORBIDDEN, message="Admin access required")
     return user
 

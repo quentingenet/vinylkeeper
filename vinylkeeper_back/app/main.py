@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI
 from app.core.security import configure_cors
 from app.core.handlers import register_exception_handlers
@@ -8,7 +7,6 @@ from app.core.lifespan import lifespan
 
 from app.core.config_env import settings
 
-os.environ["TZ"] = "Europe/Paris"
 
 # No interactive docs nor schema in production: they map every endpoint for anyone
 is_production = settings.APP_ENV.lower() == "production"

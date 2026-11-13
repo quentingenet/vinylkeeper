@@ -1,4 +1,5 @@
 from typing import Optional
+from app.utils.pagination import page_count
 from app.repositories.wishlist_repository import WishlistRepository
 from app.repositories.external_reference_repository import ExternalReferenceRepository
 from app.schemas.external_reference_schema import (
@@ -13,17 +14,12 @@ from app.schemas.wishlist_schema import (
 )
 from app.schemas.album_schema import AlbumResponse, AlbumCreate
 from app.schemas.artist_schema import ArtistResponse, ArtistCreate
-from app.core.exceptions import (
-    AppException,
-    ValidationError,
-    ResourceNotFoundError,
-    ServerError
-)
+from app.core.exceptions import ErrorCode, ValidationError, ResourceNotFoundError
 from app.core.logging import logger
 from app.core.enums import EntityTypeEnum
 from app.core.transaction import transaction_context
 
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 
 from app.models.wishlist_model import Wishlist
 from app.utils.discogs_release import clean_artist_name
@@ -40,140 +36,118 @@ class WishlistService:
         self, request: AddToWishlistRequest, external_source_id: int | None = None
     ) -> AlbumResponse | ArtistResponse:
         """Find existing entity or create new one"""
-        try:
-            external_id = request.get_external_id()
-            if not external_id:
-                raise ValidationError(
-                    error_code=4000,
-                    message="External ID must be provided"
-                )
-
-            # Get the external source ID if not provided
-            if external_source_id is None:
-                external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
-
-            if request.entity_type == EntityTypeEnum.ALBUM:
-                # Safe against a concurrent creation of the same album (ON CONFLICT DO NOTHING)
-                entity, _ = await self.external_ref_repo.get_or_create_album(AlbumCreate(
-                    external_album_id=external_id,
-                    title=request.title,
-                    image_url=request.image_url,
-                    external_source_id=external_source_id
-                ))
-
-                # Convert SQLAlchemy object to dict for Pydantic validation
-                entity_dict = {
-                    "id": entity.id,
-                    "external_album_id": entity.external_album_id,
-                    "external_source_id": entity.external_source_id,
-                    "external_source": {
-                        "id": entity.external_source.id,
-                        "name": entity.external_source.name
-                    } if entity.external_source else None,
-                    "title": entity.title,
-                    "artist": None,  # Album model doesn't have artist field
-                    "image_url": entity.image_url,
-                    "created_at": entity.created_at,
-                    "updated_at": entity.updated_at
-                }
-                return AlbumResponse.model_validate(entity_dict)
-            else:
-                # Safe against a concurrent creation of the same artist (ON CONFLICT DO NOTHING)
-                entity, _ = await self.external_ref_repo.get_or_create_artist(ArtistCreate(
-                    external_artist_id=external_id,
-                    title=request.title,
-                    image_url=request.image_url,
-                    external_source_id=external_source_id
-                ))
-
-                # Convert SQLAlchemy object to dict for Pydantic validation
-                entity_dict = {
-                    "id": entity.id,
-                    "external_artist_id": entity.external_artist_id,
-                    "external_source_id": entity.external_source_id,
-                    "external_source": {
-                        "id": entity.external_source.id,
-                        "name": entity.external_source.name
-                    } if entity.external_source else None,
-                    "title": entity.title,
-                    "artist": entity.title,  # For Artist model, artist = title
-                    "image_url": entity.image_url,
-                    "created_at": entity.created_at,
-                    "updated_at": entity.updated_at
-                }
-                return ArtistResponse.model_validate(entity_dict)
-
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Failed to find or create entity: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to find or create entity",
-                details={}
+        external_id = request.get_external_id()
+        if not external_id:
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_REQUEST,
+                message="External ID must be provided"
             )
+
+        # Get the external source ID if not provided
+        if external_source_id is None:
+            external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
+
+        if request.entity_type == EntityTypeEnum.ALBUM:
+            # Safe against a concurrent creation of the same album (ON CONFLICT DO NOTHING)
+            entity, _ = await self.external_ref_repo.get_or_create_album(AlbumCreate(
+                external_album_id=external_id,
+                title=request.title,
+                image_url=request.image_url,
+                external_source_id=external_source_id
+            ))
+
+            # Convert SQLAlchemy object to dict for Pydantic validation
+            entity_dict = {
+                "id": entity.id,
+                "external_album_id": entity.external_album_id,
+                "external_source_id": entity.external_source_id,
+                "external_source": {
+                    "id": entity.external_source.id,
+                    "name": entity.external_source.name
+                } if entity.external_source else None,
+                "title": entity.title,
+                "artist": None,  # Album model doesn't have artist field
+                "image_url": entity.image_url,
+                "created_at": entity.created_at,
+                "updated_at": entity.updated_at
+            }
+            return AlbumResponse.model_validate(entity_dict)
+        else:
+            # Safe against a concurrent creation of the same artist (ON CONFLICT DO NOTHING)
+            entity, _ = await self.external_ref_repo.get_or_create_artist(ArtistCreate(
+                external_artist_id=external_id,
+                title=request.title,
+                image_url=request.image_url,
+                external_source_id=external_source_id
+            ))
+
+            # Convert SQLAlchemy object to dict for Pydantic validation
+            entity_dict = {
+                "id": entity.id,
+                "external_artist_id": entity.external_artist_id,
+                "external_source_id": entity.external_source_id,
+                "external_source": {
+                    "id": entity.external_source.id,
+                    "name": entity.external_source.name
+                } if entity.external_source else None,
+                "title": entity.title,
+                "artist": entity.title,  # For Artist model, artist = title
+                "image_url": entity.image_url,
+                "created_at": entity.created_at,
+                "updated_at": entity.updated_at
+            }
+            return ArtistResponse.model_validate(entity_dict)
 
     async def add_to_wishlist(self, user_id: int, request: AddToWishlistRequest) -> AddToWishlistResponse:
         """Add an album or artist to the wishlist with transactional integrity"""
-        try:
-            external_id = request.get_external_id()
-            if not external_id:
-                raise ValidationError(
-                    error_code=4000,
-                    message="External ID must be provided"
-                )
+        external_id = request.get_external_id()
+        if not external_id:
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_REQUEST,
+                message="External ID must be provided"
+            )
 
-            # Check if item already exists in wishlist
-            existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
+        # Check if item already exists in wishlist
+        existing = await self.wishlist_repo.find_by_user_and_external_id(user_id, external_id, request.entity_type)
+        if existing:
+            return self._already_in_wishlist_response(existing, request)
+
+        # Get external source ID once (avoid duplicate queries)
+        external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
+
+        # Find or create entity (pass external_source_id to avoid duplicate query)
+        await self._find_or_create_entity(request, external_source_id)
+
+        try:
+            async with transaction_context(self.wishlist_repo.db):
+                result = await self.wishlist_repo.add_to_wishlist(
+                    user_id=user_id,
+                    external_id=external_id,
+                    entity_type=request.entity_type,
+                    title=(request.title if request.entity_type == EntityTypeEnum.ALBUM
+                           else clean_artist_name(request.title or "")),
+                    image_url=request.image_url,
+                    external_source_id=external_source_id
+                )
+        except IntegrityError:
+            # Concurrent request inserted the same item between our check
+            # and our insert: treat it as already-existing (idempotent),
+            # matching the pre-check branch above, instead of a 500.
+            existing = await self.wishlist_repo.find_by_user_and_external_id(
+                user_id, external_id, request.entity_type
+            )
             if existing:
                 return self._already_in_wishlist_response(existing, request)
-
-            # Get external source ID once (avoid duplicate queries)
-            external_source_id = await self.external_ref_repo.get_external_source_id(request.source)
-
-            # Find or create entity (pass external_source_id to avoid duplicate query)
-            await self._find_or_create_entity(request, external_source_id)
-
-            try:
-                async with transaction_context(self.wishlist_repo.db):
-                    result = await self.wishlist_repo.add_to_wishlist(
-                        user_id=user_id,
-                        external_id=external_id,
-                        entity_type=request.entity_type,
-                        title=(request.title if request.entity_type == EntityTypeEnum.ALBUM
-                               else clean_artist_name(request.title or "")),
-                        image_url=request.image_url,
-                        external_source_id=external_source_id
-                    )
-            except IntegrityError:
-                # Concurrent request inserted the same item between our check
-                # and our insert: treat it as already-existing (idempotent),
-                # matching the pre-check branch above, instead of a 500.
-                existing = await self.wishlist_repo.find_by_user_and_external_id(
-                    user_id, external_id, request.entity_type
-                )
-                if existing:
-                    return self._already_in_wishlist_response(existing, request)
-                raise
-
-            wishlist_response = self._build_wishlist_response(
-                result, request.entity_type.value, request.source)
-            return AddToWishlistResponse(
-                item=wishlist_response,
-                is_new=True,
-                message=f"Added {request.entity_type.value} '{request.title}' to wishlist",
-                entity_type=request.entity_type.value
-            )
-
-        except AppException:
             raise
-        except Exception as e:
-            logger.error(f"Failed to add to wishlist: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to add to wishlist",
-                details={}
-            )
+
+        wishlist_response = self._build_wishlist_response(
+            result, request.entity_type.value, request.source)
+        return AddToWishlistResponse(
+            item=wishlist_response,
+            is_new=True,
+            message=f"Added {request.entity_type.value} '{request.title}' to wishlist",
+            entity_type=request.entity_type.value
+        )
 
     def _already_in_wishlist_response(self, existing: Wishlist, request: AddToWishlistRequest) -> AddToWishlistResponse:
         wishlist_response = self._build_wishlist_response(
@@ -203,41 +177,29 @@ class WishlistService:
 
     async def remove_from_wishlist(self, user_id: int, wishlist_id: int) -> bool:
         """Remove an item from user's wishlist with transactional integrity"""
-        try:
-            # Find wishlist item and verify ownership
-            wishlist_item = await self.wishlist_repo.get_by_id(wishlist_id)
-            if not wishlist_item or wishlist_item.user_id != user_id:
-                raise ResourceNotFoundError(
-                    resource_type="Wishlist item",
-                    resource_id=wishlist_id
-                )
-
-            async with transaction_context(self.wishlist_repo.db):
-                await self.wishlist_repo._delete_entity(wishlist_item)
-
-            return True
-        except ResourceNotFoundError:
-            raise
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Failed to remove from wishlist: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to remove from wishlist",
-                details={}
+        # Find wishlist item and verify ownership
+        wishlist_item = await self.wishlist_repo.get_by_id(wishlist_id)
+        if not wishlist_item or wishlist_item.user_id != user_id:
+            raise ResourceNotFoundError(
+                resource_type="Wishlist item",
+                resource_id=wishlist_id
             )
+
+        async with transaction_context(self.wishlist_repo.db):
+            await self.wishlist_repo._delete_entity(wishlist_item)
+
+        return True
 
     def _validate_pagination_params(self, page: int, limit: int):
         """Validate pagination parameters"""
         if page < 1:
             raise ValidationError(
-                error_code=4000,
+                error_code=ErrorCode.INVALID_REQUEST,
                 message="Page number must be greater than 0"
             )
         if limit < 1 or limit > 50:
             raise ValidationError(
-                error_code=4000,
+                error_code=ErrorCode.INVALID_REQUEST,
                 message="Limit must be between 1 and 50"
             )
 
@@ -277,42 +239,29 @@ class WishlistService:
         search: Optional[str] = None, sort_order: str = "newest"
     ) -> PaginatedWishlistResponse:
         """Get paginated wishlist items for a user with optional search and sort."""
-        try:
-            self._validate_pagination_params(page, limit)
+        self._validate_pagination_params(page, limit)
 
-            works, total = await self.wishlist_repo.get_user_wishlist_paginated(
-                user_id, page, limit, search, sort_order
-            )
+        works, total = await self.wishlist_repo.get_user_wishlist_paginated(
+            user_id, page, limit, search, sort_order
+        )
 
-            list_responses = []
-            for _key, rows in works:
-                try:
-                    list_responses.append(self._build_wishlist_card(rows))
-                except Exception as e:
-                    logger.error(f"Error processing wishlist work {_key}: {str(e)}", exc_info=True)
-                    continue
+        list_responses = []
+        for _key, rows in works:
+            try:
+                list_responses.append(self._build_wishlist_card(rows))
+            except Exception as e:
+                logger.error(f"Error processing wishlist work {_key}: {str(e)}", exc_info=True)
+                continue
 
-            total_pages = (total + limit - 1) // limit if total > 0 else 0
+        total_pages = page_count(total, limit)
 
-            return PaginatedWishlistResponse(
-                items=list_responses,
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=total_pages
-            )
-
-        except ValidationError:
-            raise
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Failed to get paginated wishlist: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get paginated wishlist",
-                details={}
-            )
+        return PaginatedWishlistResponse(
+            items=list_responses,
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=total_pages
+        )
 
     async def get_wishlist_item_owner_id(self, wishlist_id: int) -> int:
         """Return the owner user_id of a wishlist item, for visibility checks."""
@@ -325,24 +274,11 @@ class WishlistService:
         """Get detailed wishlist item by ID. Caller is responsible for the
         visibility check (see get_wishlist_item_owner_id) — this only fetches
         and maps the data."""
-        try:
-            item = await self.wishlist_repo.get_by_id_with_relations(wishlist_id)
-            if not item:
-                raise ResourceNotFoundError("Wishlist item", wishlist_id)
+        item = await self.wishlist_repo.get_by_id_with_relations(wishlist_id)
+        if not item:
+            raise ResourceNotFoundError("Wishlist item", wishlist_id)
 
-            entity_type_str = item.entity_type.name.lower() if item.entity_type else "unknown"
-            source_str = item.external_source.name.lower() if item.external_source else "unknown"
+        entity_type_str = item.entity_type.name.lower() if item.entity_type else "unknown"
+        source_str = item.external_source.name.lower() if item.external_source else "unknown"
 
-            return self._build_wishlist_response(item, entity_type_str, source_str)
-
-        except ResourceNotFoundError:
-            raise
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Failed to get wishlist item detail: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get wishlist item detail",
-                details={}
-            )
+        return self._build_wishlist_response(item, entity_type_str, source_str)

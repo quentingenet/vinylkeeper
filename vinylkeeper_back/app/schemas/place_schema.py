@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -142,17 +142,6 @@ class PublicPlaceResponse(PlaceBase):
         default=False, description="Whether the current user has liked this place")
     created_at: datetime
     updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class PaginatedPlaceResponse(BaseModel):
-    """Standardized paginated response for public places."""
-    items: List[PublicPlaceResponse] = Field(default_factory=list)
-    total: int = Field(ge=0, description="Total number of places")
-    page: int = Field(gt=0, description="Current page number")
-    limit: int = Field(gt=0, description="Number of items per page")
-    total_pages: int = Field(ge=0, description="Total number of pages")
 
     model_config = ConfigDict(from_attributes=True)
 

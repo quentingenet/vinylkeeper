@@ -20,8 +20,9 @@ class PlaceLike(Base):
     place_id = Column(Integer, ForeignKey("places.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    user = relationship("User", back_populates="place_likes", lazy="selectin")
-    place = relationship("Place", back_populates="likes", lazy="selectin")
+    # raise: a like of a spot is read for its ids only, never for its user or its spot
+    user = relationship("User", back_populates="place_likes", lazy="raise")
+    place = relationship("Place", back_populates="likes", lazy="raise")
 
     def __repr__(self):
         return f"<PlaceLike(user_id={self.user_id}, place_id={self.place_id})>"

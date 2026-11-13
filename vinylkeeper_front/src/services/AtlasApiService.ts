@@ -1,5 +1,4 @@
 import { BaseApiService } from "./BaseApiService";
-import requestService from "@utils/RequestService";
 
 export interface PlaceTypeData {
   id: number;
@@ -37,22 +36,14 @@ export interface Place {
   updated_at: string;
 }
 
-export interface PaginatedPlaceResponse {
-  items: Place[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
-
-export interface PlaceLikeStatusResponse {
+interface PlaceLikeStatusResponse {
   place_id: number;
   is_liked: boolean;
   likes_count: number;
   message: string;
 }
 
-export interface PlaceMutationResponse {
+interface PlaceMutationResponse {
   message: string;
   place: Place;
 }
@@ -69,17 +60,6 @@ export interface CreatePlaceData {
   longitude?: number;
 }
 
-export interface GeocodingResult {
-  display_name: string;
-  address: {
-    house_number?: string;
-    road?: string;
-    city?: string;
-    country?: string;
-    postcode?: string;
-  };
-}
-
 class AtlasApiService extends BaseApiService {
   async getPlacesMap(): Promise<PlaceMapResponse[]> {
     return this.get<PlaceMapResponse[]>("/atlas/map");
@@ -89,14 +69,6 @@ class AtlasApiService extends BaseApiService {
     return this.get<Place[]>(
       `/atlas/by-location?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`
     );
-  }
-
-  async getPlaces(page = 1, limit = 20): Promise<PaginatedPlaceResponse> {
-    return this.get<PaginatedPlaceResponse>(`/atlas/?page=${page}&limit=${limit}`);
-  }
-
-  async getPlace(id: number): Promise<Place> {
-    return this.get<Place>(`/atlas/${id}`);
   }
 
   async createPlace(data: CreatePlaceData): Promise<PlaceMutationResponse> {
@@ -115,10 +87,6 @@ class AtlasApiService extends BaseApiService {
     return this.post<{ message: string }>(`/atlas/${id}/reports`, { issues, comment: comment.trim() || null });
   }
 
-  async deletePlace(id: number): Promise<void> {
-    return this.delete<void>(`/atlas/${id}`);
-  }
-
   async likePlace(id: number): Promise<PlaceLikeStatusResponse> {
     return this.post<PlaceLikeStatusResponse>(`/atlas/${id}/like`);
   }
@@ -129,18 +97,6 @@ class AtlasApiService extends BaseApiService {
 
   async getPlaceTypes(): Promise<PlaceTypeData[]> {
     return this.get<PlaceTypeData[]>("/atlas/place-types");
-  }
-
-  async reverseGeocode(lat: number, lng: number): Promise<GeocodingResult> {
-    return requestService<GeocodingResult>({
-      apiTarget: "https://nominatim.openstreetmap.org",
-      method: "GET",
-      endpoint: `/reverse?lat=${lat}&lon=${lng}&format=json`,
-      headers: {
-        "User-Agent": "VinylKeeper/1.0 (https://vinylkeeper.org)",
-      },
-      skipRefresh: true, // Skip token refresh for external API
-    });
   }
 }
 

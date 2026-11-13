@@ -1,6 +1,6 @@
 import { BaseApiService } from "./BaseApiService";
 
-export interface ModerationStatus {
+interface ModerationStatus {
   id: number;
   name: string;
 }
@@ -32,7 +32,7 @@ export interface ModerationRequest {
   status?: ModerationStatus;
 }
 
-export interface ModerationRequestList {
+interface ModerationRequestList {
   items: ModerationRequest[];
   total: number;
   page: number;
@@ -43,7 +43,7 @@ export interface ModerationRequestList {
   rejected_count: number;
 }
 
-export interface PaginatedModerationRequestResponse {
+interface PaginatedModerationRequestResponse {
   items: ModerationRequest[];
   total: number;
   page: number;
@@ -51,7 +51,7 @@ export interface PaginatedModerationRequestResponse {
   total_pages: number;
 }
 
-export interface ModerationStats {
+interface ModerationStats {
   total: number;
   pending: number;
   approved: number;
@@ -59,7 +59,7 @@ export interface ModerationStats {
 }
 
 export type PlaceReportIssue = "name" | "description" | "address" | "website" | "type" | "closed";
-export type PlaceReportStatus = "open" | "resolved" | "dismissed";
+type PlaceReportStatus = "open" | "resolved" | "dismissed";
 
 /** Every field of a spot an admin can correct, as it is now */
 export interface ReportedPlace {
@@ -122,14 +122,6 @@ class AdminApiService extends BaseApiService {
   ): Promise<PaginatedModerationRequestResponse> {
     return this.get<PaginatedModerationRequestResponse>(
       `/vk-admin/moderation-requests/pending?page=${page}&limit=${limit}`
-    );
-  }
-
-  async getModerationRequestById(
-    requestId: number
-  ): Promise<ModerationRequest> {
-    return this.get<ModerationRequest>(
-      `/vk-admin/moderation-requests/${requestId}`
     );
   }
 

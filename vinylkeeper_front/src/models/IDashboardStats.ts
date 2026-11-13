@@ -28,12 +28,12 @@ export interface BreakdownEntry {
   count: number;
 }
 
-export interface EraEntry {
+interface EraEntry {
   decade: number;
   count: number;
 }
 
-export interface PressingsBreakdown {
+interface PressingsBreakdown {
   originals: number;
   reissues: number;
   unknown: number;
@@ -57,7 +57,7 @@ export type Currency = "EUR" | "USD";
 /** Which collection the value is about: the largest one, all of them, or one by id */
 export type ValueScope = "largest" | "all" | number;
 
-export interface ValueAmounts {
+interface ValueAmounts {
   currency: Currency;
   low: number;
   average: number;

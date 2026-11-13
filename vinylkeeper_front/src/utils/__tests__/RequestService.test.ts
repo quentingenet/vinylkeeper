@@ -173,6 +173,15 @@ describe("requestService", () => {
       });
     });
 
+    it("keeps the error of the replayed request after a successful refresh", async () => {
+      const apiError = { code: 2001, message: "Collection name already exists", details: {} };
+      mockFetch(unauthorized, () => json({}), () => json(apiError, 409));
+
+      await expect(
+        requestService({ apiTarget: API, method: "POST", endpoint: "/collections", body: {} })
+      ).rejects.toEqual(apiError);
+    });
+
     it("does not refresh twice when the replayed request is refused again", async () => {
       mockFetch(unauthorized, () => json({}), unauthorized);
 

@@ -12,7 +12,7 @@ from odf.style import Style, TableColumnProperties, TextProperties
 from odf.table import Table, TableCell, TableColumn, TableRow
 from odf.text import P
 
-from app.core.exceptions import ForbiddenError, ResourceNotFoundError
+from app.core.exceptions import ErrorCode, ForbiddenError, ResourceNotFoundError
 from app.core.logging import logger
 from app.core.orm_utils import is_loaded
 from app.models.album_model import Album
@@ -208,7 +208,7 @@ class ExportService:
             raise ResourceNotFoundError("Collection", collection_id)
         if collection.owner_id != user_id:
             raise ForbiddenError(
-                error_code=4003,
+                error_code=ErrorCode.FORBIDDEN_OWNER,
                 message="You can only export your own collections",
                 details={"collection_id": collection_id},
             )

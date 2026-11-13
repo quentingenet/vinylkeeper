@@ -13,7 +13,8 @@ from dotenv import dotenv_values
 
 from app.main import app
 from app.deps.deps import get_session_service, get_user_service
-from app.utils.auth_utils.auth import get_current_user, create_token, TokenType
+from app.utils.auth_utils.auth import get_current_user, create_access_token
+from tests.conftest import make_legacy_refresh_token
 from app.core.security import hash_password
 from app.models.user_model import User
 from app.models.reference_data.roles import Role
@@ -75,7 +76,7 @@ class FakeSessionService:
 
     @staticmethod
     def _token(user):
-        return create_token(str(user.user_uuid), TokenType.REFRESH, user.token_version)
+        return make_legacy_refresh_token(str(user.user_uuid), user.token_version)
 
     async def open(self, user, client="web"):
         self.opened.append((user, client))
@@ -209,7 +210,7 @@ async def auth_client(mock_user, fake_sessions):
 
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-            access_token = create_token(str(mock_user.user_uuid), TokenType.ACCESS)
+            access_token = create_access_token(str(mock_user.user_uuid))
             c.cookies.set("access_token", access_token)
             yield c, mock_service, mock_user
 

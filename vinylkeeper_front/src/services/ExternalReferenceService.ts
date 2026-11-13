@@ -3,7 +3,6 @@ import {
   AddToWishlistRequest,
   AddToCollectionRequest,
   PaginatedWishlistResponse,
-  CollectionItemResponse,
   AddToWishlistResponse,
   AddToCollectionResponse,
   OwnedPressing,
@@ -95,21 +94,6 @@ export class ExternalReferenceService extends BaseApiService {
     }
   }
 
-  async removeFromCollection(
-    collectionId: number,
-    externalId: string,
-    entityType: "album" | "artist"
-  ): Promise<void> {
-    try {
-      await this.delete<void>(
-        `${this.endpoint}/collection/${collectionId}/remove?external_id=${externalId}&entity_type=${entityType}`
-      );
-    } catch (error) {
-      logger.error("Error removing from collection:", error);
-      throw new Error("Failed to remove item from collection", { cause: error });
-    }
-  }
-
   async getUserWishlistPaginated(
     page: number = 1,
     limit: number = 8,
@@ -133,17 +117,6 @@ export class ExternalReferenceService extends BaseApiService {
       throw new Error("Failed to fetch wishlist items", { cause: error });
     }
   }
-
-  async getCollectionItems(): Promise<CollectionItemResponse[]> {
-    try {
-      return await this.get<CollectionItemResponse[]>(
-        `${this.endpoint}/collection`
-      );
-    } catch (error) {
-      logger.error("Error fetching collection items:", error);
-      throw new Error("Failed to fetch collection items", { cause: error });
-    }
-  }
 }
 
 const externalReferenceServiceInstance = new ExternalReferenceService();
@@ -161,16 +134,6 @@ export const externalReferenceApiService = {
     externalReferenceServiceInstance.moveWishlistItemToCollection(wishlistId, collectionId, pressingConfirmed),
   removeFromWishlist: (wishlistId: number) =>
     externalReferenceServiceInstance.removeFromWishlist(wishlistId),
-  removeFromCollection: (
-    collectionId: number,
-    externalId: string,
-    entityType: "album" | "artist"
-  ) =>
-    externalReferenceServiceInstance.removeFromCollection(
-      collectionId,
-      externalId,
-      entityType
-    ),
   getUserWishlistPaginated: (
     page: number = 1,
     limit: number = 8,
@@ -179,6 +142,4 @@ export const externalReferenceApiService = {
     search?: string
   ) =>
     externalReferenceServiceInstance.getUserWishlistPaginated(page, limit, userUuid, sortOrder, search),
-  getCollectionItems: () =>
-    externalReferenceServiceInstance.getCollectionItems(),
 };

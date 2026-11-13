@@ -23,6 +23,7 @@ from app.core.exceptions import (
     InvalidEmailTokenError,
     CsrfValidationError,
 )
+from app.core.enums import RoleEnum
 from app.core.logging import logger
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
@@ -62,25 +63,25 @@ class TokenType(str, Enum):
     EMAIL_CHANGE = "email_change"
 
 
-def create_token(user_uuid: str, token_type: TokenType, token_version: int = 0) -> str:
-    """Create a JWT token
+def _encode_jwt(claims: dict, expire_minutes: int) -> str:
+    """Sign claims, valid for expire_minutes from now: every token of the app is built here."""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
+    return jwt.encode({**claims, "exp": expire}, PRIVATE_KEY, algorithm=ALGORITHM)
+
+
+def _decode_jwt(token: str) -> dict:
+    """Payload of a token signed by the app; raises PyJWTError when it is not one, or expired."""
+    return jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+
+
+def create_access_token(user_uuid: str, token_version: int = 0) -> str:
+    """Create an access JWT
 
     token_version is the user's token_version: bumping it on the user revokes every
-    token issued before.
+    token issued before. Refresh tokens belong to a session: create_refresh_token.
     """
-    if token_type == TokenType.ACCESS:
-        expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    else:
-        expires_delta = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-
-    expire = datetime.now(timezone.utc) + expires_delta
-    to_encode = {
-        "sub": user_uuid,
-        "exp": expire,
-        "type": token_type.value,
-        "ver": token_version
-    }
-    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+    claims = {"sub": user_uuid, "type": TokenType.ACCESS.value, "ver": token_version}
+    return _encode_jwt(claims, ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
 def create_refresh_token(user_uuid: str, token_version: int, session_id: str, jti: str) -> str:
@@ -88,22 +89,20 @@ def create_refresh_token(user_uuid: str, token_version: int, session_id: str, jt
     A refresh token of a session (see SessionService). "sid" is the session, "jti" the renewal: only
     the latest one is good. Neither leads to a user by itself.
     """
-    expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-    to_encode = {
+    claims = {
         "sub": user_uuid,
-        "exp": expire,
         "type": TokenType.REFRESH.value,
         "ver": token_version,
         "sid": session_id,
         "jti": jti,
     }
-    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+    return _encode_jwt(claims, REFRESH_TOKEN_EXPIRE_MINUTES)
 
 
 def decode_token(token: str, expected_type: Optional[TokenType] = None) -> dict:
     """Verify a JWT token and return its payload"""
     try:
-        payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        payload = _decode_jwt(token)
         if expected_type and payload.get("type") != expected_type.value:
             raise UnauthorizedError("Invalid token type")
         return payload
@@ -132,6 +131,11 @@ def check_user_session(user: Optional[User], payload: dict) -> User:
     return user
 
 
+def is_admin(user: User) -> bool:
+    """An admin has the admin role and the superuser flag, both."""
+    return bool(user.role and user.role.name == RoleEnum.ADMIN.value and user.is_superuser)
+
+
 def bearer_token(request: Request) -> Optional[str]:
     """
     The token of an "Authorization: Bearer <token>" header, None without one. This is how the
@@ -146,13 +150,6 @@ def bearer_token(request: Request) -> Optional[str]:
     return token if scheme.lower() == "bearer" and token else None
 
 
-def verify_access_token(request: Request) -> str:
-    token = bearer_token(request) or request.cookies.get("access_token")
-    if not token:
-        raise UnauthorizedError("Access token not found")
-    return verify_token(token, expected_type=TokenType.ACCESS)
-
-
 def decode_refresh_token(request: Request) -> dict:
     """
     Verify the refresh token and return its payload: the Bearer header of the native app, else
@@ -163,17 +160,12 @@ def decode_refresh_token(request: Request) -> dict:
         raise RefreshTokenNotFoundError()
 
     try:
-        payload = jwt.decode(refresh_token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        payload = _decode_jwt(refresh_token)
         if payload.get("type") != TokenType.REFRESH.value:
             raise UnauthorizedError("Invalid token type")
         return payload
     except PyJWTError:
         raise UnauthorizedError("Invalid refresh token")
-
-
-def verify_refresh_token(request: Request) -> str:
-    """Verify a refresh token from cookies"""
-    return decode_refresh_token(request)["sub"]
 
 
 async def get_refresh_user(
@@ -202,15 +194,8 @@ async def get_refresh_user(
 def create_reset_token(user_uuid: str, token_version: int = 0) -> str:
     """Create a password reset token, valid until the user's token_version changes"""
     try:
-        expire = datetime.now(
-            timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
-        to_encode = {
-            "sub": str(user_uuid),
-            "exp": expire,
-            "type": TokenType.RESET.value,
-            "ver": token_version
-        }
-        return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+        claims = {"sub": str(user_uuid), "type": TokenType.RESET.value, "ver": token_version}
+        return _encode_jwt(claims, settings.RESET_TOKEN_EXPIRE_MINUTES)
     except Exception as e:
         logger.error("Failed to create reset token", exc_info=True, extra={"error": str(e)})
         raise ValueError("Failed to create reset token")
@@ -219,7 +204,7 @@ def create_reset_token(user_uuid: str, token_version: int = 0) -> str:
 def verify_reset_token(token: str) -> tuple[str, int]:
     """Verify a password reset token and return the user UUID and its token_version"""
     try:
-        payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        payload = _decode_jwt(token)
         if payload.get("type") != TokenType.RESET.value:
             raise InvalidResetTokenError()
         user_uuid = payload.get("sub")
@@ -232,9 +217,8 @@ def verify_reset_token(token: str) -> tuple[str, int]:
 
 def create_email_confirmation_token(user_uuid: str, email: str) -> str:
     """Link of the registration email: confirms this very address, not a later one"""
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.EMAIL_TOKEN_EXPIRE_MINUTES)
-    to_encode = {"sub": str(user_uuid), "exp": expire, "type": TokenType.EMAIL_CONFIRM.value, "email": email}
-    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+    claims = {"sub": str(user_uuid), "type": TokenType.EMAIL_CONFIRM.value, "email": email}
+    return _encode_jwt(claims, settings.EMAIL_TOKEN_EXPIRE_MINUTES)
 
 
 def create_email_change_token(user_uuid: str, current_email: str, new_email: str, token_version: int) -> str:
@@ -242,22 +226,20 @@ def create_email_change_token(user_uuid: str, current_email: str, new_email: str
     Link sent to the new address. Valid while the account still has current_email and the same
     token_version: a password reset (after a stolen session, say) cancels a pending change.
     """
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.EMAIL_TOKEN_EXPIRE_MINUTES)
-    to_encode = {
+    claims = {
         "sub": str(user_uuid),
-        "exp": expire,
         "type": TokenType.EMAIL_CHANGE.value,
         "email": new_email,
         "cur": current_email,
         "ver": token_version,
     }
-    return jwt.encode(to_encode, PRIVATE_KEY, algorithm=ALGORITHM)
+    return _encode_jwt(claims, settings.EMAIL_TOKEN_EXPIRE_MINUTES)
 
 
 def decode_email_token(token: str) -> dict:
     """Payload of a confirmation or email change link"""
     try:
-        payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
+        payload = _decode_jwt(token)
     except PyJWTError:
         raise InvalidEmailTokenError()
     if payload.get("type") not in (TokenType.EMAIL_CONFIRM.value, TokenType.EMAIL_CHANGE.value):
@@ -326,36 +308,41 @@ async def get_optional_user(
     return await get_current_user(request, response, db)
 
 
+def _set_cookie(response: Response, key: str, value: str, max_age: int, httponly: bool) -> None:
+    """
+    A cookie of the session. Outside development the site and the API are on different domains: the
+    cookie must then be Secure and SameSite=None to be sent at all, on the configured domain.
+    """
+    app_env = settings.APP_ENV.lower()
+    use_secure_cookie = app_env not in {"development", "local", "test"}
+    cookie_domain = settings.COOKIE_DOMAIN if use_secure_cookie and settings.COOKIE_DOMAIN else None
+
+    response.set_cookie(
+        key=key,
+        value=value,
+        max_age=max_age,
+        httponly=httponly,
+        secure=use_secure_cookie,
+        samesite="none" if use_secure_cookie else "lax",
+        path="/",
+        domain=cookie_domain
+    )
+
+
 def set_token_cookie(
     response: Response,
     token: str,
     token_type: TokenType,
     custom_max_age: int | None = None
 ) -> None:
-    """Set a token cookie"""
-    if token_type == TokenType.ACCESS:
-        max_age = custom_max_age or ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    """Set a token cookie. custom_max_age=0 expires it (logout): 0 is a value, not a missing one."""
+    if custom_max_age is not None:
+        max_age = custom_max_age
+    elif token_type == TokenType.ACCESS:
+        max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
     else:
-        max_age = custom_max_age or REFRESH_TOKEN_EXPIRE_MINUTES * 60
-
-    app_env = settings.APP_ENV.lower()
-    use_secure_cookie = app_env not in {"development", "local", "test"}
-    cookie_domain = (
-            settings.COOKIE_DOMAIN
-            if use_secure_cookie and settings.COOKIE_DOMAIN
-            else None
-        )
-
-    response.set_cookie(
-        key=f"{token_type.value}_token",
-        value=token,
-        max_age=max_age,
-        httponly=True,
-        secure=use_secure_cookie,
-        samesite="none" if use_secure_cookie else "lax",
-        path="/",
-        domain=cookie_domain
-    )
+        max_age = REFRESH_TOKEN_EXPIRE_MINUTES * 60
+    _set_cookie(response, f"{token_type.value}_token", token, max_age, httponly=True)
 
 
 def generate_csrf_token() -> str:
@@ -365,21 +352,4 @@ def generate_csrf_token() -> str:
 
 def set_csrf_cookie(response: Response, token: str, max_age: int) -> None:
     """Set the CSRF cookie, readable by JS for the double-submit pattern"""
-    app_env = settings.APP_ENV.lower()
-    use_secure_cookie = app_env not in {"development", "local", "test"}
-    cookie_domain = (
-            settings.COOKIE_DOMAIN
-            if use_secure_cookie and settings.COOKIE_DOMAIN
-            else None
-        )
-
-    response.set_cookie(
-        key="csrf_token",
-        value=token,
-        max_age=max_age,
-        httponly=False,
-        secure=use_secure_cookie,
-        samesite="none" if use_secure_cookie else "lax",
-        path="/",
-        domain=cookie_domain
-    )
+    _set_cookie(response, "csrf_token", token, max_age, httponly=False)

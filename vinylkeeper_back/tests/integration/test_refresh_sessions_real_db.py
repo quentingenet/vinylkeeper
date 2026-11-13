@@ -15,7 +15,8 @@ from app.main import app
 from app.models.refresh_session_model import RefreshSession
 from app.repositories.refresh_session_repository import RefreshSessionRepository
 from app.services.session_service import GRACE_PERIOD, SessionService
-from app.utils.auth_utils.auth import TokenType, create_token, decode_token
+from app.utils.auth_utils.auth import TokenType, decode_token
+from tests.conftest import make_legacy_refresh_token
 from tests.integration.conftest import make_real_test_user
 
 
@@ -273,7 +274,7 @@ class TestOverHttp:
 
     async def test_a_token_from_before_sessions_still_logs_in_and_gets_one(self, real_session, http):
         user = await make_real_test_user(real_session)
-        http.cookies.set("refresh_token", create_token(str(user.user_uuid), TokenType.REFRESH, user.token_version))
+        http.cookies.set("refresh_token", make_legacy_refresh_token(str(user.user_uuid), user.token_version))
 
         response = await http.post("/api/users/refresh-token")
 

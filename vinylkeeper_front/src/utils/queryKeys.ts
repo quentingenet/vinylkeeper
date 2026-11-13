@@ -13,7 +13,6 @@ export const queryKeys = {
       list: (page: number, sortBy: string) => ["publicCollections", page, sortBy] as const,
     },
     albums: (id: number) => ["collectionAlbums", id] as const,
-    albumsPage: (id: number, page: number, sort: string) => ["collectionAlbums", id, page, sort] as const,
     // Under the albums prefix: whatever refreshes the albums of a collection refreshes its works too
     records: (id: number) => ["collectionAlbums", id, "records"] as const,
     recordsPage: (id: number, page: number, sort: string) => ["collectionAlbums", id, "records", page, sort] as const,
@@ -25,7 +24,6 @@ export const queryKeys = {
   places: {
     all: () => ["places"] as const,
     map: () => ["places-map"] as const,
-    detail: (id: number) => ["placeDetails", id] as const,
     allByLocation: () => ["places-location"] as const,
     byLocation: (country: string | undefined, city: string | undefined) =>
       ["places-location", country, city] as const,

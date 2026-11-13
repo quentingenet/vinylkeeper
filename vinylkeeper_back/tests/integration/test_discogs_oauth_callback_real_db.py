@@ -21,7 +21,8 @@ from app.db.session import get_db
 from app.endpoints.discogs_import import get_oauth_service
 from app.main import app
 from app.models.discogs_connection_model import DiscogsConnection, DiscogsOAuthRequest
-from app.utils.auth_utils.auth import ALGORITHM, PRIVATE_KEY, TokenType, create_token
+from app.utils.auth_utils.auth import ALGORITHM, PRIVATE_KEY, TokenType, create_access_token
+from tests.conftest import make_legacy_refresh_token
 
 from tests.integration.conftest import make_real_test_user
 from tests.integration.test_discogs_oauth_real_db import FakeDiscogs, configured, service  # noqa: F401
@@ -47,7 +48,7 @@ async def setup(real_session):
 
 
 def refresh_token_of(user) -> str:
-    return create_token(str(user.user_uuid), TokenType.REFRESH, user.token_version)
+    return make_legacy_refresh_token(str(user.user_uuid), user.token_version)
 
 
 def expired_access_token_of(user) -> str:
@@ -165,7 +166,7 @@ BODY = {"oauth_token": "req-tok", "oauth_verifier": "the-verifier"}
 
 
 def bearer_of(user) -> dict:
-    return {"Authorization": f"Bearer {create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version)}"}
+    return {"Authorization": f"Bearer {create_access_token(str(user.user_uuid), user.token_version)}"}
 
 
 async def test_the_app_completes_with_its_own_session(real_session, setup):

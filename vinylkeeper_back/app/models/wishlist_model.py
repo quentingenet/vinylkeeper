@@ -39,8 +39,9 @@ class Wishlist(Base):
     created_at = Column(DateTime(timezone=True),
                         server_default=func.now(), nullable=False)
 
+    # raise: no response shows the owner of a wishlist row (user_id is enough)
     user = relationship(
-        "User", back_populates="wishlist_items", lazy="selectin")
+        "User", back_populates="wishlist_items", lazy="raise")
     entity_type = relationship(
         "EntityType", back_populates="wishlist_items", lazy="selectin")
     external_source = relationship(

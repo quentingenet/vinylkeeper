@@ -1,8 +1,7 @@
 import ky, { HTTPError } from "ky";
 import { ApiError, isApiError } from "./apiError";
 
-export type { ApiError };
-export type AppError = ApiError;
+type AppError = ApiError;
 
 const getCsrfToken = (): string | null => {
   const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
@@ -21,6 +20,12 @@ const refreshSession = (apiTarget: string): Promise<void> => {
     });
   return refreshInFlight;
 };
+
+const SESSION_EXPIRED = {
+  code: 401,
+  message: "Session expired. Please log in again.",
+  details: {},
+} satisfies AppError;
 
 interface RequestOptions {
   apiTarget: string;
@@ -84,30 +89,23 @@ const requestService = async <T = unknown>({
       throw { code: 9999, message: `Unexpected content-type: ${contentType}`, details: {} } satisfies AppError;
     }
   } catch (error: unknown) {
-    if (
-      error instanceof HTTPError &&
-      error.response?.status === 401 &&
-      !retrying &&
-      !skipRefresh
-    ) {
+    if (error instanceof HTTPError && error.response?.status === 401 && !skipRefresh) {
+      // Refused again right after a refresh: the session is really gone
+      if (retrying) throw { ...SESSION_EXPIRED, details: {} };
       try {
         await refreshSession(apiTarget);
-
-        return await requestService<T>({
-          apiTarget,
-          method,
-          endpoint,
-          body,
-          headers,
-          retrying: true,
-        });
       } catch {
-        throw {
-          code: 401,
-          message: "Session expired. Please log in again.",
-          details: {},
-        } satisfies AppError;
+        throw { ...SESSION_EXPIRED, details: {} };
       }
+      // Outside the try: an error of the replayed request reaches the caller as it is
+      return requestService<T>({
+        apiTarget,
+        method,
+        endpoint,
+        body,
+        headers,
+        retrying: true,
+      });
     }
 
     // ky has already parsed the error body: the API sends an ApiError

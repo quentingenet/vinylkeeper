@@ -4,7 +4,8 @@ before a Discogs import into an existing collection.
 
 Same safety model as test_real_db_relationships.py: everything is rolled back at the end.
 """
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import select
@@ -58,6 +59,11 @@ async def contents(session, collection_id):
     return [tuple(row) for row in albums], [tuple(row) for row in copies], sorted(artists)
 
 
+def paris_save_name(name: str) -> str:
+    """The expected name of a save made today, in Paris time."""
+    return f"SAVE {name} ({datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()})"
+
+
 class TestSaveCopy:
     async def test_the_copy_holds_every_record_copy_condition_and_artist(self, real_session):
         user, collection = await filled_collection(real_session)
@@ -65,7 +71,7 @@ class TestSaveCopy:
 
         copy = await make_collection_service(real_session).save_copy(user.id, collection.id)
 
-        assert copy.name == f"SAVE {collection.name} ({date.today().isoformat()})"
+        assert copy.name == paris_save_name(collection.name)
         assert copy.is_public is False and copy.owner_id == user.id
         assert await contents(real_session, copy.id) == before
         assert len(before[1]) == 3  # two copies of the first record, one of the second
@@ -135,7 +141,7 @@ class TestSaveCopyBeforeImport:
         await DiscogsImportService(repository, discogs_returning([item(new_release)])).run_import(job)
 
         assert job.status == "done" and job.added == 1
-        assert job.saved_copy_name == f"SAVE {collection.name} ({date.today().isoformat()})"
+        assert job.saved_copy_name == paris_save_name(collection.name)
         assert await contents(real_session, job.saved_copy_collection_id) == before
         assert len((await contents(real_session, collection.id))[0]) == len(before[0]) + 1
 

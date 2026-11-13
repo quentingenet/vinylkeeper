@@ -51,7 +51,6 @@ async def client_with_services(auth_client):
     reference_service = AsyncMock()
     reference_service.add_to_collection = AsyncMock(return_value=collection_response())
     reference_service.find_owned_pressings = AsyncMock(return_value=[])
-    reference_service.remove_from_collection = AsyncMock(return_value=None)
     wishlist_service = AsyncMock()
     app.dependency_overrides[get_external_reference_service] = lambda: reference_service
     app.dependency_overrides[get_wishlist_service] = lambda: wishlist_service
@@ -153,25 +152,4 @@ class TestQueryExternalId:
 
         assert resp.status_code == 200
 
-    @pytest.mark.parametrize("external_id", BAD_IDS)
-    async def test_remove_from_collection_refuses(self, client_with_services, external_id):
-        client, reference_service, _ = client_with_services
 
-        resp = await client.delete(
-            "/api/external-references/collection/1/remove",
-            params={"external_id": external_id, "entity_type": "album"},
-        )
-
-        assert resp.status_code == 422
-        reference_service.remove_from_collection.assert_not_called()
-
-    async def test_remove_from_collection_accepts_id(self, client_with_services):
-        client, reference_service, _ = client_with_services
-
-        resp = await client.delete(
-            "/api/external-references/collection/1/remove",
-            params={"external_id": "380980", "entity_type": "album"},
-        )
-
-        assert resp.status_code == 204
-        reference_service.remove_from_collection.assert_awaited_once()

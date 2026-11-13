@@ -3,7 +3,6 @@ from .artist_model import Artist
 from .album_model import Album
 from .collection_model import Collection
 from .collection_album import CollectionAlbum, CollectionAlbumCopy
-from .loan_model import Loan
 from .wishlist_model import Wishlist
 from .place_model import Place
 from .like_model import Like
@@ -35,7 +34,6 @@ __all__ = [
     "CollectionAlbum",
     "CollectionAlbumCopy",
     "CollectionArtist",
-    "Loan",
     "Wishlist",
     "Place",
     "Like",

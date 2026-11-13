@@ -23,9 +23,10 @@ class Like(Base):
     created_at = Column(DateTime(timezone=True),
                         server_default=func.now(), nullable=False)
 
-    user = relationship("User", back_populates="likes", lazy="selectin")
+    # raise: a like is read for its ids only; loading its user (and role) and collection cost 3 queries
+    user = relationship("User", back_populates="likes", lazy="raise")
     collection = relationship(
-        "Collection", back_populates="likes", lazy="selectin")
+        "Collection", back_populates="likes", lazy="raise")
 
     def __repr__(self):
         return f"<Like(user_id={self.user_id}, collection_id={self.collection_id})>"

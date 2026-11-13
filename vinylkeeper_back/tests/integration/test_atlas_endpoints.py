@@ -6,7 +6,7 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.deps.deps import get_atlas_service
-from app.utils.auth_utils.auth import get_current_user, get_optional_user, create_token, TokenType
+from app.utils.auth_utils.auth import get_current_user, get_optional_user, create_access_token
 from app.core.exceptions import (
     ForbiddenError,
     ResourceNotFoundError,
@@ -117,7 +117,7 @@ async def place_client(mock_user, mock_place_service):
 
     with patch("app.core.lifespan.check_reference_data_exists", new_callable=AsyncMock, return_value=True):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-            c.cookies.set("access_token", create_token(str(mock_user.user_uuid), TokenType.ACCESS))
+            c.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
             yield c, mock_place_service, mock_user
 
     app.dependency_overrides.clear()
@@ -164,39 +164,6 @@ class TestCreatePlace:
 
 
 # ---------------------------------------------------------------------------
-# GET /api/atlas/
-# ---------------------------------------------------------------------------
-
-class TestGetPlaces:
-    async def test_success_returns_200_paginated(self, place_client):
-        client, service, _ = place_client
-        service.get_all_places = AsyncMock(return_value=MagicMock(
-            items=[], total=0, page=1, limit=20, total_pages=1
-        ))
-
-        resp = await client.get("/api/atlas/")
-
-        assert resp.status_code == 200
-
-    async def test_no_auth_returns_401(self, client):
-        resp = await client.get("/api/atlas/")
-        assert resp.status_code == 401
-
-    async def test_pagination_params_forwarded(self, place_client):
-        client, service, _ = place_client
-        service.get_all_places = AsyncMock(return_value=MagicMock(
-            items=[], total=0, page=2, limit=5, total_pages=1
-        ))
-
-        await client.get("/api/atlas/?page=2&limit=5")
-
-        service.get_all_places.assert_awaited_once()
-        _, call_page, call_limit = service.get_all_places.call_args[0]
-        assert call_page == 2
-        assert call_limit == 5
-
-
-# ---------------------------------------------------------------------------
 # GET /api/atlas/map
 # ---------------------------------------------------------------------------
 
@@ -240,10 +207,6 @@ class TestVisitorAccess:
         ("post", "/api/atlas/1/like"),
         ("delete", "/api/atlas/1/like"),
         ("patch", "/api/atlas/1"),
-        ("delete", "/api/atlas/1"),
-        ("get", "/api/atlas/"),
-        ("get", "/api/atlas/1"),
-        ("get", "/api/atlas/search?q=lyon"),
     ])
     async def test_everything_else_needs_a_session(self, client, mock_place_service, method, path):
         app.dependency_overrides[get_atlas_service] = lambda: mock_place_service
@@ -277,33 +240,6 @@ class TestGetPlaceTypes:
         assert len(body) == 1
         assert body[0]["id"] == 1
         assert body[0]["name"] == "record_store"
-
-
-# ---------------------------------------------------------------------------
-# GET /api/atlas/{place_id}
-# ---------------------------------------------------------------------------
-
-class TestGetPlaceById:
-    async def test_success_returns_200(self, place_client):
-        client, service, _ = place_client
-        service.get_place = AsyncMock(return_value=_make_public_place_response())
-
-        resp = await client.get("/api/atlas/1")
-
-        assert resp.status_code == 200
-
-    async def test_not_found_returns_404(self, place_client):
-        client, service, _ = place_client
-        service.get_place = AsyncMock(side_effect=ResourceNotFoundError("Place", 99))
-
-        resp = await client.get("/api/atlas/99")
-
-        assert resp.status_code == 404
-        assert resp.json()["code"] == 2000
-
-    async def test_no_auth_returns_401(self, client):
-        resp = await client.get("/api/atlas/1")
-        assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -347,40 +283,6 @@ class TestUpdatePlace:
         client, *_ = place_client
         resp = await client.patch("/api/atlas/1", json={})
         assert resp.status_code == 422
-
-
-# ---------------------------------------------------------------------------
-# DELETE /api/atlas/{place_id}
-# ---------------------------------------------------------------------------
-
-class TestDeletePlace:
-    async def test_success_returns_204(self, place_client):
-        client, service, _ = place_client
-        service.delete_place = AsyncMock(return_value=None)
-
-        resp = await client.delete("/api/atlas/1")
-
-        assert resp.status_code == 204
-
-    async def test_not_owner_returns_403(self, place_client):
-        client, service, _ = place_client
-        service.delete_place = AsyncMock(side_effect=ForbiddenError())
-
-        resp = await client.delete("/api/atlas/2")
-
-        assert resp.status_code == 403
-
-    async def test_not_found_returns_404(self, place_client):
-        client, service, _ = place_client
-        service.delete_place = AsyncMock(side_effect=ResourceNotFoundError("Place", 99))
-
-        resp = await client.delete("/api/atlas/99")
-
-        assert resp.status_code == 404
-
-    async def test_no_auth_returns_401(self, client):
-        resp = await client.delete("/api/atlas/1")
-        assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------

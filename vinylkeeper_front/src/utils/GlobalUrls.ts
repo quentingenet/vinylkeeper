@@ -57,8 +57,6 @@ const authUrl = (form: "login" | "register", nextPath?: string) =>
   `${EGlobalUrls.ROOT}?${AUTH_PARAM}=${form}${nextPath ? `&${NEXT_PARAM}=${encodeURIComponent(nextPath)}` : ""}`;
 export const loginUrl = (nextPath?: string) => authUrl("login", nextPath);
 export const registerUrl = (nextPath?: string) => authUrl("register", nextPath);
-export const LOGIN_URL = loginUrl();
-export const REGISTER_URL = registerUrl();
 
 /** A path of this site only: "//other.site" or an absolute URL in a link must not redirect there. */
 export const safeNextPath = (value: string | null): string | null =>

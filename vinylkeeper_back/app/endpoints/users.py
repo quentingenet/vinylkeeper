@@ -24,7 +24,7 @@ from app.schemas.user_schema import (
 from app.services.session_service import SessionService
 from app.services.user_service import UserService
 from app.utils.auth_utils.auth import (
-    create_token,
+    create_access_token,
     set_token_cookie,
     generate_csrf_token,
     set_csrf_cookie,
@@ -42,14 +42,13 @@ from app.core.exceptions import (
     TermsNotAcceptedError,
     UserNotFoundError,
 )
-from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
 
 def set_session_cookies(response: Response, user: User, refresh_token: str) -> None:
     """Fresh access and CSRF cookies for the user's token_version, and the refresh token of the session"""
-    access_token = create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version)
+    access_token = create_access_token(str(user.user_uuid), user.token_version)
     set_token_cookie(response, access_token, TokenType.ACCESS)
     set_token_cookie(response, refresh_token, TokenType.REFRESH)
     set_csrf_cookie(response, generate_csrf_token(), settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
@@ -72,13 +71,12 @@ async def start_session(
         set_session_cookies(response, user, refresh_token)
         return {}
     return {
-        "access_token": create_token(str(user.user_uuid), TokenType.ACCESS, user.token_version),
+        "access_token": create_access_token(str(user.user_uuid), user.token_version),
         "refresh_token": refresh_token,
     }
 
 
 @router.post("/auth", response_model=LoginResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def login(
     response: Response,
     user_data: UserAuthSchema,
@@ -98,7 +96,6 @@ async def login(
 
 @router.post("/register", response_model=RegisterResponse, response_model_exclude_none=True,
              status_code=status.HTTP_201_CREATED)
-@handle_app_exceptions
 async def register(
     response: Response,
     new_user: UserCreate,
@@ -111,22 +108,21 @@ async def register(
     log_activity(user.username, "signed up")
     # After the response: a slow or failing SMTP never delays nor fails the registration
     background_tasks.add_task(user_service.send_welcome_email, user)
-    await user_service.send_new_user_registered_email(user)
+    user_service.send_new_user_registered_email(user, background_tasks)
     return RegisterResponse(message="User registered successfully", isLoggedIn=True, **tokens)
 
 
 @router.post("/forgot-password", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def forgot_password(
     data: ForgotPasswordSchema,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service)
 ) -> MessageResponse:
-    await user_service.send_password_reset_email(data.email)
+    await user_service.send_password_reset_email(data.email, background_tasks)
     return MessageResponse(message="If an account exists with this email, a password reset link has been sent")
 
 
 @router.post("/reset-password/check", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def check_reset_token(
     data: ResetTokenSchema,
     user_service: UserService = Depends(get_user_service)
@@ -137,7 +133,6 @@ async def check_reset_token(
 
 
 @router.post("/reset-password", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def reset_password(
     data: ResetPasswordSchema,
     user_service: UserService = Depends(get_user_service)
@@ -148,7 +143,6 @@ async def reset_password(
 
 @router.post("/refresh-token", response_model=TokenRefreshResponse, response_model_exclude_none=True,
              status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def refresh_token(
     request: Request,
     response: Response,
@@ -186,7 +180,6 @@ async def logout(
 
 
 @router.get("/me", response_model=UserMeResponse)
-@handle_app_exceptions
 async def get_current_user_info(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
@@ -197,7 +190,6 @@ async def get_current_user_info(
 
 
 @router.get("/me/settings", response_model=UserSettingsResponse)
-@handle_app_exceptions
 async def get_current_user_settings(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
@@ -208,7 +200,6 @@ async def get_current_user_settings(
 
 
 @router.put("/me/currency", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def set_my_currency(
     currency_data: CurrencyUpdateRequest,
     current_user=Depends(get_current_user),
@@ -221,7 +212,6 @@ async def set_my_currency(
 
 @router.put("/me/password", response_model=PasswordChangeResponse, response_model_exclude_none=True,
             status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def change_my_password(
     request: Request,
     response: Response,
@@ -242,7 +232,6 @@ async def change_my_password(
 
 
 @router.post("/confirm-email", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def confirm_email(
     data: ConfirmEmailRequest,
     user_service: UserService = Depends(get_user_service)
@@ -253,7 +242,6 @@ async def confirm_email(
 
 
 @router.post("/me/confirm-email/resend", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def resend_email_confirmation(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
@@ -264,7 +252,6 @@ async def resend_email_confirmation(
 
 
 @router.post("/me/email", response_model=MessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def request_email_change(
     data: EmailChangeRequest,
     current_user=Depends(get_current_user),
@@ -276,20 +263,18 @@ async def request_email_change(
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
-@handle_app_exceptions
 async def delete_my_account(
     current_user=Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """Delete current user account"""
     success = await user_service.delete_user(current_user)
-    log_activity(current_user.username, "deleted their account")
     if not success:
         raise UserNotFoundError(str(current_user.user_uuid))
+    log_activity(current_user.username, "deleted their account")
 
 
 @router.post("/contact", response_model=ContactMessageResponse, status_code=status.HTTP_200_OK)
-@handle_app_exceptions
 async def send_contact_message(
     message_data: ContactMessageRequest,
     current_user=Depends(get_current_user),

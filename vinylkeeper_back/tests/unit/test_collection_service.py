@@ -294,39 +294,6 @@ class TestUnlikeCollection:
 # get_collection_by_id
 # ---------------------------------------------------------------------------
 
-class TestGetCollectionById:
-    async def test_not_found_raises(self):
-        service, repo, *_ = make_service()
-        repo.get_by_id = AsyncMock(return_value=None)
-
-        with pytest.raises(ResourceNotFoundError):
-            await service.get_collection_by_id(collection_id=99, user_id=1)
-
-    async def test_private_non_owner_raises(self):
-        service, repo, *_ = make_service()
-        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=2, is_public=False))
-
-        with pytest.raises(ForbiddenError):
-            await service.get_collection_by_id(collection_id=1, user_id=1)
-
-    async def test_public_any_user_succeeds(self):
-        service, repo, *_ = make_service()
-        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=2, is_public=True))
-
-        with patch.object(service, "_build_collection_response", new_callable=AsyncMock, return_value=MagicMock()):
-            result = await service.get_collection_by_id(collection_id=1, user_id=99)
-
-        assert result is not None
-
-    async def test_private_owner_succeeds(self):
-        service, repo, *_ = make_service()
-        repo.get_by_id = AsyncMock(return_value=make_collection(owner_id=1, is_public=False))
-
-        with patch.object(service, "_build_collection_response", new_callable=AsyncMock, return_value=MagicMock()):
-            result = await service.get_collection_by_id(collection_id=1, user_id=1)
-
-        assert result is not None
-
 
 # ---------------------------------------------------------------------------
 # _build_collection_response — real (non-mocked) ORM relationship objects
@@ -434,17 +401,32 @@ class TestUpdateCollection:
         col = make_collection(owner_id=1, name="Same name")
         repo.get_by_id = AsyncMock(return_value=col)
         repo.update = AsyncMock(return_value=col)
-        repo.refresh = AsyncMock(return_value=col)
 
-        with patch.object(service, "get_collection", new_callable=AsyncMock, return_value=MagicMock()):
-            await service.update_collection(
-                user_id=1, collection_id=1,
-                collection_data=CollectionUpdate.model_construct(
-                    name="Same name", description=None, is_public=None, mood_id=None
-                ),
-            )
+        await service.update_collection(
+            user_id=1, collection_id=1,
+            collection_data=CollectionUpdate.model_construct(
+                name="Same name", description=None, is_public=None, mood_id=None
+            ),
+        )
 
         repo.find_by_name_and_owner.assert_not_awaited()
+
+    async def test_saves_the_fields_without_reloading_the_collection(self):
+        """The endpoints answer a message only: no album nor copy is loaded for a response."""
+        service, repo, *_ = make_service()
+        col = make_collection(owner_id=1, name="Jazz")
+        repo.get_by_id = AsyncMock(return_value=col)
+        repo.update = AsyncMock(return_value=col)
+
+        result = await service.update_collection(
+            user_id=1, collection_id=1, collection_data=CollectionUpdate(description="Blue Note"),
+        )
+
+        assert result is None
+        assert col.description == "Blue Note"
+        repo.update.assert_awaited_once_with(col)
+        # One read, without the albums nor their copies
+        repo.get_by_id.assert_awaited_once_with(1, load_relations=False)
 
 
 # ---------------------------------------------------------------------------
@@ -733,3 +715,26 @@ class TestOnlyTheOwnerWrites:
 
         repo.delete.assert_not_awaited()
         repo.update.assert_not_awaited()
+
+
+class TestSavedCopyName:
+    def test_dates_the_save_in_paris_time_whatever_the_process_timezone(self, monkeypatch):
+        """23:30 UTC on 29 October is already 30 October in Paris: the name says the 30th."""
+        import time
+        from datetime import datetime as real_datetime, timezone
+        from app.services import collection_service
+
+        class FrozenDatetime(real_datetime):
+            @classmethod
+            def now(cls, tz=None):
+                instant = real_datetime(2026, 10, 29, 23, 30, tzinfo=timezone.utc)
+                return instant.astimezone(tz) if tz else instant.replace(tzinfo=None)
+
+        monkeypatch.setattr(collection_service, "datetime", FrozenDatetime, raising=False)
+        monkeypatch.setenv("TZ", "UTC")
+        time.tzset()
+        try:
+            assert collection_service.saved_copy_name("Jazz shelf") == "SAVE Jazz shelf (2026-10-30)"
+        finally:
+            monkeypatch.undo()
+            time.tzset()

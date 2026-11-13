@@ -3,7 +3,6 @@ from fastapi.responses import StreamingResponse
 from io import BytesIO
 import hashlib
 from app.services.image_proxy_service import ImageProxyService
-from app.utils.endpoint_utils import handle_app_exceptions
 
 router = APIRouter()
 
@@ -15,7 +14,6 @@ def get_image_proxy_service(request: Request) -> ImageProxyService:
 
 
 @router.get("/proxy")
-@handle_app_exceptions
 async def proxy_image(
     request: Request,
     src: str = Query(...,

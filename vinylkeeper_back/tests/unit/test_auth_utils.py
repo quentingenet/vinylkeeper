@@ -10,15 +10,15 @@ from app.utils.auth_utils.auth import (
     PRIVATE_KEY,
     TokenType,
     create_reset_token,
-    create_token,
+    create_access_token,
     get_current_user,
     set_token_cookie,
     bearer_token,
-    verify_access_token,
-    verify_refresh_token,
+    decode_refresh_token,
     verify_reset_token,
     verify_token,
 )
+from tests.conftest import make_legacy_refresh_token
 from app.core.exceptions import RefreshTokenNotFoundError, InvalidResetTokenError, UnauthorizedError
 
 
@@ -40,24 +40,24 @@ def make_expired_token(user_uuid: str, token_type: TokenType) -> str:
 
 
 # ---------------------------------------------------------------------------
-# create_token / verify_token
+# create_access_token / verify_token
 # ---------------------------------------------------------------------------
 
 class TestVerifyToken:
     def test_access_round_trip(self):
-        token = create_token("uuid-123", TokenType.ACCESS)
+        token = create_access_token("uuid-123")
         assert verify_token(token, expected_type=TokenType.ACCESS) == "uuid-123"
 
     def test_refresh_round_trip(self):
-        token = create_token("uuid-123", TokenType.REFRESH)
+        token = make_legacy_refresh_token("uuid-123")
         assert verify_token(token, expected_type=TokenType.REFRESH) == "uuid-123"
 
     def test_no_expected_type_accepts_any(self):
-        token = create_token("uuid-123", TokenType.ACCESS)
+        token = create_access_token("uuid-123")
         assert verify_token(token) == "uuid-123"
 
     def test_wrong_type_raises(self):
-        token = create_token("uuid-123", TokenType.REFRESH)
+        token = make_legacy_refresh_token("uuid-123")
         with pytest.raises(UnauthorizedError, match="Invalid token type"):
             verify_token(token, expected_type=TokenType.ACCESS)
 
@@ -72,64 +72,36 @@ class TestVerifyToken:
 
 
 # ---------------------------------------------------------------------------
-# verify_access_token
+# decode_refresh_token
 # ---------------------------------------------------------------------------
 
-class TestVerifyAccessToken:
+class TestDecodeRefreshToken:
     def test_valid_cookie(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
-        request = make_request({"access_token": token})
-        assert verify_access_token(request) == str(regular_user.user_uuid)
-
-    def test_missing_cookie_raises(self):
-        request = make_request({})
-        with pytest.raises(UnauthorizedError, match="Access token not found"):
-            verify_access_token(request)
-
-    def test_refresh_token_in_access_cookie_raises(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)
-        request = make_request({"access_token": token})
-        with pytest.raises(UnauthorizedError, match="Invalid token type"):
-            verify_access_token(request)
-
-    def test_expired_token_raises(self, regular_user):
-        token = make_expired_token(str(regular_user.user_uuid), TokenType.ACCESS)
-        request = make_request({"access_token": token})
-        with pytest.raises(UnauthorizedError):
-            verify_access_token(request)
-
-
-# ---------------------------------------------------------------------------
-# verify_refresh_token
-# ---------------------------------------------------------------------------
-
-class TestVerifyRefreshToken:
-    def test_valid_cookie(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)
+        token = make_legacy_refresh_token(str(regular_user.user_uuid))
         request = make_request({"refresh_token": token})
-        assert verify_refresh_token(request) == str(regular_user.user_uuid)
+        assert decode_refresh_token(request)["sub"] == str(regular_user.user_uuid)
 
     def test_missing_cookie_raises_refresh_not_found(self):
         request = make_request({})
         with pytest.raises(RefreshTokenNotFoundError):
-            verify_refresh_token(request)
+            decode_refresh_token(request)
 
     def test_access_token_in_refresh_cookie_raises(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        token = create_access_token(str(regular_user.user_uuid))
         request = make_request({"refresh_token": token})
         with pytest.raises(UnauthorizedError, match="Invalid token type"):
-            verify_refresh_token(request)
+            decode_refresh_token(request)
 
     def test_garbage_token_raises(self):
         request = make_request({"refresh_token": "garbage"})
         with pytest.raises(UnauthorizedError, match="Invalid refresh token"):
-            verify_refresh_token(request)
+            decode_refresh_token(request)
 
     def test_expired_token_raises(self, regular_user):
         token = make_expired_token(str(regular_user.user_uuid), TokenType.REFRESH)
         request = make_request({"refresh_token": token})
         with pytest.raises(UnauthorizedError):
-            verify_refresh_token(request)
+            decode_refresh_token(request)
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +114,7 @@ class TestResetToken:
         assert verify_reset_token(token) == ("uuid-456", 3)
 
     def test_access_token_as_reset_raises(self):
-        token = create_token("uuid-456", TokenType.ACCESS)
+        token = create_access_token("uuid-456")
         with pytest.raises(InvalidResetTokenError):
             verify_reset_token(token)
 
@@ -164,7 +136,7 @@ class TestSetTokenCookie:
     @pytest.mark.parametrize("app_env", ["development", "local", "test"])
     def test_non_production_envs_use_local_cookie_attributes(self, app_env):
         response = MagicMock()
-        token = create_token("uuid-123", TokenType.ACCESS)
+        token = create_access_token("uuid-123")
 
         with patch("app.utils.auth_utils.auth.settings.APP_ENV", app_env):
             set_token_cookie(response, token, TokenType.ACCESS)
@@ -177,7 +149,7 @@ class TestSetTokenCookie:
 
     def test_production_env_uses_secure_cross_site_cookie_attributes(self):
         response = MagicMock()
-        token = create_token("uuid-123", TokenType.ACCESS)
+        token = create_access_token("uuid-123")
 
         with patch("app.utils.auth_utils.auth.settings.APP_ENV", "production"):
             set_token_cookie(response, token, TokenType.ACCESS)
@@ -188,6 +160,39 @@ class TestSetTokenCookie:
         assert cookie_kwargs["secure"] is True
         assert cookie_kwargs["samesite"] == "none"
 
+    def test_production_cookies_carry_every_attribute(self):
+        """The full set_cookie call of each session cookie in production, as the browser gets it."""
+        from app.utils.auth_utils.auth import (
+            ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES, set_csrf_cookie,
+        )
+        response = MagicMock()
+
+        with patch("app.utils.auth_utils.auth.settings.APP_ENV", "production"), \
+                patch("app.utils.auth_utils.auth.settings.COOKIE_DOMAIN", ".example.org"):
+            set_token_cookie(response, "a", TokenType.ACCESS)
+            set_token_cookie(response, "r", TokenType.REFRESH)
+            set_csrf_cookie(response, "c", 60)
+
+        common = {"secure": True, "samesite": "none", "path": "/", "domain": ".example.org"}
+        assert [call.kwargs for call in response.set_cookie.call_args_list] == [
+            {"key": "access_token", "value": "a", "max_age": ACCESS_TOKEN_EXPIRE_MINUTES * 60, "httponly": True,
+             **common},
+            {"key": "refresh_token", "value": "r", "max_age": REFRESH_TOKEN_EXPIRE_MINUTES * 60, "httponly": True,
+             **common},
+            # Read by the web app for the double-submit check
+            {"key": "csrf_token", "value": "c", "max_age": 60, "httponly": False, **common},
+        ]
+
+    def test_no_cookie_domain_outside_production(self):
+        from app.utils.auth_utils.auth import set_csrf_cookie
+        response = MagicMock()
+
+        with patch("app.utils.auth_utils.auth.settings.APP_ENV", "development"), \
+                patch("app.utils.auth_utils.auth.settings.COOKIE_DOMAIN", ".example.org"):
+            set_csrf_cookie(response, "c", 60)
+
+        assert response.set_cookie.call_args.kwargs["domain"] is None
+
 # ---------------------------------------------------------------------------
 # get_current_user
 # ---------------------------------------------------------------------------
@@ -195,7 +200,7 @@ class TestSetTokenCookie:
 
 class TestGetCurrentUser:
     async def test_returns_user_with_valid_token(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        token = create_access_token(str(regular_user.user_uuid))
         request = make_request({"access_token": token})
         mock_repo = AsyncMock()
         mock_repo.get_user_by_uuid = AsyncMock(return_value=regular_user)
@@ -211,7 +216,7 @@ class TestGetCurrentUser:
             await get_current_user(request, response=MagicMock(), db=AsyncMock())
 
     async def test_user_not_in_db_raises(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        token = create_access_token(str(regular_user.user_uuid))
         request = make_request({"access_token": token})
         mock_repo = AsyncMock()
         mock_repo.get_user_by_uuid = AsyncMock(return_value=None)
@@ -234,19 +239,19 @@ class TestGetCurrentUser:
 
     async def test_disabled_user_raises(self, regular_user):
         regular_user.is_active = False
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        token = create_access_token(str(regular_user.user_uuid))
         with pytest.raises(UnauthorizedError, match="Account is disabled"):
             await self._current_user_with(token, regular_user)
 
     async def test_token_of_an_older_version_raises(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS, 0)
+        token = create_access_token(str(regular_user.user_uuid), 0)
         regular_user.token_version = 1
         with pytest.raises(UnauthorizedError, match="Session revoked"):
             await self._current_user_with(token, regular_user)
 
     async def test_token_of_the_current_version_is_accepted(self, regular_user):
         regular_user.token_version = 4
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS, 4)
+        token = create_access_token(str(regular_user.user_uuid), 4)
         assert await self._current_user_with(token, regular_user) is regular_user
 
     async def test_token_issued_before_versions_counts_as_version_0(self, regular_user):
@@ -257,7 +262,7 @@ class TestGetCurrentUser:
         assert await self._current_user_with(legacy, regular_user) is regular_user
 
     async def test_refresh_token_in_access_cookie_raises(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)
+        token = make_legacy_refresh_token(str(regular_user.user_uuid))
         request = make_request({"access_token": token})
         with pytest.raises(UnauthorizedError, match="Invalid token type"):
             await get_current_user(request, response=MagicMock(), db=AsyncMock())
@@ -310,16 +315,29 @@ class TestBearerToken:
     def test_no_header(self):
         assert bearer_token(make_bearer_request(None)) is None
 
-    def test_access_token_read_from_the_header_before_the_cookie(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
-        request = make_bearer_request(f"Bearer {token}", {"access_token": "stale"})
-        assert verify_access_token(request) == str(regular_user.user_uuid)
-
     def test_refresh_token_read_from_the_header(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.REFRESH)
-        assert verify_refresh_token(make_bearer_request(f"Bearer {token}")) == str(regular_user.user_uuid)
+        token = make_legacy_refresh_token(str(regular_user.user_uuid))
+        assert decode_refresh_token(make_bearer_request(f"Bearer {token}"))["sub"] == str(regular_user.user_uuid)
 
     def test_access_token_as_bearer_refresh_is_refused(self, regular_user):
-        token = create_token(str(regular_user.user_uuid), TokenType.ACCESS)
+        token = create_access_token(str(regular_user.user_uuid))
         with pytest.raises(UnauthorizedError, match="Invalid token type"):
-            verify_refresh_token(make_bearer_request(f"Bearer {token}"))
+            decode_refresh_token(make_bearer_request(f"Bearer {token}"))
+
+
+class TestIsAdmin:
+    @pytest.mark.parametrize("role_name, is_superuser, expected", [
+        ("admin", True, True),
+        ("admin", False, False),
+        ("user", True, False),
+        (None, True, False),
+    ])
+    def test_needs_the_admin_role_and_the_superuser_flag(self, role_name, is_superuser, expected):
+        from app.utils.auth_utils.auth import is_admin
+
+        user = MagicMock(is_superuser=is_superuser)
+        user.role = None if role_name is None else MagicMock()
+        if role_name:
+            user.role.name = role_name
+
+        assert is_admin(user) is expected

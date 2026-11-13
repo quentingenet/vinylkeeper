@@ -1,5 +1,5 @@
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.utils.pagination import page_count
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.atlas_repository import AtlasRepository
 from app.models.moderation_request_model import ModerationRequest
@@ -8,14 +8,8 @@ from app.schemas.moderation_request_schema import (
     ModerationRequestListResponse,
     PaginatedModerationRequestResponse,
 )
-from app.core.exceptions import (
-    AppException,
-    ResourceNotFoundError,
-    ValidationError,
-    ServerError
-)
+from app.core.exceptions import ErrorCode, ValidationError, ServerError
 from app.core.enums import ModerationStatusEnum
-from app.core.logging import logger
 from app.core.transaction import transaction_context
 
 
@@ -30,132 +24,86 @@ class ModerationService:
         self, page: int = 1, limit: int = 10
     ) -> ModerationRequestListResponse:
         """Get all moderation requests with statistics and pagination."""
-        try:
-            offset = (page - 1) * limit
-            requests = await self.moderation_repository.get_all_requests(limit, offset)
-            stats = await self.moderation_repository.get_moderation_request_stats()
-            total = stats["total"]
+        offset = (page - 1) * limit
+        requests = await self.moderation_repository.get_all_requests(limit, offset)
+        stats = await self.moderation_repository.get_moderation_request_stats()
+        total = stats["total"]
 
-            return ModerationRequestListResponse(
-                items=[self._create_moderation_request_response(r) for r in requests],
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=max(1, -(-total // limit)),
-                pending_count=stats["pending"],
-                approved_count=stats["approved"],
-                rejected_count=stats["rejected"]
-            )
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting moderation requests: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation requests",
-                details={}
-            )
+        return ModerationRequestListResponse(
+            items=[self._create_moderation_request_response(r) for r in requests],
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=max(1, page_count(total, limit)),
+            pending_count=stats["pending"],
+            approved_count=stats["approved"],
+            rejected_count=stats["rejected"]
+        )
 
     async def get_moderation_request_by_id(self, request_id: int) -> ModerationRequestResponse:
         """Get a moderation request by ID."""
-        try:
-            request = await self.moderation_repository.get_request_by_id(request_id)
-            return self._create_moderation_request_response(request)
-        except ResourceNotFoundError:
-            raise
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting moderation request: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation request",
-                details={}
-            )
+        request = await self.moderation_repository.get_request_by_id(request_id)
+        return self._create_moderation_request_response(request)
 
     async def get_pending_moderation_requests(
         self, page: int = 1, limit: int = 10
     ) -> PaginatedModerationRequestResponse:
         """Get pending moderation requests with pagination."""
-        try:
-            pending_status = await self.moderation_repository.get_moderation_status_by_name(
-                ModerationStatusEnum.PENDING.value
-            )
+        pending_status = await self.moderation_repository.get_moderation_status_by_name(
+            ModerationStatusEnum.PENDING.value
+        )
 
-            if not pending_status:
-                raise ServerError(
-                    error_code=5000,
-                    message="Pending moderation status not found in database"
-                )
-
-            offset = (page - 1) * limit
-            requests = await self.moderation_repository.get_requests_by_status(
-                pending_status.id, limit, offset
-            )
-            total = await self.moderation_repository.count_requests_by_status_id(pending_status.id)
-
-            return PaginatedModerationRequestResponse(
-                items=[self._create_moderation_request_response(r) for r in requests],
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=max(1, -(-total // limit)),
-            )
-        except ServerError:
-            raise
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting pending moderation requests: {str(e)}", exc_info=True)
+        if not pending_status:
             raise ServerError(
-                error_code=5000,
-                message="Failed to get pending moderation requests",
-                details={}
+                error_code=ErrorCode.SERVER_ERROR,
+                message="Pending moderation status not found in database"
             )
+
+        offset = (page - 1) * limit
+        requests = await self.moderation_repository.get_requests_by_status(
+            pending_status.id, limit, offset
+        )
+        total = await self.moderation_repository.count_requests_by_status_id(pending_status.id)
+
+        return PaginatedModerationRequestResponse(
+            items=[self._create_moderation_request_response(r) for r in requests],
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=max(1, page_count(total, limit)),
+        )
 
     async def update_moderation_request_status(
         self, request_id: int, new_status: str, admin_user_id: int
     ) -> ModerationRequestResponse:
         """Update moderation request status and handle place moderation with transactional integrity."""
-        try:
-            # Get the moderation request
-            request = await self.moderation_repository.get_request_by_id(request_id)
+        # Get the moderation request
+        request = await self.moderation_repository.get_request_by_id(request_id)
 
-            # Get the new status
-            new_status_obj = await self.moderation_repository.get_moderation_status_by_name(new_status)
+        # Get the new status
+        new_status_obj = await self.moderation_repository.get_moderation_status_by_name(new_status)
 
-            if not new_status_obj:
-                raise ValidationError(
-                    error_code=4000,
-                    message="Invalid moderation status"
-                )
-
-            async with transaction_context(self.moderation_repository.db):
-                await self.moderation_repository.update_request(
-                    request_id, {"status_id": new_status_obj.id}
-                )
-
-                if new_status == ModerationStatusEnum.APPROVED.value:
-                    await self.place_repository.update_place(request.place_id, {"is_moderated": True})
-                elif new_status == ModerationStatusEnum.REJECTED.value:
-                    await self.place_repository.update_place(
-                        request.place_id, {"is_moderated": False, "is_valid": False}
-                    )
-
-            reloaded_request = await self.moderation_repository.get_request_by_id(request_id)
-
-            return self._create_moderation_request_response(reloaded_request)
-        except (ResourceNotFoundError, ValidationError):
-            raise
-        except AppException:
-            raise
-        except Exception as e:
-            logger.error(f"Error updating moderation request status: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to update moderation request status",
-                details={}
+        if not new_status_obj:
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_REQUEST,
+                message="Invalid moderation status"
             )
+
+        async with transaction_context(self.moderation_repository.db):
+            await self.moderation_repository.update_request(
+                request_id, {"status_id": new_status_obj.id}
+            )
+
+            if new_status == ModerationStatusEnum.APPROVED.value:
+                await self.place_repository.update_place(request.place_id, {"is_moderated": True})
+            elif new_status == ModerationStatusEnum.REJECTED.value:
+                await self.place_repository.update_place(
+                    request.place_id, {"is_moderated": False, "is_valid": False}
+                )
+
+        reloaded_request = await self.moderation_repository.get_request_by_id(request_id)
+
+        return self._create_moderation_request_response(reloaded_request)
 
     async def approve_moderation_request(self, request_id: int, admin_user_id: int) -> ModerationRequestResponse:
         """Approve a moderation request."""
@@ -171,17 +119,7 @@ class ModerationService:
 
     async def get_moderation_stats(self) -> dict:
         """Get moderation statistics."""
-        try:
-            return await self.moderation_repository.get_moderation_request_stats()
-        except AppException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            logger.error(f"Error getting moderation stats: {str(e)}", exc_info=True)
-            raise ServerError(
-                error_code=5000,
-                message="Failed to get moderation statistics",
-                details={}
-            )
+        return await self.moderation_repository.get_moderation_request_stats()
 
     def _create_moderation_request_response(self, request: ModerationRequest) -> ModerationRequestResponse:
         """Create a ModerationRequestResponse from a ModerationRequest model."""

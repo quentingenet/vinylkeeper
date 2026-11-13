@@ -13,6 +13,7 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -76,7 +77,7 @@ class TestCreatePlace:
         place_type_id = await pick_existing_place_type_id(real_session)
         service = make_place_service(real_session)
 
-        response = await service.create_place(make_place_create(place_type_id), user)
+        response = await service.create_place(make_place_create(place_type_id), user, BackgroundTasks())
 
         assert response.id > 0
 
@@ -101,11 +102,10 @@ class TestUpdatePlace:
         user = await make_test_user(real_session)
         place_type_id = await pick_existing_place_type_id(real_session)
         service = make_place_service(real_session)
-        created = await service.create_place(make_place_create(place_type_id), user)
+        created = await service.create_place(make_place_create(place_type_id), user, BackgroundTasks())
 
         updated = await service.update_place(
-            user, created.id, PlaceUpdate(name="Renamed Shop")
-        )
+            user, created.id, PlaceUpdate(name="Renamed Shop"), BackgroundTasks())
 
         assert updated.name == "Renamed Shop"
 
@@ -114,17 +114,17 @@ class TestUpdatePlace:
         intruder = await make_test_user(real_session)
         place_type_id = await pick_existing_place_type_id(real_session)
         service = make_place_service(real_session)
-        created = await service.create_place(make_place_create(place_type_id), owner)
+        created = await service.create_place(make_place_create(place_type_id), owner, BackgroundTasks())
 
         with pytest.raises(ForbiddenError):
-            await service.update_place(intruder, created.id, PlaceUpdate(name="Hijacked"))
+            await service.update_place(intruder, created.id, PlaceUpdate(name="Hijacked"), BackgroundTasks())
 
     async def test_editing_an_approved_place_hides_it_until_approved_again(self, real_session):
         from app.models.moderation_request_model import ModerationRequest
         user = await make_test_user(real_session)
         place_type_id = await pick_existing_place_type_id(real_session)
         service = make_place_service(real_session)
-        created = await service.create_place(make_place_create(place_type_id), user)
+        created = await service.create_place(make_place_create(place_type_id), user, BackgroundTasks())
         first_request = (
             await real_session.execute(
                 select(ModerationRequest).filter(ModerationRequest.place_id == created.id)
@@ -134,7 +134,8 @@ class TestUpdatePlace:
             first_request.id, admin_user_id=user.id
         )
 
-        await service.update_place(user, created.id, PlaceUpdate(description="Changed after approval"))
+        await service.update_place(
+            user, created.id, PlaceUpdate(description="Changed after approval"), BackgroundTasks())
 
         map_ids = {place.id for place in await service.get_map_places()}
         assert created.id not in map_ids
@@ -146,22 +147,6 @@ class TestUpdatePlace:
         assert len(requests) == 2
 
 
-class TestDeletePlace:
-    async def test_owner_can_soft_delete(self, real_session):
-        user = await make_test_user(real_session)
-        place_type_id = await pick_existing_place_type_id(real_session)
-        service = make_place_service(real_session)
-        created = await service.create_place(make_place_create(place_type_id), user)
-
-        result = await service.delete_place(user, created.id)
-        assert result is True
-
-        place = (
-            await real_session.execute(select(Place).filter(Place.id == created.id))
-        ).scalar_one()
-        assert place.is_valid is False
-
-
 class TestModerationApproveRejectFlow:
     async def test_approve_marks_place_moderated(self, real_session):
         user = await make_test_user(real_session)
@@ -169,7 +154,7 @@ class TestModerationApproveRejectFlow:
         place_service = make_place_service(real_session)
         moderation_service = make_moderation_service(real_session)
 
-        created = await place_service.create_place(make_place_create(place_type_id), user)
+        created = await place_service.create_place(make_place_create(place_type_id), user, BackgroundTasks())
 
         from app.models.moderation_request_model import ModerationRequest
         mod_request = (
@@ -195,7 +180,8 @@ class TestModerationApproveRejectFlow:
         place_type_id = await pick_existing_place_type_id(real_session)
         moderation_repository = ModerationRequestRepository(real_session)
         dashboard_repository = DashboardRepository(real_session)
-        created = await make_place_service(real_session).create_place(make_place_create(place_type_id), user)
+        created = await make_place_service(real_session).create_place(
+            make_place_create(place_type_id), user, BackgroundTasks())
 
         from app.models.moderation_request_model import ModerationRequest
         mod_request = (
@@ -216,7 +202,8 @@ class TestModerationApproveRejectFlow:
     async def test_a_request_carries_what_the_admin_can_edit(self, real_session):
         user = await make_test_user(real_session)
         place_type_id = await pick_existing_place_type_id(real_session)
-        created = await make_place_service(real_session).create_place(make_place_create(place_type_id), user)
+        created = await make_place_service(real_session).create_place(
+            make_place_create(place_type_id), user, BackgroundTasks())
 
         from app.models.moderation_request_model import ModerationRequest
         mod_request = (
@@ -235,7 +222,7 @@ class TestModerationApproveRejectFlow:
         place_service = make_place_service(real_session)
         moderation_service = make_moderation_service(real_session)
 
-        created = await place_service.create_place(make_place_create(place_type_id), user)
+        created = await place_service.create_place(make_place_create(place_type_id), user, BackgroundTasks())
 
         from app.models.moderation_request_model import ModerationRequest
         mod_request = (
@@ -263,7 +250,7 @@ class TestLikeUnlikePlace:
         place_service = make_place_service(real_session)
         moderation_service = make_moderation_service(real_session)
 
-        created = await place_service.create_place(make_place_create(place_type_id), user)
+        created = await place_service.create_place(make_place_create(place_type_id), user, BackgroundTasks())
 
         from app.models.moderation_request_model import ModerationRequest
         mod_request = (

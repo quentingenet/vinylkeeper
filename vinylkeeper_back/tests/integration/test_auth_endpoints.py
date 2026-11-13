@@ -1,11 +1,11 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.main import app
 from app.deps.deps import get_user_service
-from app.utils.auth_utils.auth import create_token, decode_token, TokenType
+from app.utils.auth_utils.auth import create_access_token, decode_token, TokenType
+from tests.conftest import make_legacy_refresh_token
 from app.core.exceptions import (
     DuplicateEmailError,
-    EmailNotFoundError,
     InvalidCredentialsError,
     InvalidResetTokenError,
 )
@@ -53,18 +53,6 @@ class TestLogin:
         assert "code" in body
         assert "message" in body
 
-    async def test_email_not_found_returns_401(self, client):
-        mock_service = AsyncMock()
-        mock_service.authenticate = AsyncMock(side_effect=EmailNotFoundError("ghost@example.com"))
-        app.dependency_overrides[get_user_service] = lambda: mock_service
-
-        resp = await client.post("/api/users/auth", json={
-            "email": "ghost@example.com",
-            "password": "password"
-        })
-
-        assert resp.status_code == 401
-
     async def test_account_locked_returns_401(self, client, mock_user):
         mock_user.is_active = False
         mock_service = AsyncMock()
@@ -107,7 +95,8 @@ class TestRegister:
     async def test_success_returns_201_and_cookies(self, client, mock_user):
         mock_service = AsyncMock()
         mock_service.create_user = AsyncMock(return_value=mock_user)
-        mock_service.send_new_user_registered_email = AsyncMock()
+        # Schedules the admin email, it does not send it
+        mock_service.send_new_user_registered_email = MagicMock()
         app.dependency_overrides[get_user_service] = lambda: mock_service
 
         resp = await client.post("/api/users/register", json={
@@ -174,7 +163,7 @@ class TestRegister:
 
 class TestRefreshToken:
     async def test_success_with_valid_cookie(self, client, mock_user):
-        refresh_token = create_token(str(mock_user.user_uuid), TokenType.REFRESH)
+        refresh_token = make_legacy_refresh_token(str(mock_user.user_uuid))
         client.cookies.set("refresh_token", refresh_token)
 
         mock_service = AsyncMock()
@@ -200,27 +189,27 @@ class TestRefreshToken:
         assert resp.status_code == 401
 
     async def test_access_token_in_refresh_cookie_returns_401(self, client, mock_user):
-        wrong_token = create_token(str(mock_user.user_uuid), TokenType.ACCESS)
+        wrong_token = create_access_token(str(mock_user.user_uuid))
         client.cookies.set("refresh_token", wrong_token)
         resp = await client.post("/api/users/refresh-token")
         assert resp.status_code == 401
 
     async def test_deleted_user_returns_401(self, client, mock_user):
-        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH))
+        client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid)))
         with patch_user_lookup(None):
             resp = await client.post("/api/users/refresh-token")
         assert resp.status_code == 401
 
     async def test_disabled_user_returns_401(self, client, mock_user):
         mock_user.is_active = False
-        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH))
+        client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid)))
         with patch_user_lookup(mock_user):
             resp = await client.post("/api/users/refresh-token")
         assert resp.status_code == 401
         assert "access_token" not in resp.cookies
 
     async def test_revoked_token_returns_401(self, client, mock_user):
-        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH, 0))
+        client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid), 0))
         mock_user.token_version = 1  # password changed since the token was issued
         with patch_user_lookup(mock_user):
             resp = await client.post("/api/users/refresh-token")
@@ -236,6 +225,15 @@ class TestLogout:
         resp = await client.post("/api/users/logout")
         assert resp.status_code == 200
         assert resp.json() == {"message": "Logged out successfully"}
+
+    async def test_every_session_cookie_is_expired(self, client):
+        """Max-Age=0: the browser deletes them, not only empties them."""
+        resp = await client.post("/api/users/logout")
+
+        cookies = {header.split("=", 1)[0]: header for header in resp.headers.get_list("set-cookie")}
+        assert set(cookies) == {"access_token", "refresh_token", "csrf_token"}
+        for header in cookies.values():
+            assert "max-age=0" in header.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +274,10 @@ class TestForgotPassword:
 
         assert resp.status_code == 200
         assert "password reset link" in resp.json()["message"]
+        # The email is left to a background task: the lookup and the scheduling happen in the request
+        email, background_tasks = mock_service.send_password_reset_email.await_args.args
+        assert email == "anyone@example.com"
+        assert hasattr(background_tasks, "add_task")
 
 
 # ---------------------------------------------------------------------------
@@ -363,6 +365,8 @@ class TestEmailConfirmationEndpoints:
     async def test_register_sends_the_welcome_email(self, client, mock_user):
         mock_service = AsyncMock()
         mock_service.create_user = AsyncMock(return_value=mock_user)
+        # Schedules the admin email, it does not send it
+        mock_service.send_new_user_registered_email = MagicMock()
         app.dependency_overrides[get_user_service] = lambda: mock_service
 
         resp = await client.post("/api/users/register", json={
@@ -376,6 +380,8 @@ class TestEmailConfirmationEndpoints:
     async def test_register_ignores_a_role_id(self, client, mock_user):
         mock_service = AsyncMock()
         mock_service.create_user = AsyncMock(return_value=mock_user)
+        # Schedules the admin email, it does not send it
+        mock_service.send_new_user_registered_email = MagicMock()
         app.dependency_overrides[get_user_service] = lambda: mock_service
 
         resp = await client.post("/api/users/register", json={
@@ -447,7 +453,7 @@ class TestNativeSession:
         assert resp.status_code == 422
 
     async def test_refresh_with_a_bearer_returns_new_tokens_without_cookie(self, client, mock_user):
-        refresh_token = create_token(str(mock_user.user_uuid), TokenType.REFRESH)
+        refresh_token = make_legacy_refresh_token(str(mock_user.user_uuid))
         app.dependency_overrides[get_user_service] = lambda: AsyncMock()
 
         with patch_user_lookup(mock_user):
@@ -459,13 +465,13 @@ class TestNativeSession:
         assert not resp.cookies
 
     async def test_an_access_token_cannot_refresh(self, client, mock_user):
-        access_token = create_token(str(mock_user.user_uuid), TokenType.ACCESS)
+        access_token = create_access_token(str(mock_user.user_uuid))
         with patch_user_lookup(mock_user):
             resp = await client.post("/api/users/refresh-token", headers={"Authorization": f"Bearer {access_token}"})
         assert resp.status_code == 401
 
     async def test_bearer_needs_no_csrf_token(self, client, mock_user):
-        access_token = create_token(str(mock_user.user_uuid), TokenType.ACCESS)
+        access_token = create_access_token(str(mock_user.user_uuid))
         mock_service = AsyncMock()
         mock_service.set_preferred_currency = AsyncMock()
         app.dependency_overrides[get_user_service] = lambda: mock_service
@@ -479,7 +485,7 @@ class TestNativeSession:
         assert "csrf_token" not in resp.cookies
 
     async def test_cookie_without_csrf_token_is_still_refused(self, client, mock_user):
-        client.cookies.set("access_token", create_token(str(mock_user.user_uuid), TokenType.ACCESS))
+        client.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
         app.dependency_overrides[get_user_service] = lambda: AsyncMock()
 
         with patch_user_lookup(mock_user):
@@ -488,13 +494,13 @@ class TestNativeSession:
         assert resp.status_code == 403
 
     async def test_a_valid_cookie_does_not_rescue_a_bad_bearer(self, client, mock_user):
-        client.cookies.set("access_token", create_token(str(mock_user.user_uuid), TokenType.ACCESS))
+        client.cookies.set("access_token", create_access_token(str(mock_user.user_uuid)))
         with patch_user_lookup(mock_user):
             resp = await client.get("/api/users/me", headers={"Authorization": "Bearer garbage"})
         assert resp.status_code == 401
 
     async def test_revoked_bearer_is_refused(self, client, mock_user):
-        stale = create_token(str(mock_user.user_uuid), TokenType.ACCESS, token_version=0)
+        stale = create_access_token(str(mock_user.user_uuid), token_version=0)
         mock_user.token_version = 1
         with patch_user_lookup(mock_user):
             resp = await client.get("/api/users/me", headers={"Authorization": f"Bearer {stale}"})
@@ -532,7 +538,7 @@ class TestSessionsFromTheEndpoints:
         assert [kind for _, kind in fake_sessions.opened] == ["web", "native"]
 
     async def test_a_refresh_moves_the_session_on_instead_of_opening_another(self, client, mock_user, fake_sessions):
-        refresh_token = create_token(str(mock_user.user_uuid), TokenType.REFRESH)
+        refresh_token = make_legacy_refresh_token(str(mock_user.user_uuid))
         client.cookies.set("refresh_token", refresh_token)
         app.dependency_overrides[get_user_service] = lambda: AsyncMock()
 
@@ -550,7 +556,7 @@ class TestSessionsFromTheEndpoints:
             raise UnauthorizedError("Session revoked")
 
         fake_sessions.rotate = refuse
-        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH))
+        client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid)))
         app.dependency_overrides[get_user_service] = lambda: AsyncMock()
 
         with patch_user_lookup(mock_user):
@@ -560,7 +566,7 @@ class TestSessionsFromTheEndpoints:
         assert "access_token" not in resp.cookies and "refresh_token" not in resp.cookies
 
     async def test_logout_revokes_the_session_of_the_refresh_token(self, client, mock_user, fake_sessions):
-        client.cookies.set("refresh_token", create_token(str(mock_user.user_uuid), TokenType.REFRESH))
+        client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid)))
 
         resp = await client.post("/api/users/logout")
 
@@ -568,7 +574,7 @@ class TestSessionsFromTheEndpoints:
         assert [payload["sub"] for payload in fake_sessions.revoked] == [str(mock_user.user_uuid)]
 
     async def test_the_app_logs_out_with_its_refresh_token_as_bearer(self, client, mock_user, fake_sessions):
-        token = create_token(str(mock_user.user_uuid), TokenType.REFRESH)
+        token = make_legacy_refresh_token(str(mock_user.user_uuid))
 
         resp = await client.post("/api/users/logout", headers={"Authorization": f"Bearer {token}"})
 
@@ -587,3 +593,29 @@ class TestSessionsFromTheEndpoints:
             "current_password": "correct_password", "new_password": "NewStr0ng!Passw0rd"})
 
         assert len(fake_sessions.opened) == 1
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/users/me
+# ---------------------------------------------------------------------------
+
+class TestDeleteMyAccount:
+    async def test_success_returns_204_and_logs_the_deletion(self, auth_client):
+        client, mock_service, mock_user = auth_client
+        mock_service.delete_user = AsyncMock(return_value=True)
+
+        with patch("app.endpoints.users.log_activity") as log_activity:
+            resp = await client.delete("/api/users/me")
+
+        assert resp.status_code == 204
+        log_activity.assert_called_once_with(mock_user.username, "deleted their account")
+
+    async def test_failed_deletion_is_not_logged_as_a_deletion(self, auth_client):
+        client, mock_service, _ = auth_client
+        mock_service.delete_user = AsyncMock(return_value=False)
+
+        with patch("app.endpoints.users.log_activity") as log_activity:
+            resp = await client.delete("/api/users/me")
+
+        assert resp.status_code == 401  # UserNotFoundError, as before
+        log_activity.assert_not_called()
