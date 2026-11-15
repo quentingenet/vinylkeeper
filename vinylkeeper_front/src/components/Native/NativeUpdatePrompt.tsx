@@ -1,15 +1,35 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, Snackbar } from "@mui/material";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Box, Button, CircularProgress, Snackbar } from "@mui/material";
 import { App as CapacitorApp } from "@capacitor/app";
 import {
   AppUpdate,
   AppUpdateAvailability,
+  AppUpdateResultCode,
   FlexibleUpdateInstallStatus,
 } from "@capawesome/capacitor-app-update";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { logger } from "@utils/logger";
 
-type Step = "idle" | "available" | "downloading" | "ready";
+type Step = "idle" | "available" | "downloading" | "ready" | "installing";
+
+// While downloading, Google Play only pushes progress to the session that started the update: polling also covers
+// an app restarted mid-download
+const PROGRESS_POLL_MS = 4000;
+
+const IN_PROGRESS_STATUSES = [
+  FlexibleUpdateInstallStatus.PENDING,
+  FlexibleUpdateInstallStatus.DOWNLOADING,
+  FlexibleUpdateInstallStatus.INSTALLING,
+];
+
+function UpdateMessage({ text }: { text: string }) {
+  return (
+    <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <CircularProgress size={18} color="inherit" aria-hidden />
+      {text}
+    </Box>
+  );
+}
 
 /**
  * In the Android app, offers the update published on Google Play: a flexible update, which downloads in the
@@ -18,49 +38,68 @@ type Step = "idle" | "available" | "downloading" | "ready";
  */
 export default function NativeUpdatePrompt() {
   const [step, setStep] = useState<Step>("idle");
+  const [progress, setProgress] = useState<number | null>(null);
   // "Later" lasts until the app is started again
   const dismissed = useRef(false);
+  // Set once the update is accepted: Google Play can still report "update available" for a few seconds after its
+  // dialog closes, which must not bring the offer back
+  const started = useRef(false);
+
+  const check = useCallback(async () => {
+    try {
+      const info = await AppUpdate.getAppUpdateInfo();
+      const status = info.installStatus;
+      if (status === FlexibleUpdateInstallStatus.DOWNLOADED) {
+        started.current = true;
+        setStep("ready");
+      } else if (
+        (status !== undefined && IN_PROGRESS_STATUSES.includes(status)) ||
+        info.updateAvailability === AppUpdateAvailability.UPDATE_IN_PROGRESS
+      ) {
+        started.current = true;
+        setStep((current) => (current === "installing" ? current : "downloading"));
+      } else if (started.current) {
+        // Accepted but not reported yet: keep showing the progress
+      } else if (
+        !dismissed.current &&
+        info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE &&
+        info.flexibleUpdateAllowed
+      ) {
+        setStep("available");
+      }
+    } catch (error) {
+      // Not installed from the Play Store (APK of a test, for instance): no update to offer
+      logger.warn("App update check skipped:", error);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isCapacitorPlatform()) return;
     let active = true;
-
-    const check = async () => {
-      try {
-        const info = await AppUpdate.getAppUpdateInfo();
-        if (!active) return;
-        if (info.installStatus === FlexibleUpdateInstallStatus.DOWNLOADED) {
-          setStep("ready");
-        } else if (
-          info.installStatus === FlexibleUpdateInstallStatus.DOWNLOADING ||
-          info.installStatus === FlexibleUpdateInstallStatus.PENDING
-        ) {
-          setStep("downloading");
-        } else if (
-          !dismissed.current &&
-          info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE &&
-          info.flexibleUpdateAllowed
-        ) {
-          setStep("available");
-        }
-      } catch (error) {
-        // Not installed from the Play Store (APK of a test, for instance): no update to offer
-        logger.warn("App update check skipped:", error);
-      }
+    const safeCheck = () => {
+      if (active) void check();
     };
 
-    void check();
-    const resumed = CapacitorApp.addListener("resume", () => void check());
+    safeCheck();
+    const resumed = CapacitorApp.addListener("resume", safeCheck);
     const state = AppUpdate.addListener(
       "onFlexibleUpdateStateChange",
-      ({ installStatus }) => {
-        if (installStatus === FlexibleUpdateInstallStatus.DOWNLOADED)
+      ({ installStatus, bytesDownloaded, totalBytesToDownload }) => {
+        if (!active) return;
+        if (installStatus === FlexibleUpdateInstallStatus.DOWNLOADED) {
           setStep("ready");
-        else if (
+        } else if (
           installStatus === FlexibleUpdateInstallStatus.FAILED ||
           installStatus === FlexibleUpdateInstallStatus.CANCELED
-        )
+        ) {
+          started.current = false;
           setStep("idle");
+        } else if (installStatus === FlexibleUpdateInstallStatus.DOWNLOADING) {
+          setStep("downloading");
+          if (bytesDownloaded !== undefined && totalBytesToDownload) {
+            setProgress(Math.floor((bytesDownloaded / totalBytesToDownload) * 100));
+          }
+        }
       },
     );
 
@@ -69,24 +108,40 @@ export default function NativeUpdatePrompt() {
       void resumed.then((handle) => handle.remove());
       void state.then((handle) => handle.remove());
     };
-  }, []);
+  }, [check]);
+
+  useEffect(() => {
+    if (step !== "downloading") return;
+    const timer = setInterval(() => void check(), PROGRESS_POLL_MS);
+    return () => clearInterval(timer);
+  }, [step, check]);
 
   const startUpdate = async () => {
+    started.current = true;
+    setProgress(null);
     setStep("downloading");
     try {
-      await AppUpdate.startFlexibleUpdate();
+      const result = await AppUpdate.startFlexibleUpdate();
+      if (result.code !== AppUpdateResultCode.OK) {
+        // Closed or refused in the Google Play dialog: same as "later"
+        started.current = false;
+        dismissed.current = true;
+        setStep("idle");
+      }
     } catch (error) {
       logger.error("Flexible update failed:", error);
+      started.current = false;
       setStep("idle");
     }
   };
 
   const restart = async () => {
+    setStep("installing");
     try {
       await AppUpdate.completeFlexibleUpdate();
     } catch (error) {
       logger.error("Update installation failed:", error);
-      setStep("idle");
+      setStep("ready");
     }
   };
 
@@ -118,10 +173,15 @@ export default function NativeUpdatePrompt() {
     );
   }
   if (step === "downloading") {
+    const percent = progress !== null ? ` (${progress}%)` : "";
     return (
       <Snackbar
         open
-        message="Downloading the update, you can keep using the app."
+        message={
+          <UpdateMessage
+            text={`Update in progress${percent}. You can keep using the app.`}
+          />
+        }
       />
     );
   }
@@ -129,12 +189,20 @@ export default function NativeUpdatePrompt() {
     return (
       <Snackbar
         open
-        message="Update ready."
+        message="Update downloaded. Restart to finish."
         action={
           <Button color="primary" size="small" onClick={() => void restart()}>
             Restart
           </Button>
         }
+      />
+    );
+  }
+  if (step === "installing") {
+    return (
+      <Snackbar
+        open
+        message={<UpdateMessage text="Installing the update, the app will restart." />}
       />
     );
   }
