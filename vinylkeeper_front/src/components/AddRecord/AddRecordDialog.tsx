@@ -35,18 +35,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { scanRecordBarcode } from "@utils/BarcodeScanner";
 import { logger } from "@utils/logger";
-import type { DiscogsData } from "@models/IRequestProxy";
-
-const toPlaybackItem = (
-  item: DiscogsData,
-  isArtist: boolean,
-): PlaybackItem => ({
-  id: item.id,
-  title: item.title || item.name || "",
-  artist: isArtist ? item.title || item.name || "" : item.artist?.title || "",
-  image_url: item.picture || "",
-  itemType: isArtist ? "artist" : "album",
-});
+import { searchResultToPlaybackItem } from "@utils/toPlaybackItem";
 
 interface AddRecordDialogProps {
   options: AddRecordOptions;
@@ -291,7 +280,7 @@ export default function AddRecordDialog({
                     <ReplacePressingPanel
                       pressing={item}
                       target={replaceTarget}
-                      onDetails={() => setDetails(toPlaybackItem(item, false))}
+                      onDetails={() => setDetails(searchResultToPlaybackItem(item, false))}
                       onReplaced={onClose}
                     />
                   ) : (
@@ -300,7 +289,7 @@ export default function AddRecordDialog({
                       itemType={results.isArtist ? "artist" : "album"}
                       presetCollectionId={presetCollectionId}
                       onDetails={() =>
-                        setDetails(toPlaybackItem(item, results.isArtist))
+                        setDetails(searchResultToPlaybackItem(item, results.isArtist))
                       }
                       onDone={() => setExpandedId(null)}
                     />

@@ -51,7 +51,7 @@ interface PaginatedModerationRequestResponse {
   total_pages: number;
 }
 
-interface ModerationStats {
+export interface ModerationStats {
   total: number;
   pending: number;
   approved: number;

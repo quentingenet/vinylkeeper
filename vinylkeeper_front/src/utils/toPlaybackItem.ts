@@ -2,6 +2,7 @@ import { logger } from "@utils/logger";
 import type { LatestAddition } from "@models/IDashboardStats";
 import type { PlaybackItem } from "@components/Modals/PlaybackModal";
 import type { SpinningNowAlbum } from "@models/ISpinningNow";
+import type { DiscogsData } from "@models/IRequestProxy";
 
 export function toPlaybackItem(
   addition: LatestAddition | undefined,
@@ -46,5 +47,17 @@ export function spinningNowAlbumToPlaybackItem(album: SpinningNowAlbum): Playbac
     itemType: "album",
     // Picked from the user's own shelves: the modal lists the pressings they own
     owned: { masterId: album.external_master_id ?? null },
+  };
+}
+
+/** A result of the Discogs search (album or artist), for the details modal. */
+export function searchResultToPlaybackItem(item: DiscogsData, isArtist: boolean): PlaybackItem {
+  const title = item.title || item.name || "";
+  return {
+    id: item.id,
+    title,
+    artist: isArtist ? title : item.artist?.name || "",
+    image_url: item.picture || "",
+    itemType: isArtist ? "artist" : "album",
   };
 }

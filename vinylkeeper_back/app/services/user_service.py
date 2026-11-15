@@ -80,7 +80,7 @@ class UserService:
                 # Same pace as last_seen_at: once an hour at most, not on every token refresh
                 log_activity(user.username, "came back (session restored)")
         except Exception as e:
-            logger.warning(f"last_seen_at not updated for user {user.id}: {str(e)}")
+            logger.warning(f"last_seen_at not updated for user {user.username}: {str(e)}")
 
     async def get_user_by_uuid(self, user_uuid: str) -> User:
         """Get a user by UUID"""

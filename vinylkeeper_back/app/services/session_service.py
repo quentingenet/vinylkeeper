@@ -87,7 +87,7 @@ class SessionService:
     async def _revoke_after_reuse(self, session_id: UUID, user: User, now: datetime) -> None:
         async with transaction_context(self.repository.db):
             await self.repository.revoke(session_id, now)
-        logger.warning(f"Refresh token reused: session {session_id} of user {user.id} revoked")
+        logger.warning(f"Refresh token reused: session {session_id} of user {user.username} revoked")
 
     async def revoke(self, payload: dict) -> None:
         """Logout of this device. Never raises: logging out must always work."""

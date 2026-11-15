@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import httpx
 from app.core.config_env import settings
-from app.core.exceptions import ValidationError, ServerError, ErrorCode
+from app.core.exceptions import ValidationError, ServerError, ErrorCode, ResourceNotFoundError
 from app.core.logging import logger
 from app.utils.discogs_release import (
     DISCOGS_IMAGE_HOST, clean_artist_name, clean_discogs_markup, format_values, parse_release_edition,
@@ -297,20 +297,12 @@ class SearchService:
             if not data:
                 logger.warning(
                     f"No data returned for artist ID: {artist_id}")
-                raise ServerError(
-                    error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                    message="Artist not found",
-                    details={"artist_id": artist_id}
-                )
+                raise ResourceNotFoundError("Artist", artist_id)
         except httpx.HTTPStatusError as e:
             logger.error(
                 f"HTTP error fetching artist metadata for ID {artist_id}: {e.response.status_code} - {e.response.text}")
             if e.response.status_code == 404:
-                raise ServerError(
-                    error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                    message="Artist not found",
-                    details={"artist_id": artist_id}
-                )
+                raise ResourceNotFoundError("Artist", artist_id)
             else:
                 raise ServerError(
                     error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
@@ -318,6 +310,8 @@ class SearchService:
                     details={"artist_id": artist_id,
                              "status_code": e.response.status_code}
                 )
+        except ResourceNotFoundError:
+            raise
         except Exception as e:
             logger.error(
                 f"Unexpected error fetching artist metadata for ID {artist_id}: {str(e)}")
@@ -425,20 +419,12 @@ class SearchService:
             if not data:
                 logger.warning(
                     f"No data returned for album ID: {album_id}")
-                raise ServerError(
-                    error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                    message="Album not found",
-                    details={"album_id": album_id}
-                )
+                raise ResourceNotFoundError("Album", album_id)
         except httpx.HTTPStatusError as e:
             logger.error(
                 f"HTTP error fetching album metadata for ID {album_id}: {e.response.status_code} - {e.response.text}")
             if e.response.status_code == 404:
-                raise ServerError(
-                    error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                    message="Album not found",
-                    details={"album_id": album_id}
-                )
+                raise ResourceNotFoundError("Album", album_id)
             else:
                 raise ServerError(
                     error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
@@ -446,6 +432,8 @@ class SearchService:
                     details={"album_id": album_id,
                              "status_code": e.response.status_code}
                 )
+        except ResourceNotFoundError:
+            raise
         except Exception as e:
             logger.error(
                 f"Unexpected error fetching album metadata for ID {album_id}: {str(e)}", exc_info=True)
@@ -470,22 +458,6 @@ class SearchService:
                     logger.warning(f"Failed to parse track: {str(e)}")
                     continue
 
-        # Parse artists
-        artists = []
-        if "artists" in data:
-            for artist in data["artists"]:
-                try:
-                    artist_info = Artist(
-                        id=str(artist.get("id", "")),
-                        # Frontend expects 'title', not 'name'
-                        title=clean_artist_name(artist.get("name") or ""),
-                        type=artist.get("type", "")
-                    )
-                    artists.append(artist_info)
-                except Exception as e:
-                    logger.warning(f"Failed to parse artist: {str(e)}")
-                    continue
-
         # Build album metadata
         raw_image_url = data.get("images", [{}])[0].get("uri", "") if data.get("images") else ""
         album_metadata = AlbumMetadata(
@@ -498,7 +470,6 @@ class SearchService:
             styles=data.get("styles", []),
             tracklist=tracks,
             source="discogs",
-            artists=artists,
             **parse_release_edition(data),
             **parse_release_marks(data),
         )

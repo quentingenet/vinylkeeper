@@ -1,12 +1,6 @@
 import { Box, Card, CardContent, Typography, CircularProgress } from "@mui/material";
 import { colors } from "@styles/colors";
-
-interface ModerationStats {
-  total?: number;
-  pending?: number;
-  approved?: number;
-  rejected?: number;
-}
+import type { ModerationStats } from "@services/AdminApiService";
 
 interface Props {
   stats: ModerationStats | undefined;

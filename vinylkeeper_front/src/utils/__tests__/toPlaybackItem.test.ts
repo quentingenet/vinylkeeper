@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { toPlaybackItem } from "@utils/toPlaybackItem";
+import { searchResultToPlaybackItem, toPlaybackItem } from "@utils/toPlaybackItem";
+import type { DiscogsData } from "@models/IRequestProxy";
 import type { LatestAddition } from "@models/IDashboardStats";
 
 function makeAddition(overrides: Partial<LatestAddition> = {}): LatestAddition {
@@ -86,6 +87,27 @@ describe("toPlaybackItem", () => {
 
       expect(item?.image_url).toBe("https://example.com/cover.jpg");
       expect(item?.itemType).toBe("album");
+    });
+  });
+});
+
+describe("searchResultToPlaybackItem", () => {
+  it("takes the artist of an album from its name, as the API sends it", () => {
+    const hit = {
+      uuid: "u", id: "249504", title: "Miles Davis - Kind Of Blue", picture: "cover.jpg",
+      artist: { uuid: "a", id: "", name: "Miles Davis" },
+    } as DiscogsData;
+
+    expect(searchResultToPlaybackItem(hit, false)).toEqual({
+      id: "249504", title: "Miles Davis - Kind Of Blue", artist: "Miles Davis", image_url: "cover.jpg", itemType: "album",
+    });
+  });
+
+  it("uses the name of an artist for both title and artist", () => {
+    const hit = { uuid: "u", id: "23755", name: "Miles Davis" } as DiscogsData;
+
+    expect(searchResultToPlaybackItem(hit, true)).toEqual({
+      id: "23755", title: "Miles Davis", artist: "Miles Davis", image_url: "", itemType: "artist",
     });
   });
 });

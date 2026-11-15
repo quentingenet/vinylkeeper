@@ -2,7 +2,7 @@ import { logger } from "@utils/logger";
 import { useQuery } from "@tanstack/react-query";
 import { AlbumMetadata, ArtistMetadata } from "@models/IRequestProxy";
 import { queryKeys } from "@utils/queryKeys";
-import { isApiError } from "@utils/apiError";
+import { ApiErrorCode, isApiError } from "@utils/apiError";
 import { BaseApiService } from "./BaseApiService";
 
 export interface AlbumMetadataParams {
@@ -31,7 +31,7 @@ export const fetchAlbumMetadata = async (
   try {
     return await musicMetadataApiService.getAlbum(params.id);
   } catch (error: unknown) {
-    if (isApiError(error) && error.code === 404) {
+    if (isApiError(error) && error.code === ApiErrorCode.RESOURCE_NOT_FOUND) {
       throw new Error(`Album with ID ${params.id} not found`, { cause: error });
     }
     throw new Error("Failed to fetch album metadata", { cause: error });

@@ -44,13 +44,13 @@ class ExportService:
         self.collection_album_repository = collection_album_repository
 
     async def export_collection_albums_csv(
-        self, collection_id: int, user_id: int
+        self, collection_id: int, user_id: int, username: str
     ) -> StreamingResponse:
         export_kind = "collection_albums"
         export_format = "csv"
         logger.info(
             f"Export requested: kind={export_kind} format={export_format}"
-            f" user_id={user_id} collection_id={collection_id}"
+            f" user={username} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -70,25 +70,25 @@ class ExportService:
             response = self._stream_csv(filename=filename, rows=row_iter())
             logger.info(
                 f"Export success: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} rows={rows_count}"
+                f" user={username} collection_id={collection_id} rows={rows_count}"
             )
             return response
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                f" user={username} collection_id={collection_id} error={str(e)}",
                 exc_info=True
             )
             raise
 
     async def export_collection_artists_csv(
-        self, collection_id: int, user_id: int
+        self, collection_id: int, user_id: int, username: str
     ) -> StreamingResponse:
         export_kind = "collection_artists"
         export_format = "csv"
         logger.info(
             f"Export requested: kind={export_kind} format={export_format}"
-            f" user_id={user_id} collection_id={collection_id}"
+            f" user={username} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -110,25 +110,25 @@ class ExportService:
             response = self._stream_csv(filename=filename, rows=row_iter())
             logger.info(
                 f"Export success: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} rows={rows_count}"
+                f" user={username} collection_id={collection_id} rows={rows_count}"
             )
             return response
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                f" user={username} collection_id={collection_id} error={str(e)}",
                 exc_info=True
             )
             raise
 
     async def export_collection_albums_ods(
-        self, collection_id: int, user_id: int
+        self, collection_id: int, user_id: int, username: str
     ) -> Response:
         export_kind = "collection_albums"
         export_format = "ods"
         logger.info(
             f"Export requested: kind={export_kind} format={export_format}"
-            f" user_id={user_id} collection_id={collection_id}"
+            f" user={username} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -150,25 +150,25 @@ class ExportService:
             response = self._file_response(export_file)
             logger.info(
                 f"Export success: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} rows={len(rows)}"
+                f" user={username} collection_id={collection_id} rows={len(rows)}"
             )
             return response
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                f" user={username} collection_id={collection_id} error={str(e)}",
                 exc_info=True
             )
             raise
 
     async def export_collection_artists_ods(
-        self, collection_id: int, user_id: int
+        self, collection_id: int, user_id: int, username: str
     ) -> Response:
         export_kind = "collection_artists"
         export_format = "ods"
         logger.info(
             f"Export requested: kind={export_kind} format={export_format}"
-            f" user_id={user_id} collection_id={collection_id}"
+            f" user={username} collection_id={collection_id}"
         )
         try:
             collection = await self._get_owned_collection(collection_id, user_id)
@@ -189,13 +189,13 @@ class ExportService:
             response = self._file_response(export_file)
             logger.info(
                 f"Export success: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} rows={len(rows)}"
+                f" user={username} collection_id={collection_id} rows={len(rows)}"
             )
             return response
         except Exception as e:
             logger.error(
                 f"Export failed: kind={export_kind} format={export_format}"
-                f" user_id={user_id} collection_id={collection_id} error={str(e)}",
+                f" user={username} collection_id={collection_id} error={str(e)}",
                 exc_info=True
             )
             raise

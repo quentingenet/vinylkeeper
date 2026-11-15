@@ -108,7 +108,7 @@ class TestReadPaths:
             real_session, state_record="mint", state_cover="good", acquisition_month_year="2022-11")
         service = ExportService(CollectionRepository(real_session), CollectionAlbumRepository(real_session))
 
-        response = await service.export_collection_albums_csv(collection.id, user.id)
+        response = await service.export_collection_albums_csv(collection.id, user.id, user.username)
         body = "".join([chunk if isinstance(chunk, str) else chunk.decode() async for chunk in response.body_iterator])
 
         [row] = list(csv.DictReader(io.StringIO(body.lstrip("\ufeff")), delimiter=";"))
@@ -581,7 +581,7 @@ class TestExportCopies:
         real_session.expunge_all()
         service = ExportService(CollectionRepository(real_session), CollectionAlbumRepository(real_session))
 
-        response = await service.export_collection_albums_csv(collection.id, user.id)
+        response = await service.export_collection_albums_csv(collection.id, user.id, user.username)
         body = "".join([chunk if isinstance(chunk, str) else chunk.decode() async for chunk in response.body_iterator])
 
         rows = list(csv.DictReader(io.StringIO(body.lstrip("﻿")), delimiter=";"))

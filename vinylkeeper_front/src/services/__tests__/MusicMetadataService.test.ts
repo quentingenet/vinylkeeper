@@ -37,7 +37,8 @@ describe("MusicMetadataService goes through the common client", () => {
   });
 
   it("says when an album is unknown", async () => {
-    requestService.mockRejectedValueOnce({ code: 404, message: "Album not found", details: {} });
+    // What the API sends for a release unknown on Discogs (ErrorCode.RESOURCE_NOT_FOUND)
+    requestService.mockRejectedValueOnce({ code: 2000, message: "Album with id 99 not found", details: {} });
     await expect(fetchAlbumMetadata({ id: "99", artist: "a", title: "t" })).rejects.toThrow(
       "Album with ID 99 not found"
     );

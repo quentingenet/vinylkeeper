@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from app.services.search_service import SEARCH_PAGE_SIZE, SearchService
-from app.core.exceptions import ServerError
+from app.core.exceptions import ErrorCode, ResourceNotFoundError, ServerError
 
 
 def make_service_with_failing_client(exc: Exception) -> SearchService:
@@ -380,3 +380,31 @@ class TestSearchByBarcode:
 
         assert sent[0]["q"] == "kind of blue"
         assert "barcode" not in sent[0]
+
+
+class TestMetadataNotFound:
+    """A release or an artist unknown on Discogs is a 404 the app can tell apart, not a server error."""
+
+    @staticmethod
+    def service(status: int, body) -> SearchService:
+        return SearchService(http_client=httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda request: httpx.Response(status, json=body))))
+
+    @pytest.mark.parametrize("status, body", [(404, {"message": "Release not found."}), (200, {})])
+    async def test_unknown_album(self, status, body):
+        with pytest.raises(ResourceNotFoundError) as caught:
+            await self.service(status, body).get_album_metadata("99")
+        assert (caught.value.status_code, caught.value.detail["code"]) == (404, ErrorCode.RESOURCE_NOT_FOUND)
+
+    @pytest.mark.parametrize("status, body", [(404, {"message": "Artist not found."}), (200, {})])
+    async def test_unknown_artist(self, status, body):
+        with pytest.raises(ResourceNotFoundError) as caught:
+            await self.service(status, body).get_artist_metadata("99")
+        assert (caught.value.status_code, caught.value.detail["code"]) == (404, ErrorCode.RESOURCE_NOT_FOUND)
+
+    async def test_album_metadata_has_its_artist_name(self):
+        release = {"id": 1, "title": "Kind Of Blue", "artists": [{"id": 23755, "name": "Miles Davis (2)"}]}
+
+        metadata = await self.service(200, release).get_album_metadata("1")
+
+        assert metadata.artist == "Miles Davis"

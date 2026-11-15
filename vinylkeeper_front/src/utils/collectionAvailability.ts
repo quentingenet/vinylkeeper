@@ -1,7 +1,7 @@
-import { isApiError } from "@utils/apiError";
+import { ApiErrorCode, isApiError } from "@utils/apiError";
 
-const NOT_FOUND_CODE = 2000;
-const FORBIDDEN_CODE = 4003;
+// details.field of DuplicateCollectionNameError (app/core/exceptions.py)
+const COLLECTION_NAME_FIELD = "Collection name";
 // The id column of the API: a longer number in a link is no collection
 const MAX_COLLECTION_ID = 2147483647;
 
@@ -9,10 +9,16 @@ export type CollectionUnavailableReason = "private" | "gone" | "error";
 
 /** Why a collection cannot be shown: anything but a clear answer of the API may be temporary. */
 export const unavailableReason = (error: unknown): CollectionUnavailableReason => {
-  if (isApiError(error) && error.code === FORBIDDEN_CODE) return "private";
-  if (isApiError(error) && error.code === NOT_FOUND_CODE) return "gone";
+  if (isApiError(error) && error.code === ApiErrorCode.FORBIDDEN_OWNER) return "private";
+  if (isApiError(error) && error.code === ApiErrorCode.RESOURCE_NOT_FOUND) return "gone";
   return "error";
 };
+
+/** The user already has a collection of that name (create or rename): told by the field, not the wording. */
+export const isDuplicateCollectionName = (error: unknown): boolean =>
+  isApiError(error) &&
+  error.code === ApiErrorCode.RESOURCE_ALREADY_EXISTS &&
+  error.details?.field === COLLECTION_NAME_FIELD;
 
 /** The id of a collection in a URL, null when it cannot be one. */
 export const parseCollectionId = (value: string | undefined): number | null => {

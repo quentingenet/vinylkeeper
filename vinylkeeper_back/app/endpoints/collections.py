@@ -322,7 +322,7 @@ async def export_collection_albums_csv(
     user=Depends(get_current_user),
     export_service: ExportService = Depends(get_export_service),
 ):
-    return await export_service.export_collection_albums_csv(collection_id, user.id)
+    return await export_service.export_collection_albums_csv(collection_id, user.id, user.username)
 
 
 @router.get("/{collection_id}/export/artists.csv", status_code=status.HTTP_200_OK)
@@ -331,7 +331,7 @@ async def export_collection_artists_csv(
     user=Depends(get_current_user),
     export_service: ExportService = Depends(get_export_service),
 ):
-    return await export_service.export_collection_artists_csv(collection_id, user.id)
+    return await export_service.export_collection_artists_csv(collection_id, user.id, user.username)
 
 
 @router.get("/{collection_id}/export/albums.ods", status_code=status.HTTP_200_OK)
@@ -340,7 +340,7 @@ async def export_collection_albums_ods(
     user=Depends(get_current_user),
     export_service: ExportService = Depends(get_export_service),
 ):
-    return await export_service.export_collection_albums_ods(collection_id, user.id)
+    return await export_service.export_collection_albums_ods(collection_id, user.id, user.username)
 
 
 @router.get("/{collection_id}/export/artists.ods", status_code=status.HTTP_200_OK)
@@ -349,4 +349,4 @@ async def export_collection_artists_ods(
     user=Depends(get_current_user),
     export_service: ExportService = Depends(get_export_service),
 ):
-    return await export_service.export_collection_artists_ods(collection_id, user.id)
+    return await export_service.export_collection_artists_ods(collection_id, user.id, user.username)

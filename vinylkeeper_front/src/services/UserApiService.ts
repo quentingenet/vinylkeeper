@@ -2,7 +2,7 @@ import { BaseApiService } from "./BaseApiService";
 import { ILoginForm } from "@models/ILoginForm";
 import { IRegisterForm } from "@models/IRegisterForm";
 import { IResetPasswordToBackend } from "@models/IResetPassword";
-import { isApiError } from "@utils/apiError";
+import { ApiErrorCode, isApiError } from "@utils/apiError";
 import { RESET_LINK_UNUSABLE } from "@utils/resetLink";
 import { capacitorHttpService } from "@utils/CapacitorHttpService";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
@@ -45,9 +45,6 @@ export interface ForgotPasswordResponse {
   message: string;
 }
 
-// Code the API gives to a link or token that is wrong, expired or already used (ErrorCode.INVALID_TOKEN)
-const INVALID_TOKEN_CODE = 1004;
-
 export interface ResetPasswordResponse {
   message: string;
 }
@@ -73,10 +70,7 @@ export interface ContactMessageResponse {
   sent_at: string;
 }
 
-// Error codes of the API (app/core/exceptions.py ErrorCode)
-const INVALID_CREDENTIALS = 1000;
-const ACCOUNT_LOCKED = 1003;
-const TERMS_NOT_ACCEPTED = 1008;
+// HTTP status of the rate limit (NGINX): not a code of the API
 const TOO_MANY_REQUESTS = 429;
 
 /** What the user can do about a failed login, from the error of the API or of the network. */
@@ -85,11 +79,11 @@ export function loginErrorMessage(error: unknown): string {
     return "Unable to reach Vinyl Keeper. Check your connection and try again.";
   }
   switch (error.code) {
-    case INVALID_CREDENTIALS:
+    case ApiErrorCode.INVALID_CREDENTIALS:
       return "Wrong email or password.";
-    case ACCOUNT_LOCKED:
+    case ApiErrorCode.ACCOUNT_LOCKED:
       return "This account is disabled. Contact us if you think it is a mistake.";
-    case TERMS_NOT_ACCEPTED:
+    case ApiErrorCode.TERMS_NOT_ACCEPTED:
       return "This account has not accepted the terms of use. Contact us to restore access.";
     case TOO_MANY_REQUESTS:
       return "Too many login attempts. Wait a few minutes and try again.";
@@ -178,7 +172,7 @@ export class UserApiService extends BaseApiService {
       // Opened from an email, without a session: a refresh of the session has nothing to refresh
       return await this.post<ResetPasswordResponse>("/users/reset-password", data, true);
     } catch (error) {
-      throw new Error(isApiError(error) && error.code === INVALID_TOKEN_CODE
+      throw new Error(isApiError(error) && error.code === ApiErrorCode.INVALID_TOKEN
         ? RESET_LINK_UNUSABLE
         : "Failed to reset password. Please try again.", { cause: error });
     }
@@ -189,7 +183,7 @@ export class UserApiService extends BaseApiService {
     try {
       await this.post<ResetPasswordResponse>("/users/reset-password/check", { token }, true);
     } catch (error) {
-      throw new Error(isApiError(error) && error.code === INVALID_TOKEN_CODE
+      throw new Error(isApiError(error) && error.code === ApiErrorCode.INVALID_TOKEN
         ? RESET_LINK_UNUSABLE
         : "The link could not be checked. Please try again.", { cause: error });
     }
@@ -258,7 +252,7 @@ export class UserApiService extends BaseApiService {
       }, true);
       return await this.keepSession(response);
     } catch (error: unknown) {
-      const message = isApiError(error) && error.code === 1000
+      const message = isApiError(error) && error.code === ApiErrorCode.INVALID_CREDENTIALS
         ? "Wrong current password."
         : isApiError(error) ? error.message : "Failed to change password. Please try again.";
       throw new Error(message, { cause: error });

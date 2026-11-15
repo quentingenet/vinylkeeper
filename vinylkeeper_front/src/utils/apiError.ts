@@ -16,8 +16,17 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 
-// ErrorCode.CSRF_TOKEN_INVALID of the API
-const CSRF_TOKEN_INVALID = 4004;
+/** The codes of the API the app acts on (app/core/exceptions.py ErrorCode): keep both in step. */
+export enum ApiErrorCode {
+  INVALID_CREDENTIALS = 1000,
+  ACCOUNT_LOCKED = 1003,
+  INVALID_TOKEN = 1004,
+  TERMS_NOT_ACCEPTED = 1008,
+  RESOURCE_NOT_FOUND = 2000,
+  RESOURCE_ALREADY_EXISTS = 2001,
+  FORBIDDEN_OWNER = 4003,
+  CSRF_TOKEN_INVALID = 4004,
+}
 
 /**
  * Whether the server really refused the session: an HTTP 401/403, an authentication code of the API
@@ -27,5 +36,5 @@ const CSRF_TOKEN_INVALID = 4004;
 export function isSessionRefused(error: unknown): boolean {
   if (!isApiError(error)) return false;
   const { code } = error;
-  return code === 401 || code === 403 || code === CSRF_TOKEN_INVALID || (code >= 1000 && code < 2000);
+  return code === 401 || code === 403 || code === ApiErrorCode.CSRF_TOKEN_INVALID || (code >= 1000 && code < 2000);
 }

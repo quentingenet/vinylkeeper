@@ -32,7 +32,7 @@ import {
   PaginatedCollectionListResponse,
   type CollectionDetailResponse,
 } from "@services/CollectionApiService";
-import { isApiError } from "@utils/apiError";
+import { isDuplicateCollectionName } from "@utils/collectionAvailability";
 import { colors } from "@styles/colors";
 
 interface IModalCollectionProps {
@@ -109,7 +109,7 @@ export default function ModalCollection({
       handleClose();
     },
     onError: (error: Error) => {
-      if (isApiError(error) && error.code === 2001 && error.message.includes("Collection name already exists")) {
+      if (isDuplicateCollectionName(error)) {
         setErrorSnackbar({
           open: true,
           message:
@@ -165,7 +165,7 @@ export default function ModalCollection({
       ]);
     },
     onError: (error: Error) => {
-      if (isApiError(error) && error.code === 2001 && error.message.includes("Collection name already exists")) {
+      if (isDuplicateCollectionName(error)) {
         setErrorSnackbar({
           open: true,
           message:

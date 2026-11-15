@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseCollectionId, parseShareToken, retryCollection, unavailableReason } from "@utils/collectionAvailability";
+import {
+  isDuplicateCollectionName,
+  parseCollectionId,
+  parseShareToken,
+  retryCollection,
+  unavailableReason,
+} from "@utils/collectionAvailability";
 import { safeNextPath, registerUrl } from "@utils/GlobalUrls";
 
 describe("unavailableReason", () => {
@@ -50,5 +56,30 @@ describe("safeNextPath", () => {
 
   it("travels in the link of the form", () => {
     expect(registerUrl("/shared/abc")).toBe("/?auth=register&next=%2Fshared%2Fabc");
+  });
+});
+
+describe("isDuplicateCollectionName", () => {
+  it("recognises the error of the API by its field", () => {
+    expect(
+      isDuplicateCollectionName({
+        code: 2001,
+        message: "Collection name already exists: Jazz shelf",
+        details: { field: "Collection name", value: "Jazz shelf" },
+      })
+    ).toBe(true);
+  });
+
+  it("does not depend on the wording of the message", () => {
+    expect(
+      isDuplicateCollectionName({ code: 2001, message: "Reworded", details: { field: "Collection name" } })
+    ).toBe(true);
+  });
+
+  it("refuses another duplicate, another code, a missing details, or no API error", () => {
+    expect(isDuplicateCollectionName({ code: 2001, message: "x", details: { field: "like" } })).toBe(false);
+    expect(isDuplicateCollectionName({ code: 3000, message: "x", details: { field: "Collection name" } })).toBe(false);
+    expect(isDuplicateCollectionName({ code: 2001, message: "Collection name already exists" })).toBe(false);
+    expect(isDuplicateCollectionName(new Error("Collection name already exists"))).toBe(false);
   });
 });

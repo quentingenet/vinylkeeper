@@ -15,7 +15,7 @@ export interface SearchResultsPage {
 interface Artist {
   uuid: string;
   id: string;
-  title?: string;
+  name?: string;
   link?: string;
   picture?: string;
   picture_small?: string;

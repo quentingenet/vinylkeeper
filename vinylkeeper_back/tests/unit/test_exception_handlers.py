@@ -259,6 +259,8 @@ class TestValidationErrors:
         resp = await call(make_app_raising(lambda: DuplicateCollectionNameError("My Mix")))
         assert resp.status_code == 400
         assert resp.json()["code"] == ErrorCode.RESOURCE_ALREADY_EXISTS
+        # The web app tells this error by its field (isDuplicateCollectionName): keep both in step
+        assert resp.json()["details"] == {"field": "Collection name", "value": "My Mix"}
 
 
 # ---------------------------------------------------------------------------

@@ -134,3 +134,71 @@ describe("ModalCollection create", () => {
     });
   });
 });
+
+describe("ModalCollection duplicate name", () => {
+  // What the API sends (DuplicateCollectionNameError)
+  const duplicate = {
+    code: 2001,
+    message: "Collection name already exists: Jazz shelf",
+    details: { field: "Collection name", value: "Jazz shelf" },
+  };
+  const duplicateMessage = "Collection name already exists. Please choose a different name.";
+
+  it("says the name is taken when creating", async () => {
+    api.createCollection.mockRejectedValueOnce(duplicate);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ModalCollection
+          openModal
+          isUpdatingCollection={false}
+          handleClose={vi.fn()}
+          onCollectionAdded={vi.fn()}
+          isPublic={false}
+          setIsPublic={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+
+    await userEvent.type(screen.getByLabelText("Name"), "Jazz shelf");
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText(duplicateMessage)).toBeInTheDocument();
+  });
+
+  it("says the name is taken when renaming", async () => {
+    api.updateCollection.mockRejectedValueOnce(duplicate);
+    renderModal(new QueryClient({ defaultOptions: { queries: { retry: false } } }));
+    const user = userEvent.setup();
+
+    const name = screen.getByLabelText("Name");
+    await user.clear(name);
+    await user.type(name, "Jazz shelf 2");
+    await user.click(screen.getByRole("button", { name: "Update" }));
+
+    expect(await screen.findByText(duplicateMessage)).toBeInTheDocument();
+  });
+
+  it("keeps the generic message for another conflict", async () => {
+    api.createCollection.mockRejectedValueOnce({
+      code: 2001, message: "like already exists: collection_9", details: { field: "like", value: "collection_9" },
+    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ModalCollection
+          openModal
+          isUpdatingCollection={false}
+          handleClose={vi.fn()}
+          onCollectionAdded={vi.fn()}
+          isPublic={false}
+          setIsPublic={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+
+    await userEvent.type(screen.getByLabelText("Name"), "Jazz shelf");
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(api.createCollection).toHaveBeenCalled());
+    expect(screen.queryByText(duplicateMessage)).toBeNull();
+  });
+});
