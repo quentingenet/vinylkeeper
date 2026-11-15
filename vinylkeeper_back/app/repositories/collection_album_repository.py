@@ -168,7 +168,9 @@ class CollectionAlbumRepository(TransactionalMixin):
         pressings: dict[str, list[tuple]] = {key: [] for key in page_keys}
         for album, collection_album, key in rows:
             pressings[key].append((album, collection_album))
-        return [(key, pressings[key]) for key in page_keys], total
+        # Read apart from the keys: a pressing enriched in between (its master id found) moved to
+        # another work, so a key may come back empty; it shows under its new key on the next load
+        return [(key, pressings[key]) for key in page_keys if pressings[key]], total
 
     async def get_album_with_metadata(self, collection_id: int, album_id: int) -> Optional[Album]:
         """Get an album with its collection metadata"""

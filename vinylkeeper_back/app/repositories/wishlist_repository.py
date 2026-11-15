@@ -135,7 +135,9 @@ class WishlistRepository(TransactionalMixin):
         pressings: dict[str, list] = {key: [] for key in page_keys}
         for wishlist, entity_type, album, key in rows:
             pressings[key].append((wishlist, entity_type, album))
-        return [(key, pressings[key]) for key in page_keys], total
+        # Read apart from the keys: a pressing enriched in between (its master id found) moved to
+        # another work, so a key may come back empty; it shows under its new key on the next load
+        return [(key, pressings[key]) for key in page_keys if pressings[key]], total
 
     async def get_user_wishlist_all(self, user_id: int) -> List[Wishlist]:
         """Get all wishlist items for a user with relations loaded (for exports)."""
