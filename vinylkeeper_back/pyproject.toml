@@ -10,7 +10,7 @@ python = ">=3.12,<3.14"
 fastapi = "^0.162.0"
 starlette = "^1.10.0"
 uvicorn = {extras = ["standard"], version = ">=0.37,<0.55"}
-gunicorn = ">=23,<27"
+gunicorn = ">=23,<28"
 alembic = "^1.14.1"
 sqlalchemy = {version = "^2.1.6", extras = ["asyncio"]}
 asyncpg = ">=0.30,<0.33"
