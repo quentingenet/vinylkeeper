@@ -25,10 +25,10 @@
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@capacitor-mlkit/barcode-scanning": "^8.2.2",
-    "@capacitor/android": "^8.3.0",
+    "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/browser": "^8.0.5",
-    "@capacitor/core": "^8.3.0",
+    "@capacitor/core": "^8.6.2",
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/share": "^8.0.3",
     "@capawesome/capacitor-app-update": "^8.1.1",
@@ -53,11 +53,11 @@
     "yup": "^1.7.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.3.0",
+    "@capacitor/cli": "^8.6.2",
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.9",
+    "@testing-library/user-event": "^14.6.10",
     "@types/leaflet": "^1.9.22",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
