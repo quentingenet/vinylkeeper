@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+/** Version of the app, set at build time by vite.config.ts (versionName of the Android app) */
+declare const __APP_VERSION__: string;
+
 interface ImportMetaEnv {
   readonly VITE_API_VK_URL: string;
   readonly VITE_DISCOGS_API_URL: string;

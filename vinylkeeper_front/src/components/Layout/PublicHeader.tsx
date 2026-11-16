@@ -34,10 +34,10 @@ export default function PublicHeader({ nextPath }: PublicHeaderProps) {
         Vinyl Keeper
       </Typography>
       <Box sx={{ display: "flex", gap: 1 }}>
-        <Button component={RouterLink} to={loginUrl(nextPath)} size="small" variant="text">
+        <Button component={RouterLink} to={loginUrl(nextPath)} rel="nofollow" size="small" variant="text">
           Log in
         </Button>
-        <Button component={RouterLink} to={registerUrl(nextPath)} size="small" variant="contained">
+        <Button component={RouterLink} to={registerUrl(nextPath)} rel="nofollow" size="small" variant="contained">
           Sign up
         </Button>
       </Box>

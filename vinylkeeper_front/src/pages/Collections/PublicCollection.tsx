@@ -331,7 +331,7 @@ export default function PublicCollection() {
               <Button component={RouterLink} to={EGlobalUrls.ATLAS} variant="text">
                 Explore the Vinyl Atlas
               </Button>
-              <Button component={RouterLink} to={registerUrl()} variant="contained">
+              <Button component={RouterLink} to={registerUrl()} rel="nofollow" variant="contained">
                 Join Vinyl Keeper
               </Button>
             </>

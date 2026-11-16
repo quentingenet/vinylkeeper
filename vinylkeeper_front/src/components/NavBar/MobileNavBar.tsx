@@ -28,6 +28,7 @@ import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 import { growItem } from "@utils/Animations";
 import { colors } from "@styles/colors";
+import AppVersion from "@components/UI/AppVersion";
 
 /**
  * MobileNavBar component props interface
@@ -262,6 +263,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             </Box>
           ))}
         </Box>
+        <AppVersion />
       </Drawer>
     </>
   );

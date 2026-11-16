@@ -97,10 +97,10 @@ export default function JoinVinylKeeperDialog({
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button component={RouterLink} to={loginUrl(nextPath)} variant="text">
+            <Button component={RouterLink} to={loginUrl(nextPath)} rel="nofollow" variant="text">
               Log in
             </Button>
-            <Button component={RouterLink} to={registerUrl(nextPath)} variant="contained">
+            <Button component={RouterLink} to={registerUrl(nextPath)} rel="nofollow" variant="contained">
               Sign up
             </Button>
           </Box>

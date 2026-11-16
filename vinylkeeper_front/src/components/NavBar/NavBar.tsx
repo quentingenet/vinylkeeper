@@ -29,6 +29,7 @@ import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
 import { growItem } from "@utils/Animations";
 import { colors } from "@styles/colors";
+import AppVersion from "@components/UI/AppVersion";
 
 /**
  * NavBar component props interface
@@ -250,6 +251,7 @@ const NavBar: React.FC<NavBarProps> = ({
           />
         </ListItemButton>
       </ListItem>
+      <AppVersion corner />
     </Drawer>
   );
 };
