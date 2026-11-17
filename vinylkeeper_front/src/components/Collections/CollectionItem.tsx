@@ -393,8 +393,8 @@ export default function CollectionItem({
           <TextField
             fullWidth
             sx={{ mt: 2 }}
-            placeholder={t("settings:danger.placeholder")}
-            label={t("settings:danger.confirmLabel")}
+            placeholder={t("settingsUsersVk:danger.placeholder")}
+            label={t("settingsUsersVk:danger.confirmLabel")}
             value={deleteConfirmation}
             onChange={(e) => setDeleteConfirmation(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleDelete()}

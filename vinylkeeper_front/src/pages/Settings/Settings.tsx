@@ -37,7 +37,7 @@ const TAB_IDS: Record<SettingsTab, { tab: string; panel: string }> = {
 };
 
 export default function Settings() {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   // The tab lives in the URL, as on the Collections page: back/forward and links keep it
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab: SettingsTab = searchParams.get(COLLECTIONS_TAB_PARAM) === SETTINGS_APP_TAB_VALUE ? "app" : "profile";

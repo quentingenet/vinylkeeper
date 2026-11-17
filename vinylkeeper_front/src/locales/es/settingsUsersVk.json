@@ -1,0 +1,72 @@
+{
+  "loginRequired": "Inicia sesión para acceder a los ajustes",
+  "loadError": "Error al cargar los ajustes.",
+  "profile": {
+    "title": "Información del perfil",
+    "username": "Nombre de usuario",
+    "createdAt": "Cuenta creada el",
+    "terms": "¿Condiciones aceptadas?",
+    "accepted": "Aceptadas",
+    "notAccepted": "No aceptadas",
+    "viewTerms": "Ver las condiciones"
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Idioma de la app. Automático sigue el idioma de tu dispositivo. Los títulos, artistas, sellos y formatos de Discogs se quedan como los da Discogs.",
+    "saveError": "No se pudo guardar el idioma. Inténtalo de nuevo en un momento."
+  },
+  "currency": {
+    "title": "Valor de la colección",
+    "description": "Moneda del valor estimado de tus colecciones en el panel. Los dólares se convierten desde euros al cambio del día.",
+    "label": "Moneda"
+  },
+  "email": {
+    "title": "Correo electrónico",
+    "current": "Correo actual",
+    "confirmed": "Confirmado",
+    "notConfirmed": "No confirmado",
+    "sendLink": "Enviar un nuevo enlace",
+    "linkSent": "Se ha enviado un enlace de confirmación a tu correo.",
+    "changeTitle": "Cambiar tu correo electrónico",
+    "newEmail": "Nuevo correo",
+    "currentPassword": "Contraseña actual",
+    "change": "Cambiar el correo",
+    "changeSent": "Se ha enviado un enlace de confirmación a tu nuevo correo. Tu correo actual sigue en uso hasta que abras ese enlace."
+  },
+  "password": {
+    "title": "Cambiar la contraseña",
+    "current": "Contraseña actual",
+    "new": "Nueva contraseña",
+    "confirm": "Confirmar la nueva contraseña",
+    "submit": "Cambiar la contraseña",
+    "submitting": "Cambiando...",
+    "success": "¡Contraseña cambiada!",
+    "error": "No se pudo cambiar la contraseña"
+  },
+  "contact": {
+    "title": "Contactar con soporte",
+    "intro": "¿Preguntas, comentarios o algún error que comunicar?",
+    "invite": "¡Nos encantará leerte! Escríbenos y te responderemos lo antes posible.",
+    "subject": "Asunto",
+    "subjectHelp": "200 caracteres como máximo",
+    "message": "Mensaje",
+    "messageHelp": "2000 caracteres como máximo",
+    "submit": "Enviar el mensaje",
+    "success": "¡Mensaje enviado!",
+    "error": "No se pudo enviar el mensaje"
+  },
+  "danger": {
+    "title": "Zona de peligro",
+    "warning": "Si eliminas tu cuenta, es definitivo.",
+    "delete": "Eliminar la cuenta",
+    "cannotUndo": "Esta acción no se puede deshacer.",
+    "placeholder": "Escribe DELETE en mayúsculas para eliminar",
+    "confirmLabel": "Confirmar la eliminación",
+    "error": "No se pudo eliminar la cuenta. Inténtalo de nuevo."
+  },
+  "tabs": {
+    "label": "Pestañas de los ajustes",
+    "profile": "Perfil",
+    "app": "Ajustes de la app"
+  }
+}

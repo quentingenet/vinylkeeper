@@ -1,0 +1,72 @@
+{
+  "loginRequired": "Inicia sessão para aceder às definições",
+  "loadError": "Erro ao carregar as definições.",
+  "profile": {
+    "title": "Informações do perfil",
+    "username": "Nome de utilizador",
+    "createdAt": "Conta criada em",
+    "terms": "Condições aceites?",
+    "accepted": "Aceites",
+    "notAccepted": "Não aceites",
+    "viewTerms": "Ver as condições"
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Idioma da app. Automático segue o idioma do teu dispositivo. Os títulos, artistas, editoras e formatos do Discogs ficam como o Discogs os dá.",
+    "saveError": "Não foi possível guardar o idioma. Tenta novamente daqui a pouco."
+  },
+  "currency": {
+    "title": "Valor da coleção",
+    "description": "Moeda do valor estimado das tuas coleções no painel. Os dólares são convertidos a partir dos euros ao câmbio do dia.",
+    "label": "Moeda"
+  },
+  "email": {
+    "title": "Endereço de e-mail",
+    "current": "E-mail atual",
+    "confirmed": "Confirmado",
+    "notConfirmed": "Não confirmado",
+    "sendLink": "Enviar uma nova ligação",
+    "linkSent": "Foi enviada uma ligação de confirmação para o teu e-mail.",
+    "changeTitle": "Alterar o teu endereço de e-mail",
+    "newEmail": "Novo e-mail",
+    "currentPassword": "Palavra-passe atual",
+    "change": "Alterar o e-mail",
+    "changeSent": "Foi enviada uma ligação de confirmação para o teu novo e-mail. O teu endereço atual continua em uso até abrires essa ligação."
+  },
+  "password": {
+    "title": "Alterar a palavra-passe",
+    "current": "Palavra-passe atual",
+    "new": "Nova palavra-passe",
+    "confirm": "Confirmar a nova palavra-passe",
+    "submit": "Alterar a palavra-passe",
+    "submitting": "A alterar...",
+    "success": "Palavra-passe alterada!",
+    "error": "Não foi possível alterar a palavra-passe"
+  },
+  "contact": {
+    "title": "Contactar o suporte",
+    "intro": "Perguntas, comentários ou erros a reportar?",
+    "invite": "Adoramos ouvir-te! Envia-nos uma mensagem e respondemos assim que possível.",
+    "subject": "Assunto",
+    "subjectHelp": "200 caracteres no máximo",
+    "message": "Mensagem",
+    "messageHelp": "2000 caracteres no máximo",
+    "submit": "Enviar a mensagem",
+    "success": "Mensagem enviada!",
+    "error": "Não foi possível enviar a mensagem"
+  },
+  "danger": {
+    "title": "Zona de perigo",
+    "warning": "Se eliminares a tua conta, é definitivo.",
+    "delete": "Eliminar a conta",
+    "cannotUndo": "Esta ação não pode ser anulada.",
+    "placeholder": "Escreve DELETE em maiúsculas para eliminar",
+    "confirmLabel": "Confirmar a eliminação",
+    "error": "Não foi possível eliminar a conta. Tenta novamente."
+  },
+  "tabs": {
+    "label": "Separadores das definições",
+    "profile": "Perfil",
+    "app": "Definições da app"
+  }
+}

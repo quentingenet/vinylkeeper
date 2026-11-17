@@ -1,0 +1,72 @@
+{
+  "loginRequired": "Melde dich an, um die Einstellungen zu öffnen",
+  "loadError": "Fehler beim Laden der Einstellungen.",
+  "tabs": {
+    "label": "Tabs der Einstellungen",
+    "profile": "Profil",
+    "app": "App-Einstellungen"
+  },
+  "profile": {
+    "title": "Profilinformationen",
+    "username": "Benutzername",
+    "createdAt": "Konto erstellt am",
+    "terms": "Bedingungen akzeptiert?",
+    "accepted": "Akzeptiert",
+    "notAccepted": "Nicht akzeptiert",
+    "viewTerms": "Bedingungen ansehen"
+  },
+  "language": {
+    "title": "Sprache",
+    "description": "Sprache der App. Automatisch folgt der Sprache deines Geräts. Titel, Künstler, Labels und Discogs-Formate bleiben so, wie Discogs sie liefert.",
+    "saveError": "Die Sprache konnte nicht gespeichert werden. Versuche es gleich noch einmal."
+  },
+  "currency": {
+    "title": "Wert der Sammlung",
+    "description": "Währung des geschätzten Werts deiner Sammlungen in der Übersicht. Dollar werden zum Tageskurs aus Euro umgerechnet.",
+    "label": "Währung"
+  },
+  "email": {
+    "title": "E-Mail-Adresse",
+    "current": "Aktuelle E-Mail",
+    "confirmed": "Bestätigt",
+    "notConfirmed": "Nicht bestätigt",
+    "sendLink": "Neuen Link senden",
+    "linkSent": "Ein Bestätigungslink wurde an deine E-Mail-Adresse gesendet.",
+    "changeTitle": "E-Mail-Adresse ändern",
+    "newEmail": "Neue E-Mail",
+    "currentPassword": "Aktuelles Passwort",
+    "change": "E-Mail ändern",
+    "changeSent": "Ein Bestätigungslink wurde an deine neue E-Mail-Adresse gesendet. Deine aktuelle Adresse bleibt aktiv, bis du diesen Link öffnest."
+  },
+  "password": {
+    "title": "Passwort ändern",
+    "current": "Aktuelles Passwort",
+    "new": "Neues Passwort",
+    "confirm": "Neues Passwort bestätigen",
+    "submit": "Passwort ändern",
+    "submitting": "Wird geändert...",
+    "success": "Passwort geändert!",
+    "error": "Das Passwort konnte nicht geändert werden"
+  },
+  "contact": {
+    "title": "Support kontaktieren",
+    "intro": "Fragen, Feedback oder einen Fehler gefunden?",
+    "invite": "Wir freuen uns, von dir zu hören! Schreib uns und wir antworten so schnell wie möglich.",
+    "subject": "Betreff",
+    "subjectHelp": "Höchstens 200 Zeichen",
+    "message": "Nachricht",
+    "messageHelp": "Höchstens 2000 Zeichen",
+    "submit": "Nachricht senden",
+    "success": "Nachricht gesendet!",
+    "error": "Die Nachricht konnte nicht gesendet werden"
+  },
+  "danger": {
+    "title": "Gefahrenbereich",
+    "warning": "Wenn du dein Konto löschst, ist das endgültig.",
+    "delete": "Konto löschen",
+    "cannotUndo": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "placeholder": "Gib DELETE in Großbuchstaben ein, um zu löschen",
+    "confirmLabel": "Löschen bestätigen",
+    "error": "Das Konto konnte nicht gelöscht werden. Versuche es erneut."
+  }
+}

@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { colors } from "@styles/colors";
 
 export default function DangerZoneSection() {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   const { logout } = useUserContext();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);

@@ -1,0 +1,72 @@
+{
+  "loginRequired": "Connecte-toi pour accéder aux paramètres",
+  "loadError": "Erreur lors du chargement des paramètres.",
+  "profile": {
+    "title": "Informations du profil",
+    "username": "Nom d'utilisateur",
+    "createdAt": "Compte créé le",
+    "terms": "Conditions acceptées ?",
+    "accepted": "Acceptées",
+    "notAccepted": "Non acceptées",
+    "viewTerms": "Voir les conditions"
+  },
+  "language": {
+    "title": "Langue",
+    "description": "Langue de l'app. Automatique suit la langue de ton appareil. Les titres, artistes, labels et formats Discogs restent tels que Discogs les donne.",
+    "saveError": "La langue n'a pas pu être enregistrée. Réessaie dans un instant."
+  },
+  "currency": {
+    "title": "Valeur de la collection",
+    "description": "Devise de la valeur estimée de tes collections sur le tableau de bord. Les dollars sont convertis depuis les euros au taux du jour.",
+    "label": "Devise"
+  },
+  "email": {
+    "title": "Adresse e-mail",
+    "current": "E-mail actuel",
+    "confirmed": "Confirmée",
+    "notConfirmed": "Non confirmée",
+    "sendLink": "Envoyer un nouveau lien",
+    "linkSent": "Un lien de confirmation a été envoyé à ton adresse e-mail.",
+    "changeTitle": "Changer ton adresse e-mail",
+    "newEmail": "Nouvel e-mail",
+    "currentPassword": "Mot de passe actuel",
+    "change": "Changer l'e-mail",
+    "changeSent": "Un lien de confirmation a été envoyé à ta nouvelle adresse e-mail. Ton adresse actuelle reste utilisée tant que tu n'as pas ouvert ce lien."
+  },
+  "password": {
+    "title": "Changer le mot de passe",
+    "current": "Mot de passe actuel",
+    "new": "Nouveau mot de passe",
+    "confirm": "Confirmer le nouveau mot de passe",
+    "submit": "Changer le mot de passe",
+    "submitting": "Modification...",
+    "success": "Mot de passe modifié !",
+    "error": "Le mot de passe n'a pas pu être modifié"
+  },
+  "contact": {
+    "title": "Contacter le support",
+    "intro": "Des questions, des retours ou un bug à signaler ?",
+    "invite": "On sera ravis de te lire ! Écris-nous et on te répondra dès que possible.",
+    "subject": "Objet",
+    "subjectHelp": "200 caractères maximum",
+    "message": "Message",
+    "messageHelp": "2000 caractères maximum",
+    "submit": "Envoyer le message",
+    "success": "Message envoyé !",
+    "error": "Le message n'a pas pu être envoyé"
+  },
+  "danger": {
+    "title": "Zone de danger",
+    "warning": "La suppression de ton compte est définitive.",
+    "delete": "Supprimer le compte",
+    "cannotUndo": "Cette action est irréversible.",
+    "placeholder": "Tape DELETE en majuscules pour supprimer",
+    "confirmLabel": "Confirmer la suppression",
+    "error": "Le compte n'a pas pu être supprimé. Réessaie."
+  },
+  "tabs": {
+    "label": "Onglets des paramètres",
+    "profile": "Profil",
+    "app": "Paramètres de l'app"
+  }
+}

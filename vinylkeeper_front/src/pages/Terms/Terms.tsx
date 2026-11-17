@@ -44,8 +44,8 @@ export default function Terms({ standalone = false }: { standalone?: boolean }) 
           <Typography variant="body2" sx={{ color: "black", mt: 0.75 }}>
             {t("deleteAccount.steps", {
               settings: t("nav:items.settings"),
-              dangerZone: t("settings:danger.title"),
-              deleteAccount: t("settings:danger.delete"),
+              dangerZone: t("settingsUsersVk:danger.title"),
+              deleteAccount: t("settingsUsersVk:danger.delete"),
             })}
           </Typography>
           <Typography variant="body2" sx={{ color: "black", mt: 0.75 }}>

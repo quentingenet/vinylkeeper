@@ -13,7 +13,7 @@ interface CurrencySectionProps {
 
 /** Currency the collection value of the dashboard is shown in. Prices are stored in EUR. */
 export default function CurrencySection({ currency }: CurrencySectionProps) {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 

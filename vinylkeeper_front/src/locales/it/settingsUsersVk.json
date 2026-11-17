@@ -1,0 +1,72 @@
+{
+  "loginRequired": "Accedi per aprire le impostazioni",
+  "loadError": "Errore nel caricamento delle impostazioni.",
+  "tabs": {
+    "label": "Schede delle impostazioni",
+    "profile": "Profilo",
+    "app": "Impostazioni dell'app"
+  },
+  "profile": {
+    "title": "Informazioni del profilo",
+    "username": "Nome utente",
+    "createdAt": "Account creato il",
+    "terms": "Condizioni accettate?",
+    "accepted": "Accettate",
+    "notAccepted": "Non accettate",
+    "viewTerms": "Vedi le condizioni"
+  },
+  "language": {
+    "title": "Lingua",
+    "description": "Lingua dell'app. Automatica segue la lingua del tuo dispositivo. Titoli, artisti, etichette e formati Discogs restano come li fornisce Discogs.",
+    "saveError": "Non è stato possibile salvare la lingua. Riprova tra poco."
+  },
+  "currency": {
+    "title": "Valore della collezione",
+    "description": "Valuta del valore stimato delle tue collezioni nella bacheca. I dollari sono convertiti dagli euro al cambio del giorno.",
+    "label": "Valuta"
+  },
+  "email": {
+    "title": "Indirizzo e-mail",
+    "current": "E-mail attuale",
+    "confirmed": "Confermato",
+    "notConfirmed": "Non confermato",
+    "sendLink": "Invia un nuovo link",
+    "linkSent": "Abbiamo inviato un link di conferma al tuo indirizzo e-mail.",
+    "changeTitle": "Cambia il tuo indirizzo e-mail",
+    "newEmail": "Nuova e-mail",
+    "currentPassword": "Password attuale",
+    "change": "Cambia e-mail",
+    "changeSent": "Abbiamo inviato un link di conferma al tuo nuovo indirizzo e-mail. Il tuo indirizzo attuale resta in uso finché non apri quel link."
+  },
+  "password": {
+    "title": "Cambia password",
+    "current": "Password attuale",
+    "new": "Nuova password",
+    "confirm": "Conferma la nuova password",
+    "submit": "Cambia password",
+    "submitting": "Modifica...",
+    "success": "Password cambiata!",
+    "error": "Non è stato possibile cambiare la password"
+  },
+  "contact": {
+    "title": "Contatta il supporto",
+    "intro": "Domande, suggerimenti o un bug da segnalare?",
+    "invite": "Ci farà piacere sentirti! Scrivici e ti risponderemo appena possibile.",
+    "subject": "Oggetto",
+    "subjectHelp": "Massimo 200 caratteri",
+    "message": "Messaggio",
+    "messageHelp": "Massimo 2000 caratteri",
+    "submit": "Invia il messaggio",
+    "success": "Messaggio inviato!",
+    "error": "Non è stato possibile inviare il messaggio"
+  },
+  "danger": {
+    "title": "Zona pericolosa",
+    "warning": "Se elimini il tuo account, è definitivo.",
+    "delete": "Elimina l'account",
+    "cannotUndo": "Questa azione non può essere annullata.",
+    "placeholder": "Scrivi DELETE in maiuscolo per eliminare",
+    "confirmLabel": "Conferma l'eliminazione",
+    "error": "Non è stato possibile eliminare l'account. Riprova."
+  }
+}

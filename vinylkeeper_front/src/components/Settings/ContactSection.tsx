@@ -19,7 +19,7 @@ import { userApiService } from "@services/UserApiService";
 import { colors } from "@styles/colors";
 
 export default function ContactSection() {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   const [modalOpen, setModalOpen] = useState(false);
   const [contactMessage, setContactMessage] = useState<{
     type: "success" | "error";

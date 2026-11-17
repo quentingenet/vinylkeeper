@@ -1,0 +1,72 @@
+{
+  "loginRequired": "Please log in to access settings",
+  "loadError": "Error loading user settings.",
+  "profile": {
+    "title": "Profile informations",
+    "username": "Username",
+    "createdAt": "Account Created",
+    "terms": "Terms Accepted?",
+    "accepted": "Accepted",
+    "notAccepted": "Not accepted",
+    "viewTerms": "View Terms"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Language of the app. Automatic follows the language of your device. Record titles, artists, labels and Discogs formats stay as Discogs gives them.",
+    "saveError": "The language could not be saved. Try again in a moment."
+  },
+  "currency": {
+    "title": "Collection value",
+    "description": "Currency of the estimated value of your collections on the dashboard. Dollars are converted from euros at the rate of the day.",
+    "label": "Currency"
+  },
+  "email": {
+    "title": "Email address",
+    "current": "Current email",
+    "confirmed": "Confirmed",
+    "notConfirmed": "Not confirmed",
+    "sendLink": "Send a new link",
+    "linkSent": "A confirmation link has been sent to your email address.",
+    "changeTitle": "Change your email address",
+    "newEmail": "New email",
+    "currentPassword": "Current Password",
+    "change": "Change email",
+    "changeSent": "A confirmation link has been sent to your new email address. Your current email address stays in use until you open that link."
+  },
+  "password": {
+    "title": "Change password",
+    "current": "Current Password",
+    "new": "New Password",
+    "confirm": "Confirm New Password",
+    "submit": "Change Password",
+    "submitting": "Changing...",
+    "success": "Password changed successfully!",
+    "error": "Failed to change password"
+  },
+  "contact": {
+    "title": "Contact support",
+    "intro": "Questions, feedback, or bug reports?",
+    "invite": "We'd love to hear from you! Drop us a message and we'll reply as soon as we can.",
+    "subject": "Subject",
+    "subjectHelp": "200 max characters",
+    "message": "Message",
+    "messageHelp": "2000 max characters",
+    "submit": "Send message",
+    "success": "Contact message sent successfully!",
+    "error": "Failed to send contact message"
+  },
+  "danger": {
+    "title": "Danger zone",
+    "warning": "Once you delete your account, it's permanent.",
+    "delete": "Delete account",
+    "cannotUndo": "This action cannot be undone.",
+    "placeholder": "Type DELETE in uppercase to delete",
+    "confirmLabel": "Confirm deletion",
+    "error": "Failed to delete account. Please try again."
+  },
+  "tabs": {
+    "label": "Settings tabs",
+    "profile": "Profile",
+    "app": "App settings"
+  }
+}

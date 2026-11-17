@@ -37,7 +37,7 @@ const PASSWORD_FIELDS = [
 ];
 
 export default function ChangePasswordSection() {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   const [showPassword, setShowPassword] = useState({
     currentPassword: false,
     newPassword: false,

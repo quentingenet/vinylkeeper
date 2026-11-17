@@ -9,7 +9,7 @@ const AUTOMATIC = "auto";
 
 /** Language of the interface: one of the languages of the app, or the one of the device. */
 export default function LanguageSection() {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   const { preference, choose, isPending, isError } = useLanguagePreference();
 
   return (

@@ -48,7 +48,7 @@ const emailChangeSchema = yup.object({
 
 /** Email of the account: confirmation status, a new link, and a change confirmed from the new address. */
 export default function EmailSection({ email, isEmailConfirmed }: EmailSectionProps) {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation("settingsUsersVk");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<Message>(null);
 
