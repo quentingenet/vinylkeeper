@@ -1,4 +1,5 @@
 import { BarcodeFormat, BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
+import i18n from "@utils/i18n";
 
 // The barcodes printed on records
 const RECORD_FORMATS = [BarcodeFormat.Ean13, BarcodeFormat.Ean8, BarcodeFormat.UpcA, BarcodeFormat.UpcE];
@@ -13,7 +14,7 @@ export async function scanRecordBarcode(): Promise<string | null> {
   const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
   if (!available) {
     await BarcodeScanner.installGoogleBarcodeScannerModule();
-    throw new ScannerNotReadyError("The scanner is being installed, try again in a moment.");
+    throw new ScannerNotReadyError(i18n.t("common:scanner.installing"));
   }
   try {
     const { barcodes } = await BarcodeScanner.scan({ formats: RECORD_FORMATS });

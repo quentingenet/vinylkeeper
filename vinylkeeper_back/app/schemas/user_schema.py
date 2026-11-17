@@ -89,6 +89,10 @@ class UserBase(BaseSchema):
         return v
 
 
+# Language of the interface; None follows the language of the device
+UserLanguage = Literal["en", "fr", "es", "pt", "de", "it"]
+
+
 # "native": the Android app keeps its tokens itself, so they come back in the body, without cookies
 ClientKind = Literal["web", "native"]
 
@@ -245,6 +249,10 @@ class UserMeResponse(BaseModel):
         default=0,
         description="Number of times the user has connected"
     )
+    language: Optional[UserLanguage] = Field(
+        default=None,
+        description="Language of the interface, None to follow the device"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -283,6 +291,10 @@ class UserSettingsResponse(BaseSchema):
         default="EUR",
         description="Currency the collection value is shown in"
     )
+    language: Optional[UserLanguage] = Field(
+        default=None,
+        description="Language of the interface, None to follow the device"
+    )
 
 
 class CurrencyUpdateRequest(BaseModel):
@@ -290,6 +302,13 @@ class CurrencyUpdateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     currency: Literal["EUR", "USD"] = Field(description="EUR or USD")
+
+
+class LanguageUpdateRequest(BaseModel):
+    """Schema for the language of the interface. Required, null included: null follows the device."""
+    model_config = ConfigDict(extra="forbid")
+
+    language: Optional[UserLanguage] = Field(description="en, fr, es, pt, de, it, or null to follow the device")
 
 
 class ContactMessageRequest(BaseSchema):

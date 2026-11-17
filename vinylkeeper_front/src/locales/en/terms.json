@@ -1,0 +1,14 @@
+{
+  "modalTitle": "Vinyl Keeper Terms of Use",
+  "pageTitle": "Terms of use and privacy | Vinyl Keeper",
+  "heading": "Vinyl Keeper: terms of use and privacy",
+  "englishOnly": "These terms are written in English, the only version that applies.",
+  "lastUpdated": "Last updated: {{date}}",
+  "deleteAccount": {
+    "title": "Delete your account",
+    "steps": "In the app or on vinylkeeper.org: log in, open {{settings}}, then “{{dangerZone}}” and “{{deleteAccount}}”, type DELETE and confirm. The deletion is permanent.",
+    "cannotLogIn": "If you cannot log in, write to",
+    "fromAddress": "from the email address of the account, asking for its deletion.",
+    "whatIsKept": "What is deleted, and what is kept, is told in section 7.6 below."
+  }
+}

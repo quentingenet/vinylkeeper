@@ -14,10 +14,12 @@ import {
 } from "@mui/material";
 import { ContactSupport } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { userApiService } from "@services/UserApiService";
 import { colors } from "@styles/colors";
 
 export default function ContactSection() {
+  const { t } = useTranslation("settings");
   const [modalOpen, setModalOpen] = useState(false);
   const [contactMessage, setContactMessage] = useState<{
     type: "success" | "error";
@@ -36,7 +38,7 @@ export default function ContactSection() {
     mutationFn: (data: { subject: string; message: string }) =>
       userApiService.sendContactMessage(data),
     onSuccess: () => {
-      setContactMessage({ type: "success", text: "Contact message sent successfully!" });
+      setContactMessage({ type: "success", text: t("contact.success") });
       setModalOpen(false);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setContactMessage(null), 3000);
@@ -44,7 +46,7 @@ export default function ContactSection() {
     onError: (e: Error) => {
       setContactMessage({
         type: "error",
-        text: e.message || "Failed to send contact message",
+        text: e.message || t("contact.error"),
       });
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setContactMessage(null), 5000);
@@ -63,12 +65,12 @@ export default function ContactSection() {
         <CardContent>
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <ContactSupport sx={{ color: "primary.main", mr: 1 }} />
-            <Typography variant="h6">Contact support</Typography>
+            <Typography variant="h6">{t("contact.title")}</Typography>
           </Box>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-            Questions, feedback, or bug reports?
+            {t("contact.intro")}
             <br />
-            We'd love to hear from you! Drop us a message and we'll reply as soon as we can.
+            {t("contact.invite")}
           </Typography>
           <Box sx={{ display: "flex", justifyContent: { xs: "center", md: "flex-end" }, mx: 2 }}>
             <Button
@@ -77,7 +79,7 @@ export default function ContactSection() {
               onClick={() => setModalOpen(true)}
               sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
             >
-              Contact support
+              {t("contact.title")}
             </Button>
           </Box>
         </CardContent>
@@ -87,7 +89,7 @@ export default function ContactSection() {
         <DialogTitle>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <ContactSupport sx={{ color: "primary.main", mr: 1 }} />
-            Contact support
+            {t("contact.title")}
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -112,10 +114,10 @@ export default function ContactSection() {
             <TextField
               fullWidth
               name="subject"
-              label="Subject"
+              label={t("contact.subject")}
               required
               margin="normal"
-              helperText="200 max characters"
+              helperText={t("contact.subjectHelp")}
               slotProps={{
                 htmlInput: { minLength: 1, maxLength: 200 },
               }}
@@ -123,12 +125,12 @@ export default function ContactSection() {
             <TextField
               fullWidth
               name="message"
-              label="Message"
+              label={t("contact.message")}
               required
               multiline
               rows={4}
               margin="normal"
-              helperText="2000 max characters"
+              helperText={t("contact.messageHelp")}
               slotProps={{
                 htmlInput: { minLength: 1, maxLength: 2000 },
               }}
@@ -137,14 +139,14 @@ export default function ContactSection() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => setModalOpen(false)}>{t("common:actions.cancel")}</Button>
           <Button
             onClick={() => formRef.current?.requestSubmit()}
             variant="contained"
             disabled={sendContactMessageMutation.isPending}
             sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
           >
-            {sendContactMessageMutation.isPending ? "Sending..." : "Send message"}
+            {sendContactMessageMutation.isPending ? t("common:actions.sending") : t("contact.submit")}
           </Button>
         </DialogActions>
       </Dialog>

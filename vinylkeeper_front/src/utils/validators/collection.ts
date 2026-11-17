@@ -1,26 +1,27 @@
 import * as yup from "yup";
+import i18n from "@utils/i18n";
 import { ICollectionForm } from "@models/ICollectionForm";
 
 export const collectionValidationSchema = yup.object({
   name: yup
     .string()
-    .required("Name is required")
-    .min(1, "Name must be at least 1 character")
-    .max(255, "Name cannot exceed 255 characters")
-    .test("not-empty", "Name cannot be empty", (value: string | undefined) => {
+    .required(() => i18n.t("validation:collection.nameRequired"))
+    .min(1, () => i18n.t("validation:collection.nameMin"))
+    .max(255, () => i18n.t("validation:collection.nameMax"))
+    .test("not-empty", () => i18n.t("validation:collection.nameEmpty"), (value: string | undefined) => {
       return value ? value.trim().length > 0 : false;
     }),
   description: yup
     .string()
-    .max(255, "Description cannot exceed 255 characters")
+    .max(255, () => i18n.t("validation:collection.descriptionMax"))
     .optional(),
-  is_public: yup.boolean().required("Visibility is required"),
+  is_public: yup.boolean().required(() => i18n.t("validation:collection.visibilityRequired")),
   album_ids: yup
     .array()
-    .of(yup.number().positive("Album ID must be positive"))
+    .of(yup.number().positive(() => i18n.t("validation:collection.albumIdPositive")))
     .optional(),
   artist_ids: yup
     .array()
-    .of(yup.number().positive("Artist ID must be positive"))
+    .of(yup.number().positive(() => i18n.t("validation:collection.artistIdPositive")))
     .optional(),
 }) as yup.ObjectSchema<ICollectionForm>;

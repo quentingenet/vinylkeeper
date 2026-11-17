@@ -3,6 +3,7 @@ import { API_VK_URL } from "./GlobalUtils";
 import { ApiError } from "./apiError";
 import { extractFilenameFromContentDisposition } from "./DownloadUtils";
 import { nativeSession } from "./NativeSession";
+import i18n from "@utils/i18n";
 
 interface CapacitorHttpOptions {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -20,7 +21,7 @@ const TIMEOUT_MS = 60000;
 
 const sessionExpired = (): ApiError => ({
   code: 401,
-  message: "Session expired. Please log in again.",
+  message: i18n.t("errors:sessionExpired"),
   details: {},
 });
 
@@ -192,7 +193,7 @@ class CapacitorHttpService {
 
     return {
       code: error.status || 9999,
-      message: error.message || "Unknown error occurred",
+      message: error.message || i18n.t("errors:unknown"),
       details: {},
     };
   }

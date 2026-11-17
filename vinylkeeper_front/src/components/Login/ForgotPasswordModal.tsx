@@ -13,6 +13,7 @@ import { emailValidator } from "@utils/Regex";
 import { useState } from "react";
 import { userApiService } from "@services/UserApiService";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 type ForgotPasswordProps = {
   openForgotPassword: boolean;
@@ -25,6 +26,7 @@ export default function ForgotPasswordModal({
   setOpenForgotPassword,
   setForgotPassword,
 }: ForgotPasswordProps) {
+  const { t } = useTranslation("auth");
   const { isMobile } = useDetectMobile();
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -46,18 +48,16 @@ export default function ForgotPasswordModal({
         setIsLoading(true);
         await userApiService.forgotPassword(email.toLowerCase());
         // Same answer whether the account exists or not: nobody can test who has an account
-        setMessage(
-          "If an account exists with this email, a link to choose a new password has been sent. Check your inbox and your spam folder. The link is valid for 15 minutes."
-        );
+        setMessage(t("forgot.sent"));
         setMessageType("success");
       } catch (error: unknown) {
-        setMessage(error instanceof Error ? error.message : "The link could not be sent. Try again in a moment.");
+        setMessage(error instanceof Error ? error.message : t("forgot.error"));
         setMessageType("error");
       } finally {
         setIsLoading(false);
       }
     } else {
-      setEmailError("Invalid email format");
+      setEmailError(t("forgot.invalidEmail"));
     }
   };
 
@@ -105,14 +105,14 @@ export default function ForgotPasswordModal({
             component="h2"
             sx={{ color: colors.slate, textAlign: "center", mb: 1, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
           >
-            Forgot your password?
+            {t("forgot.title")}
           </Typography>
           <Typography variant="body2" sx={{ color: colors.slate, textAlign: "center", mb: 2.5 }}>
-            Enter the email of your account: we send you a link to choose a new password.
+            {t("forgot.intro")}
           </Typography>
           <TextField
             fullWidth
-            label="Email"
+            label={t("fields.email")}
             type="email"
             variant="outlined"
             value={email}
@@ -141,7 +141,7 @@ export default function ForgotPasswordModal({
               disabled={!email || isLoading}
               sx={{ mb: 1, mx: 0, opacity: 1, "&.Mui-disabled": { opacity: 0.5 } }}
             >
-              {isLoading ? <CircularProgress size={24} /> : "Send Reset Link"}
+              {isLoading ? <CircularProgress size={24} /> : t("forgot.submit")}
             </Button>
 
             <Button
@@ -159,7 +159,7 @@ export default function ForgotPasswordModal({
                 "&:hover": { backgroundColor: "action.hover", color: colors.slate, border: "none" },
               }}
             >
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
           </Box>
 

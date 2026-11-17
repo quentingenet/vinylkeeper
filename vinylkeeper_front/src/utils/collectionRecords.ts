@@ -1,5 +1,6 @@
 import type { CollectionAlbumResponse, CollectionRecordResponse } from "@models/Collection";
 import { editionChips, type Edition } from "@components/Records/editionLabels";
+import i18n from "@utils/i18n";
 
 // Same rule as the API: pressings of one Discogs master are one work
 export const workKey = (album: CollectionAlbumResponse): string =>
@@ -49,5 +50,5 @@ export const storedEdition = (pressing: CollectionAlbumResponse): Edition => ({
 /** "1959, US, Columbia CL 1355" from the stored details, or the place of the pressing in the list. */
 export function pressingTitle(pressing: CollectionAlbumResponse, number: number): string {
   const details = editionChips({ ...storedEdition(pressing), formats: [] }).map((chip) => chip.label);
-  return details.length > 0 ? details.join(", ") : `Pressing ${number}`;
+  return details.length > 0 ? details.join(", ") : i18n.t("collections:wishlist.pressingNumber", { number });
 }

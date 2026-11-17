@@ -4,6 +4,7 @@ import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import { albumTitleOnly, formatMoodName } from "@components/SpinningNow/spinningNowLabels";
+import { useTranslation } from "react-i18next";
 
 const COVER_SIZE = 300;
 
@@ -13,6 +14,7 @@ interface SpinningNowAlbumCardProps {
 }
 
 export default function SpinningNowAlbumCard({ album, onPlay }: SpinningNowAlbumCardProps) {
+  const { t } = useTranslation("spinningNow");
   const cover = album.image_url ? buildProxyImageUrl(album.image_url, COVER_SIZE, COVER_SIZE, 85, true) : "";
   const title = albumTitleOnly(album.title);
   const collectionNames = album.collections.map((collection) => collection.name).join(", ");
@@ -29,7 +31,7 @@ export default function SpinningNowAlbumCard({ album, onPlay }: SpinningNowAlbum
     <Card sx={{ backgroundColor: "background.paper", height: "100%" }}>
       <CardActionArea
         onClick={() => onPlay(album)}
-        aria-label={`Play ${title}${album.artist_name ? ` by ${album.artist_name}` : ""}`}
+        aria-label={album.artist_name ? t("playBy", { title, artist: album.artist_name }) : t("play", { title })}
         sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch" }}
       >
         <CardMedia
@@ -50,7 +52,7 @@ export default function SpinningNowAlbumCard({ album, onPlay }: SpinningNowAlbum
           </Typography>
           {album.collections.length > 0 && (
             <Typography variant="caption" noWrap component="p" title={collectionNames} sx={{ color: "text.secondary" }}>
-              In {collectionNames}
+              {t("inCollections", { names: collectionNames })}
             </Typography>
           )}
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>

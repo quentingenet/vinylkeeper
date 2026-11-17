@@ -1,3 +1,5 @@
+import { localizedCountry } from "@utils/i18n";
+
 // Found on almost every release: tells nothing about the edition
 const NOISE_FORMATS = new Set(["Album"]);
 
@@ -22,7 +24,8 @@ export function editionChips(edition: Edition): EditionChip[] {
   const year = edition.year && edition.year !== "0" ? edition.year : "";
   return [
     { key: "year", label: year },
-    { key: "country", label: edition.country ?? "" },
+    // The name of the country in the language of the interface; formats stay as Discogs writes them
+    { key: "country", label: edition.country ? localizedCountry(edition.country) : "" },
     { key: "label", label: labelAndCatno },
     { key: "formats", label: formats },
   ].filter((chip) => chip.label);

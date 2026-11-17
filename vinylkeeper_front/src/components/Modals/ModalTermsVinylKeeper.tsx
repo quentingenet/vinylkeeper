@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Box, Modal, Typography, Button, Link } from "@mui/material";
 import { colors } from "@styles/colors";
 import { DISCOGS_DISCLAIMER } from "@utils/discogsLinks";
+import { useTranslation } from "react-i18next";
 
 // The popup has a light background: its links take the color of the text around them (black),
 // underlined, whatever the theme of the page opening it (the gold primary is unreadable on it)
@@ -140,8 +141,13 @@ const SECTIONS: TermsSection[] = [
  * needs an address to link to (the app stores ask for one), on the public page /terms.
  */
 export function TermsContent() {
+  const { t, i18n } = useTranslation("terms");
   return (
     <>
+      {/* The legal text is not translated: the English version is the one that applies */}
+      {!i18n.language.startsWith("en") && (
+        <Typography sx={{ color: "black", fontStyle: "italic", mb: 2 }}>{t("englishOnly")}</Typography>
+      )}
       <Typography sx={{ color: "black", fontWeight: 700 }}>
         Vinyl Keeper is a free and open-source application licensed under GPLv3, developed by Quentin Genet, to
         manage, share and discover vinyl collections while promoting the freedom to share and modify the software.
@@ -153,7 +159,7 @@ export function TermsContent() {
         <ExternalLink href="https://github.com/quentingenet/vinylkeeper">Source code (GitHub)</ExternalLink>
       </Typography>
       <Typography sx={{ mt: 1, textAlign: "center", color: "black", fontStyle: "italic" }}>
-        Last updated: {TERMS_LAST_UPDATED}
+        {t("lastUpdated", { date: TERMS_LAST_UPDATED })}
       </Typography>
 
       {SECTIONS.map((section) => (
@@ -178,6 +184,7 @@ interface ModalTermsVinylKeeperProps {
 }
 
 export default function ModalTermsVinylKeeper(props: ModalTermsVinylKeeperProps) {
+  const { t } = useTranslation("terms");
   const { setOpenTermsModal, openTermsModal } = props;
 
   const handleClose = () => setOpenTermsModal(false);
@@ -214,7 +221,7 @@ export default function ModalTermsVinylKeeper(props: ModalTermsVinylKeeperProps)
     >
       <Box sx={style}>
         <Typography id="terms-modal-title" variant="h6" component="h2" sx={{ color: "black", textAlign: "center" }}>
-          Vinyl Keeper Terms of Use
+          {t("modalTitle")}
         </Typography>
 
         <Box id="terms-modal-description" sx={{ mt: 2, color: "black" }}>
@@ -223,7 +230,7 @@ export default function ModalTermsVinylKeeper(props: ModalTermsVinylKeeperProps)
 
         <Box sx={{ mt: 3, display: "flex", justifyContent: "center", alignItems: "center" }}>
           <Button variant="contained" onClick={handleClose} sx={{ color: "white", px: 4, py: 1 }}>
-            Understood
+            {t("common:actions.understood")}
           </Button>
         </Box>
       </Box>

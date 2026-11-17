@@ -1,12 +1,13 @@
-/** "laid_back" -> "Laid back" */
+/** "laid_back" -> "Laid back", in the language of the interface (a mood the app does not know: as it comes) */
+import i18n from "@utils/i18n";
 export function formatMoodName(mood: string): string {
   const words = mood.replace(/_/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return i18n.t(`moods:${mood}`, { defaultValue: words.charAt(0).toUpperCase() + words.slice(1) });
 }
 
 /** 1970 -> "1970s" */
 export function formatDecade(decade: number): string {
-  return `${decade}s`;
+  return i18n.t("dashboard:decade", { decade });
 }
 
 /** Album titles are stored as "Artist - Title": keep the title part. */

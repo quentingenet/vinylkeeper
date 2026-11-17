@@ -367,6 +367,44 @@ class TestGetUserMe:
         result = await service.get_user_me(regular_user)
         assert result["is_tutorial_seen"] is False
 
+    async def test_language_is_given_to_the_app(self, regular_user):
+        regular_user.number_of_connections = 1
+        regular_user.language = "es"
+        service, _, _ = make_service(regular_user)
+        result = await service.get_user_me(regular_user)
+        assert result["language"] == "es"
+
+
+class TestSetLanguage:
+    async def test_saves_the_language(self, regular_user):
+        service, repo, _ = make_service(regular_user)
+        repo.update_user = AsyncMock()
+
+        await service.set_language(regular_user, "fr")
+
+        assert regular_user.language == "fr"
+        repo.update_user.assert_awaited_once_with(regular_user)
+
+    async def test_none_follows_the_device(self, regular_user):
+        regular_user.language = "fr"
+        service, repo, _ = make_service(regular_user)
+        repo.update_user = AsyncMock()
+
+        await service.set_language(regular_user, None)
+
+        assert regular_user.language is None
+
+    def test_schema_refuses_an_unknown_language(self):
+        from app.schemas.user_schema import LanguageUpdateRequest
+        with pytest.raises(PydanticValidationError):
+            LanguageUpdateRequest.model_validate({"language": "nl"})
+
+    def test_schema_needs_the_field_even_when_null(self):
+        from app.schemas.user_schema import LanguageUpdateRequest
+        assert LanguageUpdateRequest.model_validate({"language": None}).language is None
+        with pytest.raises(PydanticValidationError):
+            LanguageUpdateRequest.model_validate({})
+
 
 # ---------------------------------------------------------------------------
 # update_user()

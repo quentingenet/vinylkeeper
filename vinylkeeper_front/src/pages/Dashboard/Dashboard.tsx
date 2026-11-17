@@ -31,6 +31,8 @@ import CollectionValueCard from "@components/Dashboard/CollectionValueCard";
 import NewMemberCards from "@components/Dashboard/NewMemberCards";
 import { useAddRecord } from "@contexts/AddRecordContext";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "@utils/i18n";
 
 const LatestAdditionCard = ({
   title,
@@ -46,6 +48,7 @@ const LatestAdditionCard = ({
   onClick?: () => void;
 }) => {
   const { isMobile } = useDetectMobile();
+  const { t } = useTranslation("dashboard");
 
   return (
     <Card
@@ -100,19 +103,19 @@ const LatestAdditionCard = ({
                 {truncateText(data.name, 55)}
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Added by{" "}
+                {t("latest.addedBy")}{" "}
                 <span style={{ color: color, fontWeight: "bold" }}>
                   {data.username}
                 </span>
               </Typography>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                {new Date(data.created_at).toLocaleDateString()}
+                {formatDate(data.created_at)}
               </Typography>
             </Box>
           </Box>
         ) : (
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            No recent additions
+            {t("latest.none")}
           </Typography>
         )}
       </CardContent>
@@ -121,6 +124,7 @@ const LatestAdditionCard = ({
 };
 
 export default function Dashboard() {
+  const { t } = useTranslation("dashboard");
   const { isMobile } = useDetectMobile();
   const { currentUser } = useUserContext();
   const [showTutorial, setShowTutorial] = useState(false);
@@ -161,7 +165,7 @@ export default function Dashboard() {
   if (!isLoading && isError) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
-        <Typography color="error">Failed to load dashboard data.</Typography>
+        <Typography color="error">{t("loadFailed")}</Typography>
       </Box>
     );
   }
@@ -212,21 +216,21 @@ export default function Dashboard() {
         ) : (
           <>
           {renderStatCard(
-            "My albums",
+            t("stats.myAlbums"),
             data?.user_albums_total ?? 0,
             1000,
             "",
             data?.user_albums_total > 0 ? "/collections" : "/add-vinyls"
           )}
           {renderStatCard(
-            "My artists",
+            t("stats.myArtists"),
             data?.user_artists_total ?? 0,
             1200,
             "",
             data?.user_artists_total > 0 ? "/collections" : "/add-vinyls"
           )}
           {renderStatCard(
-            "Atlas spots",
+            t("stats.atlasSpots"),
             data?.moderated_places_total ?? 0,
             900,
             "",
@@ -247,7 +251,7 @@ export default function Dashboard() {
           >
             <div style={{ flex: 1 }}>
               <LatestAdditionCard
-                title="Latest Album"
+                title={t("latest.album")}
                 data={data.latest_album}
                 icon={<Album />}
                 color={colors.gold}
@@ -262,7 +266,7 @@ export default function Dashboard() {
             </div>
             <div style={{ flex: 1 }}>
               <LatestAdditionCard
-                title="Latest Artist"
+                title={t("latest.artist")}
                 data={data.latest_artist}
                 icon={<Person />}
                 color={colors.textSecondary}
@@ -303,7 +307,7 @@ export default function Dashboard() {
                   width: "100%",
                 }}
               >
-                Recently added by the community
+                {t("community.recent")}
               </Typography>
               <Box
                 sx={{
@@ -428,7 +432,7 @@ export default function Dashboard() {
                   }}
                 >
                   <span>🌍</span>
-                  Community collections
+                  {t("community.collections")}
                 </Typography>
                 <Typography
                   variant="h3"
@@ -457,7 +461,7 @@ export default function Dashboard() {
                       fontWeight: 400,
                     }}
                   >
-                    shared collections
+                    {t("community.shared")}
                   </Typography>
                 </Typography>
                 <Typography
@@ -468,7 +472,7 @@ export default function Dashboard() {
                     fontSize: isMobile ? "0.875rem" : "1rem",
                   }}
                 >
-                  from vinyl lovers worldwide
+                  {t("community.worldwide")}
                 </Typography>
                 <Box
                   sx={{
@@ -485,7 +489,7 @@ export default function Dashboard() {
                     },
                   }}
                 >
-                  Explore collections now{" "}
+                  {t("community.explore")}{" "}
                   <ArrowForward
                     sx={{
                       color: colors.gold,
@@ -511,7 +515,7 @@ export default function Dashboard() {
                     opacity: 0.9,
                   }}
                 >
-                  Make one of your collections public and inspire others...
+                  {t("community.inspire")}
                 </Typography>
               )}
           </Box>

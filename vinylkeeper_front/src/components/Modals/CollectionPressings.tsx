@@ -8,6 +8,7 @@ import PressingSection from "@components/Modals/PressingSection";
 import CopiesEditor from "@components/Modals/CopiesEditor";
 import { pressingTitle, storedEdition } from "@utils/collectionRecords";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 const accordionSx = {
   backgroundColor: colors.surface,
@@ -37,6 +38,7 @@ export default function CollectionPressings({
   onFindPressing,
   onRemovePressing,
 }: CollectionPressingsProps) {
+  const { t } = useTranslation("records");
   const [pressings, setPressings] = useState(initialPressings);
   const confirmPressing = useConfirmAlbumPressing();
 
@@ -80,7 +82,7 @@ export default function CollectionPressings({
   return (
     <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-        Pressings in this collection ({pressings.length})
+        {t("pressings.inCollection", { count: pressings.length })}
       </Typography>
       {pressings.map((pressing, index) => {
         const copies = pressing.copies_count ?? pressing.copies?.length ?? 1;
@@ -96,7 +98,7 @@ export default function CollectionPressings({
               {details(pressing, storedEdition(pressing))}
               {canEdit && onRemovePressing && (
                 <Button size="small" color="error" onClick={() => onRemovePressing(pressing)}>
-                  Remove this pressing from the collection
+                  {t("pressings.remove")}
                 </Button>
               )}
             </AccordionDetails>

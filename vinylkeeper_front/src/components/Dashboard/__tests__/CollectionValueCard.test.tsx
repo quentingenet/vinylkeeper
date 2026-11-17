@@ -124,7 +124,7 @@ describe("CollectionValueCard", () => {
     await userEvent.click(screen.getByRole("button", { name: "USD" }));
 
     expect(screen.getByText(formatMoney(2048, "USD"))).toBeInTheDocument();
-    expect(screen.getByText(/Converted from euros at the ECB rate of 2026-10-29 \(1 EUR = 1\.113 USD\)\./))
+    expect(screen.getByText(/Converted from euros at the ECB rate of 29 Oct 2026 \(1 EUR = 1\.113 USD\)\./))
       .toBeInTheDocument();
     expect(api.getValue).toHaveBeenCalledTimes(1);
   });

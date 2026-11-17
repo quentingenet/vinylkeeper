@@ -1,0 +1,17 @@
+{
+  "sessionExpired": "Sitzung abgelaufen. Melde dich erneut an.",
+  "exportFailed": "Export fehlgeschlagen ({{status}})",
+  "unknown": "Unbekannter Fehler",
+  "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Versuche es erneut.",
+  "addToWishlist": "Konnte nicht zur Wunschliste hinzugefügt werden",
+  "addToCollection": "Konnte nicht zur Sammlung hinzugefügt werden",
+  "checkCollections": "Deine Sammlungen konnten nicht geprüft werden",
+  "replacePressing": "Die Pressung konnte nicht ersetzt werden",
+  "removeFromWishlist": "Konnte nicht von der Wunschliste entfernt werden",
+  "fetchWishlist": "Die Wunschliste konnte nicht geladen werden",
+  "albumNotFound": "Album mit der ID {{id}} nicht gefunden",
+  "albumMetadata": "Die Albuminformationen konnten nicht geladen werden",
+  "artistMetadata": "Die Künstlerinformationen konnten nicht geladen werden",
+  "search": "Die Suche ist fehlgeschlagen",
+  "fileUnreadable": "Datei nicht lesbar"
+}

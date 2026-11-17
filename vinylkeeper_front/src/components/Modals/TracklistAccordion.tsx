@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface Track {
   position: string;
@@ -21,6 +22,7 @@ interface TracklistAccordionProps {
 }
 
 export default function TracklistAccordion({ tracklist }: TracklistAccordionProps) {
+  const { t } = useTranslation("records");
   return (
     <Accordion
       sx={{
@@ -39,7 +41,7 @@ export default function TracklistAccordion({ tracklist }: TracklistAccordionProp
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-          Tracklist
+          {t("tracklist.title")}
         </Typography>
       </AccordionSummary>
       <AccordionDetails>

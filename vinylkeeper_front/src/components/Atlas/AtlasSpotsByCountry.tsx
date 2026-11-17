@@ -12,8 +12,11 @@ import {
 import { ChevronRight, ExpandMore } from "@mui/icons-material";
 import type { PlaceMapResponse } from "@services/AtlasApiService";
 import { groupSpotsByCountry } from "@components/Atlas/atlasSpotsGrouping";
+import { useTranslation } from "react-i18next";
+import i18n, { localizedCountry } from "@utils/i18n";
+import { placeTypeLabel } from "@components/Atlas/placeReportLabels";
 
-const spotsLabel = (count: number) => `${count} spot${count === 1 ? "" : "s"}`;
+const spotsLabel = (count: number) => i18n.t("atlas:byCountry.spots", { count });
 
 interface AtlasSpotsByCountryProps {
   spots: PlaceMapResponse[];
@@ -26,6 +29,7 @@ interface AtlasSpotsByCountryProps {
  * engines: the details of a closed accordion stay in the page).
  */
 export default function AtlasSpotsByCountry({ spots, onSelectCity }: AtlasSpotsByCountryProps) {
+  const { t } = useTranslation("atlas");
   const countries = useMemo(() => groupSpotsByCountry(spots), [spots]);
   if (countries.length === 0) return null;
 
@@ -36,13 +40,13 @@ export default function AtlasSpotsByCountry({ spots, onSelectCity }: AtlasSpotsB
       sx={{ width: { xs: "94dvw", md: "60dvw" }, maxWidth: "100%", mt: 4, mx: "auto" }}
     >
       <Typography id="atlas-spots-by-country" variant="h6" component="h2" sx={{ color: "primary.main", fontWeight: "bold", mb: 1.5 }}>
-        Spots by country
+        {t("byCountry.title")}
       </Typography>
       {countries.map(({ country, count, cities }) => (
         <Accordion key={country} disableGutters sx={{ bgcolor: "background.paper", color: "text.primary" }}>
           <AccordionSummary expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}>
             <Typography component="h3" sx={{ fontWeight: "bold", flex: 1 }}>
-              {country}
+              {localizedCountry(country)}
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", mr: 1 }}>
               {spotsLabel(count)}
@@ -64,7 +68,7 @@ export default function AtlasSpotsByCountry({ spots, onSelectCity }: AtlasSpotsB
                         size="small"
                         variant="outlined"
                         label={spot.name}
-                        title={spot.place_type ?? undefined}
+                        title={spot.place_type ? placeTypeLabel(spot.place_type) : undefined}
                       />
                     ))}
                   </Box>

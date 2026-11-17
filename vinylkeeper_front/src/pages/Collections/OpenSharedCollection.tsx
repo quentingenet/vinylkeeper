@@ -7,9 +7,11 @@ import LoadingCenter from "@components/UI/LoadingCenter";
 import { collectionUrl, COMMUNITY_COLLECTIONS_URL } from "@utils/GlobalUrls";
 import { parseShareToken, retryCollection, unavailableReason } from "@utils/collectionAvailability";
 import { queryKeys } from "@utils/queryKeys";
+import { useTranslation } from "react-i18next";
 
 /** The public link of a collection, opened by a member: straight to its full page. */
 export default function OpenSharedCollection() {
+  const { t } = useTranslation("collections");
   const { token } = useParams<{ token: string }>();
   const shareToken = parseShareToken(token);
 
@@ -28,7 +30,7 @@ export default function OpenSharedCollection() {
   return (
     <CollectionUnavailable reason={shareToken ? unavailableReason(error) : "gone"}>
       <Button component={RouterLink} to={COMMUNITY_COLLECTIONS_URL} variant="contained">
-        Browse community collections
+        {t("details.browseCommunity")}
       </Button>
     </CollectionUnavailable>
   );

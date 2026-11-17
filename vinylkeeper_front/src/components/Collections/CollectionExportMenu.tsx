@@ -18,6 +18,7 @@ import {
   collectionMenuPaperSx,
   desktopMenuTextSx,
 } from "@components/Collections/collectionMenuStyles";
+import { useTranslation } from "react-i18next";
 
 // Desktop: the size of the texts around the menu ("Created on", the buttons), in the font
 // of the buttons. The desktop theme sizes every ListItemText for the navigation bar (1.6rem).
@@ -27,6 +28,7 @@ interface CollectionExportMenuProps {
 
 export default function CollectionExportMenu({ collectionId }: CollectionExportMenuProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { t } = useTranslation("collections");
   const [activeExportKey, setActiveExportKey] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const { isMobile } = useDetectMobile();
@@ -79,32 +81,32 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
   const exportItems = [
     {
       key: "collection_albums_csv",
-      label: "Collection albums (CSV)",
+      label: t("export.albumsCsv"),
       action: () => handleExport("collection_albums_csv", "albums.csv", `collection_${collectionId}_albums.csv`),
     },
     {
       key: "collection_albums_ods",
-      label: "Collection albums (ODS)",
+      label: t("export.albumsOds"),
       action: () => handleExport("collection_albums_ods", "albums.ods", `collection_${collectionId}_albums.ods`),
     },
     {
       key: "collection_artists_csv",
-      label: "Collection artists (CSV)",
+      label: t("export.artistsCsv"),
       action: () => handleExport("collection_artists_csv", "artists.csv", `collection_${collectionId}_artists.csv`),
     },
     {
       key: "collection_artists_ods",
-      label: "Collection artists (ODS)",
+      label: t("export.artistsOds"),
       action: () => handleExport("collection_artists_ods", "artists.ods", `collection_${collectionId}_artists.ods`),
     },
     {
       key: "wishlist_csv",
-      label: "My wishlist (CSV)",
+      label: t("export.wishlistCsv"),
       action: () => handleExportWishlist("wishlist_csv", "csv"),
     },
     {
       key: "wishlist_ods",
-      label: "My wishlist (ODS)",
+      label: t("export.wishlistOds"),
       action: () => handleExportWishlist("wishlist_ods", "ods"),
     },
   ];
@@ -119,7 +121,7 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
         disabled={isExporting}
         sx={collectionActionButtonSx}
       >
-        Export to
+        {t("export.button")}
       </Button>
       <Menu
         anchorEl={anchorEl}
@@ -137,7 +139,7 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
             {isExporting && activeExportKey === key ? (
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <VinylSpinner size={18} />
-                <Typography variant="caption">Exporting…</Typography>
+                <Typography variant="caption">{t("export.exporting")}</Typography>
               </Box>
             ) : (
               <ListItemText

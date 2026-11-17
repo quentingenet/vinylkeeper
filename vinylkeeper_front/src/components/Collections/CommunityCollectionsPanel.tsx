@@ -23,6 +23,7 @@ import { ITEMS_PER_PAGE } from "@utils/GlobalUtils";
 import { queryKeys } from "@utils/queryKeys";
 import { COLLECTIONS_PAGE_PARAM, COMMUNITY_SORT_PARAM } from "@utils/GlobalUrls";
 import { useUrlPage } from "@hooks/useUrlPage";
+import { useTranslation } from "react-i18next";
 
 type SortOption = "updated_at" | "likes_count" | "created_at";
 
@@ -33,6 +34,7 @@ const isSortOption = (value: string | null): value is SortOption =>
   SORT_OPTIONS.includes(value as SortOption);
 
 export default function CommunityCollectionsPanel() {
+  const { t } = useTranslation("collections");
   const [page, setPage] = useUrlPage(COLLECTIONS_PAGE_PARAM);
   const [searchParams, setSearchParams] = useSearchParams();
   const sortParam = searchParams.get(COMMUNITY_SORT_PARAM);
@@ -85,7 +87,7 @@ export default function CommunityCollectionsPanel() {
     return (
       <Box>
         <Typography variant="h6" sx={{ color: "white" }}>
-          Error loading public collections
+          {t("community.loadError")}
         </Typography>
       </Box>
     );
@@ -104,15 +106,14 @@ export default function CommunityCollectionsPanel() {
         }}
       >
         <Typography variant="h6" sx={{ color: "white" }}>
-          Explore public and shared vinyl collections from other users on the
-          platform.
+          {t("community.intro")}
         </Typography>
 
         <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel sx={{ color: "white" }}>Sort by</InputLabel>
+          <InputLabel sx={{ color: "white" }}>{t("community.sortBy")}</InputLabel>
           <Select
             value={sortBy}
-            label="Sort by"
+            label={t("community.sortBy")}
             onChange={handleSortChange}
             sx={{
               color: "white",
@@ -130,9 +131,9 @@ export default function CommunityCollectionsPanel() {
               },
             }}
           >
-            <MenuItem value="updated_at">Recently Updated</MenuItem>
-            <MenuItem value="likes_count">Most Liked</MenuItem>
-            <MenuItem value="created_at">Newest</MenuItem>
+            <MenuItem value="updated_at">{t("community.recentlyUpdated")}</MenuItem>
+            <MenuItem value="likes_count">{t("community.mostLiked")}</MenuItem>
+            <MenuItem value="created_at">{t("community.newest")}</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -159,7 +160,7 @@ export default function CommunityCollectionsPanel() {
         ) : (
           <Box sx={{ width: "100%", textAlign: "center" }}>
             <Typography variant="body1" sx={{ color: "text.secondary" }}>
-              No public collections available at the moment.
+              {t("community.empty")}
             </Typography>
           </Box>
         )}

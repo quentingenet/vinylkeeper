@@ -24,6 +24,7 @@ import {
   desktopMenuTextSx,
 } from "@components/Collections/collectionMenuStyles";
 import { sharedCollectionUrl } from "@utils/GlobalUrls";
+import { useTranslation } from "react-i18next";
 
 interface ShareCollectionButtonProps {
   shareToken?: string | null;
@@ -36,8 +37,6 @@ interface ShareCollectionButtonProps {
   sx?: SystemStyleObject<Theme>;
 }
 
-const SHARE_LABEL = "Share this collection";
-const PRIVATE_LABEL = "Go public to share this collection with diggers\nall around the world, on Vinyl Keeper or not";
 
 /** The link of a public collection: it opens for anyone, without an account. */
 export default function ShareCollectionButton({
@@ -48,6 +47,9 @@ export default function ShareCollectionButton({
   variant = "icon",
   sx,
 }: ShareCollectionButtonProps) {
+  const { t } = useTranslation("collections");
+  const SHARE_LABEL = t("share.label");
+  const PRIVATE_LABEL = t("share.private");
   const { isMobile } = useDetectMobile();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -55,8 +57,8 @@ export default function ShareCollectionButton({
   const canShare = isPublic && !!shareToken;
   const url = `${SITE_URL}${sharedCollectionUrl(shareToken ?? "")}`;
   const text = ownerUsername
-    ? `Have a look at ${ownerUsername}'s collection and discover vinylkeeper.org`
-    : "Have a look at this collection and discover vinylkeeper.org";
+    ? t("share.textOwner", { name: ownerUsername })
+    : t("share.text");
 
   const handleClick = async (event: MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -77,9 +79,9 @@ export default function ShareCollectionButton({
     setAnchorEl(null);
     try {
       await navigator.clipboard.writeText(url);
-      setMessage("Link copied");
+      setMessage(t("share.copied"));
     } catch {
-      setMessage("The link could not be copied");
+      setMessage(t("share.copyFailed"));
     }
   };
 
@@ -90,8 +92,8 @@ export default function ShareCollectionButton({
   };
 
   const options = [
-    { label: "Copy link", Icon: LinkIcon, action: () => void copyLink() },
-    { label: "Email", Icon: EmailIcon, action: openEmail },
+    { label: t("share.copy"), Icon: LinkIcon, action: () => void copyLink() },
+    { label: t("share.email"), Icon: EmailIcon, action: openEmail },
   ];
 
   return (
@@ -112,7 +114,7 @@ export default function ShareCollectionButton({
               onClick={(event) => void handleClick(event)}
               sx={collectionActionButtonSx}
             >
-              Share
+              {t("share.button")}
             </Button>
           ) : (
             <IconButton

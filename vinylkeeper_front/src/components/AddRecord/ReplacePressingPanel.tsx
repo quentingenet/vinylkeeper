@@ -11,6 +11,7 @@ import { useReplacePressing } from "@hooks/useReplacePressing";
 import type { IAlbumRequestResults } from "@models/IRequestProxy";
 import type { ReplaceTarget } from "@utils/findPressing";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface ReplacePressingPanelProps {
   pressing: IAlbumRequestResults;
@@ -26,6 +27,7 @@ export default function ReplacePressingPanel({
   onDetails,
   onReplaced,
 }: ReplacePressingPanelProps) {
+  const { t } = useTranslation("records");
   const replacePressing = useReplacePressing(target);
 
   const confirm = () => {
@@ -48,13 +50,13 @@ export default function ReplacePressingPanel({
     >
       <Typography variant="body2" sx={{ color: "text.primary" }}>
         {target.title
-          ? `It will replace the pressing of “${target.title}” in your collection.`
+          ? t("replace.willReplace", { title: target.title })
           : null}{" "}
-        Your copies, their condition and the date you added it are kept.
+        {t("replace.kept")}
       </Typography>
       {replacePressing.isError && (
         <Alert severity="error">
-          Could not replace the pressing. Please try again.
+          {t("replace.failed")}
         </Alert>
       )}
       <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
@@ -63,11 +65,11 @@ export default function ReplacePressingPanel({
           onClick={confirm}
           disabled={replacePressing.isPending}
         >
-          This is my pressing
+          {t("replace.mine")}
         </Button>
-        <Tooltip title="View album details">
+        <Tooltip title={t("panel.albumDetails")}>
           <IconButton
-            aria-label="View album details"
+            aria-label={t("panel.albumDetails")}
             onClick={onDetails}
             sx={{ color: "text.primary" }}
           >

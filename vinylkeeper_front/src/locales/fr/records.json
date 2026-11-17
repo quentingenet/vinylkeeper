@@ -1,0 +1,123 @@
+{
+  "add": {
+    "failed": "Le disque n'a pas pu être ajouté. Réessaie.",
+    "adding": "Ajout à la collection..."
+  },
+  "search": {
+    "minChars": "Saisis au moins {{count}} caractères pour chercher."
+  },
+  "export": {
+    "shareTitle": "Enregistrer ou envoyer ton export"
+  },
+  "dialog": {
+    "scanFailed": "Le scan a échoué, réessaie.",
+    "findPressing": "Trouver ton pressage",
+    "addRecord": "Ajouter un disque",
+    "pickPressing": "Choisis le pressage qui est sur ton étagère.",
+    "pickPressingFor": "Choisis le pressage de « {{title}} » qui est sur ton étagère.",
+    "searchFor": "Chercher",
+    "album": "Album",
+    "artist": "Artiste",
+    "searchByAlbum": "Chercher par album",
+    "searchByArtist": "Chercher par artiste",
+    "search": "Chercher",
+    "scan": "Scanner le code-barres",
+    "scanHint": "Scanne le code-barres au dos de la pochette : tiens le téléphone à environ 15 cm, avec une bonne lumière.",
+    "scanSoon": "Bientôt disponible avec l'app Android",
+    "noArtist": "Aucun artiste trouvé",
+    "noAlbum": "Aucun album trouvé"
+  },
+  "panel": {
+    "noCollections": "Aucune collection pour l'instant. Crées-en une dans Collections pour y ajouter des disques.",
+    "collection": "Collection",
+    "addToCollection": "Ajouter à la collection",
+    "addToWishlist": "Ajouter à la liste d'envies",
+    "albumDetails": "Voir les détails de l'album",
+    "artistDetails": "Voir les détails de l'artiste"
+  },
+  "replace": {
+    "willReplace": "Il remplacera le pressage de « {{title}} » dans ta collection.",
+    "kept": "Tes exemplaires, leur état et la date d'ajout sont conservés.",
+    "failed": "Le pressage n'a pas pu être remplacé. Réessaie.",
+    "mine": "C'est mon pressage"
+  },
+  "copy": {
+    "addedOn": "Ajouté le {{date}}",
+    "updatedOn": "{{caption}}, modifié le {{date}}"
+  },
+  "duplicate": {
+    "samePressing": "Tu as déjà ce pressage dans {{collection}}{{count}}. Ajouter un autre exemplaire ?",
+    "addCopy": "Ajouter un exemplaire",
+    "otherPressings": "{{count}} autres pressages de ce disque",
+    "otherPressing": "un autre pressage de ce disque",
+    "alreadyHave": "Tu as déjà {{what}} dans {{collection}}{{details}}. Ajouter aussi ce pressage ?",
+    "addPressing": "Ajouter ce pressage",
+    "hintSame": "Tu as ce pressage ici",
+    "hintOther": "Tu as un autre pressage ici"
+  },
+  "states": {
+    "notDefined": "Non défini"
+  },
+  "state": {
+    "title": "États de l'album (facultatif)",
+    "cover": "État de la pochette",
+    "record": "État du disque",
+    "acquisition": "Mois d'acquisition",
+    "acquisitionHelp": "Choisis le mois et l'année d'acquisition"
+  },
+  "more": {
+    "title": "En savoir plus sur ce pressage",
+    "failed": "Les détails du pressage n'ont pas pu être chargés. Réessaie.",
+    "released": "Sortie",
+    "barcode": "Code-barres",
+    "matrix": "Matrice / Runout",
+    "none": "Pas d'autres détails sur Discogs pour ce pressage."
+  },
+  "copies": {
+    "record": "Disque : {{state}}",
+    "cover": "Pochette : {{state}}",
+    "acquired": "Acquis : {{date}}",
+    "copyNumber": "Exemplaire {{number}}",
+    "noCondition": "Aucun état indiqué",
+    "deleteAria": "Supprimer l'exemplaire {{number}}",
+    "deleteConfirm": "Supprimer cet exemplaire ?",
+    "keep": "Le garder",
+    "save": "Enregistrer l'exemplaire {{number}}",
+    "title": "Exemplaire",
+    "titleMany": "Exemplaires ({{count}})",
+    "add": "Ajouter un exemplaire",
+    "saveFailed": "Les exemplaires n'ont pas pu être enregistrés. Réessaie."
+  },
+  "pressing": {
+    "title": "Pressage",
+    "addedBefore": "Ajouté avant que les pressages s'affichent dans les résultats de recherche. Est-ce ton exemplaire ?",
+    "notConfirmed": "Pressage non confirmé par le propriétaire.",
+    "yes": "Oui, c'est mon pressage",
+    "no": "Non, trouver mon pressage"
+  },
+  "owned": {
+    "one": "Ton pressage",
+    "many": "Tes pressages",
+    "notConfirmed": "Pressage pas encore confirmé : ouvre-le depuis ta collection pour le vérifier."
+  },
+  "pressings": {
+    "inCollection": "Pressages dans cette collection ({{count}})",
+    "remove": "Retirer ce pressage de la collection"
+  },
+  "streaming": {
+    "listenOn": "Écouter sur",
+    "listenOnPlatform": "Écouter sur {{platform}}"
+  },
+  "tracklist": {
+    "title": "Liste des titres"
+  },
+  "playback": {
+    "albumDetails": "Détails de l'album",
+    "artistDetails": "Détails de l'artiste",
+    "error": "Une erreur est survenue",
+    "genres": "Genres",
+    "biography": "Biographie",
+    "noTracklist": "Liste des titres indisponible",
+    "noBiography": "Biographie indisponible"
+  }
+}

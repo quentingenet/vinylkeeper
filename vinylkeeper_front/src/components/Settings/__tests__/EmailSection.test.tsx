@@ -41,7 +41,8 @@ describe("EmailSection", () => {
     await userEvent.type(passwordField(), "secret1");
     await userEvent.click(screen.getByRole("button", { name: "Change email" }));
 
-    expect(await screen.findByText(/Check your new inbox\. Your current email address stays in use/)).toBeInTheDocument();
+    // The app says it in the language of the interface, whatever the API answered
+    expect(await screen.findByText(/Your current email address stays in use until you open that link/)).toBeInTheDocument();
     expect(api.requestEmailChange.mock.calls[0][0]).toEqual({ newEmail: "new@example.com", currentPassword: "secret1" });
   });
 

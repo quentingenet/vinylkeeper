@@ -12,9 +12,10 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format, parse } from "date-fns";
-import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+import { vinylStates, vinylStateLabel, VinylStateEnum } from "@utils/GlobalUtils";
 import { type AlbumStateData } from "@hooks/useAddToCollection";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface AlbumStateFormProps {
   albumStateData: AlbumStateData;
@@ -32,6 +33,7 @@ export default function AlbumStateForm({
   isDatePickerOpen,
   setIsDatePickerOpen,
 }: AlbumStateFormProps) {
+  const { t } = useTranslation("records");
   const handleDateChange = (newValue: Date | null) => {
     onAlbumStateChange(
       "acquisition_month_year",
@@ -61,7 +63,7 @@ export default function AlbumStateForm({
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-          Album states (Optional)
+          {t("state.title")}
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
@@ -76,13 +78,13 @@ export default function AlbumStateForm({
                   "&.MuiInputLabel-shrink": { color: "primary.main" },
                 }}
               >
-                Cover state
+                {t("state.cover")}
               </InputLabel>
               <Select
                 labelId="cover-state-label"
                 id="cover-state-select"
                 value={albumStateData.state_cover || ""}
-                label="Cover state"
+                label={t("state.cover")}
                 onChange={(e) =>
                   onAlbumStateChange(
                     "state_cover",
@@ -97,7 +99,7 @@ export default function AlbumStateForm({
               >
                 {vinylStates.map((state) => (
                   <MenuItem key={state.id} value={state.id}>
-                    {state.name}
+                    {vinylStateLabel(state)}
                   </MenuItem>
                 ))}
               </Select>
@@ -112,13 +114,13 @@ export default function AlbumStateForm({
                   "&.MuiInputLabel-shrink": { color: "primary.main" },
                 }}
               >
-                Record state
+                {t("state.record")}
               </InputLabel>
               <Select
                 labelId="record-state-label"
                 id="record-state-select"
                 value={albumStateData.state_record || ""}
-                label="Record state"
+                label={t("state.record")}
                 onChange={(e) =>
                   onAlbumStateChange(
                     "state_record",
@@ -133,7 +135,7 @@ export default function AlbumStateForm({
               >
                 {vinylStates.map((state) => (
                   <MenuItem key={state.id} value={state.id}>
-                    {state.name}
+                    {vinylStateLabel(state)}
                   </MenuItem>
                 ))}
               </Select>
@@ -141,7 +143,7 @@ export default function AlbumStateForm({
           </Box>
 
           <DatePicker
-            label="Acquisition month"
+            label={t("state.acquisition")}
             value={
               albumStateData.acquisition_month_year
                 ? parse(albumStateData.acquisition_month_year, "yyyy-MM", new Date())
@@ -156,7 +158,7 @@ export default function AlbumStateForm({
               textField: {
                 fullWidth: true,
                 size: "small",
-                helperText: "Select acquisition month and year",
+                helperText: t("state.acquisitionHelp"),
                 onClick: () => setIsDatePickerOpen(true),
                 sx: {
                   color: colors.textLight,

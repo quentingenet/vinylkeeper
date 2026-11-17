@@ -8,11 +8,13 @@ import { useUserContext } from "@contexts/UserContext";
 import { queryKeys } from "@utils/queryKeys";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { usePageMeta } from "@hooks/usePageMeta";
+import { useTranslation } from "react-i18next";
 
 /** Opened from the link of the registration or email change email, logged in or not. */
 export default function ConfirmEmail() {
+  const { t } = useTranslation("auth");
   // Opened from an email link: nothing for search engines
-  usePageMeta({ title: "Confirm your email | Vinyl Keeper", noIndex: true });
+  usePageMeta({ title: t("confirm.metaTitle"), noIndex: true });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isUserLoggedIn } = useUserContext();
@@ -36,9 +38,9 @@ export default function ConfirmEmail() {
   }, [confirmation.isSuccess, queryClient]);
 
   const errorMessage = !token
-    ? "This confirmation link is incomplete. Please open the link of the email again."
+    ? t("confirm.incomplete")
     : confirmation.isError
-      ? `${confirmation.error.message} You can ask for a new link from your settings.`
+      ? t("confirm.askNew", { reason: confirmation.error.message })
       : null;
 
   return (
@@ -47,17 +49,17 @@ export default function ConfirmEmail() {
         <CardContent>
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <MarkEmailRead sx={{ color: "primary.main", mr: 1 }} />
-            <Typography variant="h6">Email confirmation</Typography>
+            <Typography variant="h6">{t("confirm.title")}</Typography>
           </Box>
           {confirmation.isLoading && <VinylSpinner />}
           {confirmation.isSuccess && (
-            <Alert severity="success">Your email address is confirmed. Thank you!</Alert>
+            <Alert severity="success">{t("confirm.success")}</Alert>
           )}
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
           {!confirmation.isLoading && (
             <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
               <Button variant="contained" onClick={() => void navigate("/", { replace: true })}>
-                {isUserLoggedIn ? "Back to Vinyl Keeper" : "Go to Vinyl Keeper"}
+                {isUserLoggedIn ? t("confirm.back") : t("confirm.goTo")}
               </Button>
             </Box>
           )}

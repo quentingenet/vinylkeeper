@@ -20,6 +20,7 @@ import {
   slideTitleSx,
 } from "@components/Modals/carouselModalStyles";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface TutorialModalProps {
   open: boolean;
@@ -28,23 +29,21 @@ interface TutorialModalProps {
   disableEnforceFocus?: boolean;
 }
 
+// title and content: translation keys
 const steps = [
   {
-    title: "Add Vinyls",
-    content:
-      "After searching for an album or artist, you can select a collection and add your discoveries!",
+    title: "landing:tutorial.steps.add.title",
+    content: "landing:tutorial.steps.add.content",
     image: "/vk_tutorial/1_add_vinyl.jpg",
   },
   {
-    title: "Collections",
-    content:
-      "You can like collections and choose to make your collections public to share their content with other users. Simply switch between private and public! If a collection is public, all users can explore it and like it.",
+    title: "landing:tutorial.steps.collections.title",
+    content: "landing:tutorial.steps.collections.content",
     image: "/vk_tutorial/2_collection.jpg",
   },
   {
-    title: "Vinyl Atlas",
-    content:
-      "Share and discover the spots of the vinyl culture community on the Atlas: shops, flea markets...",
+    title: "landing:tutorial.steps.atlas.title",
+    content: "landing:tutorial.steps.atlas.content",
     images: ["/vk_tutorial/3_places.jpg", "/vk_tutorial/4_suggest_places.jpg"],
   },
 ];
@@ -56,6 +55,7 @@ export default function TutorialModal({
   disableEnforceFocus = true,
 }: TutorialModalProps) {
   const [activeStep, setActiveStep] = useState(0);
+  const { t } = useTranslation("landing");
   const [imageIndex, setImageIndex] = useState(0);
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function TutorialModal({
           component="h2"
           sx={modalTitleSx}
         >
-          Welcome to VinylKeeper
+          {t("tutorial.welcome")}
         </Typography>
 
         <Stepper
@@ -118,7 +118,7 @@ export default function TutorialModal({
         >
           {steps.map((step, index) => (
             <Step key={index}>
-              <StepLabel>{step.title}</StepLabel>
+              <StepLabel>{t(step.title)}</StepLabel>
             </Step>
           ))}
         </Stepper>
@@ -142,21 +142,21 @@ export default function TutorialModal({
             <Fade in={imageIndex === 0} timeout={500}>
               <ModalImage
                 src={steps[2].images![imageIndex]}
-                alt={steps[2].title}
+                alt={t(steps[2].title)}
                 style={{ display: imageIndex === 0 ? "block" : "none" }}
               />
             </Fade>
           ) : (
             <ModalImage
               src={steps[activeStep].image}
-              alt={steps[activeStep].title}
+              alt={t(steps[activeStep].title)}
             />
           )}
           {activeStep === 2 && (
             <Fade in={imageIndex === 1} timeout={500}>
               <ModalImage
                 src={steps[2].images![imageIndex]}
-                alt={steps[2].title}
+                alt={t(steps[2].title)}
                 style={{
                   display: imageIndex === 1 ? "block" : "none",
                   position: "absolute",
@@ -173,13 +173,13 @@ export default function TutorialModal({
             variant="h6"
             sx={slideTitleSx}
           >
-            {steps[activeStep].title}
+            {t(steps[activeStep].title)}
           </Typography>
           <Typography
             variant="body1"
             sx={slideTextSx}
           >
-            {steps[activeStep].content}
+            {t(steps[activeStep].content)}
           </Typography>
         </TextContainer>
 
@@ -204,7 +204,7 @@ export default function TutorialModal({
             }}
             variant="outlined"
           >
-            Back
+            {t("tutorial.back")}
           </Button>
 
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -220,7 +220,7 @@ export default function TutorialModal({
                 }}
                 variant="contained"
               >
-                Get Started
+                {t("tutorial.start")}
               </Button>
             ) : (
               <Button
@@ -234,7 +234,7 @@ export default function TutorialModal({
                 }}
                 variant="contained"
               >
-                Next
+                {t("tutorial.next")}
               </Button>
             )}
           </Box>

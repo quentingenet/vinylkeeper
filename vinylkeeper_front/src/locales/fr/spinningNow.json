@@ -1,0 +1,29 @@
+{
+  "nothingMatches": "Rien ne correspond encore à ces filtres. Essaie d'en retirer un.",
+  "unavailable": "Spinning now est indisponible pour le moment. Réessaie plus tard.",
+  "empty": {
+    "before": "Aucun disque dans tes collections pour l'instant.",
+    "link": "Ajoute tes premiers vinyles",
+    "after": "et reviens en choisir un à écouter."
+  },
+  "intro": "Choisis une humeur, une époque ou un genre et trouve quoi poser sur la platine.",
+  "moreRecords": "Plus tu ajoutes de disques, meilleures sont les suggestions.",
+  "notAnalysed": "Les humeurs, époques et genres apparaissent une fois tes disques analysés.",
+  "filters": {
+    "mood": "Humeur",
+    "era": "Époque",
+    "genre": "Genre",
+    "collection": "Collection"
+  },
+  "surprise": "Surprends-moi",
+  "shuffle": "Mélanger",
+  "clear": "Effacer les filtres",
+  "noMatch": "Aucun disque ne correspond à ces filtres.",
+  "results_one": "{{shown}} sur {{count}} disque, choisi au hasard.",
+  "results_other": "{{shown}} sur {{count}} disques, choisis au hasard.",
+  "loadFailed": "Les disques n'ont pas pu être chargés. Réessaie.",
+  "play": "Écouter {{title}}",
+  "playBy": "Écouter {{title}} de {{artist}}",
+  "inCollections": "Dans {{names}}",
+  "results_many": "{{shown}} sur {{count}} disques, choisis au hasard."
+}

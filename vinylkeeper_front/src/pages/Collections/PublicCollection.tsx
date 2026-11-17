@@ -19,6 +19,7 @@ import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { EGlobalUrls, registerUrl, sharedCollectionUrl } from "@utils/GlobalUrls";
 import { parseShareToken, retryCollection, unavailableReason } from "@utils/collectionAvailability";
 import { queryKeys } from "@utils/queryKeys";
+import { useTranslation } from "react-i18next";
 
 const DISCOGS_URL = "https://www.discogs.com";
 // The footer of a public page is fixed: the end of the page must clear it
@@ -36,16 +37,17 @@ const tileGridSx = {
   gap: 2,
 };
 
-const TABS: { kind: SharedItemsKind; label: string; noun: string; emptyText: string }[] = [
-  { kind: "records", label: "Albums", noun: "record", emptyText: "No records in this collection yet." },
-  { kind: "artists", label: "Artists", noun: "artist", emptyText: "No artists in this collection yet." },
-  { kind: "wishlist", label: "Wishlist", noun: "record", emptyText: "Nothing on this wishlist yet." },
+// label and emptyText: translation keys; noun: what the counts are made of
+const TABS: { kind: SharedItemsKind; label: string; noun: "record" | "artist"; emptyText: string }[] = [
+  { kind: "records", label: "collections:tabs.albums", noun: "record", emptyText: "collections:shared.emptyRecords" },
+  { kind: "artists", label: "collections:tabs.artists", noun: "artist", emptyText: "collections:details.noArtists" },
+  { kind: "wishlist", label: "collections:tabs.wishlist", noun: "record", emptyText: "collections:shared.emptyWishlist" },
 ];
 
-const formatCount = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 function ItemTile({ item, onClick }: { item: SharedItem; onClick: () => void }) {
-  const title = item.title ?? "Unknown";
+  const { t } = useTranslation("collections");
+  const title = item.title ?? t("shared.unknown");
   const cover = item.image_url ? buildProxyImageUrl(item.image_url, 240, 240, 80, true) || item.image_url : null;
 
   return (
@@ -102,7 +104,7 @@ function EmptyTile() {
 
 interface InvitationProps {
   hiddenCount: number;
-  noun: string;
+  noun: "record" | "artist";
   /** Too small to page through: the invitation is to the other collections */
   isSmall: boolean;
   /** On the pages before the last one: its place stays, so that the pages keep the same height */
@@ -112,6 +114,7 @@ interface InvitationProps {
 
 /** At the end of what a visitor can see, not before: the pages come first. */
 function Invitation({ hiddenCount, noun, isSmall, isReserved, onJoin }: InvitationProps) {
+  const { t } = useTranslation("collections");
   return (
     <Box
       aria-hidden={isReserved}
@@ -131,11 +134,11 @@ function Invitation({ hiddenCount, noun, isSmall, isReserved, onJoin }: Invitati
       <LockOutlinedIcon sx={{ color: "primary.main" }} />
       <Typography variant="body1">
         {isSmall
-          ? "Join Vinyl Keeper to see every digger's collection."
-          : `${formatCount(hiddenCount, `more ${noun}`)} in this collection. Join Vinyl Keeper to see them all.`}
+          ? t("shared.joinEvery")
+          : t(`shared.more.${noun}`, { count: hiddenCount })}
       </Typography>
       <Button variant="contained" onClick={onJoin} disabled={isReserved}>
-        {isSmall ? "Join Vinyl Keeper" : "See the whole collection"}
+        {isSmall ? t("shared.join") : t("shared.seeWhole")}
       </Button>
     </Box>
   );
@@ -143,7 +146,7 @@ function Invitation({ hiddenCount, noun, isSmall, isReserved, onJoin }: Invitati
 
 interface SharedListProps {
   kind: SharedItemsKind;
-  noun: string;
+  noun: "record" | "artist";
   emptyText: string;
   list: SharedItemsResponse;
   onPageChange: (page: number) => void;
@@ -151,6 +154,7 @@ interface SharedListProps {
 }
 
 function SharedList({ kind, noun, emptyText, list, onPageChange, onJoin }: SharedListProps) {
+  const { t } = useTranslation("collections");
   const isLastPage = list.page >= list.total_pages;
   // A single page has no other page to match: no empty places under a small collection
   const emptyTiles = list.total_pages > 1 ? Math.max(0, ITEMS_PER_PAGE - list.items.length) : 0;
@@ -168,7 +172,7 @@ function SharedList({ kind, noun, emptyText, list, onPageChange, onJoin }: Share
         </Box>
       ) : (
         <Typography variant="body1" sx={{ color: "text.secondary", textAlign: "center", my: 4 }}>
-          {emptyText}
+          {t(emptyText)}
         </Typography>
       )}
 
@@ -196,6 +200,7 @@ interface SharedCollectionProps {
 }
 
 function SharedCollection({ collection, kind, list, onTabChange, onPageChange, onJoin }: SharedCollectionProps) {
+  const { t } = useTranslation("collections");
   const tab = TABS.find((candidate) => candidate.kind === kind) ?? TABS[0];
 
   return (
@@ -208,7 +213,7 @@ function SharedCollection({ collection, kind, list, onTabChange, onPageChange, o
       </Typography>
       {collection.owner_username && (
         <Typography variant="body1" sx={{ color: "text.secondary" }}>
-          A collection by {collection.owner_username}
+          {t("shared.by", { name: collection.owner_username })}
         </Typography>
       )}
       {collection.description && (
@@ -217,15 +222,15 @@ function SharedCollection({ collection, kind, list, onTabChange, onPageChange, o
         </Typography>
       )}
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, my: 2 }}>
-        <Chip variant="outlined" size="small" label={formatCount(collection.records_count, "record")} />
+        <Chip variant="outlined" size="small" label={t("counts.records", { count: collection.records_count })} />
         {collection.artists_count > 0 && (
-          <Chip variant="outlined" size="small" label={formatCount(collection.artists_count, "artist")} />
+          <Chip variant="outlined" size="small" label={t("counts.artists", { count: collection.artists_count })} />
         )}
         <Chip
           variant="outlined"
           size="small"
           icon={<FavoriteIcon />}
-          label={formatCount(collection.likes_count, "like")}
+          label={t("counts.likes", { count: collection.likes_count })}
           onClick={onJoin}
         />
       </Box>
@@ -234,12 +239,12 @@ function SharedCollection({ collection, kind, list, onTabChange, onPageChange, o
         <Tabs
           value={kind}
           onChange={(_event, value: SharedItemsKind) => onTabChange(value)}
-          aria-label="Shared collection"
+          aria-label={t("shared.tabsLabel")}
           variant="fullWidth"
           sx={primaryTabsSx}
         >
           {TABS.map(({ kind: value, label }) => (
-            <Tab key={value} value={value} label={label} />
+            <Tab key={value} value={value} label={t(label)} />
           ))}
         </Tabs>
       </Box>
@@ -276,6 +281,7 @@ function SharedCollection({ collection, kind, list, onTabChange, onPageChange, o
 /** A public collection for someone who has its link and no session: a taste, then an invitation. */
 export default function PublicCollection() {
   const { token } = useParams<{ token: string }>();
+  const { t } = useTranslation("collections");
   const shareToken = parseShareToken(token);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [kind, setKind] = useState<SharedItemsKind>("records");
@@ -305,9 +311,9 @@ export default function PublicCollection() {
 
   const data = collection.data;
   usePageMeta({
-    title: data ? `${data.name} | Vinyl Keeper` : "Shared collection | Vinyl Keeper",
+    title: data ? t("shared.metaTitle", { name: data.name }) : t("shared.metaTitleDefault"),
     description: data
-      ? `Have a look at ${data.owner_username ?? "this digger"}'s collection and discover vinylkeeper.org. ${formatCount(data.records_count, "record")}.`
+      ? t("shared.metaDescription", { owner: data.owner_username ?? t("shared.thisDigger"), count: data.records_count })
       : undefined,
     // Shared by link, not published: members made these public for other collectors
     noIndex: true,
@@ -324,15 +330,15 @@ export default function PublicCollection() {
         <CollectionUnavailable reason={reason}>
           {reason === "error" ? (
             <Button variant="contained" onClick={() => void Promise.all([collection.refetch(), items.refetch()])}>
-              Try again
+              {t("common:actions.retry")}
             </Button>
           ) : (
             <>
               <Button component={RouterLink} to={EGlobalUrls.ATLAS} variant="text">
-                Explore the Vinyl Atlas
+                {t("shared.exploreAtlas")}
               </Button>
               <Button component={RouterLink} to={registerUrl()} rel="nofollow" variant="contained">
-                Join Vinyl Keeper
+                {t("shared.join")}
               </Button>
             </>
           )}
@@ -356,7 +362,7 @@ export default function PublicCollection() {
       <JoinVinylKeeperDialog
         open={isJoinOpen}
         onClose={() => setIsJoinOpen(false)}
-        title="Join Vinyl Keeper to see this whole collection"
+        title={t("shared.joinTitle")}
         nextPath={nextPath}
       />
     </PublicPage>

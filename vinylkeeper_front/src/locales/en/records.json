@@ -1,0 +1,123 @@
+{
+  "add": {
+    "failed": "Could not add the record. Please try again.",
+    "adding": "Adding to collection..."
+  },
+  "search": {
+    "minChars": "Type at least {{count}} characters to search."
+  },
+  "export": {
+    "shareTitle": "Save or send your export"
+  },
+  "dialog": {
+    "scanFailed": "The scan failed, try again.",
+    "findPressing": "Find your pressing",
+    "addRecord": "Add a record",
+    "pickPressing": "Pick the pressing on your shelf.",
+    "pickPressingFor": "Pick the pressing on your shelf for “{{title}}”.",
+    "searchFor": "Search for",
+    "album": "Album",
+    "artist": "Artist",
+    "searchByAlbum": "Search by album",
+    "searchByArtist": "Search by artist",
+    "search": "Search",
+    "scan": "Scan barcode",
+    "scanHint": "Scan the barcode on the back of the sleeve: hold the phone about 15 cm away, in good light.",
+    "scanSoon": "Coming soon with mobile android app",
+    "noArtist": "No artist found",
+    "noAlbum": "No album found"
+  },
+  "panel": {
+    "noCollections": "No collections yet. Create one in Collections to add records to it.",
+    "collection": "Collection",
+    "addToCollection": "Add to collection",
+    "addToWishlist": "Add to wishlist",
+    "albumDetails": "View album details",
+    "artistDetails": "View artist details"
+  },
+  "replace": {
+    "willReplace": "It will replace the pressing of “{{title}}” in your collection.",
+    "kept": "Your copies, their condition and the date you added it are kept.",
+    "failed": "Could not replace the pressing. Please try again.",
+    "mine": "This is my pressing"
+  },
+  "copy": {
+    "addedOn": "Added on {{date}}",
+    "updatedOn": "{{caption}}, updated on {{date}}"
+  },
+  "duplicate": {
+    "samePressing": "You already have this pressing in {{collection}}{{count}}. Add another copy?",
+    "addCopy": "Add another copy",
+    "otherPressings": "{{count}} other pressings of this record",
+    "otherPressing": "another pressing of this record",
+    "alreadyHave": "You already have {{what}} in {{collection}}{{details}}. Add this pressing too?",
+    "addPressing": "Add this pressing",
+    "hintSame": "You have this pressing here",
+    "hintOther": "You have another pressing here"
+  },
+  "states": {
+    "notDefined": "Not defined"
+  },
+  "state": {
+    "title": "Album states (Optional)",
+    "cover": "Cover state",
+    "record": "Record state",
+    "acquisition": "Acquisition month",
+    "acquisitionHelp": "Select acquisition month and year"
+  },
+  "more": {
+    "title": "More about this pressing",
+    "failed": "Could not load the pressing details. Please try again.",
+    "released": "Released",
+    "barcode": "Barcode",
+    "matrix": "Matrix / Runout",
+    "none": "No more details on Discogs for this pressing."
+  },
+  "copies": {
+    "record": "Record: {{state}}",
+    "cover": "Cover: {{state}}",
+    "acquired": "Acquired: {{date}}",
+    "copyNumber": "Copy {{number}}",
+    "noCondition": "No condition given",
+    "deleteAria": "Delete copy {{number}}",
+    "deleteConfirm": "Delete this copy?",
+    "keep": "Keep it",
+    "save": "Save copy {{number}}",
+    "title": "Copy",
+    "titleMany": "Copies ({{count}})",
+    "add": "Add a copy",
+    "saveFailed": "Could not save the copies. Please try again."
+  },
+  "pressing": {
+    "title": "Pressing",
+    "addedBefore": "Added before pressings were shown in search results. Is this your copy?",
+    "notConfirmed": "Pressing not confirmed by the owner.",
+    "yes": "Yes, this is my pressing",
+    "no": "No, find my pressing"
+  },
+  "owned": {
+    "one": "Your pressing",
+    "many": "Your pressings",
+    "notConfirmed": "Pressing not confirmed yet: open it from your collection to check it."
+  },
+  "pressings": {
+    "inCollection": "Pressings in this collection ({{count}})",
+    "remove": "Remove this pressing from the collection"
+  },
+  "streaming": {
+    "listenOn": "Listen on",
+    "listenOnPlatform": "Listen on {{platform}}"
+  },
+  "tracklist": {
+    "title": "Tracklist"
+  },
+  "playback": {
+    "albumDetails": "Album details",
+    "artistDetails": "Artist details",
+    "error": "An error occurred",
+    "genres": "Genres",
+    "biography": "Biography",
+    "noTracklist": "Tracklist not available",
+    "noBiography": "Biography not available"
+  }
+}

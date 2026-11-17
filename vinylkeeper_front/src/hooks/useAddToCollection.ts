@@ -18,6 +18,7 @@ import {
   ownedHint,
   type DuplicatePrompt,
 } from "@components/Records/duplicateLabels";
+import i18n from "@utils/i18n";
 
 export interface AlbumStateData {
   state_cover?: VinylStateEnum | null;
@@ -92,7 +93,7 @@ export function useAddToCollection(
 
   const handleMutationError = () => {
     setMessageType("error");
-    setSuccessMessage("Could not add the record. Please try again.");
+    setSuccessMessage(i18n.t("records:add.failed"));
     setTimeout(() => setSuccessMessage(""), 3000);
   };
 
@@ -168,7 +169,7 @@ export function useAddToCollection(
     }
     setPendingDuplicate(null);
 
-    setSuccessMessage("Adding to collection...");
+    setSuccessMessage(i18n.t("records:add.adding"));
     try {
       await addToCollectionMutation.mutateAsync({
         collectionId,

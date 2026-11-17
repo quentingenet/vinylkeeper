@@ -1,0 +1,14 @@
+{
+  "modalTitle": "Condições de utilização do Vinyl Keeper",
+  "pageTitle": "Condições de utilização e privacidade | Vinyl Keeper",
+  "heading": "Vinyl Keeper: condições de utilização e privacidade",
+  "englishOnly": "Estas condições estão redigidas em inglês, a única versão que faz fé.",
+  "lastUpdated": "Última atualização: {{date}}",
+  "deleteAccount": {
+    "title": "Eliminar a tua conta",
+    "steps": "Na app ou em vinylkeeper.org: inicia sessão, abre {{settings}}, depois «{{dangerZone}}» e «{{deleteAccount}}», escreve DELETE e confirma. A eliminação é definitiva.",
+    "cannotLogIn": "Se não conseguires iniciar sessão, escreve para",
+    "fromAddress": "a partir do e-mail da conta, pedindo a sua eliminação.",
+    "whatIsKept": "O que é eliminado, e o que é conservado, está indicado na secção 7.6 abaixo."
+  }
+}

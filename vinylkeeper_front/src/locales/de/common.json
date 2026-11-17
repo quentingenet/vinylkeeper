@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "title": "Vinyl Keeper - Katalogisiere und teile deine Vinylsammlung"
+  },
+  "language": {
+    "label": "Sprache",
+    "automatic": "Automatisch (Gerät)",
+    "choose": "Sprache: {{language}}. Sprache ändern"
+  },
+  "actions": {
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht...",
+    "save": "Speichern",
+    "saving": "Wird gespeichert...",
+    "send": "Senden",
+    "sending": "Wird gesendet...",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "retry": "Erneut versuchen",
+    "confirm": "Bestätigen",
+    "loading": "Wird geladen...",
+    "understood": "Verstanden"
+  },
+  "password": {
+    "show": "Passwort anzeigen",
+    "hide": "Passwort verbergen",
+    "strength": "Passwortstärke",
+    "weak": "Schwach",
+    "medium": "Mittel",
+    "strong": "Stark",
+    "rules": {
+      "length": "Mindestens 8 Zeichen",
+      "letter": "Enthält einen Buchstaben",
+      "number": "Enthält eine Zahl"
+    }
+  },
+  "dataProvidedBy": "Daten bereitgestellt von",
+  "update": {
+    "available": "Eine neue Version von Vinyl Keeper ist verfügbar.",
+    "later": "Später",
+    "update": "Aktualisieren",
+    "progress": "Update läuft. Du kannst die App weiter benutzen.",
+    "progressPercent": "Update läuft ({{percent}} %). Du kannst die App weiter benutzen.",
+    "ready": "Update heruntergeladen. Starte neu, um es abzuschließen.",
+    "restart": "Neu starten",
+    "installing": "Das Update wird installiert, die App startet neu."
+  },
+  "errorBoundary": {
+    "title": "Etwas ist schiefgelaufen",
+    "text1": "VinylKeeper ist auf einen unerwarteten Fehler gestoßen.",
+    "text2": "Versuche es erneut oder kehre zur Startseite zurück.",
+    "home": "Zur Startseite"
+  },
+  "scanner": {
+    "installing": "Der Scanner wird installiert, versuche es gleich noch einmal."
+  }
+}

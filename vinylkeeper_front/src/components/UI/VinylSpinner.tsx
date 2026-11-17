@@ -1,11 +1,13 @@
 import vinylKeeperLogo from "@assets/vinylKeeper.svg";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface VinylSpinnerProps {
   size?: number;
 }
 
 export default function VinylSpinner({ size = 48 }: VinylSpinnerProps) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -18,7 +20,7 @@ export default function VinylSpinner({ size = 48 }: VinylSpinnerProps) {
     >
       <img
         src={vinylKeeperLogo}
-        alt="Loading..."
+        alt={t("actions.loading")}
         style={{
           width: "100%",
           height: "100%",

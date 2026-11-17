@@ -1,0 +1,17 @@
+{
+  "sessionExpired": "Session expired. Please log in again.",
+  "exportFailed": "Export failed ({{status}})",
+  "unknown": "Unknown error occurred",
+  "unexpected": "An unexpected error occurred. Please try again.",
+  "addToWishlist": "Failed to add item to wishlist",
+  "addToCollection": "Failed to add item to collection",
+  "checkCollections": "Failed to check your collections",
+  "replacePressing": "Failed to replace the pressing",
+  "removeFromWishlist": "Failed to remove item from wishlist",
+  "fetchWishlist": "Failed to fetch wishlist items",
+  "albumNotFound": "Album with ID {{id}} not found",
+  "albumMetadata": "Failed to fetch album metadata",
+  "artistMetadata": "Failed to fetch artist metadata",
+  "search": "Failed to search music",
+  "fileUnreadable": "File unreadable"
+}

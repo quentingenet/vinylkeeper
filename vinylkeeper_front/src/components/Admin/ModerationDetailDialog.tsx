@@ -12,6 +12,7 @@ import { CheckCircle, Cancel } from "@mui/icons-material";
 import { ModerationRequest } from "@services/AdminApiService";
 import { getStatusChip, formatDate } from "./adminUtils";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -32,6 +33,7 @@ export default function ModerationDetailDialog({
   isApproving,
   isRejecting,
 }: Props) {
+  const { t } = useTranslation("admin");
   return (
     <Dialog
       open={open}
@@ -50,7 +52,7 @@ export default function ModerationDetailDialog({
       }}
     >
       <DialogTitle sx={{ color: "primary.main", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-        Moderation Request Details
+        {t("detail.title")}
       </DialogTitle>
       <DialogContent>
         {selectedRequest && (
@@ -68,18 +70,18 @@ export default function ModerationDetailDialog({
                   variant="subtitle2"
                   sx={{ color: "primary.main", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
-                  Spot information
+                  {t("detail.spot")}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                  <strong>City:</strong> {selectedRequest.place?.city},{" "}
+                  <strong>{t("detail.city")}</strong> {selectedRequest.place?.city},{" "}
                   {selectedRequest.place?.country}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                  <strong>Description:</strong>{" "}
-                  {selectedRequest.place?.description ?? "No description"}
+                  <strong>{t("detail.description")}</strong>{" "}
+                  {selectedRequest.place?.description ?? t("detail.noDescription")}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                  <strong>Current Status:</strong>{" "}
+                  <strong>{t("detail.status")}</strong>{" "}
                   {getStatusChip(selectedRequest.status?.name ?? "unknown")}
                 </Typography>
               </Stack>
@@ -89,13 +91,13 @@ export default function ModerationDetailDialog({
                   variant="subtitle2"
                   sx={{ color: "primary.main", fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
-                  Request Information
+                  {t("detail.request")}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                  <strong>Submitted by:</strong> {selectedRequest.user?.username}
+                  <strong>{t("detail.submittedBy")}</strong> {selectedRequest.user?.username}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                  <strong>Submission Date:</strong> {formatDate(selectedRequest.created_at)}
+                  <strong>{t("detail.date")}</strong> {formatDate(selectedRequest.created_at)}
                 </Typography>
               </Stack>
             </Stack>
@@ -106,7 +108,7 @@ export default function ModerationDetailDialog({
                   variant="subtitle2"
                   sx={{ color: "primary.main", mb: 2, fontSize: { xs: "0.875rem", sm: "1rem" } }}
                 >
-                  Available Actions
+                  {t("detail.actions")}
                 </Typography>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                   <Button
@@ -121,7 +123,7 @@ export default function ModerationDetailDialog({
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
-                    {isApproving ? "Approving..." : "Approve"}
+                    {isApproving ? t("detail.approving") : t("detail.approve")}
                   </Button>
                   <Button
                     variant="contained"
@@ -135,7 +137,7 @@ export default function ModerationDetailDialog({
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
-                    {isRejecting ? "Rejecting..." : "Reject"}
+                    {isRejecting ? t("detail.rejecting") : t("detail.reject")}
                   </Button>
                 </Stack>
               </Box>
@@ -148,7 +150,7 @@ export default function ModerationDetailDialog({
           onClick={onClose}
           sx={{ color: "primary.main", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
         >
-          Close
+          {t("common:actions.close")}
         </Button>
       </DialogActions>
     </Dialog>

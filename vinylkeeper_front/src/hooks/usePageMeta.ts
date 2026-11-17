@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { titleToRestore } from "@utils/i18n";
 
 // Address of the site in production: canonical URLs are absolute
 export const SITE_URL = "https://vinylkeeper.org";
@@ -28,7 +29,7 @@ export function usePageMeta({ title, description, canonicalPath, noIndex = false
     if (title) {
       const previous = document.title;
       document.title = title;
-      restore.push(() => { document.title = previous; });
+      restore.push(() => { document.title = titleToRestore(previous); });
     }
 
     const setMeta = (name: string, content: string) => {

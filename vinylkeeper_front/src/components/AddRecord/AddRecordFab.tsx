@@ -6,6 +6,7 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { growItem } from "@utils/Animations";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 // Pages with their own floating add button, which this one must not compete with
 const PAGES_WITH_THEIR_OWN_ADD_BUTTON: string[] = [EGlobalUrls.ATLAS];
@@ -13,6 +14,7 @@ const PAGES_WITH_THEIR_OWN_ADD_BUTTON: string[] = [EGlobalUrls.ATLAS];
 /** "Add a record" from any page; labelled, so it never reads like the other "+" buttons of the app. */
 export default function AddRecordFab() {
   const { openAddRecord, isAddRecordOpen } = useAddRecord();
+  const { t } = useTranslation("records");
   const { pathname } = useLocation();
   const { isMobile } = useDetectMobile();
 
@@ -20,11 +22,11 @@ export default function AddRecordFab() {
     return null;
 
   return (
-    <Tooltip title={isMobile ? "Add a record" : ""} placement="left">
+    <Tooltip title={isMobile ? t("dialog.addRecord") : ""} placement="left">
       <Fab
         color="primary"
         variant={isMobile ? "circular" : "extended"}
-        aria-label="Add a record"
+        aria-label={t("dialog.addRecord")}
         onClick={() => openAddRecord()}
         sx={{
           position: "fixed",
@@ -41,7 +43,7 @@ export default function AddRecordFab() {
         }}
       >
         <LibraryAddIcon />
-        {!isMobile && "Add a record"}
+        {!isMobile && t("dialog.addRecord")}
       </Fab>
     </Tooltip>
   );

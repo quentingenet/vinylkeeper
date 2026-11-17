@@ -17,6 +17,7 @@ import { growItem } from "@utils/Animations";
 import { usePreloadedImages } from "@hooks/usePreloadedImages";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface PreviewModalProps {
   open: boolean;
@@ -33,8 +34,6 @@ const screenshotFadeIn = keyframes`
   to { opacity: 1; }
 `;
 
-// Visible title is the brand only; screen readers get the full purpose
-const DIALOG_LABEL = "A look inside VinylKeeper";
 const SCREENSHOT_ASPECT_RATIO = "16 / 9";
 
 const navButtonSx = {
@@ -45,6 +44,7 @@ const navButtonSx = {
 
 export default function PreviewModal({ open, slides, onClose, onEnter, preload = false }: PreviewModalProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useTranslation("landing");
   // Every screenshot at once: the tour opens whole, and changing slides never waits for an image
   const screenshotsReady = usePreloadedImages(slides.map((item) => item.image), open || preload);
   const lastIndex = slides.length - 1;
@@ -74,7 +74,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
       {!screenshotsReady ? (
         <Box
           role="status"
-          aria-label="Loading"
+          aria-label={t("common:actions.loading")}
           sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
         >
           <VinylSpinner size={64} />
@@ -83,13 +83,14 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
       <ModalContent
         role="dialog"
         aria-modal="true"
-        aria-label={DIALOG_LABEL}
+        // Visible title is the brand only; screen readers get the full purpose
+        aria-label={t("preview.dialogLabel")}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         sx={{ position: "relative", overflowY: "auto" }}
       >
         <IconButton
-          aria-label="Close preview"
+          aria-label={t("preview.close")}
           onClick={handleClose}
           sx={{ position: "absolute", top: 8, right: 8, color: colors.textLight }}
         >
@@ -108,14 +109,14 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
             fontSize: { xs: theme.typography.h5.fontSize, sm: theme.typography.h4.fontSize },
           })}
         >
-          Vinyl Keeper
+          {t("nav:brand")}
         </Typography>
 
         <ImageContainer sx={{ height: "auto", aspectRatio: SCREENSHOT_ASPECT_RATIO, flexShrink: 0 }}>
           <ModalImage
             key={slide.image}
             src={slide.image}
-            alt={slide.title}
+            alt={t(slide.title)}
             sx={{
               animation: `${screenshotFadeIn} 0.4s ease-out`,
               "@media (prefers-reduced-motion: reduce)": { animation: "none" },
@@ -125,20 +126,20 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
 
         <TextContainer>
           <Typography variant="h6" sx={slideTitleSx}>
-            {slide.title}
+            {t(slide.title)}
           </Typography>
           <Typography variant="body1" sx={slideTextSx}>
-            {slide.description}
+            {t(slide.description)}
           </Typography>
         </TextContainer>
 
         <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <Button onClick={handleEnter}>Enter</Button>
+          <Button onClick={handleEnter}>{t("enter")}</Button>
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <IconButton
-            aria-label="Previous screenshot"
+            aria-label={t("preview.previous")}
             onClick={() => goTo(activeIndex - 1)}
             disabled={activeIndex === 0}
             sx={navButtonSx}
@@ -151,7 +152,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
                 key={item.title}
                 component="button"
                 type="button"
-                aria-label={`Show screenshot ${index + 1}: ${item.title}`}
+                aria-label={t("preview.show", { number: index + 1, title: t(item.title) })}
                 aria-current={index === activeIndex}
                 onClick={() => goTo(index)}
                 sx={{
@@ -167,7 +168,7 @@ export default function PreviewModal({ open, slides, onClose, onEnter, preload =
             ))}
           </Box>
           <IconButton
-            aria-label="Next screenshot"
+            aria-label={t("preview.next")}
             onClick={() => goTo(activeIndex + 1)}
             disabled={activeIndex === lastIndex}
             sx={navButtonSx}

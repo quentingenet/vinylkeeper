@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import App from "../App";
 
@@ -20,9 +21,11 @@ afterEach(cleanup);
 
 const renderAt = (url: string) =>
   render(
+    <QueryClientProvider client={new QueryClient()}>
     <MemoryRouter initialEntries={[url]}>
       <App />
     </MemoryRouter>
+    </QueryClientProvider>
   );
 
 describe("Public Atlas", () => {

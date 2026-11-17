@@ -7,6 +7,7 @@ import { RESET_LINK_UNUSABLE } from "@utils/resetLink";
 import { capacitorHttpService } from "@utils/CapacitorHttpService";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { nativeSession } from "@utils/NativeSession";
+import i18n, { type LanguagePreference } from "@utils/i18n";
 
 export interface UserResponse {
   username: string;
@@ -14,6 +15,8 @@ export interface UserResponse {
   is_tutorial_seen: boolean;
   is_admin: boolean;
   number_of_connections: number;
+  /** Language of the interface the member picked; null follows the device */
+  language: LanguagePreference;
 }
 
 export interface UserSettingsResponse {
@@ -24,6 +27,7 @@ export interface UserSettingsResponse {
   is_accepted_terms: boolean;
   is_email_confirmed: boolean;
   preferred_currency: "EUR" | "USD";
+  language: LanguagePreference;
 }
 
 /** The tokens the API gives the Android app in the body: kept in the Keystore, never passed on. */
@@ -76,21 +80,21 @@ const TOO_MANY_REQUESTS = 429;
 /** What the user can do about a failed login, from the error of the API or of the network. */
 export function loginErrorMessage(error: unknown): string {
   if (!isApiError(error)) {
-    return "Unable to reach Vinyl Keeper. Check your connection and try again.";
+    return i18n.t("auth:login.errors.unreachable");
   }
   switch (error.code) {
     case ApiErrorCode.INVALID_CREDENTIALS:
-      return "Wrong email or password.";
+      return i18n.t("auth:login.errors.wrongCredentials");
     case ApiErrorCode.ACCOUNT_LOCKED:
-      return "This account is disabled. Contact us if you think it is a mistake.";
+      return i18n.t("auth:login.errors.locked");
     case ApiErrorCode.TERMS_NOT_ACCEPTED:
-      return "This account has not accepted the terms of use. Contact us to restore access.";
+      return i18n.t("auth:login.errors.termsNotAccepted");
     case TOO_MANY_REQUESTS:
-      return "Too many login attempts. Wait a few minutes and try again.";
+      return i18n.t("auth:login.errors.tooMany");
     default:
       return error.code >= 500 && error.code < 600
-        ? "Vinyl Keeper is having trouble right now. Try again in a moment."
-        : "Unable to reach Vinyl Keeper. Check your connection and try again.";
+        ? i18n.t("auth:login.errors.server")
+        : i18n.t("auth:login.errors.unreachable");
   }
 }
 
@@ -160,8 +164,8 @@ export class UserApiService extends BaseApiService {
     } catch (error: unknown) {
       throw new Error(
         isApiError(error) && error.code === TOO_MANY_REQUESTS
-          ? "Too many requests. Wait a minute and try again."
-          : "The link could not be sent. Try again in a moment.",
+          ? i18n.t("auth:forgot.tooMany")
+          : i18n.t("auth:forgot.error"),
         { cause: error }
       );
     }
@@ -174,7 +178,7 @@ export class UserApiService extends BaseApiService {
     } catch (error) {
       throw new Error(isApiError(error) && error.code === ApiErrorCode.INVALID_TOKEN
         ? RESET_LINK_UNUSABLE
-        : "Failed to reset password. Please try again.", { cause: error });
+        : i18n.t("auth:reset.failed"), { cause: error });
     }
   }
 
@@ -185,7 +189,7 @@ export class UserApiService extends BaseApiService {
     } catch (error) {
       throw new Error(isApiError(error) && error.code === ApiErrorCode.INVALID_TOKEN
         ? RESET_LINK_UNUSABLE
-        : "The link could not be checked. Please try again.", { cause: error });
+        : i18n.t("auth:reset.checkFailed"), { cause: error });
     }
   }
 
@@ -193,7 +197,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.get<UserResponse>("/users/me");
     } catch {
-      throw new Error("Failed to fetch user information.");
+      throw new Error(i18n.t("auth:errors.fetchUser"));
     }
   }
 
@@ -201,7 +205,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.get<UserSettingsResponse>("/users/me/settings");
     } catch {
-      throw new Error("Failed to fetch user settings information.");
+      throw new Error(i18n.t("auth:errors.fetchSettings"));
     }
   }
 
@@ -210,7 +214,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.post<{ message: string }>("/users/confirm-email", { token }, true);
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to confirm your email address.", { cause: error });
+      throw new Error(isApiError(error) ? error.message : i18n.t("auth:errors.confirmEmail"), { cause: error });
     }
   }
 
@@ -218,7 +222,7 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.post<{ message: string }>("/users/me/confirm-email/resend");
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to send the confirmation email.", { cause: error });
+      throw new Error(isApiError(error) ? error.message : i18n.t("auth:errors.resendConfirmation"), { cause: error });
     }
   }
 
@@ -230,7 +234,7 @@ export class UserApiService extends BaseApiService {
         current_password: data.currentPassword,
       });
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to change your email address.", { cause: error });
+      throw new Error(isApiError(error) ? error.message : i18n.t("auth:errors.changeEmail"), { cause: error });
     }
   }
 
@@ -239,8 +243,13 @@ export class UserApiService extends BaseApiService {
     try {
       return await this.put<{ message: string }>("/users/me/currency", { currency });
     } catch (error: unknown) {
-      throw new Error(isApiError(error) ? error.message : "Failed to change the currency.", { cause: error });
+      throw new Error(isApiError(error) ? error.message : i18n.t("auth:errors.changeCurrency"), { cause: error });
     }
+  }
+
+  /** Language of the interface of the current member; null follows the device */
+  async setLanguage(language: LanguagePreference): Promise<{ message: string }> {
+    return this.put<{ message: string }>("/users/me/language", { language });
   }
 
   async changePassword(data: PasswordChangeData): Promise<{ message: string }> {
@@ -253,8 +262,8 @@ export class UserApiService extends BaseApiService {
       return await this.keepSession(response);
     } catch (error: unknown) {
       const message = isApiError(error) && error.code === ApiErrorCode.INVALID_CREDENTIALS
-        ? "Wrong current password."
-        : isApiError(error) ? error.message : "Failed to change password. Please try again.";
+        ? i18n.t("auth:errors.wrongCurrentPassword")
+        : isApiError(error) ? error.message : i18n.t("auth:errors.changePassword");
       throw new Error(message, { cause: error });
     }
   }
@@ -264,7 +273,7 @@ export class UserApiService extends BaseApiService {
       await this.delete<void>("/users/me");
       if (isCapacitorPlatform()) await nativeSession.clear();
     } catch {
-      throw new Error("Failed to delete account. Please try again.");
+      throw new Error(i18n.t("auth:errors.deleteAccount"));
     }
   }
 
@@ -275,7 +284,7 @@ export class UserApiService extends BaseApiService {
         message: data.message,
       });
     } catch {
-      throw new Error("Failed to send contact message. Please try again.");
+      throw new Error(i18n.t("auth:errors.contact"));
     }
   }
 }
@@ -297,6 +306,7 @@ export const userApiService = {
   requestEmailChange: (data: EmailChangeData) => userApiServiceInstance.requestEmailChange(data),
   changePassword: (data: PasswordChangeData) => userApiServiceInstance.changePassword(data),
   setCurrency: (currency: "EUR" | "USD") => userApiServiceInstance.setCurrency(currency),
+  setLanguage: (language: LanguagePreference) => userApiServiceInstance.setLanguage(language),
   deleteAccount: () => userApiServiceInstance.deleteAccount(),
   sendContactMessage: (data: ContactMessageData) => userApiServiceInstance.sendContactMessage(data),
 };

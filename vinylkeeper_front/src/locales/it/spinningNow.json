@@ -1,0 +1,29 @@
+{
+  "nothingMatches": "Ancora niente corrisponde a questi filtri. Prova a toglierne uno.",
+  "unavailable": "Spinning now non è disponibile al momento. Riprova più tardi.",
+  "empty": {
+    "before": "Ancora nessun disco nelle tue collezioni.",
+    "link": "Aggiungi i tuoi primi vinili",
+    "after": "e torna a sceglierne uno da ascoltare."
+  },
+  "intro": "Scegli un'atmosfera, un'epoca o un genere e trova cosa mettere sul giradischi.",
+  "moreRecords": "Più dischi aggiungi, migliori sono i suggerimenti.",
+  "notAnalysed": "Atmosfere, epoche e generi compaiono una volta analizzati i tuoi dischi.",
+  "filters": {
+    "mood": "Atmosfera",
+    "era": "Epoca",
+    "genre": "Genere",
+    "collection": "Collezione"
+  },
+  "surprise": "Sorprendimi",
+  "shuffle": "Mescola",
+  "clear": "Cancella i filtri",
+  "noMatch": "Nessun disco corrisponde a questi filtri.",
+  "results_one": "{{shown}} di {{count}} disco, scelto a caso.",
+  "results_other": "{{shown}} di {{count}} dischi, scelti a caso.",
+  "loadFailed": "Non è stato possibile caricare i dischi. Riprova.",
+  "play": "Ascolta {{title}}",
+  "playBy": "Ascolta {{title}} di {{artist}}",
+  "inCollections": "In {{names}}",
+  "results_many": "{{shown}} di {{count}} dischi, scelti a caso."
+}

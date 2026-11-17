@@ -1,0 +1,98 @@
+{
+  "feedback": {
+    "approved": "Pedido de moderação aprovado.",
+    "rejected": "Pedido de moderação recusado.",
+    "removed": "Local retirado do mapa.",
+    "updated": "Local atualizado no mapa."
+  },
+  "status": {
+    "pending": "Pendente",
+    "approved": "Aprovado",
+    "rejected": "Recusado",
+    "removed": "Retirado",
+    "total": "Total"
+  },
+  "edit": {
+    "title": "Editar o local",
+    "name": "Nome",
+    "address": "Morada",
+    "city": "Cidade",
+    "country": "País",
+    "description": "Descrição",
+    "website": "Site",
+    "type": "Tipo de local",
+    "failed": "Não foi possível guardar o local. Tenta novamente.",
+    "save": "Guardar",
+    "saveResolve": "Guardar e resolver",
+    "lastUpdate": "Última atualização: {{date}}",
+    "pinMoves": "O marcador muda para a nova cidade no mapa."
+  },
+  "detail": {
+    "title": "Detalhes do pedido de moderação",
+    "spot": "Informações do local",
+    "city": "Cidade:",
+    "description": "Descrição:",
+    "noDescription": "Sem descrição",
+    "status": "Estado atual:",
+    "request": "Informações do pedido",
+    "submittedBy": "Enviado por:",
+    "date": "Data de envio:",
+    "actions": "Ações disponíveis",
+    "approving": "A aprovar...",
+    "approve": "Aprovar",
+    "rejecting": "A recusar...",
+    "reject": "Recusar"
+  },
+  "reports": {
+    "resolved": "Reporte resolvido, com os outros reportes abertos deste local.",
+    "resolveFailed": "Não foi possível resolver o reporte.",
+    "dismissed": "Reporte descartado.",
+    "dismissFailed": "Não foi possível descartar o reporte.",
+    "removed": "Local retirado do mapa, os seus reportes estão resolvidos.",
+    "removeFailed": "Não foi possível retirar o local.",
+    "title": "Reportes de locais ({{count}} abertos)",
+    "shown": "Reportes mostrados",
+    "open": "Abertos",
+    "all": "Todos",
+    "loadError": "Erro ao carregar os reportes",
+    "noneOpen": "Nenhum reporte aberto: todos os locais parecem corretos.",
+    "none": "Ainda não há reportes.",
+    "statusResolved": "Resolvido",
+    "statusDismissed": "Descartado",
+    "offMap": "Retirado do mapa",
+    "by": "Reportado por {{name}} em {{date}}",
+    "deletedAccount": "uma conta eliminada",
+    "edit": "Editar o local",
+    "resolve": "Resolver",
+    "dismiss": "Descartar",
+    "remove": "Retirar do mapa"
+  },
+  "remove": {
+    "title": "Retirar {{name}} do mapa?",
+    "text": "Para um local encerrado definitivamente. Desaparece do Atlas e os seus reportes abertos são resolvidos.",
+    "confirm": "Retirar"
+  },
+  "page": {
+    "deniedTitle": "Acesso de administrador necessário",
+    "deniedText": "Precisas de permissões de administrador para aceder a esta página.",
+    "title": "Administração",
+    "loadError": "Erro ao carregar os pedidos de moderação",
+    "pending": "Pedidos pendentes ({{count}})",
+    "noPending": "Nenhum pedido pendente",
+    "all": "Todos os pedidos ({{count}})"
+  },
+  "columns": {
+    "spot": "Local",
+    "city": "Cidade",
+    "user": "Membro",
+    "status": "Estado",
+    "date": "Data",
+    "updated": "Última atualização",
+    "actions": "Ações"
+  },
+  "actions": {
+    "view": "Ver os detalhes",
+    "edit": "Editar o local",
+    "remove": "Retirar do mapa"
+  }
+}

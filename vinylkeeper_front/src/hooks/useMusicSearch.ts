@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { searchApiService } from "@services/SearchApiService";
 import type { DiscogsData, IRequestToSend } from "@models/IRequestProxy";
 import { queryKeys } from "@utils/queryKeys";
+import i18n from "@utils/i18n";
 
 type SearchRequest = Required<IRequestToSend>;
 
@@ -39,7 +40,7 @@ export function useMusicSearch() {
   const search = useCallback((query: string, isArtist: boolean, barcode = false) => {
     const trimmed = query.trim();
     if (!barcode && trimmed.length < MIN_QUERY_LENGTH) {
-      setInputError(`Type at least ${MIN_QUERY_LENGTH} characters to search.`);
+      setInputError(i18n.t("records:search.minChars", { count: MIN_QUERY_LENGTH }));
       return;
     }
     setInputError(null);

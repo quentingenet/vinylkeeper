@@ -1,6 +1,7 @@
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { isCapacitorPlatform } from "./CapacitorUtils";
+import i18n from "@utils/i18n";
 
 export function extractFilenameFromContentDisposition(
   contentDisposition: string | null
@@ -26,7 +27,7 @@ export function extractFilenameFromContentDisposition(
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error("File unreadable"));
+    reader.onerror = () => reject(reader.error ?? new Error(i18n.t("errors:fileUnreadable")));
     reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
     reader.readAsDataURL(blob);
   });
@@ -52,7 +53,7 @@ export async function deliverFile(blob: Blob, filename: string): Promise<void> {
     recursive: true,
   });
   try {
-    await Share.share({ title: filename, url: uri, dialogTitle: "Save or send your export" });
+    await Share.share({ title: filename, url: uri, dialogTitle: i18n.t("records:export.shareTitle") });
   } catch (error) {
     // Closing the share sheet is not a failure
     if (!/cancel/i.test(error instanceof Error ? error.message : String(error))) throw error;

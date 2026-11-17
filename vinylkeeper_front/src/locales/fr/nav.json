@@ -1,0 +1,20 @@
+{
+  "brand": "Vinyl Keeper",
+  "items": {
+    "dashboard": "Tableau de bord",
+    "addRecord": "Ajouter un disque",
+    "collections": "Collections",
+    "spinningNow": "Spinning now",
+    "atlas": "Atlas",
+    "vinylAtlas": "Vinyl Atlas",
+    "settings": "Paramètres",
+    "admin": "Admin",
+    "emailConfirmation": "Confirmation de l'e-mail",
+    "logout": "Déconnexion"
+  },
+  "openMenu": "Ouvrir le menu",
+  "closeMenu": "Fermer le menu",
+  "toggleMenu": "Replier ou déplier le menu",
+  "logIn": "Se connecter",
+  "signUp": "S'inscrire"
+}

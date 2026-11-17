@@ -11,6 +11,7 @@ import {
   COLLECTIONS_PAGE_PARAM,
   COMMUNITY_SORT_PARAM,
 } from "@utils/GlobalUrls";
+import { useTranslation } from "react-i18next";
 
 type CollectionsTab = "mine" | "community";
 
@@ -24,6 +25,7 @@ const TAB_IDS: Record<CollectionsTab, { tab: string; panel: string }> = {
 
 /** The active tab lives in the URL so back/forward navigation and shared links work. */
 export default function CollectionsPage() {
+  const { t } = useTranslation("collections");
   const [searchParams, setSearchParams] = useSearchParams();
 
   const activeTab: CollectionsTab =
@@ -32,7 +34,7 @@ export default function CollectionsPage() {
       : "mine";
 
   useDocumentTitle(
-    activeTab === "community" ? "Community collections - VinylKeeper" : null
+    activeTab === "community" ? t("page.communityTitle") : null
   );
 
   const handleTabChange = (
@@ -58,7 +60,7 @@ export default function CollectionsPage() {
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          aria-label="Collections tabs"
+          aria-label={t("page.tabsLabel")}
           variant="fullWidth"
           sx={[
             primaryTabsSx,
@@ -71,13 +73,13 @@ export default function CollectionsPage() {
           ]}
         >
           <Tab
-            label="My collections"
+            label={t("page.mine")}
             value="mine"
             id={TAB_IDS.mine.tab}
             aria-controls={TAB_IDS.mine.panel}
           />
           <Tab
-            label="Community"
+            label={t("page.community")}
             value="community"
             id={TAB_IDS.community.tab}
             aria-controls={TAB_IDS.community.panel}

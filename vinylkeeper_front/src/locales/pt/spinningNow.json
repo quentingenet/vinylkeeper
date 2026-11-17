@@ -1,0 +1,29 @@
+{
+  "nothingMatches": "Ainda nada corresponde a estes filtros. Experimenta retirar um.",
+  "unavailable": "O Spinning now está indisponível neste momento. Tenta mais tarde.",
+  "empty": {
+    "before": "Ainda não há discos nas tuas coleções.",
+    "link": "Adiciona os teus primeiros vinis",
+    "after": "e volta para escolher um para ouvir."
+  },
+  "intro": "Escolhe um estado de espírito, uma época ou um género e encontra o que pôr no gira-discos.",
+  "moreRecords": "Quantos mais discos adicionar, melhores são as sugestões.",
+  "notAnalysed": "Os estados de espírito, as épocas e os géneros aparecem depois de os teus discos serem analisados.",
+  "filters": {
+    "mood": "Estado de espírito",
+    "era": "Época",
+    "genre": "Género",
+    "collection": "Coleção"
+  },
+  "surprise": "Surpreende-me",
+  "shuffle": "Baralhar",
+  "clear": "Limpar os filtros",
+  "noMatch": "Nenhum disco corresponde a estes filtros.",
+  "results_one": "{{shown}} de {{count}} disco, escolhido ao acaso.",
+  "results_other": "{{shown}} de {{count}} discos, escolhidos ao acaso.",
+  "loadFailed": "Não foi possível carregar os discos. Tenta novamente.",
+  "play": "Ouvir {{title}}",
+  "playBy": "Ouvir {{title}} de {{artist}}",
+  "inCollections": "Em {{names}}",
+  "results_many": "{{shown}} de {{count}} discos, escolhidos ao acaso."
+}

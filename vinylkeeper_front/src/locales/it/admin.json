@@ -1,0 +1,98 @@
+{
+  "feedback": {
+    "approved": "Richiesta di moderazione approvata.",
+    "rejected": "Richiesta di moderazione rifiutata.",
+    "removed": "Luogo rimosso dalla mappa.",
+    "updated": "Luogo aggiornato sulla mappa."
+  },
+  "status": {
+    "pending": "In attesa",
+    "approved": "Approvato",
+    "rejected": "Rifiutato",
+    "removed": "Rimosso",
+    "total": "Totale"
+  },
+  "edit": {
+    "title": "Modifica il luogo",
+    "name": "Nome",
+    "address": "Indirizzo",
+    "city": "Città",
+    "country": "Paese",
+    "description": "Descrizione",
+    "website": "Sito web",
+    "type": "Tipo di luogo",
+    "failed": "Non è stato possibile salvare il luogo. Riprova.",
+    "save": "Salva",
+    "saveResolve": "Salva e risolvi",
+    "lastUpdate": "Ultimo aggiornamento: {{date}}",
+    "pinMoves": "Il segnaposto si sposta nella nuova città sulla mappa."
+  },
+  "detail": {
+    "title": "Dettagli della richiesta di moderazione",
+    "spot": "Informazioni sul luogo",
+    "city": "Città:",
+    "description": "Descrizione:",
+    "noDescription": "Nessuna descrizione",
+    "status": "Stato attuale:",
+    "request": "Informazioni sulla richiesta",
+    "submittedBy": "Inviato da:",
+    "date": "Data di invio:",
+    "actions": "Azioni disponibili",
+    "approving": "Approvazione...",
+    "approve": "Approva",
+    "rejecting": "Rifiuto...",
+    "reject": "Rifiuta"
+  },
+  "reports": {
+    "resolved": "Segnalazione risolta, insieme alle altre segnalazioni aperte di questo luogo.",
+    "resolveFailed": "Non è stato possibile risolvere la segnalazione.",
+    "dismissed": "Segnalazione archiviata.",
+    "dismissFailed": "Non è stato possibile archiviare la segnalazione.",
+    "removed": "Luogo rimosso dalla mappa, le sue segnalazioni sono risolte.",
+    "removeFailed": "Non è stato possibile rimuovere il luogo.",
+    "title": "Segnalazioni di luoghi ({{count}} aperte)",
+    "shown": "Segnalazioni mostrate",
+    "open": "Aperte",
+    "all": "Tutte",
+    "loadError": "Errore nel caricamento delle segnalazioni",
+    "noneOpen": "Nessuna segnalazione aperta: tutti i luoghi sembrano corretti.",
+    "none": "Ancora nessuna segnalazione.",
+    "statusResolved": "Risolta",
+    "statusDismissed": "Archiviata",
+    "offMap": "Rimosso dalla mappa",
+    "by": "Segnalato da {{name}} il {{date}}",
+    "deletedAccount": "un account eliminato",
+    "edit": "Modifica il luogo",
+    "resolve": "Risolvi",
+    "dismiss": "Archivia",
+    "remove": "Rimuovi dalla mappa"
+  },
+  "remove": {
+    "title": "Rimuovere {{name}} dalla mappa?",
+    "text": "Per un luogo chiuso definitivamente. Sparisce dall'Atlas e le sue segnalazioni aperte vengono risolte.",
+    "confirm": "Rimuovi"
+  },
+  "page": {
+    "deniedTitle": "Accesso da amministratore richiesto",
+    "deniedText": "Ti servono i permessi di amministratore per aprire questa pagina.",
+    "title": "Amministrazione",
+    "loadError": "Errore nel caricamento delle richieste di moderazione",
+    "pending": "Richieste in attesa ({{count}})",
+    "noPending": "Nessuna richiesta in attesa",
+    "all": "Tutte le richieste ({{count}})"
+  },
+  "columns": {
+    "spot": "Luogo",
+    "city": "Città",
+    "user": "Membro",
+    "status": "Stato",
+    "date": "Data",
+    "updated": "Ultimo aggiornamento",
+    "actions": "Azioni"
+  },
+  "actions": {
+    "view": "Vedi i dettagli",
+    "edit": "Modifica il luogo",
+    "remove": "Rimuovi dalla mappa"
+  }
+}

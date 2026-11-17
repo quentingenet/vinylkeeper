@@ -1,4 +1,5 @@
 export const API_VK_URL = import.meta.env.VITE_API_VK_URL;
+import i18n from "@utils/i18n";
 
 // Items per page for collections pagination
 export const ITEMS_PER_PAGE = 3;
@@ -25,7 +26,8 @@ export enum VinylStateEnum {
   NOT_DEFINED = "not_defined",
 }
 
-// Vinyl states array for UI components (keeping backward compatibility)
+// Vinyl states array for UI components (keeping backward compatibility). The grades (Mint, Near Mint...)
+// are the ones of Discogs and Goldmine and stay in English, as the Discogs formats; use vinylStateLabel
 export const vinylStates = [
   { id: VinylStateEnum.NOT_DEFINED, name: "Not defined" },
   { id: VinylStateEnum.MINT, name: "Mint" },
@@ -37,4 +39,8 @@ export const vinylStates = [
   { id: VinylStateEnum.FAIR, name: "Fair" },
   { id: VinylStateEnum.POOR, name: "Poor" },
 ];
+
+/** What a state is called in the interface: the grade, or "Not defined" in the language of the interface. */
+export const vinylStateLabel = (state: (typeof vinylStates)[number]): string =>
+  state.id === VinylStateEnum.NOT_DEFINED ? i18n.t("records:states.notDefined") : state.name;
 

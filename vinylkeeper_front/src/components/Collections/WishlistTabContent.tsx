@@ -5,6 +5,7 @@ import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import EmptyState from "@components/UI/EmptyState";
 import styles from "../../styles/pages/Collection.module.scss";
+import { useTranslation } from "react-i18next";
 
 interface WishlistTabContentProps {
   isLoading: boolean;
@@ -40,22 +41,23 @@ export default function WishlistTabContent({
   onDelete,
   onGotIt,
 }: WishlistTabContentProps) {
+  const { t } = useTranslation("collections");
   if (isLoading) {
     return <LoadingCenter />;
   }
 
   if (searchTerm.trim() && searchTerm.length < 2) {
-    return <EmptyState message="Please enter at least 2 characters to search." />;
+    return <EmptyState message={t("wishlist.minChars")} />;
   }
 
   if (debouncedSearchTerm.trim() && debouncedSearchTerm.length >= 2) {
     if (items.length === 0) {
-      return <EmptyState message={`No wishlist items found matching "${debouncedSearchTerm}".`} />;
+      return <EmptyState message={t("wishlist.noMatch", { term: debouncedSearchTerm })} />;
     }
     return (
       <>
         <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-          Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({total} items)
+          {t("wishlist.results", { term: debouncedSearchTerm, count: total })}
         </Typography>
         <div className={styles.resultsContainer}>
           {items.map((item) => (
@@ -80,7 +82,7 @@ export default function WishlistTabContent({
   }
 
   if (items.length === 0) {
-    return <EmptyState message="Your wishlist is empty." />;
+    return <EmptyState message={t("wishlist.empty")} />;
   }
 
   return (

@@ -1,5 +1,6 @@
 import { Box, Tabs, Tab } from "@mui/material";
 import { primaryTabsSx } from "@components/UI/tabsStyles";
+import { useTranslation } from "react-i18next";
 
 interface CollectionTabsProps {
   value: number;
@@ -12,18 +13,19 @@ export default function CollectionTabs({
   onChange,
   isUserLoggedIn,
 }: CollectionTabsProps) {
+  const { t } = useTranslation("collections");
   return (
     <Box sx={{ width: "100%", borderBottom: 1, borderColor: "divider" }}>
       <Tabs
         value={value}
         onChange={onChange}
-        aria-label="collection tabs"
+        aria-label={t("tabs.label")}
         variant="fullWidth"
         sx={primaryTabsSx}
       >
-        <Tab label="Albums" />
-        <Tab label="Artists" />
-        {isUserLoggedIn && <Tab label="Wishlist" />}
+        <Tab label={t("tabs.albums")} />
+        <Tab label={t("tabs.artists")} />
+        {isUserLoggedIn && <Tab label={t("tabs.wishlist")} />}
       </Tabs>
     </Box>
   );

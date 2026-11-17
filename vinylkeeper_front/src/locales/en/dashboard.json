@@ -1,0 +1,102 @@
+{
+  "latest": {
+    "addedBy": "Added by",
+    "none": "No recent additions",
+    "album": "Latest Album",
+    "artist": "Latest Artist"
+  },
+  "stats": {
+    "myAlbums": "My albums",
+    "myArtists": "My artists",
+    "atlasSpots": "Atlas spots"
+  },
+  "community": {
+    "recent": "Recently added by the community",
+    "collections": "Community collections",
+    "shared": "shared collections",
+    "worldwide": "from vinyl lovers worldwide",
+    "explore": "Explore collections now",
+    "inspire": "Make one of your collections public and inspire others..."
+  },
+  "decade": "{{decade}}s",
+  "statsCard": {
+    "tabs": {
+      "eras": "Eras",
+      "genres": "Genres",
+      "moods": "Moods",
+      "pressings": "Pressings",
+      "community": "Community"
+    },
+    "noRecords": "No records here yet.",
+    "addFirst": "Add your first vinyls",
+    "perDecade": "Records per decade",
+    "perGenre": "Records per genre",
+    "perMood": "Records per mood",
+    "communityTitle": "Community activity overview",
+    "mineTitle": "Your collection in numbers",
+    "label": "Collection stats",
+    "collection": "Collection",
+    "all": "All my collections",
+    "discover": "Discover community collections",
+    "unavailable": "Your stats are unavailable right now. Please try again later.",
+    "loading": "Loading your stats",
+    "clickBar": "Click a bar to pick a record to play in Spinning now.",
+    "originals": "Original pressings",
+    "reissues": "Reissues",
+    "unknownYear": "Year unknown",
+    "pressedIn": "Pressed in",
+    "formats": "Formats",
+    "others": "Others",
+    "records": "Records",
+    "toSeeNumbers": "to see your collection in numbers."
+  },
+  "value": {
+    "title": "Collection value",
+    "startFailed": "The re-evaluation could not start. Please try again later.",
+    "unavailable": "The value of your collection is unavailable right now. Please try again later.",
+    "loading": "Loading the value of your collection",
+    "low": "Low",
+    "average": "Average",
+    "high": "High",
+    "collection": "Collection",
+    "all": "All my collections",
+    "empty": "No records here yet: add some to see what your collection is worth.",
+    "currency": "Currency",
+    "estimatedOn_one": "Estimated on {{priced}} of {{count}} record.",
+    "estimatedOn_other": "Estimated on {{priced}} of {{count}} records.",
+    "lastEstimate": "Last estimate on {{when}}.",
+    "notEstimated": "Not estimated yet.",
+    "exactness": "The more exact the pressings in your collection, the closer the estimate.",
+    "sources": "Discogs suggested prices: Very Good for low, Very Good Plus for average, Near Mint for high.",
+    "converted": " Converted from euros at the ECB rate of {{date}} (1 EUR = {{rate}} USD).",
+    "toConfirm_one": " {{count}} pressing is not confirmed yet.",
+    "toConfirm_other": " {{count}} pressings are not confirmed yet."
+  },
+  "refresh": {
+    "pending": "Re-evaluating, {{count}} left",
+    "pendingHint": "Discogs prices are asked one by one, the estimate updates as they come.",
+    "button": "Re-evaluate",
+    "nextOn": "One re-evaluation a day. Next one possible on {{when}}.",
+    "oncePerDay": "One re-evaluation a day.",
+    "upToDate": "Up to date",
+    "upToDateHint": "Every price of your collections is less than a day old.",
+    "hint": "Updates every collection you own, once a day. Prices are asked again in the background, you can leave the page."
+  },
+  "chart": {
+    "albums": "Albums",
+    "artists": "Artists",
+    "spots": "Atlas spots",
+    "totals": "Global Totals",
+    "items": "items",
+    "recordsTooltip_one": "{{count}} record",
+    "recordsTooltip_other": "{{count}} records"
+  },
+  "newMember": {
+    "start": "Start your collection",
+    "addHint": "Add now to your collection some records or artists.",
+    "add": "Add a record",
+    "spots": "Atlas spots",
+    "spotsHint": "places to dig, shared by the community"
+  },
+  "loadFailed": "Failed to load dashboard data."
+}

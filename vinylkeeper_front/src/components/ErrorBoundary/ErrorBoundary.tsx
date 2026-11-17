@@ -2,6 +2,7 @@ import { logger } from "@utils/logger";
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   children: ReactNode;
@@ -91,14 +92,15 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 function ErrorFallback({ error, onReset }: FallbackProps) {
+  const { t } = useTranslation();
   return (
     <div style={styles.container}>
       <VinylSpinner size={80} />
-      <p style={styles.title}>Something went wrong</p>
+      <p style={styles.title}>{t("errorBoundary.title")}</p>
       <p style={styles.subtitle}>
-        VinylKeeper hit an unexpected error.
+        {t("errorBoundary.text1")}
         <br />
-        Try again or go back to the home page.
+        {t("errorBoundary.text2")}
       </p>
       {import.meta.env.DEV && error?.message && (
         <span style={styles.errorCode}>{error.message}</span>
@@ -118,7 +120,7 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
             btn.style.color = colors.gold;
           }}
         >
-          Try again
+          {t("actions.retry")}
         </button>
         <button
           style={styles.link}
@@ -126,7 +128,7 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = colors.textSecondary; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = colors.grey600; }}
         >
-          Go to home page
+          {t("errorBoundary.home")}
         </button>
       </div>
     </div>

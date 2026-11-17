@@ -21,8 +21,10 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EGlobalUrls, COLLECTIONS_PAGE_PARAM } from "@utils/GlobalUrls";
 import { useDebounce } from "@hooks/useDebounce";
 import { useUrlPage } from "@hooks/useUrlPage";
+import { useTranslation } from "react-i18next";
 
 export default function MyCollectionsPanel() {
+  const { t } = useTranslation("collections");
   const [modalState, setModalState] = useState({
     isOpen: false,
     isUpdating: false,
@@ -104,7 +106,7 @@ export default function MyCollectionsPanel() {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
         <Typography color="error">
-          {error instanceof Error ? error.message : "Error loading collections"}
+          {error instanceof Error ? error.message : t("mine.loadError")}
         </Typography>
       </Box>
     );
@@ -147,10 +149,10 @@ export default function MyCollectionsPanel() {
           }}
         />
         <Box>
-          <Typography variant="h3">Create a new collection</Typography>
+          <Typography variant="h3">{t("mine.create")}</Typography>
           <Typography variant="body1" sx={{ color: "text.secondary", mt: 1 }}>
-            Share your collection with others by changing
-            <br /> its visibility from private to public.
+            {t("mine.shareHint1")}
+            <br /> {t("mine.shareHint2")}
           </Typography>
         </Box>
       </Box>
@@ -163,7 +165,7 @@ export default function MyCollectionsPanel() {
           onClick={() => setIsImportOpen(true)}
           sx={{ minHeight: 44, textTransform: "none" }}
         >
-          {isImportActive(latestImport) ? "Discogs import in progress" : "Import from Discogs"}
+          {isImportActive(latestImport) ? t("mine.importRunning") : t("mine.import")}
         </Button>
       </Box>
       <DiscogsImportDialog
@@ -210,7 +212,7 @@ export default function MyCollectionsPanel() {
       ) : (
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", marginY: 4 }}>
           <Typography variant="body1" sx={{ color: "text.secondary" }}>
-            No collection found. Create a new one!
+            {t("mine.empty")}
           </Typography>
         </Box>
       )}

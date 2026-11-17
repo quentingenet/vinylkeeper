@@ -1,0 +1,17 @@
+{
+  "sessionExpired": "Session expirée. Reconnecte-toi.",
+  "exportFailed": "L'export a échoué ({{status}})",
+  "unknown": "Erreur inconnue",
+  "unexpected": "Une erreur inattendue est survenue. Réessaie.",
+  "addToWishlist": "Impossible d'ajouter à la liste d'envies",
+  "addToCollection": "Impossible d'ajouter à la collection",
+  "checkCollections": "Impossible de vérifier tes collections",
+  "replacePressing": "Impossible de remplacer le pressage",
+  "removeFromWishlist": "Impossible de retirer de la liste d'envies",
+  "fetchWishlist": "Impossible de récupérer la liste d'envies",
+  "albumNotFound": "Album d'identifiant {{id}} introuvable",
+  "albumMetadata": "Impossible de récupérer les informations de l'album",
+  "artistMetadata": "Impossible de récupérer les informations de l'artiste",
+  "search": "La recherche a échoué",
+  "fileUnreadable": "Fichier illisible"
+}

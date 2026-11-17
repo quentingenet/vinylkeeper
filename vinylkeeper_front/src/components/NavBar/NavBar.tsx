@@ -9,6 +9,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import {
@@ -27,6 +28,8 @@ import { useUserContext } from "@contexts/UserContext";
 import { useAddRecord } from "@contexts/AddRecordContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageMenu from "@components/UI/LanguageMenu";
 import { growItem } from "@utils/Animations";
 import { colors } from "@styles/colors";
 import AppVersion from "@components/UI/AppVersion";
@@ -36,8 +39,8 @@ import AppVersion from "@components/UI/AppVersion";
  * @interface NavBarProps
  * @property {boolean} open - Whether the drawer is open or not
  * @property {() => void} toggleMenu - Function to toggle the drawer
- * @property {(title: string) => void} setTitlePage - Function to set the title of the page
- * @property {string} titlePage - The current title of the page
+ * @property {(titleKey: string) => void} setTitlePage - Sets the translation key of the title of the page
+ * @property {string} titlePage - Translation key of the current title of the page
  */
 interface NavBarProps {
   open: boolean;
@@ -63,14 +66,24 @@ const NavBar: React.FC<NavBarProps> = ({
   const { logout, currentUser } = useUserContext();
   const { openAddRecord } = useAddRecord();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  // The menu entry hovered whose label is cut by an ellipsis: its tooltip gives the whole label
+  const [truncatedLabel, setTruncatedLabel] = React.useState<string | null>(null);
+  const tooltipIfTruncated = (labelKey: string) => ({
+    onMouseEnter: (event: React.MouseEvent<HTMLElement>) => {
+      const text = event.currentTarget.querySelector<HTMLElement>(".MuiListItemText-primary");
+      setTruncatedLabel(text && text.scrollWidth > text.clientWidth ? labelKey : null);
+    },
+    onMouseLeave: () => setTruncatedLabel(null),
+  });
 
-  const handleItemClick = (title: string, linkTo: EGlobalUrls) => {
+  const handleItemClick = (titleKey: string, linkTo: EGlobalUrls) => {
     // Adding a record is a dialog over the current page, not a page of its own
     if (linkTo === EGlobalUrls.ADD_VINYLS) {
       openAddRecord();
       return;
     }
-    setTitlePage(title);
+    setTitlePage(titleKey);
     void navigate(linkTo);
   };
 
@@ -82,32 +95,32 @@ const NavBar: React.FC<NavBarProps> = ({
 
   const menuItems = [
     {
-      text: "Dashboard",
+      labelKey: "nav:items.dashboard",
       icon: <SpaceDashboardOutlinedIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.DASHBOARD,
     },
     {
-      text: "Add a record",
+      labelKey: "nav:items.addRecord",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ADD_VINYLS,
     },
     {
-      text: "Collections",
+      labelKey: "nav:items.collections",
       icon: <AlbumIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.COLLECTIONS,
     },
     {
-      text: "Spinning now",
+      labelKey: "nav:items.spinningNow",
       icon: <GraphicEqIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SPINNING_NOW,
     },
     {
-      text: "Atlas",
+      labelKey: "nav:items.atlas",
       icon: <PublicIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ATLAS,
     },
     {
-      text: "Settings",
+      labelKey: "nav:items.settings",
       icon: <SettingsIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SETTINGS,
     },
@@ -115,7 +128,7 @@ const NavBar: React.FC<NavBarProps> = ({
     ...(isAdmin
       ? [
           {
-            text: "Admin",
+            labelKey: "nav:items.admin",
             icon: <AdminPanelSettings fontSize={sizeIcons} />,
             linkTo: EGlobalUrls.ADMIN,
           },
@@ -164,10 +177,10 @@ const NavBar: React.FC<NavBarProps> = ({
             transition: "opacity 0.3s ease",
           }}
         >
-          Vinyl Keeper
+          {t("nav:brand")}
         </Typography>
         <IconButton
-   
+          aria-label={t("nav:toggleMenu")}
           sx={{
             animation: `${growItem} 1s ease infinite`,
             color: colorYellow,
@@ -182,14 +195,16 @@ const NavBar: React.FC<NavBarProps> = ({
           paddingY: "2rem",
         }}
       >
-        {menuItems.map(({ text, icon, linkTo }) => (
+        {menuItems.map(({ labelKey, icon, linkTo }) => (
           <ListItem
-            key={text}
-            onClick={() => handleItemClick(text, linkTo)}
+            key={labelKey}
+            onClick={() => handleItemClick(labelKey, linkTo)}
             disablePadding
           >
+            <Tooltip title={t(labelKey)} placement="right" open={open && truncatedLabel === labelKey}>
             <ListItemButton
-              selected={text === titlePage}
+              {...tooltipIfTruncated(labelKey)}
+              selected={labelKey === titlePage}
               sx={{
                 justifyContent: open ? "initial" : "center",
                 gap: "8px",
@@ -207,28 +222,40 @@ const NavBar: React.FC<NavBarProps> = ({
                 {icon}
               </ListItemIcon>
               <ListItemText
-                primary={text}
+                primary={t(labelKey)}
                 sx={{
                   color: colors.textLight,
                   opacity: open ? 1 : 0,
                   transition: "opacity 0.3s ease-in-out",
                   whiteSpace: "nowrap",
+                  // Safeguard for a label longer than the menu (some languages): an ellipsis
+                  minWidth: 0,
+                  "& .MuiListItemText-primary": { overflow: "hidden", textOverflow: "ellipsis" },
                 }}
               />
             </ListItemButton>
+            </Tooltip>
           </ListItem>
         ))}
       </List>
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
-      <ListItem disablePadding>
+      {/* Logout and, on its right past a divider, the language: one row at the bottom of the menu */}
+      <Box sx={{ display: "flex", alignItems: "stretch" }}>
+      <ListItem disablePadding sx={{ flex: 1, minWidth: 0 }}>
+        <Tooltip title={t("nav:items.logout")} placement="right" open={open && truncatedLabel === "nav:items.logout"}>
         <ListItemButton
+          {...tooltipIfTruncated("nav:items.logout")}
           onClick={logout}
           sx={{
+            // Folded: the icon with the version under it, both centered on the 60px of the menu
+            flexDirection: open ? "row" : "column",
             justifyContent: open ? "initial" : "center",
             alignItems: "center",
-            height: 56,
-            gap: "8px",
+            // Taller than the other rows: the version has its own line under the label or the icon
+            height: 72,
+            pb: open ? "18px" : 0,
+            gap: open ? "8px" : "6px",
           }}
         >
           <ListItemIcon
@@ -241,17 +268,34 @@ const NavBar: React.FC<NavBarProps> = ({
             <PowerSettingsNewIcon fontSize={sizeIcons} />
           </ListItemIcon>
           <ListItemText
-            primary="Logout"
+            primary={t("nav:items.logout")}
             sx={{
               color: colors.textLight,
               opacity: open ? 1 : 0,
               transition: "opacity 0.3s ease",
               whiteSpace: "nowrap",
+              // Invisible is not enough when folded: its width would push the icon off center
+              display: open ? undefined : "none",
+              // Safeguard for a label longer than the room left by the language button: an ellipsis
+              minWidth: 0,
+              "& .MuiListItemText-primary": { overflow: "hidden", textOverflow: "ellipsis" },
             }}
           />
+          {/* In the logout button, on its own line: bottom right when unfolded, right under the icon when folded */}
+          {open ? <AppVersion corner /> : <AppVersion inline />}
         </ListItemButton>
+        </Tooltip>
       </ListItem>
-      <AppVersion corner />
+      {/* Folded to icons the menu is 60px wide: the language waits for it to be unfolded */}
+      {open && (
+        <>
+          <Divider orientation="vertical" flexItem />
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", px: 1 }}>
+            <LanguageMenu sx={{ color: colors.textLight }} />
+          </Box>
+        </>
+      )}
+      </Box>
     </Drawer>
   );
 };

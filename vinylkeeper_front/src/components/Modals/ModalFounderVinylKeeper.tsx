@@ -5,6 +5,7 @@ import { usePreloadedImages } from "@hooks/usePreloadedImages";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import founderImg from "@assets/quentin_genet_vinyl_keeper.webp";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 // Size of the photo file: its place is kept before it is drawn, so nothing moves when it appears
 const PHOTO_WIDTH = 593;
@@ -26,6 +27,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
   setOpenFounderModal,
 }) => {
   const { isMobile } = useDetectMobile();
+  const { t } = useTranslation("landing");
   // Loaded as soon as the footer shows, before anyone opens the popup: by then the photo is
   // usually ready, and the popup appears whole instead of growing when it lands
   const imageReady = usePreloadedImages([founderImg]);
@@ -43,7 +45,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
       {!imageReady ? (
         <Box
           role="status"
-          aria-label="Loading"
+          aria-label={t("common:actions.loading")}
           sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
         >
           <VinylSpinner size={64} />
@@ -74,7 +76,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
               <Box
                 component="img"
                 src={founderImg}
-                alt="Quentin Genet, founder of Vinyl Keeper"
+                alt={t("founder.photoAlt")}
                 sx={{
                   width: "100%",
                   maxWidth: `${PHOTO_WIDTH}px`,
@@ -97,9 +99,9 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
                   fontFamily: "Oswald-ExtraLight, sans-serif",
                 }}
               >
-                When music and code spin together,&nbsp;
+                {t("founder.title1")}&nbsp;
                 {isMobile && <br />}
-                cool&nbsp;happens...
+                {t("founder.title2")}
               </Typography>
               <Typography
                 id="founder-modal-description"
@@ -113,11 +115,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
                   textAlign: isMobile ? "left" : "justify",
                 }}
               >
-                Passionate about music and vinyl, I built Vinyl Keeper: a free,
-                open-source app to manage your records, share your collections with
-                the community, and discover the best vinyl spots around the world
-                on the Vinyl Atlas. Thank you for using it, and for keeping the
-                passion for&nbsp;vinyl&nbsp;alive!
+                {t("founder.text")}
               </Typography>
               <Button
                 variant="contained"
@@ -129,7 +127,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
                 }}
                 onClick={() => setOpenFounderModal(false)}
               >
-                Close
+                {t("common:actions.close")}
               </Button>
             </Stack>
           </Box>

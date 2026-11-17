@@ -26,6 +26,8 @@ import { useUserContext } from "@contexts/UserContext";
 import { useAddRecord } from "@contexts/AddRecordContext";
 import { EGlobalUrls } from "@utils/GlobalUrls";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageMenu from "@components/UI/LanguageMenu";
 import { growItem } from "@utils/Animations";
 import { colors } from "@styles/colors";
 import AppVersion from "@components/UI/AppVersion";
@@ -33,8 +35,8 @@ import AppVersion from "@components/UI/AppVersion";
 /**
  * MobileNavBar component props interface
  * @interface MobileNavBarProps
- * @property {() => void} setTitlePage - Function to set the title of the page
- * @property {string} titlePage - The current title of the page
+ * @property {(titleKey: string) => void} setTitlePage - Sets the translation key of the title of the page
+ * @property {string} titlePage - Translation key of the current title of the page
  */
 interface MobileNavBarProps {
   setTitlePage: (title: string) => void;
@@ -50,6 +52,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const [_activeItem, setActiveItem] = useState<string | null>(null);
   const navigate = useNavigate();
   const { openAddRecord } = useAddRecord();
+  const { t } = useTranslation();
 
   const colorYellow = colors.gold;
   const sizeIcons = "large";
@@ -59,32 +62,32 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
   const menuItems = [
     {
-      text: "Dashboard",
+      labelKey: "nav:items.dashboard",
       icon: <SpaceDashboardOutlinedIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.DASHBOARD,
     },
     {
-      text: "Collections",
+      labelKey: "nav:items.collections",
       icon: <AlbumIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.COLLECTIONS,
     },
     {
-      text: "Spinning now",
+      labelKey: "nav:items.spinningNow",
       icon: <GraphicEqIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SPINNING_NOW,
     },
     {
-      text: "Add a record",
+      labelKey: "nav:items.addRecord",
       icon: <AddBoxIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ADD_VINYLS,
     },
     {
-      text: "Atlas",
+      labelKey: "nav:items.atlas",
       icon: <PublicIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ATLAS,
     },
     {
-      text: "Settings",
+      labelKey: "nav:items.settings",
       icon: <SettingsIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.SETTINGS,
     },
@@ -92,14 +95,14 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     ...(isAdmin
       ? [
           {
-            text: "Admin",
+            labelKey: "nav:items.admin",
             icon: <AdminPanelSettings fontSize={sizeIcons} />,
             linkTo: EGlobalUrls.ADMIN,
           },
         ]
       : []),
     {
-      text: "Logout",
+      labelKey: "nav:items.logout",
       icon: <PowerSettingsNewIcon fontSize={sizeIcons} />,
       linkTo: EGlobalUrls.ROOT,
     },
@@ -111,24 +114,24 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
   /**
    * Handles the click event for a menu item
-   * @param {string} text - The text of the menu item
+   * @param {string} labelKey - The translation key of the menu item
    * @param {EGlobalUrls} linkTo - The URL to navigate to
    */
-  const handleMenuItemClick = (text: string, linkTo: EGlobalUrls) => {
+  const handleMenuItemClick = (labelKey: string, linkTo: EGlobalUrls) => {
     // Adding a record is a dialog over the current page, not a page of its own
     if (linkTo === EGlobalUrls.ADD_VINYLS) {
       setIsMenuOpen(false);
       openAddRecord();
       return;
     }
-    setActiveItem(text);
-    setTitlePage(text);
+    setActiveItem(labelKey);
+    setTitlePage(labelKey);
     setTimeout(() => {
       setIsMenuOpen(false);
       setActiveItem(null);
     }, 200);
 
-    if (text === "Logout") {
+    if (labelKey === "nav:items.logout") {
       logout();
     }
     void navigate(linkTo);
@@ -138,7 +141,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     <>
       <AppBar position="fixed" sx={{ backgroundColor: colors.deep }}>
         <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={handleMenuToggle}>
+          <IconButton edge="start" color="inherit" onClick={handleMenuToggle} aria-label={t("nav:openMenu")}>
             <MenuIcon
               sx={{
                 animation: `${growItem} 1.3s ease infinite`,
@@ -151,8 +154,9 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             noWrap
             sx={{ color: colorYellow, fontFamily: "Oswald", marginX: "auto", textShadow: `2px 2px 4px ${colors.black}` }}
           >
-            {titlePage}
+            {t(titlePage)}
           </Typography>
+          <LanguageMenu sx={{ color: colorYellow }} />
         </Toolbar>
       </AppBar>
 
@@ -180,7 +184,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             color: { colorYellow },
           }}
         >
-          <IconButton onClick={handleMenuToggle} color="inherit">
+          <IconButton onClick={handleMenuToggle} color="inherit" aria-label={t("nav:closeMenu")}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -195,21 +199,22 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
             marginX: "auto",
           }}
         >
-          Vinyl Keeper
+          {t("nav:brand")}
         </Typography>
 
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
+            // minmax(0, 1fr): a long label cannot widen its column past half the screen
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: 2,
             flexGrow: 1,
             paddingY: 5,
           }}
         >
-          {menuItems.map(({ text, icon, linkTo }, index) => (
+          {menuItems.map(({ labelKey, icon, linkTo }, index) => (
             <Box
-              key={text}
+              key={labelKey}
               sx={{
                 display: "flex",
                 justifyContent: "center",
@@ -221,8 +226,8 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
               }}
             >
               <ListItemButton
-                onClick={() => handleMenuItemClick(text, linkTo)}
-                selected={text === titlePage}
+                onClick={() => handleMenuItemClick(labelKey, linkTo)}
+                selected={labelKey === titlePage}
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -248,13 +253,18 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
                   {icon}
                 </ListItemIcon>
                 <ListItemText
-                  primary={text}
+                  primary={t(labelKey)}
+                  sx={{ minWidth: 0, width: "100%" }}
                   slotProps={{
                     primary: {
                       variant: "h6",
                       sx: {
                         fontWeight: "bold",
                         textAlign: "center",
+                        // Safeguard for a label longer than its cell (some languages): an ellipsis
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       },
                     },
                   }}

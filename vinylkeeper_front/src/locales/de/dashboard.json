@@ -1,0 +1,105 @@
+{
+  "latest": {
+    "addedBy": "Hinzugefügt von",
+    "none": "Keine neuen Einträge",
+    "album": "Neuestes Album",
+    "artist": "Neuester Künstler"
+  },
+  "stats": {
+    "myAlbums": "Meine Alben",
+    "myArtists": "Meine Künstler",
+    "atlasSpots": "Spots im Atlas"
+  },
+  "community": {
+    "recent": "Kürzlich von der Community hinzugefügt",
+    "collections": "Sammlungen der Community",
+    "shared": "geteilte Sammlungen",
+    "worldwide": "von Vinylfans aus aller Welt",
+    "explore": "Sammlungen erkunden",
+    "inspire": "Mach eine deiner Sammlungen öffentlich und inspiriere andere..."
+  },
+  "decade": "{{decade}}er",
+  "statsCard": {
+    "tabs": {
+      "eras": "Epochen",
+      "genres": "Genres",
+      "moods": "Stimmungen",
+      "pressings": "Pressungen",
+      "community": "Community"
+    },
+    "noRecords": "Hier sind noch keine Platten.",
+    "addFirst": "Füge deine ersten Platten hinzu",
+    "perDecade": "Platten pro Jahrzehnt",
+    "perGenre": "Platten pro Genre",
+    "perMood": "Platten pro Stimmung",
+    "communityTitle": "Überblick über die Aktivität der Community",
+    "mineTitle": "Deine Sammlung in Zahlen",
+    "label": "Statistiken der Sammlung",
+    "collection": "Sammlung",
+    "all": "Alle meine Sammlungen",
+    "discover": "Sammlungen der Community entdecken",
+    "unavailable": "Deine Statistiken sind gerade nicht verfügbar. Versuche es später erneut.",
+    "loading": "Deine Statistiken werden geladen",
+    "clickBar": "Klick auf einen Balken, um in Spinning now eine Platte zum Hören auszuwählen.",
+    "originals": "Originalpressungen",
+    "reissues": "Neuauflagen",
+    "unknownYear": "Jahr unbekannt",
+    "pressedIn": "Gepresst in",
+    "formats": "Formate",
+    "others": "Andere",
+    "records": "Platten",
+    "toSeeNumbers": "um deine Sammlung in Zahlen zu sehen."
+  },
+  "value": {
+    "title": "Wert der Sammlung",
+    "startFailed": "Die Neubewertung konnte nicht starten. Versuche es später erneut.",
+    "unavailable": "Der Wert deiner Sammlung ist gerade nicht verfügbar. Versuche es später erneut.",
+    "loading": "Der Wert deiner Sammlung wird geladen",
+    "low": "Niedrig",
+    "average": "Mittel",
+    "high": "Hoch",
+    "collection": "Sammlung",
+    "all": "Alle meine Sammlungen",
+    "empty": "Hier sind noch keine Platten: Füge welche hinzu, um zu sehen, was deine Sammlung wert ist.",
+    "currency": "Währung",
+    "estimatedOn_one": "Geschätzt anhand von {{priced}} von {{count}} Platte.",
+    "estimatedOn_other": "Geschätzt anhand von {{priced}} von {{count}} Platten.",
+    "lastEstimate": "Letzte Schätzung am {{when}}.",
+    "notEstimated": "Noch nicht geschätzt.",
+    "exactness": "Je genauer die Pressungen in deiner Sammlung, desto genauer die Schätzung.",
+    "sources": "Von Discogs vorgeschlagene Preise: Very Good für niedrig, Very Good Plus für mittel, Near Mint für hoch.",
+    "converted": " Aus Euro umgerechnet zum EZB-Kurs vom {{date}} (1 EUR = {{rate}} USD).",
+    "toConfirm_one": " {{count}} Pressung ist noch nicht bestätigt.",
+    "toConfirm_other": " {{count}} Pressungen sind noch nicht bestätigt.",
+    "estimatedOn_many": "Geschätzt anhand von {{priced}} von {{count}} Platten.",
+    "toConfirm_many": " {{count}} Pressungen sind noch nicht bestätigt."
+  },
+  "refresh": {
+    "pending": "Neubewertung läuft, noch {{count}}",
+    "pendingHint": "Die Discogs-Preise werden einzeln abgefragt, die Schätzung aktualisiert sich nach und nach.",
+    "button": "Neu bewerten",
+    "nextOn": "Eine Neubewertung pro Tag. Die nächste ist am {{when}} möglich.",
+    "oncePerDay": "Eine Neubewertung pro Tag.",
+    "upToDate": "Aktuell",
+    "upToDateHint": "Alle Preise deiner Sammlungen sind weniger als einen Tag alt.",
+    "hint": "Aktualisiert alle deine Sammlungen, einmal pro Tag. Die Preise werden im Hintergrund neu abgefragt, du kannst die Seite verlassen."
+  },
+  "chart": {
+    "albums": "Alben",
+    "artists": "Künstler",
+    "spots": "Spots im Atlas",
+    "totals": "Gesamt",
+    "items": "Einträge",
+    "recordsTooltip_one": "{{count}} Platte",
+    "recordsTooltip_other": "{{count}} Platten",
+    "recordsTooltip_many": "{{count}} Platten"
+  },
+  "newMember": {
+    "start": "Starte deine Sammlung",
+    "addHint": "Füge jetzt Platten oder Künstler zu deiner Sammlung hinzu.",
+    "add": "Platte hinzufügen",
+    "spots": "Spots im Atlas",
+    "spotsHint": "Orte zum Diggen, geteilt von der Community"
+  },
+  "loadFailed": "Die Daten der Übersicht konnten nicht geladen werden."
+}

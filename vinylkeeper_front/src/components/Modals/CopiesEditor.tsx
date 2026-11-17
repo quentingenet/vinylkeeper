@@ -8,10 +8,17 @@ import type { CollectionAlbumCopy, CollectionAlbumCopyData, CollectionAlbumRespo
 import { useAlbumCopies } from "@hooks/useCollections";
 import { editionChips, type Edition } from "@components/Records/editionLabels";
 import { copyDatesCaption } from "@components/Records/copyLabels";
-import { vinylStates, VinylStateEnum } from "@utils/GlobalUtils";
+import { vinylStates, vinylStateLabel, VinylStateEnum } from "@utils/GlobalUtils";
+import { formatDate } from "@utils/i18n";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
-const stateName = (state?: VinylStateEnum | null) => vinylStates.find((s) => s.id === state)?.name ?? "";
+const stateName = (state?: VinylStateEnum | null) => {
+  const found = vinylStates.find((s) => s.id === state);
+  return found ? vinylStateLabel(found) : "";
+};
+// "2024-05" as "May 2024" in the locale of the device
+const acquisitionLabel = (month: string) => formatDate(parse(month, "yyyy-MM", new Date()), { month: "short", year: "numeric" });
 
 const selectLabelSx = {
   color: colors.textMuted,
@@ -88,7 +95,7 @@ function StateSelect({ id, label, value, onChange }: StateSelectProps) {
       >
         {vinylStates.map((state) => (
           <MenuItem key={state.id} value={state.id}>
-            {state.name}
+            {vinylStateLabel(state)}
           </MenuItem>
         ))}
       </Select>
@@ -108,6 +115,7 @@ interface CopyRowProps {
 }
 
 function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, onDelete }: CopyRowProps) {
+  const { t } = useTranslation("records");
   const [record, setRecord] = useState<VinylStateEnum | null>(copy.state_record ?? null);
   const [cover, setCover] = useState<VinylStateEnum | null>(copy.state_cover ?? null);
   const [acquired, setAcquired] = useState<string>(copy.acquisition_month_year ?? "");
@@ -119,21 +127,21 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
 
   if (!canEdit) {
     const details = [
-      copy.state_record && `Record: ${stateName(copy.state_record)}`,
-      copy.state_cover && `Cover: ${stateName(copy.state_cover)}`,
-      copy.acquisition_month_year && `Acquired: ${copy.acquisition_month_year}`,
+      copy.state_record && t("copies.record", { state: stateName(copy.state_record) }),
+      copy.state_cover && t("copies.cover", { state: stateName(copy.state_cover) }),
+      copy.acquisition_month_year && t("copies.acquired", { date: acquisitionLabel(copy.acquisition_month_year) }),
     ].filter((detail): detail is string => Boolean(detail));
     return (
       <Box>
         <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5 }}>
           <Typography variant="body2" sx={{ color: "text.primary", mr: 0.5 }}>
-            Copy {number}
+            {t("copies.copyNumber", { number })}
           </Typography>
           {details.length > 0 ? (
             details.map((detail) => <Chip key={detail} label={detail} size="small" variant="outlined" />)
           ) : (
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              No condition given
+              {t("copies.noCondition")}
             </Typography>
           )}
         </Box>
@@ -146,12 +154,12 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
     <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: colors.panel }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
         <Typography variant="body2" sx={{ color: "text.primary", fontWeight: "bold" }}>
-          Copy {number}
+          {t("copies.copyNumber", { number })}
         </Typography>
         {canDelete && !isConfirmingDelete && (
           <IconButton
             size="small"
-            aria-label={`Delete copy ${number}`}
+            aria-label={t("copies.deleteAria", { number })}
             onClick={() => setIsConfirmingDelete(true)}
             disabled={isBusy}
           >
@@ -162,21 +170,21 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
       {isConfirmingDelete ? (
         <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
           <Typography variant="body2" sx={{ color: "text.primary" }}>
-            Delete this copy?
+            {t("copies.deleteConfirm")}
           </Typography>
           <Button size="small" variant="contained" color="error" onClick={onDelete} disabled={isBusy}>
-            Delete
+            {t("common:actions.delete")}
           </Button>
           <Button size="small" onClick={() => setIsConfirmingDelete(false)} disabled={isBusy}>
-            Keep it
+            {t("copies.keep")}
           </Button>
         </Box>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          <StateSelect id={`record-${copy.id}`} label="Record state" value={record} onChange={setRecord} />
-          <StateSelect id={`cover-${copy.id}`} label="Cover state" value={cover} onChange={setCover} />
+          <StateSelect id={`record-${copy.id}`} label={t("state.record")} value={record} onChange={setRecord} />
+          <StateSelect id={`cover-${copy.id}`} label={t("state.cover")} value={cover} onChange={setCover} />
           <DatePicker
-            label="Acquisition month"
+            label={t("state.acquisition")}
             value={acquired ? parse(acquired, "yyyy-MM", new Date()) : null}
             onChange={(date) => setAcquired(date ? format(date, "yyyy-MM") : "")}
             views={["month", "year"]}
@@ -191,7 +199,7 @@ function CopyRow({ copy, number, edition, canEdit, canDelete, isBusy, onSave, on
                 onSave({ state_record: record, state_cover: cover, acquisition_month_year: acquired || null })
               }
             >
-              Save copy {number}
+              {t("copies.save", { number })}
             </Button>
           )}
         </Box>
@@ -211,6 +219,7 @@ interface CopiesEditorProps {
 }
 
 export default function CopiesEditor({ collectionId, pressing, edition, canEdit, onPressingChange }: CopiesEditorProps) {
+  const { t } = useTranslation("records");
   const { addCopy, updateCopy, deleteCopy } = useAlbumCopies(collectionId);
   const copies = pressing.copies ?? [];
   const isBusy = addCopy.isPending || updateCopy.isPending || deleteCopy.isPending;
@@ -226,7 +235,7 @@ export default function CopiesEditor({ collectionId, pressing, edition, canEdit,
   return (
     <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-        {copies.length > 1 ? `Copies (${copies.length})` : "Copy"}
+        {copies.length > 1 ? t("copies.titleMany", { count: copies.length }) : t("copies.title")}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
         {copies.map((copy, index) => (
@@ -252,12 +261,12 @@ export default function CopiesEditor({ collectionId, pressing, edition, canEdit,
           disabled={isBusy}
           onClick={() => apply(addCopy.mutateAsync({ albumId: pressing.id, data: {} }))}
         >
-          Add a copy
+          {t("copies.add")}
         </Button>
       )}
       {hasError && (
         <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-          Could not save the copies. Please try again.
+          {t("copies.saveFailed")}
         </Typography>
       )}
     </Box>

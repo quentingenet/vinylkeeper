@@ -58,6 +58,8 @@ import WishlistTabContent from "@components/Collections/WishlistTabContent";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import EmptyState from "@components/UI/EmptyState";
 import VinylSpinner from "@components/UI/VinylSpinner";
+import { useTranslation } from "react-i18next";
+import { formatLocale } from "@utils/i18n";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -106,6 +108,7 @@ const TAB = {
 
 export default function CollectionDetails() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation("collections");
   const collectionId = parseCollectionId(id) ?? 0;
   const { isMobile } = useDetectMobile();
   const { currentUser, isUserLoggedIn } = useUserContext();
@@ -368,11 +371,11 @@ export default function CollectionDetails() {
   const getSearchPlaceholder = () => {
     switch (tabValue) {
       case 0:
-        return "Search album";
+        return t("details.searchAlbum");
       case 1:
-        return "Search artist";
+        return t("details.searchArtist");
       case 2:
-        return "Search artist or album";
+        return t("details.searchBoth");
       default:
         return "Search";
     }
@@ -483,7 +486,7 @@ export default function CollectionDetails() {
   };
 
   useDocumentTitle(
-    collectionDetails?.name ? `${collectionDetails.name} - VinylKeeper` : null
+    collectionDetails?.name ? t("details.metaTitle", { name: collectionDetails.name }) : null
   );
 
   if (isLoadingDetails) {
@@ -494,7 +497,7 @@ export default function CollectionDetails() {
     return (
       <CollectionUnavailable reason={collectionId ? unavailableReason(detailsError) : "gone"}>
         <Button component={RouterLink} to={COMMUNITY_COLLECTIONS_URL} variant="contained">
-          Browse community collections
+          {t("details.browseCommunity")}
         </Button>
       </CollectionUnavailable>
     );
@@ -532,7 +535,7 @@ export default function CollectionDetails() {
           </Typography>
         </Box>
         <Typography variant="body1" sx={{ color: "text.secondary", marginBottom: "16px" }}>
-          {collectionDetails.description || "No description available"}
+          {collectionDetails.description || t("details.noDescription")}
         </Typography>
         <Box
           sx={{
@@ -563,17 +566,17 @@ export default function CollectionDetails() {
               // Same look as the "Export to" button next to it
               sx={{ minHeight: 30, paddingY: 0.25, paddingX: 1, lineHeight: 1.2, textTransform: "none", whiteSpace: "nowrap" }}
             >
-              Add records
+              {t("details.addRecords")}
             </Button>
           )}
 
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            Created on{" "}
-            {collectionDetails.created_at
-              ? new Date(collectionDetails.created_at).toLocaleDateString()
-              : "Unknown date"}
-            {collectionDetails.owner &&
-              ` by ${collectionDetails.owner.username}`}
+            {t("details.createdOn", {
+              date: collectionDetails.created_at
+                ? new Date(collectionDetails.created_at).toLocaleDateString(formatLocale())
+                : t("details.unknownDate"),
+            })}
+            {collectionDetails.owner && t("item.byOwner", { name: collectionDetails.owner.username })}
           </Typography>
         </Box>
 
@@ -590,7 +593,7 @@ export default function CollectionDetails() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <TextField
               sx={{ width: isMobile ? "320px" : "400px" }}
-              label={`${getSearchPlaceholder()} in ${isOwner ? "my" : "this"} collection`}
+              label={t(isOwner ? "details.searchInMine" : "details.searchInThis", { what: getSearchPlaceholder() })}
               variant="outlined"
               value={searchTerm}
               onChange={handleSearchTermChange}
@@ -603,7 +606,7 @@ export default function CollectionDetails() {
                     <InputAdornment position="end">
                       {searchTerm && (
                         <IconButton
-                          aria-label="Clear search"
+                          aria-label={t("details.clearSearch")}
                           size="small"
                           edge="end"
                           onClick={handleClearSearch}
@@ -647,11 +650,11 @@ export default function CollectionDetails() {
             tabValue === TAB.WISHLIST) && (
               <FormControl sx={{ width: isMobile ? 320 : 150 }}>
                 <InputLabel sx={{ color: "text.secondary" }}>
-                  Sort Order
+                  {t("details.sortOrder")}
                 </InputLabel>
                 <Select
                   value={sortOrder}
-                  label="Sort Order"
+                  label={t("details.sortOrder")}
                   onChange={handleSortOrderChange}
                   sx={{
                     color: "text.primary",
@@ -669,8 +672,8 @@ export default function CollectionDetails() {
                     },
                   }}
                 >
-                  <MenuItem value="newest">Newest first</MenuItem>
-                  <MenuItem value="oldest">Oldest first</MenuItem>
+                  <MenuItem value="newest">{t("details.newest")}</MenuItem>
+                  <MenuItem value="oldest">{t("details.oldest")}</MenuItem>
                 </Select>
               </FormControl>
           )}
@@ -690,14 +693,14 @@ export default function CollectionDetails() {
           {isLoadingSearch ? (
             <LoadingCenter />
           ) : searchTerm.trim() && searchTerm.length < 2 ? (
-            <EmptyState message="Please enter at least 2 characters to search." />
+            <EmptyState message={t("wishlist.minChars")} />
           ) : searchResults && debouncedSearchTerm.trim() ? (
             searchResults.albums.length === 0 ? (
-              <EmptyState message={`No albums found matching "${debouncedSearchTerm}".`} />
+              <EmptyState message={t("details.noAlbumMatch", { term: debouncedSearchTerm })} />
             ) : (
               <>
                 <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                  Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({searchRecordCards.length} albums)
+                  {t("details.albumResults", { term: debouncedSearchTerm, count: searchRecordCards.length })}
                 </Typography>
                 <CollectionItemGrid
                   items={searchRecordCards}
@@ -713,10 +716,10 @@ export default function CollectionDetails() {
             <LoadingCenter />
           ) : !isLoadingAlbums && albumsError ? (
             <Typography variant="h6" color="error">
-              Error loading albums
+              {t("details.albumsError")}
             </Typography>
           ) : albumsData?.items.length === 0 ? (
-            <EmptyState message="No albums in this collection yet." />
+            <EmptyState message={t("details.noAlbums")} />
           ) : (
             <CollectionItemGrid
               items={recordCards}
@@ -737,14 +740,14 @@ export default function CollectionDetails() {
           {isLoadingSearch ? (
             <LoadingCenter />
           ) : searchTerm.trim() && searchTerm.length < 2 ? (
-            <EmptyState message="Please enter at least 2 characters to search." />
+            <EmptyState message={t("wishlist.minChars")} />
           ) : searchResults && debouncedSearchTerm.trim() ? (
             searchResults.artists.length === 0 ? (
-              <EmptyState message={`No artists found matching "${debouncedSearchTerm}".`} />
+              <EmptyState message={t("details.noArtistMatch", { term: debouncedSearchTerm })} />
             ) : (
               <>
                 <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                  Search results for &ldquo;{debouncedSearchTerm}&rdquo; ({searchResults.artists.length} artists)
+                  {t("details.artistResults", { term: debouncedSearchTerm, count: searchResults.artists.length })}
                 </Typography>
                 <CollectionItemGrid
                   items={searchResults.artists}
@@ -759,10 +762,10 @@ export default function CollectionDetails() {
             <LoadingCenter />
           ) : !isLoadingArtists && artistsError ? (
             <Typography variant="h6" color="error">
-              Error loading artists
+              {t("details.artistsError")}
             </Typography>
           ) : artistsData?.items.length === 0 ? (
-            <EmptyState message="No artists in this collection yet." />
+            <EmptyState message={t("details.noArtists")} />
           ) : (
             <CollectionItemGrid
               items={artistsData?.items ?? []}
@@ -843,8 +846,8 @@ export default function CollectionDetails() {
 
       <ConfirmDeleteDialog
         open={deleteAlbumModalOpen}
-        title="Remove Album from Collection"
-        message={`Are you sure you want to remove "${itemToDelete?.title}" from this collection? This action cannot be undone.`}
+        title={t("details.removeAlbumTitle")}
+        message={t("details.removeFromCollection", { title: itemToDelete?.title })}
         isPending={removeAlbumMutation.isPending}
         onConfirm={confirmDeleteAlbum}
         onClose={closeDeleteModals}
@@ -852,8 +855,8 @@ export default function CollectionDetails() {
 
       <ConfirmDeleteDialog
         open={deleteArtistModalOpen}
-        title="Remove Artist from Collection"
-        message={`Are you sure you want to remove "${itemToDelete?.title}" from this collection? This action cannot be undone.`}
+        title={t("details.removeArtistTitle")}
+        message={t("details.removeFromCollection", { title: itemToDelete?.title })}
         isPending={removeArtistMutation.isPending}
         onConfirm={confirmDeleteArtist}
         onClose={closeDeleteModals}
@@ -861,8 +864,8 @@ export default function CollectionDetails() {
 
       <ConfirmDeleteDialog
         open={deleteWishlistModalOpen}
-        title="Remove from Wishlist"
-        message={`Are you sure you want to remove "${wishlistItemToDelete?.title}" from your wishlist? This action cannot be undone.`}
+        title={t("details.removeWishlistTitle")}
+        message={t("details.removeFromWishlist", { title: wishlistItemToDelete?.title })}
         isPending={removeWishlistItemMutation.isPending}
         onConfirm={confirmDeleteWishlistItem}
         onClose={closeDeleteModals}

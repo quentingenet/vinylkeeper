@@ -36,6 +36,7 @@ import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { scanRecordBarcode } from "@utils/BarcodeScanner";
 import { logger } from "@utils/logger";
 import { searchResultToPlaybackItem } from "@utils/toPlaybackItem";
+import { useTranslation } from "react-i18next";
 
 interface AddRecordDialogProps {
   options: AddRecordOptions;
@@ -46,6 +47,7 @@ export default function AddRecordDialog({
   options,
   onClose,
 }: AddRecordDialogProps) {
+  const { t } = useTranslation("records");
   const { presetCollectionId, replaceTarget, initialQuery = "" } = options;
   const { isMobile } = useDetectMobile();
   const { results, isSearching, isChangingPage, error, search, goToPage } =
@@ -93,7 +95,7 @@ export default function AddRecordDialog({
     } catch (error) {
       logger.error("Barcode scan failed:", error);
       setScanError(
-        error instanceof Error ? error.message : "The scan failed, try again.",
+        error instanceof Error ? error.message : t("dialog.scanFailed"),
       );
     }
   };
@@ -121,9 +123,9 @@ export default function AddRecordDialog({
           alignItems: "center",
         }}
       >
-        {replaceTarget ? "Find your pressing" : "Add a record"}
+        {replaceTarget ? t("dialog.findPressing") : t("dialog.addRecord")}
         <IconButton
-          aria-label="Close"
+          aria-label={t("common:actions.close")}
           onClick={onClose}
           sx={{ color: "text.primary" }}
         >
@@ -133,8 +135,9 @@ export default function AddRecordDialog({
       <DialogContent sx={{ px: { xs: 1.5, sm: 3 } }}>
         {replaceTarget && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Pick the pressing on your shelf
-            {replaceTarget.title ? ` for “${replaceTarget.title}”` : ""}.
+            {replaceTarget.title
+              ? t("dialog.pickPressingFor", { title: replaceTarget.title })
+              : t("dialog.pickPressing")}
           </Alert>
         )}
 
@@ -156,16 +159,16 @@ export default function AddRecordDialog({
               onChange={(_e, value: "album" | "artist" | null) =>
                 value && setIsArtist(value === "artist")
               }
-              aria-label="Search for"
+              aria-label={t("dialog.searchFor")}
             >
-              <ToggleButton value="album">Album</ToggleButton>
-              <ToggleButton value="artist">Artist</ToggleButton>
+              <ToggleButton value="album">{t("dialog.album")}</ToggleButton>
+              <ToggleButton value="artist">{t("dialog.artist")}</ToggleButton>
             </ToggleButtonGroup>
           )}
           <TextField
             size="small"
             sx={{ flexGrow: 1, minWidth: 220 }}
-            label={`Search by ${isArtist ? "artist" : "album"}`}
+            label={isArtist ? t("dialog.searchByArtist") : t("dialog.searchByAlbum")}
             value={query}
             autoFocus={!initialQuery}
             onChange={(e) => setQuery(e.target.value)}
@@ -180,7 +183,7 @@ export default function AddRecordDialog({
                       <VinylSpinner size={20} />
                     ) : (
                       <IconButton
-                        aria-label="Search"
+                        aria-label={t("dialog.search")}
                         onClick={runSearch}
                         edge="end"
                         sx={{ color: "text.primary" }}
@@ -204,18 +207,17 @@ export default function AddRecordDialog({
                   startIcon={<QrCodeScannerIcon />}
                   onClick={() => void scanBarcode()}
                 >
-                  Scan barcode
+                  {t("dialog.scan")}
                 </Button>
                 <Typography
                   variant="caption"
                   sx={{ color: "text.secondary", display: "block", mt: 0.5 }}
                 >
-                  Scan the barcode on the back of the sleeve: hold the phone
-                  about 15 cm away, in good light.
+                  {t("dialog.scanHint")}
                 </Typography>
               </>
             ) : (
-              <Tooltip title="Coming soon with mobile android app">
+              <Tooltip title={t("dialog.scanSoon")}>
                 {/* A disabled button fires no pointer events: the span carries the tooltip */}
                 <span style={{ display: "inline-block" }}>
                   <Button
@@ -224,7 +226,7 @@ export default function AddRecordDialog({
                     startIcon={<QrCodeScannerIcon />}
                     disabled
                   >
-                    Scan barcode
+                    {t("dialog.scan")}
                   </Button>
                 </span>
               </Tooltip>
@@ -252,7 +254,7 @@ export default function AddRecordDialog({
           <Typography
             sx={{ color: "text.secondary", textAlign: "center", py: 4 }}
           >
-            {results.isArtist ? "No artist found" : "No album found"}
+            {results.isArtist ? t("dialog.noArtist") : t("dialog.noAlbum")}
           </Typography>
         )}
 

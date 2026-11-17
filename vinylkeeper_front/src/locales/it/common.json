@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "title": "Vinyl Keeper - Cataloga e condividi la tua collezione di vinili"
+  },
+  "language": {
+    "label": "Lingua",
+    "automatic": "Automatica (dispositivo)",
+    "choose": "Lingua: {{language}}. Cambia lingua"
+  },
+  "actions": {
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "delete": "Elimina",
+    "deleting": "Eliminazione...",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "send": "Invia",
+    "sending": "Invio...",
+    "edit": "Modifica",
+    "back": "Indietro",
+    "retry": "Riprova",
+    "confirm": "Conferma",
+    "loading": "Caricamento...",
+    "understood": "Ho capito"
+  },
+  "password": {
+    "show": "Mostra la password",
+    "hide": "Nascondi la password",
+    "strength": "Sicurezza della password",
+    "weak": "Debole",
+    "medium": "Media",
+    "strong": "Forte",
+    "rules": {
+      "length": "Almeno 8 caratteri",
+      "letter": "Contiene una lettera",
+      "number": "Contiene un numero"
+    }
+  },
+  "dataProvidedBy": "Dati forniti da",
+  "update": {
+    "available": "È disponibile una nuova versione di Vinyl Keeper.",
+    "later": "Più tardi",
+    "update": "Aggiorna",
+    "progress": "Aggiornamento in corso. Puoi continuare a usare l'app.",
+    "progressPercent": "Aggiornamento in corso ({{percent}} %). Puoi continuare a usare l'app.",
+    "ready": "Aggiornamento scaricato. Riavvia per completare.",
+    "restart": "Riavvia",
+    "installing": "Installazione dell'aggiornamento, l'app si riavvierà."
+  },
+  "errorBoundary": {
+    "title": "Qualcosa è andato storto",
+    "text1": "VinylKeeper ha incontrato un errore imprevisto.",
+    "text2": "Riprova o torna alla pagina iniziale.",
+    "home": "Vai alla home"
+  },
+  "scanner": {
+    "installing": "Lo scanner è in fase di installazione, riprova tra poco."
+  }
+}

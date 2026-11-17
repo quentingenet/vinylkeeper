@@ -1,24 +1,25 @@
 import { Chip } from "@mui/material";
 import type { ModerationRequest, ReportedPlace } from "@services/AdminApiService";
 import { colors } from "@styles/colors";
+import i18n, { formatLocale } from "@utils/i18n";
 
 export const getStatusChip = (statusName: string) => {
   switch (statusName) {
     case "pending":
-      return <Chip label="Pending" color="warning" size="small" />;
+      return <Chip label={i18n.t("admin:status.pending")} color="warning" size="small" />;
     case "approved":
-      return <Chip label="Approved" color="success" size="small" />;
+      return <Chip label={i18n.t("admin:status.approved")} color="success" size="small" />;
     case "rejected":
-      return <Chip label="Rejected" color="error" size="small" />;
+      return <Chip label={i18n.t("admin:status.rejected")} color="error" size="small" />;
     case "removed":
-      return <Chip label="Removed" size="small" />;
+      return <Chip label={i18n.t("admin:status.removed")} size="small" />;
     default:
       return <Chip label={statusName} size="small" />;
   }
 };
 
 export const formatDate = (dateString: string) =>
-  new Date(dateString).toLocaleDateString("en-US", {
+  new Date(dateString).toLocaleDateString(formatLocale(), {
     year: "numeric",
     month: "short",
     day: "numeric",

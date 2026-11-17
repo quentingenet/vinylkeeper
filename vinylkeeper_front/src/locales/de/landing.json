@@ -1,0 +1,62 @@
+{
+  "metaDescription": "Vinyl Keeper ist eine kostenlose Open-Source-App, um deine Vinylsammlung zu katalogisieren, neue Platten zu entdecken und Digging-Spots auf einer interaktiven Karte zu teilen.",
+  "enter": "Eintreten",
+  "or": "oder",
+  "exploreAtlas": "einfach den Vinyl Atlas erkunden",
+  "footer": {
+    "terms": "Allgemeine Geschäftsbedingungen",
+    "madeWith": "gemacht mit",
+    "by": "von Quentin Genet"
+  },
+  "founder": {
+    "photoAlt": "Quentin Genet, Gründer von Vinyl Keeper",
+    "title1": "Wenn sich Musik und Code zusammen drehen,",
+    "title2": "passieren coole Dinge...",
+    "text": "Als Fan von Musik und Vinyl habe ich Vinyl Keeper gebaut: eine kostenlose Open-Source-App, um deine Platten zu verwalten, deine Sammlungen mit der Community zu teilen und auf dem Vinyl Atlas die besten Vinyl-Spots der Welt zu entdecken. Danke, dass du sie nutzt und die Leidenschaft für Vinyl am Leben hältst!"
+  },
+  "preview": {
+    "dialogLabel": "Ein Blick in VinylKeeper",
+    "close": "Vorschau schließen",
+    "previous": "Vorheriger Screenshot",
+    "next": "Nächster Screenshot",
+    "show": "Screenshot {{number}} zeigen: {{title}}",
+    "slides": {
+      "dashboard": {
+        "title": "Übersicht",
+        "description": "Deine Sammlung auf einen Blick: Statistiken zu Alben, Künstlern und Sammlungen, deine neuesten Einträge und was die Community zuletzt hinzugefügt hat."
+      },
+      "add": {
+        "title": "Vinyl hinzufügen",
+        "description": "Durchsuche den Discogs-Katalog nach Album oder Künstler und füge die Platten, die du besitzt, mit wenigen Klicks deinen Sammlungen hinzu."
+      },
+      "collections": {
+        "title": "Sammlungen",
+        "description": "Stöbere, suche und sortiere deine Platten, führe eine Wunschliste und mach eine Sammlung öffentlich, um sie mit der Community zu teilen."
+      },
+      "atlas": {
+        "title": "Vinyl Atlas",
+        "description": "Entdecke Plattenläden, Flohmärkte und Vinyl-Spots auf der Community-Karte des Vinyl Atlas und schlag deine Lieblingsorte vor."
+      }
+    }
+  },
+  "tutorial": {
+    "welcome": "Willkommen bei VinylKeeper",
+    "back": "Zurück",
+    "start": "Los geht's",
+    "next": "Weiter",
+    "steps": {
+      "add": {
+        "title": "Vinyl hinzufügen",
+        "content": "Suche nach einem Album oder Künstler, wähle eine Sammlung und füge deine Entdeckungen hinzu!"
+      },
+      "collections": {
+        "title": "Sammlungen",
+        "content": "Du kannst Sammlungen liken und deine eigenen öffentlich machen, um ihren Inhalt mit anderen Mitgliedern zu teilen. Wechsle einfach von privat zu öffentlich! Eine öffentliche Sammlung können alle Mitglieder erkunden und liken."
+      },
+      "atlas": {
+        "title": "Vinyl Atlas",
+        "content": "Teile und entdecke die Spots der Vinyl-Community im Atlas: Läden, Flohmärkte..."
+      }
+    }
+  }
+}

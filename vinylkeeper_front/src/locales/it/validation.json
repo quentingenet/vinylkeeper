@@ -1,0 +1,41 @@
+{
+  "email": {
+    "invalid": "E-mail non valida",
+    "tooShort": "L'e-mail deve contenere almeno 4 caratteri.",
+    "tooShortRegister": "L'e-mail deve contenere almeno 8 caratteri.",
+    "required": "Devi inserire la tua e-mail.",
+    "newRequired": "Inserisci il tuo nuovo indirizzo e-mail."
+  },
+  "password": {
+    "required": "Devi inserire la tua password.",
+    "enter": "Inserisci la tua password.",
+    "currentRequired": "Inserisci la tua password attuale.",
+    "newRequired": "Inserisci la tua nuova password.",
+    "letter": "La tua password deve contenere una lettera",
+    "number": "La tua password deve contenere un numero",
+    "length": "La tua password deve contenere almeno 8 caratteri",
+    "confirmRequired": "Conferma la tua password.",
+    "confirmNewRequired": "Conferma la tua nuova password.",
+    "mismatch": "Deve essere uguale alla password",
+    "mismatchNew": "Deve essere uguale alla nuova password"
+  },
+  "username": {
+    "tooShort": "Il nome utente deve contenere almeno 2 caratteri",
+    "format": "Il nome utente deve essere in minuscolo: sono ammessi solo lettere (a-z), numeri, punti (.), trattini (-) e trattini bassi (_)",
+    "edges": "Il nome utente non può iniziare né finire con un punto, un trattino o un trattino basso",
+    "required": "Inserisci il tuo nome utente"
+  },
+  "terms": {
+    "required": "Devi accettare le condizioni per usare Vinyl Keeper"
+  },
+  "collection": {
+    "nameRequired": "Il nome è obbligatorio",
+    "nameMin": "Il nome deve contenere almeno 1 carattere",
+    "nameMax": "Il nome non può superare i 255 caratteri",
+    "nameEmpty": "Il nome non può essere vuoto",
+    "descriptionMax": "La descrizione non può superare i 255 caratteri",
+    "visibilityRequired": "La visibilità è obbligatoria",
+    "albumIdPositive": "L'ID dell'album deve essere positivo",
+    "artistIdPositive": "L'ID dell'artista deve essere positivo"
+  }
+}

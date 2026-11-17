@@ -42,9 +42,12 @@ import "./atlas-map.css";
 import "./vinyl-marker.css";
 import { queryKeys } from "@utils/queryKeys";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
+import i18n, { localizedCountry } from "@utils/i18n";
+import { placeTypeLabel } from "@components/Atlas/placeReportLabels";
 
 const vinylIcon = divIcon({
-  html: `<div class="vinyl-marker"><img src="/images/vinylKeeper.svg" alt="vinyl spot" /></div>`,
+  html: `<div class="vinyl-marker"><img src="/images/vinylKeeper.svg" alt="${i18n.t("atlas:map.markerAlt")}" /></div>`,
   className: "",
   iconSize: [28, 28],
   iconAnchor: [14, 14],
@@ -59,6 +62,7 @@ interface AtlasMapProps {
 }
 
 const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAccount }) => {
+  const { t } = useTranslation("atlas");
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
   const defaultZoom = 4;
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -190,7 +194,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
           >
             <Fab
               color="primary"
-              aria-label="Add a spot to the Atlas"
+              aria-label={t("map.addAria")}
               onClick={onAddPlace}
               sx={{
                 backgroundColor: "primary.main",
@@ -217,7 +221,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
                 whiteSpace: "nowrap",
               }}
             >
-              Add a spot
+              {t("map.add")}
             </Typography>
           </Box>
         )}
@@ -242,11 +246,11 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
                 sx={{ color: "primary.main", fontWeight: "bold" }}
               >
                 {selectedLocation
-                  ? `🏙️ ${[selectedLocation.city, selectedLocation.country].filter(Boolean).join(", ") || "Atlas"}`
-                  : "🏙️ Atlas"}
-                {isLoadingPlaces && " (Loading...)"}
+                  ? `🏙️ ${[selectedLocation.city, selectedLocation.country && localizedCountry(selectedLocation.country)].filter(Boolean).join(", ") || t("map.title")}`
+                  : `🏙️ ${t("map.title")}`}
+                {isLoadingPlaces && t("map.loading")}
               </Typography>
-              <IconButton onClick={handleCloseModal} size="small">
+              <IconButton onClick={handleCloseModal} size="small" aria-label={t("common:actions.close")}>
                 <Close sx={{ color: "primary.main" }} />
               </IconButton>
             </Box>
@@ -257,7 +261,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
               </Box>
             ) : isPlacesError ? (
               <Typography sx={{ color: colors.textMuted }}>
-                Error loading places. Check your connection.
+                {t("map.loadError")}
               </Typography>
             ) : placesList.length > 0 ? (
               <Box
@@ -308,7 +312,7 @@ const AtlasMap: React.FC<AtlasMapProps> = ({ mapPlaces, onAddPlace, onRequireAcc
               </Box>
             ) : (
               <Typography sx={{ color: colors.textLight }}>
-                No spots found at this location.
+                {t("map.noSpots")}
               </Typography>
             )}
           </Box>
@@ -325,6 +329,7 @@ interface PlaceDetailsContentProps {
 }
 
 const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequireAccount }) => {
+  const { t } = useTranslation("atlas");
   const [likeBounce, setLikeBounce] = useState(false);
   const [likeCooldown, setLikeCooldown] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -367,7 +372,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
           }}
         >
           📍 {place.address}
-          {place.city && place.country && `, ${place.city}, ${place.country}`}
+          {place.city && place.country && `, ${place.city}, ${localizedCountry(place.country)}`}
         </Typography>
       )}
 
@@ -409,7 +414,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
       >
         {place.place_type && (
           <Chip
-            label={place.place_type.name}
+            label={placeTypeLabel(place.place_type.name)}
             size="medium"
             sx={{
               backgroundColor: "primary.main",
@@ -453,8 +458,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
               display: "inline-block",
             }}
           >
-            {place.likes_count}{" "}
-            {place.likes_count === 1 ? "like" : "likes"}
+            {t("map.likes", { count: place.likes_count })}
           </Typography>
         )}
       </Box>
@@ -466,7 +470,7 @@ const PlaceDetailsContent: React.FC<PlaceDetailsContentProps> = ({ place, onRequ
         onClick={() => (onRequireAccount ? onRequireAccount() : setReportOpen(true))}
         sx={{ alignSelf: "flex-start", color: "text.secondary", textTransform: "none" }}
       >
-        Report wrong information
+        {t("map.report")}
       </Button>
       <ReportSpotDialog
         open={reportOpen}

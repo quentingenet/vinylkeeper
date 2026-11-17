@@ -1,0 +1,20 @@
+{
+  "brand": "Vinyl Keeper",
+  "items": {
+    "dashboard": "Dashboard",
+    "addRecord": "Add a record",
+    "collections": "Collections",
+    "spinningNow": "Spinning now",
+    "atlas": "Atlas",
+    "vinylAtlas": "Vinyl Atlas",
+    "settings": "Settings",
+    "admin": "Admin",
+    "emailConfirmation": "Email confirmation",
+    "logout": "Logout"
+  },
+  "openMenu": "Open the menu",
+  "closeMenu": "Close the menu",
+  "toggleMenu": "Fold or unfold the menu",
+  "logIn": "Log in",
+  "signUp": "Sign up"
+}

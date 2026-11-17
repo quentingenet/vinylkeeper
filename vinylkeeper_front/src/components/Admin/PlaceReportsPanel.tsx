@@ -22,6 +22,7 @@ import AdminSpotEditDialog from "@components/Admin/AdminSpotEditDialog";
 import RemoveSpotDialog from "@components/Admin/RemoveSpotDialog";
 import { issueChipLabel } from "@components/Atlas/placeReportLabels";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 10;
 
@@ -34,6 +35,7 @@ function errorText(error: unknown, fallback: string): string {
 
 /** Members' reports of wrong information on Atlas spots: fix the spot, resolve or dismiss. */
 export default function PlaceReportsPanel() {
+  const { t } = useTranslation("admin");
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>("open");
   const [page, setPage] = useState(0);
@@ -62,21 +64,21 @@ export default function PlaceReportsPanel() {
 
   const resolve = useMutation({
     mutationFn: (reportId: number) => adminApiService.resolvePlaceReport(reportId),
-    onSuccess: () => done("Report resolved, with the other open reports of this spot."),
-    onError: failed("The report could not be resolved."),
+    onSuccess: () => done(t("reports.resolved")),
+    onError: failed(t("reports.resolveFailed")),
   });
   const dismiss = useMutation({
     mutationFn: (reportId: number) => adminApiService.dismissPlaceReport(reportId),
-    onSuccess: () => done("Report dismissed."),
-    onError: failed("The report could not be dismissed."),
+    onSuccess: () => done(t("reports.dismissed")),
+    onError: failed(t("reports.dismissFailed")),
   });
   const remove = useMutation({
     mutationFn: (placeId: number) => adminApiService.removePlace(placeId),
     onSuccess: () => {
       setRemoving(null);
-      done("Spot removed from the map, its reports are resolved.");
+      done(t("reports.removed"));
     },
-    onError: failed("The spot could not be removed."),
+    onError: failed(t("reports.removeFailed")),
   });
   const busy = resolve.isPending || dismiss.isPending || remove.isPending;
 
@@ -84,14 +86,14 @@ export default function PlaceReportsPanel() {
     const report = editing;
     setEditing(null);
     if (alsoResolve && report) resolve.mutate(report.id);
-    else done("Spot updated on the map.");
+    else done(t("feedback.updated"));
   };
 
   return (
     <Box sx={{ mb: 4 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
         <Typography variant="h5" sx={{ color: "primary.main", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-          Spot reports ({reports.data?.open_count ?? 0} open)
+          {t("reports.title", { count: reports.data?.open_count ?? 0 })}
         </Typography>
         <ToggleButtonGroup
           exclusive
@@ -103,10 +105,10 @@ export default function PlaceReportsPanel() {
               setPage(0);
             }
           }}
-          aria-label="Reports shown"
+          aria-label={t("reports.shown")}
         >
-          <ToggleButton value="open">Open</ToggleButton>
-          <ToggleButton value="all">All</ToggleButton>
+          <ToggleButton value="open">{t("reports.open")}</ToggleButton>
+          <ToggleButton value="all">{t("reports.all")}</ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
@@ -115,10 +117,10 @@ export default function PlaceReportsPanel() {
           <CircularProgress />
         </Box>
       ) : reports.isError ? (
-        <Alert severity="error">Error loading spot reports</Alert>
+        <Alert severity="error">{t("reports.loadError")}</Alert>
       ) : reports.data && reports.data.items.length === 0 ? (
         <Typography sx={{ color: "text.secondary" }}>
-          {filter === "open" ? "No open report: every spot looks right." : "No report yet."}
+          {filter === "open" ? t("reports.noneOpen") : t("reports.none")}
         </Typography>
       ) : (
         <Paper sx={{ bgcolor: colors.surface }}>
@@ -134,9 +136,9 @@ export default function PlaceReportsPanel() {
                   {report.place.city}, {report.place.country}
                 </Typography>
                 {report.status !== "open" && (
-                  <Chip size="small" label={report.status === "resolved" ? "Resolved" : "Dismissed"} />
+                  <Chip size="small" label={report.status === "resolved" ? t("reports.statusResolved") : t("reports.statusDismissed")} />
                 )}
-                {!report.place.is_valid && <Chip size="small" color="error" label="Removed from the map" />}
+                {!report.place.is_valid && <Chip size="small" color="error" label={t("reports.offMap")} />}
               </Box>
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                 {report.issues.map((issue) => (
@@ -149,23 +151,23 @@ export default function PlaceReportsPanel() {
                 </Typography>
               )}
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Reported by {report.reporter ?? "a deleted account"} on {formatDate(report.created_at)}
+                {t("reports.by", { name: report.reporter ?? t("reports.deletedAccount"), date: formatDate(report.created_at) })}
               </Typography>
               {report.status === "open" && (
                 <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
                   <Button size="small" variant="contained" startIcon={<Edit />} onClick={() => setEditing(report)}
                     disabled={busy || !report.place.is_valid}>
-                    Edit spot
+                    {t("reports.edit")}
                   </Button>
                   <Button size="small" variant="outlined" onClick={() => resolve.mutate(report.id)} disabled={busy}>
-                    Resolve
+                    {t("reports.resolve")}
                   </Button>
                   <Button size="small" onClick={() => dismiss.mutate(report.id)} disabled={busy}>
-                    Dismiss
+                    {t("reports.dismiss")}
                   </Button>
                   {report.place.is_valid && (
                     <Button size="small" color="error" onClick={() => setRemoving(report.place)} disabled={busy}>
-                      Remove from the map
+                      {t("reports.remove")}
                     </Button>
                   )}
                 </Box>

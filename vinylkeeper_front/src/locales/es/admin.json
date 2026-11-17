@@ -1,0 +1,98 @@
+{
+  "feedback": {
+    "approved": "Solicitud de moderación aprobada.",
+    "rejected": "Solicitud de moderación rechazada.",
+    "removed": "Lugar retirado del mapa.",
+    "updated": "Lugar actualizado en el mapa."
+  },
+  "status": {
+    "pending": "Pendiente",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "removed": "Retirado",
+    "total": "Total"
+  },
+  "edit": {
+    "title": "Editar el lugar",
+    "name": "Nombre",
+    "address": "Dirección",
+    "city": "Ciudad",
+    "country": "País",
+    "description": "Descripción",
+    "website": "Web",
+    "type": "Tipo de lugar",
+    "failed": "No se pudo guardar el lugar. Inténtalo de nuevo.",
+    "save": "Guardar",
+    "saveResolve": "Guardar y resolver",
+    "lastUpdate": "Última actualización: {{date}}",
+    "pinMoves": "El marcador se mueve a la nueva ciudad en el mapa."
+  },
+  "detail": {
+    "title": "Detalles de la solicitud de moderación",
+    "spot": "Información del lugar",
+    "city": "Ciudad:",
+    "description": "Descripción:",
+    "noDescription": "Sin descripción",
+    "status": "Estado actual:",
+    "request": "Información de la solicitud",
+    "submittedBy": "Enviado por:",
+    "date": "Fecha de envío:",
+    "actions": "Acciones disponibles",
+    "approving": "Aprobando...",
+    "approve": "Aprobar",
+    "rejecting": "Rechazando...",
+    "reject": "Rechazar"
+  },
+  "reports": {
+    "resolved": "Aviso resuelto, junto con los demás avisos abiertos de este lugar.",
+    "resolveFailed": "No se pudo resolver el aviso.",
+    "dismissed": "Aviso descartado.",
+    "dismissFailed": "No se pudo descartar el aviso.",
+    "removed": "Lugar retirado del mapa, sus avisos están resueltos.",
+    "removeFailed": "No se pudo retirar el lugar.",
+    "title": "Avisos de lugares ({{count}} abiertos)",
+    "shown": "Avisos mostrados",
+    "open": "Abiertos",
+    "all": "Todos",
+    "loadError": "Error al cargar los avisos",
+    "noneOpen": "Ningún aviso abierto: todos los lugares parecen correctos.",
+    "none": "Todavía no hay avisos.",
+    "statusResolved": "Resuelto",
+    "statusDismissed": "Descartado",
+    "offMap": "Retirado del mapa",
+    "by": "Avisado por {{name}} el {{date}}",
+    "deletedAccount": "una cuenta eliminada",
+    "edit": "Editar el lugar",
+    "resolve": "Resolver",
+    "dismiss": "Descartar",
+    "remove": "Retirar del mapa"
+  },
+  "remove": {
+    "title": "¿Retirar {{name}} del mapa?",
+    "text": "Para un lugar cerrado definitivamente. Desaparece del Atlas y sus avisos abiertos se resuelven.",
+    "confirm": "Retirar"
+  },
+  "page": {
+    "deniedTitle": "Se requiere acceso de administrador",
+    "deniedText": "Necesitas permisos de administrador para acceder a esta página.",
+    "title": "Administración",
+    "loadError": "Error al cargar las solicitudes de moderación",
+    "pending": "Solicitudes pendientes ({{count}})",
+    "noPending": "No hay solicitudes pendientes",
+    "all": "Todas las solicitudes ({{count}})"
+  },
+  "columns": {
+    "spot": "Lugar",
+    "city": "Ciudad",
+    "user": "Miembro",
+    "status": "Estado",
+    "date": "Fecha",
+    "updated": "Última actualización",
+    "actions": "Acciones"
+  },
+  "actions": {
+    "view": "Ver los detalles",
+    "edit": "Editar el lugar",
+    "remove": "Retirar del mapa"
+  }
+}

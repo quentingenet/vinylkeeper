@@ -1,0 +1,100 @@
+{
+  "report": {
+    "issues": {
+      "name": "Der Name ist falsch",
+      "description": "Die Beschreibung ist falsch oder veraltet",
+      "address": "Die Adresse ist falsch, oder der Spot ist umgezogen",
+      "website": "Der Link zur Website ist tot oder veraltet",
+      "type": "Die Art des Spots ist falsch",
+      "closed": "Dauerhaft geschlossen"
+    },
+    "chips": {
+      "name": "Name",
+      "description": "Beschreibung",
+      "address": "Adresse",
+      "website": "Website",
+      "type": "Art",
+      "closed": "Geschlossen"
+    },
+    "title": "Falsche Angaben melden",
+    "thanks": "Danke, ein Admin prüft diesen Spot.",
+    "what": "Was ist an {{name}} falsch?",
+    "should": "Was sollte dort stehen? (optional)",
+    "failed": "Die Meldung konnte nicht gesendet werden. Versuche es später erneut.",
+    "send": "Meldung senden"
+  },
+  "types": {
+    "flea market": "Flohmarkt",
+    "shop": "Laden",
+    "music or records exhibition": "Musik- oder Plattenbörse",
+    "other": "Sonstiges"
+  },
+  "map": {
+    "markerAlt": "Vinyl-Spot",
+    "addAria": "Einen Spot zum Atlas hinzufügen",
+    "add": "Spot hinzufügen",
+    "loadError": "Fehler beim Laden der Spots. Prüfe deine Verbindung.",
+    "noSpots": "An diesem Ort wurden keine Spots gefunden.",
+    "report": "Falsche Angaben melden",
+    "likes_one": "{{count}} Like",
+    "likes_other": "{{count}} Likes",
+    "loading": " (Wird geladen...)",
+    "title": "Atlas",
+    "likes_many": "{{count}} Likes"
+  },
+  "add": {
+    "nameRequired": "Der Name ist erforderlich",
+    "nameEmpty": "Der Name darf nicht leer sein",
+    "addressRequired": "Die Adresse ist erforderlich",
+    "cityRequired": "Die Stadt ist erforderlich",
+    "countryRequired": "Das Land ist erforderlich",
+    "descriptionMax": "Die Beschreibung darf höchstens 600 Zeichen haben",
+    "urlInvalid": "Muss eine gültige URL sein",
+    "typeRequired": "Die Art des Spots ist erforderlich",
+    "countriesFailed": "Die Länderliste konnte nicht geladen werden.",
+    "loadFailed": "Die Formulardaten konnten nicht geladen werden. Öffne das Fenster erneut.",
+    "failed": "Der Spot konnte nicht hinzugefügt werden. Versuche es erneut.",
+    "details": "Details zum Spot",
+    "name": "Name des Spots",
+    "type": "Art des Spots",
+    "country": "Land",
+    "city": "Stadt",
+    "address": "Adresse",
+    "description": "Beschreibung (optional)",
+    "source": "Quell-URL (optional)",
+    "adding": "Wird hinzugefügt...",
+    "submit": "Zum Atlas hinzufügen",
+    "submitted": "Spot eingereicht!",
+    "thanks": "Danke für deinen Beitrag! Dein Spot wurde eingereicht und wird von unserem Moderationsteam geprüft, bevor er im Atlas erscheint.",
+    "why": "So bleibt der Vinyl Atlas für die ganze Community genau und verlässlich.",
+    "gotIt": "Verstanden!"
+  },
+  "join": {
+    "features": [
+      "Katalogisiere deine Platten, ihre Exemplare und Pressungen",
+      "Verbinde dein Discogs-Konto, um deine Sammlung zu importieren",
+      "Schätze, was deine Sammlung wert ist",
+      "Wähle die Platte für heute Abend mit Spinning now",
+      "Führe eine Wunschliste und teile deine Sammlungen"
+    ],
+    "title": "Tritt Vinyl Keeper bei, um Spots zu liken und neue vorzuschlagen",
+    "intro": "Vinyl Keeper ist kostenlos und Open Source. Mit einem Konto kannst du außerdem:",
+    "featuresLabel": "Was Mitglieder tun können",
+    "lookInside": "Einen Blick hineinwerfen?"
+  },
+  "byCountry": {
+    "title": "Spots nach Land",
+    "spots_one": "{{count}} Spot",
+    "spots_other": "{{count}} Spots",
+    "spots_many": "{{count}} Spots"
+  },
+  "page": {
+    "loadError": "Fehler beim Laden des Atlas",
+    "introPublic": "📍 Entdecke die besten Vinyl-Spots der Welt, geteilt von der Vinyl Keeper Community.",
+    "intro": "📍 Entdecke, füge hinzu und teile mit der Community die besten Vinyl-Spots der Welt."
+  },
+  "public": {
+    "metaTitle": "Vinyl Atlas: Plattenläden, Flohmärkte und Vinyl-Spots | Vinyl Keeper",
+    "metaDescription": "Finde Plattenläden, Flohmärkte und Vinyl-Spots auf der ganzen Welt im Vinyl Atlas, einer kostenlosen Community-Karte von Vinylsammlern."
+  }
+}

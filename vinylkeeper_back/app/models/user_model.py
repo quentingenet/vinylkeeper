@@ -42,6 +42,7 @@ class User(Base):
         # One account per address whatever its case (migration d4a7c2e9f1b3)
         Index("ix_users_email_lower", func.lower(email), unique=True),
         CheckConstraint("preferred_currency IN ('EUR', 'USD')", name="ck_users_preferred_currency"),
+        CheckConstraint("language IN ('en', 'fr', 'es', 'pt', 'de', 'it')", name="ck_users_language"),
     )
     password = Column(
         String(1024),
@@ -94,6 +95,11 @@ class User(Base):
         String(3),
         nullable=False,
         server_default="EUR"
+    )
+    # Language of the interface: NULL follows the language of the device
+    language = Column(
+        String(2),
+        nullable=True
     )
     role_id = Column(
         Integer,

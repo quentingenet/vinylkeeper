@@ -5,6 +5,7 @@ import { streamingHref, streamingPlatforms, streamingQuery } from "@services/Mus
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { openInMusicApp } from "@utils/StreamingLauncher";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface StreamingLinksAccordionProps {
   itemTitle: string;
@@ -17,6 +18,7 @@ export default function StreamingLinksAccordion({
   itemArtist,
   itemType,
 }: StreamingLinksAccordionProps) {
+  const { t } = useTranslation("records");
   const { isMobile } = useDetectMobile();
   const query = streamingQuery(itemTitle, itemArtist, itemType);
   // Intent links are for mobile browsers: the WebView of the native app does not open them, the app
@@ -42,7 +44,7 @@ export default function StreamingLinksAccordion({
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-          Listen on
+          {t("streaming.listenOn")}
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
@@ -70,7 +72,7 @@ export default function StreamingLinksAccordion({
               }}
               startIcon={<span>{platform.icon}</span>}
             >
-              Listen on {platform.name}
+              {t("streaming.listenOnPlatform", { platform: platform.name })}
             </Button>
           ))}
         </Box>

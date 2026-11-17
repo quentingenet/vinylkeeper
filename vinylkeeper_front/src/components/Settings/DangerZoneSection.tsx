@@ -14,12 +14,14 @@ import {
 } from "@mui/material";
 import { Delete, Security } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { userApiService } from "@services/UserApiService";
 import { useUserContext } from "@contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { colors } from "@styles/colors";
 
 export default function DangerZoneSection() {
+  const { t } = useTranslation("settings");
   const { logout } = useUserContext();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -38,7 +40,7 @@ export default function DangerZoneSection() {
       }, 100);
     },
     onError: (e: Error) => {
-      setDeleteError(e?.message || "Failed to delete account. Please try again.");
+      setDeleteError(e?.message || t("danger.error"));
     },
   });
 
@@ -49,11 +51,11 @@ export default function DangerZoneSection() {
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <Security sx={{ color: colors.error, mr: 1 }} />
             <Typography variant="h6" color="error">
-              Danger zone
+              {t("danger.title")}
             </Typography>
           </Box>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-            Once you delete your account, it's permanent.
+            {t("danger.warning")}
           </Typography>
           <Box sx={{ display: "flex", justifyContent: { xs: "center", md: "flex-end" }, mx: 2 }}>
             <Button
@@ -62,20 +64,20 @@ export default function DangerZoneSection() {
               startIcon={<Delete />}
               onClick={() => setDialogOpen(true)}
             >
-              Delete account
+              {t("danger.delete")}
             </Button>
           </Box>
         </CardContent>
       </Card>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle color="error">Delete account</DialogTitle>
+        <DialogTitle color="error">{t("danger.delete")}</DialogTitle>
         <DialogContent>
-          <Typography sx={{ mb: 2 }}>This action cannot be undone.</Typography>
+          <Typography sx={{ mb: 2 }}>{t("danger.cannotUndo")}</Typography>
           <TextField
             fullWidth
-            placeholder="Type DELETE in uppercase to delete"
-            label="Confirm deletion"
+            placeholder={t("danger.placeholder")}
+            label={t("danger.confirmLabel")}
             value={confirmation}
             onChange={(e) => {
               setConfirmation(e.target.value);
@@ -89,7 +91,7 @@ export default function DangerZoneSection() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDialogOpen(false)}>{t("common:actions.cancel")}</Button>
           <Button
             onClick={() => {
               if (confirmation === "DELETE") deleteAccountMutation.mutate();
@@ -98,7 +100,7 @@ export default function DangerZoneSection() {
             variant="contained"
             disabled={confirmation !== "DELETE" || deleteAccountMutation.isPending}
           >
-            {deleteAccountMutation.isPending ? "Deleting..." : "Delete"}
+            {deleteAccountMutation.isPending ? t("common:actions.deleting") : t("common:actions.delete")}
           </Button>
         </DialogActions>
       </Dialog>

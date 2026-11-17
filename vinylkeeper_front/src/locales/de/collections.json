@@ -1,0 +1,232 @@
+{
+  "counts": {
+    "albums_one": "{{count}} Album",
+    "albums_other": "{{count}} Alben",
+    "artists_one": "{{count}} Künstler",
+    "artists_other": "{{count}} Künstler",
+    "records_one": "{{count}} Platte",
+    "records_other": "{{count}} Platten",
+    "likes_one": "{{count}} Like",
+    "likes_other": "{{count}} Likes",
+    "plusLikes_one": "+{{count}} Like",
+    "plusLikes_other": "+{{count}} Likes",
+    "albums_many": "{{count}} Alben",
+    "artists_many": "{{count}} Künstler",
+    "records_many": "{{count}} Platten",
+    "likes_many": "{{count}} Likes",
+    "plusLikes_many": "+{{count}} Likes"
+  },
+  "item": {
+    "nowPublic": "Deine Sammlung ist jetzt öffentlich und für andere Mitglieder sichtbar",
+    "nowPrivate": "Deine Sammlung ist privat und nur für dich sichtbar",
+    "savedAs": "Gesichert als „{{name}}“",
+    "saveFailed": "Die Sicherung konnte nicht erstellt werden. Versuche es erneut.",
+    "unknownOwner": "Unbekannt",
+    "public": "Öffentlich",
+    "private": "Privat",
+    "edit": "Sammlung bearbeiten",
+    "alreadySaved": "Sicherung: bereits gesichert als „{{name}}“",
+    "saveCopy": "Eine Kopie dieser Sammlung sichern",
+    "save": "Sichern",
+    "delete": "Sammlung löschen",
+    "createdOn": "Erstellt am {{date}}",
+    "byOwner": " von {{name}}",
+    "deleteTitle": "„{{name}}“ löschen?",
+    "deleteText": "Die Sammlung <strong>„{{name}}“</strong> wird mit {{contents}} gelöscht. Das kann nicht rückgängig gemacht werden.",
+    "keepCopyFirst": "Um vorher eine Kopie zu behalten, brich ab und nutze den Sicherungsknopf der Sammlung."
+  },
+  "back": {
+    "myCollections": "Meine Sammlungen",
+    "community": "Community",
+    "label": "Zurück zu {{label}}"
+  },
+  "export": {
+    "albumsCsv": "Alben der Sammlung (CSV)",
+    "albumsOds": "Alben der Sammlung (ODS)",
+    "artistsCsv": "Künstler der Sammlung (CSV)",
+    "artistsOds": "Künstler der Sammlung (ODS)",
+    "wishlistCsv": "Meine Wunschliste (CSV)",
+    "wishlistOds": "Meine Wunschliste (ODS)",
+    "button": "Exportieren",
+    "exporting": "Wird exportiert…"
+  },
+  "tabs": {
+    "label": "Tabs der Sammlung",
+    "albums": "Alben",
+    "artists": "Künstler",
+    "wishlist": "Wunschliste"
+  },
+  "unavailable": {
+    "private": {
+      "title": "Diese Sammlung ist jetzt privat",
+      "text": "Ihr Besitzer möchte sie für sich behalten, sie kann nicht mehr angesehen werden."
+    },
+    "notFound": {
+      "title": "Diese Sammlung gibt es nicht mehr",
+      "text": "Sie wurde vielleicht von ihrem Besitzer gelöscht, oder der Link ist unvollständig."
+    },
+    "error": {
+      "title": "Diese Sammlung konnte nicht geladen werden",
+      "text": "Prüfe deine Verbindung und versuche es gleich noch einmal."
+    }
+  },
+  "coverAlt": "Vinylplatte",
+  "community": {
+    "loadError": "Fehler beim Laden der öffentlichen Sammlungen",
+    "intro": "Entdecke öffentliche und geteilte Vinylsammlungen anderer Mitglieder.",
+    "sortBy": "Sortieren nach",
+    "recentlyUpdated": "Kürzlich aktualisiert",
+    "mostLiked": "Am beliebtesten",
+    "newest": "Neueste",
+    "empty": "Im Moment gibt es keine öffentlichen Sammlungen."
+  },
+  "media": {
+    "moveToCollection": "In eine Sammlung verschieben",
+    "delete": "Entfernen",
+    "copies_one": "{{count}} Exemplar",
+    "copies_other": "{{count}} Exemplare",
+    "pressings_one": "{{count}} Pressung",
+    "pressings_other": "{{count}} Pressungen",
+    "copies_many": "{{count}} Exemplare",
+    "pressings_many": "{{count}} Pressungen"
+  },
+  "modal": {
+    "updating": "Sammlung bearbeiten",
+    "creating": "Neue Sammlung erstellen",
+    "duplicateName": "Eine Sammlung mit diesem Namen gibt es schon. Wähle einen anderen Namen.",
+    "createError": "Beim Erstellen der Sammlung ist ein Fehler aufgetreten. Versuche es erneut.",
+    "updateError": "Beim Bearbeiten der Sammlung ist ein Fehler aufgetreten. Versuche es erneut.",
+    "name": "Name",
+    "description": "Beschreibung",
+    "submitCreating": "Wird erstellt...",
+    "submitUpdating": "Wird gespeichert...",
+    "update": "Speichern",
+    "create": "Erstellen"
+  },
+  "move": {
+    "title": "Hast du sie? Verschieb sie in eine Sammlung",
+    "albumText": "<strong>„{{title}}“</strong> kommt in die gewählte Sammlung und verlässt deine Wunschliste. Ist sie dort schon, bekommt sie ein Exemplar mehr.",
+    "artistText": "<strong>„{{title}}“</strong> kommt zu den Künstlern der gewählten Sammlung und verlässt deine Wunschliste.",
+    "pressing": "Pressung",
+    "exact": "Das ist genau die Pressung, die ich habe",
+    "toConfirm": "Die Platte kommt mit einer noch zu bestätigenden Pressung: Bestätige sie in der Sammlung oder finde die richtige, um sie zu ersetzen.",
+    "collection": "Sammlung",
+    "createFirst": "Erstelle zuerst eine Sammlung, um Platten hineinzuverschieben.",
+    "error": "Die Platte konnte nicht verschoben werden. Versuche es erneut.",
+    "moving": "Wird verschoben...",
+    "move": "Verschieben",
+    "done": "„{{title}}“ nach „{{collection}}“ verschoben",
+    "alreadyAlbum": "„{{title}}“ war schon in „{{collection}}“: ein Exemplar mehr hinzugefügt",
+    "alreadyArtist": "„{{title}}“ war schon in „{{collection}}“",
+    "thisRecord": "Diese Platte",
+    "thisArtist": "Dieser Künstler"
+  },
+  "wishlist": {
+    "gotItTooltip": "Hast du diese Platte? Verschieb sie in eine deiner Sammlungen",
+    "artistTooltip": "Diesen Künstler in eine deiner Sammlungen verschieben",
+    "pressingNumber": "Pressung {{number}}",
+    "wantedPressings_one": "{{count}} gesuchte Pressung",
+    "wantedPressings_other": "{{count}} gesuchte Pressungen",
+    "wantedLabel": "Gesuchte Pressungen",
+    "moveAria": "{{title}} in eine Sammlung verschieben",
+    "removeTooltip": "Diese Pressung von deiner Wunschliste entfernen",
+    "removeAria": "{{title}} von der Wunschliste entfernen",
+    "minChars": "Gib mindestens 2 Zeichen ein, um zu suchen.",
+    "noMatch": "Kein Eintrag der Wunschliste passt zu „{{term}}“.",
+    "results_one": "Ergebnisse für „{{term}}“ ({{count}} Eintrag)",
+    "results_other": "Ergebnisse für „{{term}}“ ({{count}} Einträge)",
+    "empty": "Deine Wunschliste ist leer.",
+    "wantedPressings_many": "{{count}} gesuchte Pressungen",
+    "results_many": "Ergebnisse für „{{term}}“ ({{count}} Einträge)"
+  },
+  "mine": {
+    "loadError": "Fehler beim Laden der Sammlungen",
+    "create": "Neue Sammlung erstellen",
+    "shareHint1": "Teile deine Sammlung, indem du",
+    "shareHint2": "ihre Sichtbarkeit von privat auf öffentlich änderst.",
+    "importRunning": "Discogs-Import läuft",
+    "import": "Von Discogs importieren",
+    "empty": "Keine Sammlung gefunden. Erstelle eine!"
+  },
+  "share": {
+    "label": "Diese Sammlung teilen",
+    "private": "Mach sie öffentlich, um diese Sammlung mit Diggern\nauf der ganzen Welt zu teilen, ob auf Vinyl Keeper oder nicht",
+    "textOwner": "Schau dir die Sammlung von {{name}} an und entdecke vinylkeeper.org",
+    "text": "Schau dir diese Sammlung an und entdecke vinylkeeper.org",
+    "copied": "Link kopiert",
+    "copyFailed": "Der Link konnte nicht kopiert werden",
+    "copy": "Link kopieren",
+    "email": "E-Mail",
+    "button": "Teilen"
+  },
+  "confirm": {
+    "remove": "Entfernen",
+    "removing": "Wird entfernt..."
+  },
+  "details": {
+    "searchAlbum": "Album suchen",
+    "searchArtist": "Künstler suchen",
+    "searchBoth": "Künstler oder Album suchen",
+    "searchInMine": "{{what}} in meiner Sammlung",
+    "searchInThis": "{{what}} in dieser Sammlung",
+    "metaTitle": "{{name}} - VinylKeeper",
+    "browseCommunity": "Sammlungen der Community ansehen",
+    "noDescription": "Keine Beschreibung",
+    "addRecords": "Platten hinzufügen",
+    "createdOn": "Erstellt am {{date}}",
+    "unknownDate": "Unbekanntes Datum",
+    "clearSearch": "Suche löschen",
+    "sortOrder": "Reihenfolge",
+    "newest": "Neueste zuerst",
+    "oldest": "Älteste zuerst",
+    "noAlbumMatch": "Kein Album passt zu „{{term}}“.",
+    "noArtistMatch": "Kein Künstler passt zu „{{term}}“.",
+    "albumResults_one": "Ergebnisse für „{{term}}“ ({{count}} Album)",
+    "albumResults_other": "Ergebnisse für „{{term}}“ ({{count}} Alben)",
+    "artistResults_one": "Ergebnisse für „{{term}}“ ({{count}} Künstler)",
+    "artistResults_other": "Ergebnisse für „{{term}}“ ({{count}} Künstler)",
+    "albumsError": "Fehler beim Laden der Alben",
+    "artistsError": "Fehler beim Laden der Künstler",
+    "noAlbums": "Noch keine Alben in dieser Sammlung.",
+    "noArtists": "Noch keine Künstler in dieser Sammlung.",
+    "removeAlbumTitle": "Album aus der Sammlung entfernen",
+    "removeArtistTitle": "Künstler aus der Sammlung entfernen",
+    "removeFromCollection": "Willst du „{{title}}“ wirklich aus dieser Sammlung entfernen? Das kann nicht rückgängig gemacht werden.",
+    "removeWishlistTitle": "Von der Wunschliste entfernen",
+    "removeFromWishlist": "Willst du „{{title}}“ wirklich von deiner Wunschliste entfernen? Das kann nicht rückgängig gemacht werden.",
+    "albumResults_many": "Ergebnisse für „{{term}}“ ({{count}} Alben)",
+    "artistResults_many": "Ergebnisse für „{{term}}“ ({{count}} Künstler)"
+  },
+  "page": {
+    "communityTitle": "Sammlungen der Community - VinylKeeper",
+    "tabsLabel": "Tabs der Sammlungen",
+    "mine": "Meine Sammlungen",
+    "community": "Community"
+  },
+  "shared": {
+    "unknown": "Unbekannt",
+    "joinEvery": "Tritt Vinyl Keeper bei, um die Sammlung jedes Diggers zu sehen.",
+    "more": {
+      "record_one": "{{count}} weitere Platte in dieser Sammlung. Tritt Vinyl Keeper bei, um alle zu sehen.",
+      "record_other": "{{count}} weitere Platten in dieser Sammlung. Tritt Vinyl Keeper bei, um alle zu sehen.",
+      "artist_one": "{{count}} weiterer Künstler in dieser Sammlung. Tritt Vinyl Keeper bei, um alle zu sehen.",
+      "artist_other": "{{count}} weitere Künstler in dieser Sammlung. Tritt Vinyl Keeper bei, um alle zu sehen.",
+      "record_many": "{{count}} weitere Platten in dieser Sammlung. Tritt Vinyl Keeper bei, um alle zu sehen.",
+      "artist_many": "{{count}} weitere Künstler in dieser Sammlung. Tritt Vinyl Keeper bei, um alle zu sehen."
+    },
+    "join": "Vinyl Keeper beitreten",
+    "seeWhole": "Die ganze Sammlung sehen",
+    "by": "Eine Sammlung von {{name}}",
+    "tabsLabel": "Geteilte Sammlung",
+    "metaTitle": "{{name}} | Vinyl Keeper",
+    "metaTitleDefault": "Geteilte Sammlung | Vinyl Keeper",
+    "metaDescription_one": "Schau dir die Sammlung von {{owner}} an und entdecke vinylkeeper.org. {{count}} Platte.",
+    "metaDescription_other": "Schau dir die Sammlung von {{owner}} an und entdecke vinylkeeper.org. {{count}} Platten.",
+    "thisDigger": "diesem Digger",
+    "exploreAtlas": "Den Vinyl Atlas erkunden",
+    "joinTitle": "Tritt Vinyl Keeper bei, um diese ganze Sammlung zu sehen",
+    "emptyRecords": "Noch keine Platten in dieser Sammlung.",
+    "emptyWishlist": "Noch nichts auf dieser Wunschliste.",
+    "metaDescription_many": "Schau dir die Sammlung von {{owner}} an und entdecke vinylkeeper.org. {{count}} Platten."
+  }
+}

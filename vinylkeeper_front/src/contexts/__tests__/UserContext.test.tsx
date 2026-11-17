@@ -3,6 +3,7 @@ import { render, screen, cleanup, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UserContextProvider, useUserContext } from "@contexts/UserContext";
+import i18n from "@utils/i18n";
 
 const api = vi.hoisted(() => ({ refreshToken: vi.fn(), getCurrentUser: vi.fn(), logout: vi.fn() }));
 vi.mock("@services/UserApiService", () => ({ userApiService: api }));
@@ -132,5 +133,36 @@ describe("UserContextProvider session check", () => {
     await flush();
 
     expect(screen.getByText(/state:false/)).toBeInTheDocument();
+  });
+});
+
+describe("UserContextProvider language", () => {
+  afterEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
+  it("shows the language the member saved once they are known", async () => {
+    localStorage.setItem(SESSION_KEY, "1");
+    api.refreshToken.mockResolvedValue({ isLoggedIn: true });
+    api.getCurrentUser.mockResolvedValue({ ...user, language: "fr" });
+
+    renderProvider();
+    await flush();
+
+    expect(i18n.language).toBe("fr");
+    expect(document.documentElement.lang).toBe("fr");
+  });
+
+  it("follows the device for a member who saved none, and for a visitor", async () => {
+    await i18n.changeLanguage("pt");
+    localStorage.setItem(SESSION_KEY, "1");
+    api.refreshToken.mockResolvedValue({ isLoggedIn: true });
+    api.getCurrentUser.mockResolvedValue({ ...user, language: null });
+
+    renderProvider();
+    await flush();
+
+    // The tests run on an en-GB device (setupTests)
+    expect(i18n.language).toBe("en");
   });
 });

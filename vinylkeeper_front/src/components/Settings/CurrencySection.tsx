@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, Box, Card, CardContent, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { Euro } from "@mui/icons-material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { userApiService } from "@services/UserApiService";
 import { queryKeys } from "@utils/queryKeys";
 import type { Currency } from "@models/IDashboardStats";
@@ -12,6 +13,7 @@ interface CurrencySectionProps {
 
 /** Currency the collection value of the dashboard is shown in. Prices are stored in EUR. */
 export default function CurrencySection({ currency }: CurrencySectionProps) {
+  const { t } = useTranslation("settings");
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
@@ -31,11 +33,10 @@ export default function CurrencySection({ currency }: CurrencySectionProps) {
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Euro sx={{ color: "primary.main", mr: 1 }} />
-          <Typography variant="h6">Collection value</Typography>
+          <Typography variant="h6">{t("currency.title")}</Typography>
         </Box>
         <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-          Currency of the estimated value of your collections on the dashboard. Dollars are converted
-          from euros at the rate of the day.
+          {t("currency.description")}
         </Typography>
         <ToggleButtonGroup
           exclusive
@@ -43,7 +44,7 @@ export default function CurrencySection({ currency }: CurrencySectionProps) {
           onChange={(_event, next: Currency | null) => {
             if (next && next !== currency) mutation.mutate(next);
           }}
-          aria-label="Currency"
+          aria-label={t("currency.label")}
           disabled={mutation.isPending}
         >
           <ToggleButton value="EUR">EUR €</ToggleButton>

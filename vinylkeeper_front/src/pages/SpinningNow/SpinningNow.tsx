@@ -13,10 +13,12 @@ import useDetectMobile from "@hooks/useDetectMobile";
 import { spinningNowAlbumToPlaybackItem } from "@utils/toPlaybackItem";
 import { useAddRecord } from "@contexts/AddRecordContext";
 import type { SpinningNowAlbum, SpinningNowFilters } from "@models/ISpinningNow";
+import { useTranslation } from "react-i18next";
 
 const PAGE_MAX_WIDTH = 1200;
 
 export default function SpinningNow() {
+  const { t } = useTranslation("spinningNow");
   // The Dashboard stats open this page on the era, genre or mood that was clicked
   const location = useLocation();
   const initialFilters = (location.state as { filters?: Partial<SpinningNowFilters> } | null)?.filters;
@@ -44,13 +46,13 @@ export default function SpinningNow() {
     setSurpriseMessage(null);
     const album = await surprise.mutateAsync().catch(() => null);
     if (album) play(album);
-    else setSurpriseMessage("Nothing matches these filters yet. Try removing one.");
+    else setSurpriseMessage(t("nothingMatches"));
   };
 
   if (optionsQuery.isLoading) return <LoadingCenter />;
 
   if (optionsQuery.isError || !optionsQuery.data) {
-    return <EmptyState message="Spinning now is unavailable right now. Please try again later." />;
+    return <EmptyState message={t("unavailable")} />;
   }
 
   if (!hasAlbums) {
@@ -58,11 +60,11 @@ export default function SpinningNow() {
       <EmptyState
         message={
           <>
-            No records in your collections yet.{" "}
+            {t("empty.before")}{" "}
             <Link component="button" onClick={() => openAddRecord()} sx={{ verticalAlign: "baseline" }}>
-              Add your first vinyls
+              {t("empty.link")}
             </Link>{" "}
-            and come back to pick one to play.
+            {t("empty.after")}
           </>
         }
       />
@@ -78,20 +80,20 @@ export default function SpinningNow() {
     // border-box: the app has no CssBaseline, so padding would otherwise widen the 100% width
     <Box sx={{ width: "100%", maxWidth: PAGE_MAX_WIDTH, mx: "auto", px: { xs: 2, md: 3 }, pb: 4, boxSizing: "border-box" }}>
       <Typography variant="h6" component="p" sx={{ color: "text.primary", textAlign: "center", mb: 0.5 }}>
-        Pick a mood, an era or a genre and find what to put on the turntable.
+        {t("intro")}
       </Typography>
       <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", mb: 3 }}>
-        The more records you add, the better your picks get.
+        {t("moreRecords")}
       </Typography>
 
       <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, backgroundColor: "background.paper" }}>
         {!hasFilterOptions && (
           <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center" }}>
-            Moods, eras and genres show up once your records have been analysed.
+            {t("notAnalysed")}
           </Typography>
         )}
         <FilterChipGroup
-          title="Mood"
+          title={t("filters.mood")}
           options={moods.map((m) => ({
             value: m.name,
             label: formatMoodName(m.name),
@@ -103,14 +105,14 @@ export default function SpinningNow() {
           defaultExpanded={!isMobile}
         />
         <FilterChipGroup
-          title="Era"
+          title={t("filters.era")}
           options={eras.map((e) => ({ value: e.decade, label: formatDecade(e.decade), count: e.albums_count }))}
           selected={filters.eras}
           onToggle={toggleEra}
           defaultExpanded={!isMobile}
         />
         <FilterChipGroup
-          title="Genre"
+          title={t("filters.genre")}
           options={genres.map((g) => ({ value: g.name, label: g.name, count: g.albums_count }))}
           selected={filters.genres}
           onToggle={toggleGenre}
@@ -119,7 +121,7 @@ export default function SpinningNow() {
         {/* Choosing among collections only makes sense with at least two of them */}
         {collections.length > 1 && (
           <FilterChipGroup
-            title="Collection"
+            title={t("filters.collection")}
             options={collections.map((c) => ({ value: c.id, label: c.name, count: c.albums_count }))}
             selected={filters.collections}
             onToggle={toggleCollection}
@@ -134,7 +136,7 @@ export default function SpinningNow() {
             onClick={() => void handleSurprise()}
             disabled={surprise.isPending}
           >
-            Surprise me
+            {t("surprise")}
           </Button>
           <Button
             variant="outlined"
@@ -142,11 +144,11 @@ export default function SpinningNow() {
             onClick={() => void resultsQuery.refetch()}
             disabled={resultsQuery.isFetching}
           >
-            Shuffle
+            {t("shuffle")}
           </Button>
           {hasFilters && (
             <Button variant="text" onClick={clearFilters}>
-              Clear filters
+              {t("clear")}
             </Button>
           )}
         </Box>
@@ -160,12 +162,12 @@ export default function SpinningNow() {
       {results && (
         <Typography variant="body2" role="status" sx={{ color: "text.secondary", mb: 2 }}>
           {results.total === 0
-            ? "No record matches these filters."
-            : `${results.items.length} of ${results.total} records, picked at random.`}
+            ? t("noMatch")
+            : t("results", { shown: results.items.length, count: results.total })}
         </Typography>
       )}
 
-      {resultsQuery.isError && <EmptyState message="Could not load records. Please try again." />}
+      {resultsQuery.isError && <EmptyState message={t("loadFailed")} />}
 
       {results && results.items.length > 0 && (
         <Box

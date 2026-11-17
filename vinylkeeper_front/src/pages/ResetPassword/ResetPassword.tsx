@@ -8,11 +8,13 @@ import { Typography } from "@mui/material";
 import videoBackground from "../../assets/landpageBackground.mp4";
 import videoPoster from "../../assets/landpageBackgroundPoster.webp";
 import ResetPasswordForm from "@components/ResetPassword/ResetPasswordForm";
+import { useTranslation } from "react-i18next";
 
 export default function ResetPassword() {
+  const { t } = useTranslation("auth");
   const { isMobile } = useDetectMobile();
   // Opened from an email link: nothing for search engines
-  usePageMeta({ title: "Reset your password | Vinyl Keeper", noIndex: true });
+  usePageMeta({ title: t("reset.metaTitle"), noIndex: true });
 
   const [openTermsModal, setOpenTermsModal] = useState<boolean>(false);
   const [openFounderModal, setOpenFounderModal] = useState<boolean>(false);
@@ -34,12 +36,12 @@ export default function ResetPassword() {
           </video>
         )}
         <Typography variant="h1" className={styles.titleNormal}>
-          Vinyl Keeper
+          {t("nav:brand")}
         </Typography>
         <div className={styles.textContainer}>
           <p className={styles.textTypo}>
-            Ready to reset your password&nbsp;?
-            <br /> Let’s get started just below&nbsp;!
+            {t("reset.ready")}
+            <br /> {t("reset.below")}
           </p>
 
           <div className={styles.actionContainer}>
@@ -51,6 +53,7 @@ export default function ResetPassword() {
           openTermsModal={openTermsModal}
           setOpenFounderModal={setOpenFounderModal}
           openFounderModal={openFounderModal}
+          withLanguage
         />
       </div>
     </>

@@ -41,11 +41,10 @@ import { isApiError } from "@utils/apiError";
 import { oneSaveMessage } from "@components/Collections/discogsImportLabels";
 import { createPortal } from "react-dom";
 import { colors } from "@styles/colors";
+import { Trans, useTranslation } from "react-i18next";
+import { formatLocale } from "@utils/i18n";
 
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
-
-const formatCount = (count: number, noun: string) =>
-  `${count} ${noun}${count === 1 ? "" : "s"}`;
+const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString(formatLocale());
 
 interface CollectionItemProps {
   collection: CollectionResponse | CollectionListItemResponse;
@@ -68,6 +67,7 @@ export default function CollectionItem({
   isOwner,
   showOwner,
 }: CollectionItemProps) {
+  const { t } = useTranslation("collections");
   // The full CollectionResponse has no list-view fields: derive them
   const previewImages =
     "preview_images" in collection ? collection.preview_images ?? [] : [];
@@ -109,8 +109,8 @@ export default function CollectionItem({
     setLocalIsPublic(newValue);
     setStatusMessage(
       newValue
-        ? "Your collection is public and visible by other users now"
-        : "Your collection is private and visible only by you"
+        ? t("item.nowPublic")
+        : t("item.nowPrivate")
     );
     setStatusSeverity("success");
     setShowStatusToast(true);
@@ -135,18 +135,17 @@ export default function CollectionItem({
       return;
     }
     saveCopy.mutate(collection.id, {
-      onSuccess: (copy) => showToast(`Saved as “${copy.name}”`, "success"),
+      onSuccess: (copy) => showToast(t("item.savedAs", { name: copy.name }), "success"),
       onError: (error) =>
-        showToast(isApiError(error) ? error.message : "The save could not be made. Try again.", "error"),
+        showToast(isApiError(error) ? error.message : t("item.saveFailed"), "error"),
     });
   };
 
   // What the delete dialog says goes away with the collection
-  const countOf = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
   const deletedContents = [
-    countOf(albumsCount, "record"),
-    countOf(artistsCount, "artist"),
-    countOf(localLikesCount, "like"),
+    t("counts.records", { count: albumsCount }),
+    t("counts.artists", { count: artistsCount }),
+    t("counts.likes", { count: localLikesCount }),
   ].join(", ");
 
   const closeDeleteDialog = () => {
@@ -236,7 +235,7 @@ export default function CollectionItem({
               fontWeight: 600,
             }}
           >
-            {formatCount(albumsCount, "album")} · {formatCount(artistsCount, "artist")}
+            {t("counts.albums", { count: albumsCount })} · {t("counts.artists", { count: artistsCount })}
           </Typography>
         </Box>
 
@@ -274,35 +273,35 @@ export default function CollectionItem({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <PersonIcon fontSize="small" color="action" />
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {collection.owner?.username || "Unknown"}
+                    {collection.owner?.username || t("item.unknownOwner")}
                   </Typography>
                 </Box>
               )}
               {isOwner && (
                 <FormControlLabel
                   control={<Switch checked={localIsPublic} onChange={handleToggle} size="small" />}
-                  label={localIsPublic ? "Public" : "Private"}
+                  label={localIsPublic ? t("item.public") : t("item.private")}
                   sx={{ m: 0 }}
                 />
               )}
             </Box>
             {isOwner && (
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Tooltip title="Edit collection">
+                <Tooltip title={t("item.edit")}>
                   <span style={{ display: "inline-flex" }}>
-                    <IconButton size="small" aria-label="Edit collection" onClick={handleEdit} sx={{ color: "primary.main" }}>
+                    <IconButton size="small" aria-label={t("item.edit")} onClick={handleEdit} sx={{ color: "primary.main" }}>
                       <EditIcon />
                     </IconButton>
                   </span>
                 </Tooltip>
                 {!isSave && (
                   <Tooltip
-                    title={existingSaveName ? `Save: already saved as “${existingSaveName}”` : "Save a copy of this collection"}
+                    title={existingSaveName ? t("item.alreadySaved", { name: existingSaveName }) : t("item.saveCopy")}
                   >
                     <span style={{ display: "inline-flex" }}>
                       <IconButton
                         size="small"
-                        aria-label="Save"
+                        aria-label={t("item.save")}
                         onClick={handleSaveCopy}
                         disabled={collection.id < 0 || saveCopy.isPending}
                         sx={{ color: "primary.main" }}
@@ -312,11 +311,11 @@ export default function CollectionItem({
                     </span>
                   </Tooltip>
                 )}
-                <Tooltip title="Delete collection">
+                <Tooltip title={t("item.delete")}>
                   <span style={{ display: "inline-flex" }}>
                     <IconButton
                       size="small"
-                      aria-label="Delete collection"
+                      aria-label={t("item.delete")}
                       onClick={(e) => { e.stopPropagation(); setOpenDeleteDialog(true); }}
                       disabled={collection.id < 0}
                       sx={{ color: collection.id < 0 ? "grey.400" : "primary.main", opacity: collection.id < 0 ? 0.5 : 1 }}
@@ -331,8 +330,8 @@ export default function CollectionItem({
 
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Typography variant="caption" sx={{ color: "text.secondary", mt: 1, display: "block" }}>
-              Created on {formatDate(collection.created_at)}
-              {!showOwner && <> by {truncateText(collection.owner?.username || "Unknown", 10)}</>}
+              {t("item.createdOn", { date: formatDate(collection.created_at) })}
+              {!showOwner && t("item.byOwner", { name: truncateText(collection.owner?.username || t("item.unknownOwner"), 10) })}
             </Typography>
             {localLikesCount > 0 && (
               <Typography
@@ -345,7 +344,7 @@ export default function CollectionItem({
                   display: "inline-block",
                 }}
               >
-                +{localLikesCount} {localLikesCount === 1 ? "like" : "likes"}
+                {t("counts.plusLikes", { count: localLikesCount })}
               </Typography>
             )}
           </Stack>
@@ -376,21 +375,26 @@ export default function CollectionItem({
       )}
 
       <Dialog open={openDeleteDialog} onClose={closeDeleteDialog} onClick={(e) => e.stopPropagation()}>
-        <DialogTitle>Delete “{collection.name}”?</DialogTitle>
+        <DialogTitle>{t("item.deleteTitle", { name: collection.name })}</DialogTitle>
         <DialogContent>
           <Typography>
-            The collection <strong>“{collection.name}”</strong> is deleted with {deletedContents}. This cannot be undone.
+            <Trans
+              t={t}
+              i18nKey="item.deleteText"
+              values={{ name: collection.name, contents: deletedContents }}
+              components={{ strong: <strong /> }}
+            />
           </Typography>
           {!isSave && !existingSaveName && albumsCount > 0 && (
             <Typography variant="body2" sx={{ color: "text.secondary", mt: 1.5 }}>
-              To keep a copy first, cancel and use the save button of the collection.
+              {t("item.keepCopyFirst")}
             </Typography>
           )}
           <TextField
             fullWidth
             sx={{ mt: 2 }}
-            placeholder="Type DELETE in uppercase to delete"
-            label="Confirm deletion"
+            placeholder={t("settings:danger.placeholder")}
+            label={t("settings:danger.confirmLabel")}
             value={deleteConfirmation}
             onChange={(e) => setDeleteConfirmation(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleDelete()}
@@ -398,14 +402,14 @@ export default function CollectionItem({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDeleteDialog}>Cancel</Button>
+          <Button onClick={closeDeleteDialog}>{t("common:actions.cancel")}</Button>
           <Button
             onClick={handleDelete}
             color="error"
             variant="contained"
             disabled={deleteConfirmation !== "DELETE" || isDeletingCollection}
           >
-            {isDeletingCollection ? "Deleting..." : "Delete"}
+            {isDeletingCollection ? t("common:actions.deleting") : t("common:actions.delete")}
           </Button>
         </DialogActions>
       </Dialog>

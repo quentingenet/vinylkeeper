@@ -15,6 +15,7 @@ from app.schemas.user_schema import (
     ConfirmEmailRequest,
     ContactMessageRequest,
     CurrencyUpdateRequest,
+    LanguageUpdateRequest,
     ContactMessageResponse,
     LoginResponse,
     RegisterResponse,
@@ -208,6 +209,17 @@ async def set_my_currency(
     """Currency the collection value is shown in."""
     await user_service.set_preferred_currency(current_user, currency_data.currency)
     return MessageResponse(message=f"Collection value shown in {currency_data.currency}")
+
+
+@router.put("/me/language", response_model=MessageResponse, status_code=status.HTTP_200_OK)
+async def set_my_language(
+    language_data: LanguageUpdateRequest,
+    current_user=Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> MessageResponse:
+    """Language of the interface of the current user; null follows the language of the device."""
+    await user_service.set_language(current_user, language_data.language)
+    return MessageResponse(message="Language saved")
 
 
 @router.put("/me/password", response_model=PasswordChangeResponse, response_model_exclude_none=True,

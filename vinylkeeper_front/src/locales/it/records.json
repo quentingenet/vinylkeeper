@@ -1,0 +1,123 @@
+{
+  "add": {
+    "failed": "Non è stato possibile aggiungere il disco. Riprova.",
+    "adding": "Aggiunta alla collezione..."
+  },
+  "search": {
+    "minChars": "Scrivi almeno {{count}} caratteri per cercare."
+  },
+  "export": {
+    "shareTitle": "Salva o invia la tua esportazione"
+  },
+  "dialog": {
+    "scanFailed": "La scansione non è riuscita, riprova.",
+    "findPressing": "Trova la tua stampa",
+    "addRecord": "Aggiungi un disco",
+    "pickPressing": "Scegli la stampa che hai sullo scaffale.",
+    "pickPressingFor": "Scegli la stampa di «{{title}}» che hai sullo scaffale.",
+    "searchFor": "Cerca",
+    "album": "Album",
+    "artist": "Artista",
+    "searchByAlbum": "Cerca per album",
+    "searchByArtist": "Cerca per artista",
+    "search": "Cerca",
+    "scan": "Scansiona il codice a barre",
+    "scanHint": "Scansiona il codice a barre sul retro della copertina: tieni il telefono a circa 15 cm, con una buona luce.",
+    "scanSoon": "Presto disponibile con l'app Android",
+    "noArtist": "Nessun artista trovato",
+    "noAlbum": "Nessun album trovato"
+  },
+  "panel": {
+    "noCollections": "Ancora nessuna collezione. Creane una in Collezioni per aggiungerci dischi.",
+    "collection": "Collezione",
+    "addToCollection": "Aggiungi alla collezione",
+    "addToWishlist": "Aggiungi alla lista dei desideri",
+    "albumDetails": "Vedi i dettagli dell'album",
+    "artistDetails": "Vedi i dettagli dell'artista"
+  },
+  "replace": {
+    "willReplace": "Sostituirà la stampa di «{{title}}» nella tua collezione.",
+    "kept": "Le tue copie, il loro stato e la data in cui l'hai aggiunto vengono conservati.",
+    "failed": "Non è stato possibile sostituire la stampa. Riprova.",
+    "mine": "Questa è la mia stampa"
+  },
+  "copy": {
+    "addedOn": "Aggiunto il {{date}}",
+    "updatedOn": "{{caption}}, modificato il {{date}}"
+  },
+  "duplicate": {
+    "samePressing": "Hai già questa stampa in {{collection}}{{count}}. Aggiungere un'altra copia?",
+    "addCopy": "Aggiungi un'altra copia",
+    "otherPressings": "{{count}} altre stampe di questo disco",
+    "otherPressing": "un'altra stampa di questo disco",
+    "alreadyHave": "Hai già {{what}} in {{collection}}{{details}}. Aggiungere anche questa stampa?",
+    "addPressing": "Aggiungi questa stampa",
+    "hintSame": "Hai questa stampa qui",
+    "hintOther": "Hai un'altra stampa qui"
+  },
+  "states": {
+    "notDefined": "Non indicato"
+  },
+  "state": {
+    "title": "Stato dell'album (facoltativo)",
+    "cover": "Stato della copertina",
+    "record": "Stato del disco",
+    "acquisition": "Mese di acquisto",
+    "acquisitionHelp": "Scegli il mese e l'anno di acquisto"
+  },
+  "more": {
+    "title": "Altro su questa stampa",
+    "failed": "Non è stato possibile caricare i dettagli della stampa. Riprova.",
+    "released": "Pubblicazione",
+    "barcode": "Codice a barre",
+    "matrix": "Matrice / Runout",
+    "none": "Nessun altro dettaglio su Discogs per questa stampa."
+  },
+  "copies": {
+    "record": "Disco: {{state}}",
+    "cover": "Copertina: {{state}}",
+    "acquired": "Acquistato: {{date}}",
+    "copyNumber": "Copia {{number}}",
+    "noCondition": "Nessuno stato indicato",
+    "deleteAria": "Elimina la copia {{number}}",
+    "deleteConfirm": "Eliminare questa copia?",
+    "keep": "Tienila",
+    "save": "Salva la copia {{number}}",
+    "title": "Copia",
+    "titleMany": "Copie ({{count}})",
+    "add": "Aggiungi una copia",
+    "saveFailed": "Non è stato possibile salvare le copie. Riprova."
+  },
+  "pressing": {
+    "title": "Stampa",
+    "addedBefore": "Aggiunto prima che le stampe comparissero nei risultati di ricerca. È la tua copia?",
+    "notConfirmed": "Stampa non confermata dal proprietario.",
+    "yes": "Sì, è la mia stampa",
+    "no": "No, trova la mia stampa"
+  },
+  "owned": {
+    "one": "La tua stampa",
+    "many": "Le tue stampe",
+    "notConfirmed": "Stampa non ancora confermata: aprila dalla tua collezione per verificarla."
+  },
+  "pressings": {
+    "inCollection": "Stampe in questa collezione ({{count}})",
+    "remove": "Rimuovi questa stampa dalla collezione"
+  },
+  "streaming": {
+    "listenOn": "Ascolta su",
+    "listenOnPlatform": "Ascolta su {{platform}}"
+  },
+  "tracklist": {
+    "title": "Tracklist"
+  },
+  "playback": {
+    "albumDetails": "Dettagli dell'album",
+    "artistDetails": "Dettagli dell'artista",
+    "error": "Si è verificato un errore",
+    "genres": "Generi",
+    "biography": "Biografia",
+    "noTracklist": "Tracklist non disponibile",
+    "noBiography": "Biografia non disponibile"
+  }
+}

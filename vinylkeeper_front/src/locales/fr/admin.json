@@ -1,0 +1,98 @@
+{
+  "feedback": {
+    "approved": "Demande de modération approuvée.",
+    "rejected": "Demande de modération refusée.",
+    "removed": "Lieu retiré de la carte.",
+    "updated": "Lieu mis à jour sur la carte."
+  },
+  "status": {
+    "pending": "En attente",
+    "approved": "Approuvé",
+    "rejected": "Refusé",
+    "removed": "Retiré",
+    "total": "Total"
+  },
+  "edit": {
+    "title": "Modifier le lieu",
+    "name": "Nom",
+    "address": "Adresse",
+    "city": "Ville",
+    "country": "Pays",
+    "description": "Description",
+    "website": "Site web",
+    "type": "Type de lieu",
+    "failed": "Le lieu n'a pas pu être enregistré. Réessaie.",
+    "save": "Enregistrer",
+    "saveResolve": "Enregistrer et résoudre",
+    "lastUpdate": "Dernière mise à jour : {{date}}",
+    "pinMoves": "Le repère se déplace vers la nouvelle ville sur la carte."
+  },
+  "detail": {
+    "title": "Détails de la demande de modération",
+    "spot": "Informations du lieu",
+    "city": "Ville :",
+    "description": "Description :",
+    "noDescription": "Aucune description",
+    "status": "Statut actuel :",
+    "request": "Informations de la demande",
+    "submittedBy": "Proposé par :",
+    "date": "Date de la proposition :",
+    "actions": "Actions possibles",
+    "approving": "Approbation...",
+    "approve": "Approuver",
+    "rejecting": "Refus...",
+    "reject": "Refuser"
+  },
+  "reports": {
+    "resolved": "Signalement résolu, avec les autres signalements ouverts de ce lieu.",
+    "resolveFailed": "Le signalement n'a pas pu être résolu.",
+    "dismissed": "Signalement écarté.",
+    "dismissFailed": "Le signalement n'a pas pu être écarté.",
+    "removed": "Lieu retiré de la carte, ses signalements sont résolus.",
+    "removeFailed": "Le lieu n'a pas pu être retiré.",
+    "title": "Signalements de lieux ({{count}} ouverts)",
+    "shown": "Signalements affichés",
+    "open": "Ouverts",
+    "all": "Tous",
+    "loadError": "Erreur lors du chargement des signalements",
+    "noneOpen": "Aucun signalement ouvert : tous les lieux semblent corrects.",
+    "none": "Aucun signalement pour l'instant.",
+    "statusResolved": "Résolu",
+    "statusDismissed": "Écarté",
+    "offMap": "Retiré de la carte",
+    "by": "Signalé par {{name}} le {{date}}",
+    "deletedAccount": "un compte supprimé",
+    "edit": "Modifier le lieu",
+    "resolve": "Résoudre",
+    "dismiss": "Écarter",
+    "remove": "Retirer de la carte"
+  },
+  "remove": {
+    "title": "Retirer {{name}} de la carte ?",
+    "text": "Pour un lieu fermé définitivement. Il disparaît de l'Atlas et ses signalements ouverts sont résolus.",
+    "confirm": "Retirer"
+  },
+  "page": {
+    "deniedTitle": "Accès administrateur requis",
+    "deniedText": "Tu dois avoir les droits administrateur pour accéder à cette page.",
+    "title": "Administration",
+    "loadError": "Erreur lors du chargement des demandes de modération",
+    "pending": "Demandes en attente ({{count}})",
+    "noPending": "Aucune demande en attente",
+    "all": "Toutes les demandes ({{count}})"
+  },
+  "columns": {
+    "spot": "Lieu",
+    "city": "Ville",
+    "user": "Membre",
+    "status": "Statut",
+    "date": "Date",
+    "updated": "Dernière mise à jour",
+    "actions": "Actions"
+  },
+  "actions": {
+    "view": "Voir les détails",
+    "edit": "Modifier le lieu",
+    "remove": "Retirer de la carte"
+  }
+}

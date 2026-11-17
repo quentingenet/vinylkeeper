@@ -9,6 +9,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip);
 
@@ -32,13 +33,14 @@ interface BreakdownBarChartProps {
 
 /** Records per era, genre or mood: one gold bar each, a click opens Spinning now on it. */
 export default function BreakdownBarChart({ entries, horizontal = false, onSelect, ariaLabel }: BreakdownBarChartProps) {
+  const { t } = useTranslation("dashboard");
   const selectable = (index: number) => Boolean(onSelect) && !entries[index]?.disabled;
 
   const data = {
     labels: entries.map((entry) => entry.label),
     datasets: [
       {
-        label: "Records",
+        label: t("statsCard.records"),
         data: entries.map((entry) => entry.count),
         backgroundColor: entries.map((entry) => (entry.disabled ? colors.textSecondary : colors.gold)),
         hoverBackgroundColor: entries.map((entry) => (entry.disabled ? colors.textSecondary : colors.goldHover)),
@@ -65,7 +67,7 @@ export default function BreakdownBarChart({ entries, horizontal = false, onSelec
     animation: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (context) => `${context.parsed[horizontal ? "x" : "y"]} records` } },
+      tooltip: { callbacks: { label: (context) => t("chart.recordsTooltip", { count: context.parsed[horizontal ? "x" : "y"] ?? 0 }) } },
     },
     scales: horizontal ? { x: valueAxis, y: labelAxis } : { x: labelAxis, y: valueAxis },
     onClick: (_event, elements) => {

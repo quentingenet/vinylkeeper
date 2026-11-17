@@ -29,10 +29,12 @@ import AdminSpotEditDialog from "@components/Admin/AdminSpotEditDialog";
 import RemoveSpotDialog from "@components/Admin/RemoveSpotDialog";
 import { ADMIN_LIVE_QUERY, getStatusChip, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 const Admin: React.FC = () => {
+  const { t } = useTranslation("admin");
   const { isMobile } = useDetectMobile();
   const { currentUser } = useUserContext();
 
@@ -104,10 +106,10 @@ const Admin: React.FC = () => {
       >
         <AdminPanelSettings sx={{ fontSize: 64, color: "primary.main", mb: 2 }} />
         <Typography variant="h4" sx={{ color: "primary.main", mb: 2 }}>
-          Administrator Access Required
+          {t("page.deniedTitle")}
         </Typography>
         <Typography variant="body1" sx={{ color: colors.textLight, textAlign: "center" }}>
-          You must have administrator privileges to access this page.
+          {t("page.deniedText")}
         </Typography>
       </Box>
     );
@@ -129,14 +131,14 @@ const Admin: React.FC = () => {
       <Box sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "wrap" }}>
         <AdminPanelSettings sx={{ fontSize: { xs: 24, sm: 28, md: 32 }, color: "primary.main", mr: 2 }} />
         <Typography variant="h4" sx={{ color: "primary.main", fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}>
-          Administration
+          {t("page.title")}
         </Typography>
       </Box>
 
       <ModerationStatsCards stats={stats} isLoading={isLoadingStats} />
 
       {requestsError && (
-        <Alert severity="error" sx={{ mb: 3 }}>Error loading moderation requests</Alert>
+        <Alert severity="error" sx={{ mb: 3 }}>{t("page.loadError")}</Alert>
       )}
       {moderationActionError && (
         <Alert severity="error" sx={{ mb: 3 }}>{moderationActionError}</Alert>
@@ -146,7 +148,7 @@ const Admin: React.FC = () => {
 
       {/* Pending Requests */}
       <Typography variant="h5" sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-        Pending Requests ({pendingData?.total ?? 0})
+        {t("page.pending", { count: pendingData?.total ?? 0 })}
       </Typography>
       {isLoadingPending ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
@@ -158,9 +160,9 @@ const Admin: React.FC = () => {
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
                 <TableRow>
-                  {["Spot", "City", "User", "Date", "Actions"].map((h) => (
+                  {["spot", "city", "user", "date", "actions"].map((h) => (
                     <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                      {h}
+                      {t(`columns.${h}`)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -173,15 +175,15 @@ const Admin: React.FC = () => {
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.user?.username ?? "N/A"}</TableCell>
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small" aria-label="View details">
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small" aria-label={t("actions.view")}>
                         <Visibility />
                       </IconButton>
                       {request.place?.is_valid !== false && (
                         <>
-                          <IconButton onClick={() => handleEdit(request)} sx={{ color: "primary.main" }} size="small" aria-label="Edit spot">
+                          <IconButton onClick={() => handleEdit(request)} sx={{ color: "primary.main" }} size="small" aria-label={t("actions.edit")}>
                             <Edit />
                           </IconButton>
-                          <IconButton onClick={() => handleRemove(request)} sx={{ color: colors.error }} size="small" aria-label="Remove from the map">
+                          <IconButton onClick={() => handleRemove(request)} sx={{ color: colors.error }} size="small" aria-label={t("actions.remove")}>
                             <Delete />
                           </IconButton>
                         </>
@@ -204,12 +206,12 @@ const Admin: React.FC = () => {
           />
         </Paper>
       ) : (
-        <Alert severity="info" sx={{ mb: 4 }}>No pending requests</Alert>
+        <Alert severity="info" sx={{ mb: 4 }}>{t("page.noPending")}</Alert>
       )}
 
       {/* All Requests */}
       <Typography variant="h5" sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-        All Requests ({moderationData?.total ?? 0})
+        {t("page.all", { count: moderationData?.total ?? 0 })}
       </Typography>
       {isLoadingRequests ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
@@ -221,9 +223,9 @@ const Admin: React.FC = () => {
             <Table sx={{ minWidth: { xs: 300, sm: 650 } }}>
               <TableHead>
                 <TableRow>
-                  {["Spot", "City", "User", "Status", "Date", "Last update", "Actions"].map((h) => (
+                  {["spot", "city", "user", "status", "date", "updated", "actions"].map((h) => (
                     <TableCell key={h} sx={{ color: "primary.main", fontWeight: "bold", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
-                      {h}
+                      {t(`columns.${h}`)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -241,15 +243,15 @@ const Admin: React.FC = () => {
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{formatDate(request.created_at)}</TableCell>
                     <TableCell sx={{ color: colors.textLight, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>{request.place?.updated_at ? formatDate(request.place.updated_at) : "N/A"}</TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small" aria-label="View details">
+                      <IconButton onClick={() => handleViewDetails(request)} sx={{ color: "primary.main" }} size="small" aria-label={t("actions.view")}>
                         <Visibility />
                       </IconButton>
                       {request.place?.is_valid !== false && (
                         <>
-                          <IconButton onClick={() => handleEdit(request)} sx={{ color: "primary.main" }} size="small" aria-label="Edit spot">
+                          <IconButton onClick={() => handleEdit(request)} sx={{ color: "primary.main" }} size="small" aria-label={t("actions.edit")}>
                             <Edit />
                           </IconButton>
-                          <IconButton onClick={() => handleRemove(request)} sx={{ color: colors.error }} size="small" aria-label="Remove from the map">
+                          <IconButton onClick={() => handleRemove(request)} sx={{ color: colors.error }} size="small" aria-label={t("actions.remove")}>
                             <Delete />
                           </IconButton>
                         </>

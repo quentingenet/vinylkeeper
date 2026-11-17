@@ -5,6 +5,7 @@ import {
   passwordWithNumber,
 } from "@utils/Regex";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface PasswordStrengthIndicatorProps {
   password: string;
@@ -16,18 +17,19 @@ export default function PasswordStrengthIndicator({
   password,
   onLight = false,
 }: PasswordStrengthIndicatorProps) {
+  const { t } = useTranslation();
   const textColor = onLight ? colors.black : "text.secondary";
   const checks = [
     {
-      label: "At least 8 characters",
+      label: t("password.rules.length"),
       test: passwordAtLeast8.test(password),
     },
     {
-      label: "Contains a letter",
+      label: t("password.rules.letter"),
       test: passwordWithLetter.test(password),
     },
     {
-      label: "Contains a number",
+      label: t("password.rules.number"),
       test: passwordWithNumber.test(password),
     },
   ];
@@ -42,9 +44,9 @@ export default function PasswordStrengthIndicator({
   };
 
   const getStrengthText = (strength: number) => {
-    if (strength <= 33) return "Weak";
-    if (strength <= 66) return "Medium";
-    return "Strong";
+    if (strength <= 33) return t("password.weak");
+    if (strength <= 66) return t("password.medium");
+    return t("password.strong");
   };
 
   // The rules are shown before the first key: a new password is easier to choose when they are known
@@ -56,7 +58,7 @@ export default function PasswordStrengthIndicator({
         <>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
             <Typography variant="caption" sx={{ color: textColor, fontSize: "0.85rem" }}>
-              Password strength
+              {t("password.strength")}
             </Typography>
             <Typography variant="caption" sx={{ color: textColor, fontSize: "0.85rem", fontWeight: 700 }}>
               {getStrengthText(strength)}

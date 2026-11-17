@@ -1,0 +1,123 @@
+{
+  "add": {
+    "failed": "No se pudo añadir el disco. Inténtalo de nuevo.",
+    "adding": "Añadiendo a la colección..."
+  },
+  "search": {
+    "minChars": "Escribe al menos {{count}} caracteres para buscar."
+  },
+  "export": {
+    "shareTitle": "Guardar o enviar tu exportación"
+  },
+  "dialog": {
+    "scanFailed": "El escaneo falló, inténtalo de nuevo.",
+    "findPressing": "Encuentra tu edición",
+    "addRecord": "Añadir un disco",
+    "pickPressing": "Elige la edición que tienes en tu estantería.",
+    "pickPressingFor": "Elige la edición de «{{title}}» que tienes en tu estantería.",
+    "searchFor": "Buscar",
+    "album": "Álbum",
+    "artist": "Artista",
+    "searchByAlbum": "Buscar por álbum",
+    "searchByArtist": "Buscar por artista",
+    "search": "Buscar",
+    "scan": "Escanear el código de barras",
+    "scanHint": "Escanea el código de barras de la parte trasera de la funda: sujeta el teléfono a unos 15 cm, con buena luz.",
+    "scanSoon": "Muy pronto con la app de Android",
+    "noArtist": "No se encontró ningún artista",
+    "noAlbum": "No se encontró ningún álbum"
+  },
+  "panel": {
+    "noCollections": "Todavía no hay colecciones. Crea una en Colecciones para añadirle discos.",
+    "collection": "Colección",
+    "addToCollection": "Añadir a la colección",
+    "addToWishlist": "Añadir a la lista de deseos",
+    "albumDetails": "Ver los detalles del álbum",
+    "artistDetails": "Ver los detalles del artista"
+  },
+  "replace": {
+    "willReplace": "Reemplazará la edición de «{{title}}» en tu colección.",
+    "kept": "Se conservan tus copias, su estado y la fecha en que lo añadiste.",
+    "failed": "No se pudo reemplazar la edición. Inténtalo de nuevo.",
+    "mine": "Esta es mi edición"
+  },
+  "copy": {
+    "addedOn": "Añadido el {{date}}",
+    "updatedOn": "{{caption}}, modificado el {{date}}"
+  },
+  "duplicate": {
+    "samePressing": "Ya tienes esta edición en {{collection}}{{count}}. ¿Añadir otra copia?",
+    "addCopy": "Añadir otra copia",
+    "otherPressings": "{{count}} ediciones más de este disco",
+    "otherPressing": "otra edición de este disco",
+    "alreadyHave": "Ya tienes {{what}} en {{collection}}{{details}}. ¿Añadir también esta edición?",
+    "addPressing": "Añadir esta edición",
+    "hintSame": "Tienes esta edición aquí",
+    "hintOther": "Tienes otra edición aquí"
+  },
+  "states": {
+    "notDefined": "Sin definir"
+  },
+  "state": {
+    "title": "Estados del álbum (opcional)",
+    "cover": "Estado de la funda",
+    "record": "Estado del disco",
+    "acquisition": "Mes de adquisición",
+    "acquisitionHelp": "Elige el mes y el año de adquisición"
+  },
+  "more": {
+    "title": "Más sobre esta edición",
+    "failed": "No se pudieron cargar los detalles de la edición. Inténtalo de nuevo.",
+    "released": "Publicado",
+    "barcode": "Código de barras",
+    "matrix": "Matriz / Runout",
+    "none": "No hay más detalles en Discogs para esta edición."
+  },
+  "copies": {
+    "record": "Disco: {{state}}",
+    "cover": "Funda: {{state}}",
+    "acquired": "Adquirido: {{date}}",
+    "copyNumber": "Copia {{number}}",
+    "noCondition": "Sin estado indicado",
+    "deleteAria": "Eliminar la copia {{number}}",
+    "deleteConfirm": "¿Eliminar esta copia?",
+    "keep": "Conservarla",
+    "save": "Guardar la copia {{number}}",
+    "title": "Copia",
+    "titleMany": "Copias ({{count}})",
+    "add": "Añadir una copia",
+    "saveFailed": "No se pudieron guardar las copias. Inténtalo de nuevo."
+  },
+  "pressing": {
+    "title": "Edición",
+    "addedBefore": "Añadido antes de que las ediciones aparecieran en los resultados de búsqueda. ¿Es tu copia?",
+    "notConfirmed": "Edición no confirmada por el propietario.",
+    "yes": "Sí, es mi edición",
+    "no": "No, buscar mi edición"
+  },
+  "owned": {
+    "one": "Tu edición",
+    "many": "Tus ediciones",
+    "notConfirmed": "Edición aún no confirmada: ábrela desde tu colección para comprobarla."
+  },
+  "pressings": {
+    "inCollection": "Ediciones en esta colección ({{count}})",
+    "remove": "Quitar esta edición de la colección"
+  },
+  "streaming": {
+    "listenOn": "Escuchar en",
+    "listenOnPlatform": "Escuchar en {{platform}}"
+  },
+  "tracklist": {
+    "title": "Lista de canciones"
+  },
+  "playback": {
+    "albumDetails": "Detalles del álbum",
+    "artistDetails": "Detalles del artista",
+    "error": "Se produjo un error",
+    "genres": "Géneros",
+    "biography": "Biografía",
+    "noTracklist": "Lista de canciones no disponible",
+    "noBiography": "Biografía no disponible"
+  }
+}

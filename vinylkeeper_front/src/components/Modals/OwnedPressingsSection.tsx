@@ -4,6 +4,7 @@ import { externalReferenceApiService } from "@services/ExternalReferenceService"
 import EditionChips from "@components/Records/EditionChips";
 import type { OwnedPressing } from "@models/IExternalReference";
 import { queryKeys } from "@utils/queryKeys";
+import { useTranslation } from "react-i18next";
 
 const edition = (owned: OwnedPressing) => ({
   year: owned.release_year ? String(owned.release_year) : null,
@@ -20,6 +21,7 @@ interface OwnedPressingsSectionProps {
 
 /** The pressings of this work on the user's shelves, collection by collection, with their copies. */
 export default function OwnedPressingsSection({ externalId, masterId }: OwnedPressingsSectionProps) {
+  const { t } = useTranslation("records");
   const { data: owned = [] } = useQuery({
     queryKey: queryKeys.ownedPressings(externalId),
     queryFn: () => externalReferenceApiService.findOwnedPressings(externalId, masterId),
@@ -31,7 +33,7 @@ export default function OwnedPressingsSection({ externalId, masterId }: OwnedPre
   return (
     <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-        {owned.length > 1 ? "Your pressings" : "Your pressing"}
+        {owned.length > 1 ? t("owned.many") : t("owned.one")}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
         {owned.map((pressing) => (
@@ -43,7 +45,7 @@ export default function OwnedPressingsSection({ externalId, masterId }: OwnedPre
             <EditionChips album={edition(pressing)} centered={false} />
             {!pressing.pressing_confirmed && (
               <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
-                Pressing not confirmed yet: open it from your collection to check it.
+                {t("owned.notConfirmed")}
               </Typography>
             )}
           </Box>

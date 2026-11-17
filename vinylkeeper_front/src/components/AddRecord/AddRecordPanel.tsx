@@ -18,6 +18,7 @@ import VinylSpinner from "@components/UI/VinylSpinner";
 import { useAddToCollection } from "@hooks/useAddToCollection";
 import type { DiscogsData } from "@models/IRequestProxy";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface AddRecordPanelProps {
   item: DiscogsData;
@@ -35,6 +36,7 @@ export default function AddRecordPanel({
   onDetails,
   onDone,
 }: AddRecordPanelProps) {
+  const { t } = useTranslation("records");
   const {
     successMessage,
     messageType,
@@ -86,7 +88,7 @@ export default function AddRecordPanel({
               {pendingDuplicate.confirmLabel}
             </Button>
             <Button size="small" onClick={cancelDuplicate}>
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
           </Box>
         </Alert>
@@ -107,7 +109,7 @@ export default function AddRecordPanel({
         </Box>
       ) : collections.length === 0 ? (
         <Typography variant="body2" sx={{ color: "text.secondary" }}>
-          No collections yet. Create one in Collections to add records to it.
+          {t("panel.noCollections")}
         </Typography>
       ) : (
         <Box
@@ -120,11 +122,11 @@ export default function AddRecordPanel({
         >
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1 }}>
             <InputLabel id={`collection-${item.uuid}-label`}>
-              Collection
+              {t("panel.collection")}
             </InputLabel>
             <Select
               labelId={`collection-${item.uuid}-label`}
-              label="Collection"
+              label={t("panel.collection")}
               value={collectionId ?? ""}
               onChange={(e) => setChosenCollectionId(Number(e.target.value))}
             >
@@ -147,7 +149,7 @@ export default function AddRecordPanel({
               collectionId && void handleAddToCollection(collectionId)
             }
           >
-            Add to collection
+            {t("panel.addToCollection")}
           </Button>
         </Box>
       )}
@@ -161,18 +163,18 @@ export default function AddRecordPanel({
           onClick={handleAddToWishlist}
           disabled={isAddingToWishlist}
         >
-          Add to wishlist
+          {t("panel.addToWishlist")}
         </Button>
         <Tooltip
           title={
-            itemType === "album" ? "View album details" : "View artist details"
+            itemType === "album" ? t("panel.albumDetails") : t("panel.artistDetails")
           }
         >
           <IconButton
             aria-label={
               itemType === "album"
-                ? "View album details"
-                : "View artist details"
+                ? t("panel.albumDetails")
+                : t("panel.artistDetails")
             }
             onClick={onDetails}
             sx={{ color: "text.primary" }}

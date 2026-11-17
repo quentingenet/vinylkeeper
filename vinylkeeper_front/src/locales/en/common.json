@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "title": "Vinyl Keeper - Catalog and share your vinyl collection"
+  },
+  "language": {
+    "label": "Language",
+    "automatic": "Automatic (device)",
+    "choose": "Language: {{language}}. Change the language"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "save": "Save",
+    "saving": "Saving...",
+    "send": "Send",
+    "sending": "Sending...",
+    "edit": "Edit",
+    "back": "Back",
+    "retry": "Try again",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "understood": "Understood"
+  },
+  "password": {
+    "show": "Show password",
+    "hide": "Hide password",
+    "strength": "Password strength",
+    "weak": "Weak",
+    "medium": "Medium",
+    "strong": "Strong",
+    "rules": {
+      "length": "At least 8 characters",
+      "letter": "Contains a letter",
+      "number": "Contains a number"
+    }
+  },
+  "dataProvidedBy": "Data provided by",
+  "update": {
+    "available": "A new version of Vinyl Keeper is available.",
+    "later": "Later",
+    "update": "Update",
+    "progress": "Update in progress. You can keep using the app.",
+    "progressPercent": "Update in progress ({{percent}}%). You can keep using the app.",
+    "ready": "Update downloaded. Restart to finish.",
+    "restart": "Restart",
+    "installing": "Installing the update, the app will restart."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "text1": "VinylKeeper hit an unexpected error.",
+    "text2": "Try again or go back to the home page.",
+    "home": "Go to home page"
+  },
+  "scanner": {
+    "installing": "The scanner is being installed, try again in a moment."
+  }
+}

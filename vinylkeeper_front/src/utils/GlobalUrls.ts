@@ -42,6 +42,8 @@ export enum EGlobalUrls {
 
 export const COLLECTIONS_TAB_PARAM = "tab";
 export const COMMUNITY_TAB_VALUE = "community";
+// Settings page opened on its App settings tab: ?tab=app (Profile otherwise)
+export const SETTINGS_APP_TAB_VALUE = "app";
 // Page and sort of the collections lists: in the URL, so coming back to the list keeps them
 export const COLLECTIONS_PAGE_PARAM = "page";
 export const COMMUNITY_SORT_PARAM = "sort";

@@ -12,6 +12,7 @@ import AddRecordFab from "@components/AddRecord/AddRecordFab";
 import { colors } from "@styles/colors";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { DISCOGS_HOME_URL } from "@utils/discogsLinks";
+import { useTranslation } from "react-i18next";
 
 /**
  * Layout component that provides the main structure for the application
@@ -46,8 +47,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const theme = useTheme();
   const { isMobile } = useDetectMobile();
   const toggleMenu = () => setOpen((prev) => !prev);
-  const [titlePage, setTitlePage] = useState<string>("Vinyl Keeper");
-  const [currentTitle, setCurrentTitle] = useState<string>("Vinyl Keeper");
+  const { t } = useTranslation();
+  // Translation keys: the title follows a change of language
+  const [titlePage, setTitlePage] = useState<string>("nav:brand");
+  const [currentTitle, setCurrentTitle] = useState<string>("nav:brand");
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
   // Use the page title hook to automatically update title based on current route
@@ -105,7 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         >
           {!isMobile && (
             <Typography variant="h1" component="h1" sx={{ color: colors.gold }}>
-              {currentTitle}
+              {t(currentTitle)}
             </Typography>
           )}
         </Box>

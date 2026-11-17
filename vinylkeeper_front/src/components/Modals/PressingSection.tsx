@@ -2,6 +2,7 @@ import { Box, Button, Typography } from "@mui/material";
 import EditionChips from "@components/Records/EditionChips";
 import { hasEdition, type Edition } from "@components/Records/editionLabels";
 import PressingMoreInfo from "@components/Records/PressingMoreInfo";
+import { useTranslation } from "react-i18next";
 
 interface PressingSectionProps {
   edition: Edition;
@@ -25,12 +26,13 @@ export default function PressingSection({
   onConfirm,
   onFindPressing,
 }: PressingSectionProps) {
+  const { t } = useTranslation("records");
   if (!hasEdition(edition)) return null;
 
   return (
     <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-        Pressing
+        {t("pressing.title")}
       </Typography>
       <EditionChips album={edition} centered={false} />
       {releaseId && <PressingMoreInfo releaseId={releaseId} />}
@@ -38,19 +40,19 @@ export default function PressingSection({
         <Box sx={{ mt: 1.5 }}>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             {canConfirm
-              ? "Added before pressings were shown in search results. Is this your copy?"
-              : "Pressing not confirmed by the owner."}
+              ? t("pressing.addedBefore")
+              : t("pressing.notConfirmed")}
           </Typography>
           {canConfirm && (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
               {onConfirm && (
                 <Button size="small" variant="outlined" onClick={onConfirm} disabled={isConfirming}>
-                  Yes, this is my pressing
+                  {t("pressing.yes")}
                 </Button>
               )}
               {onFindPressing && (
                 <Button size="small" variant="text" onClick={onFindPressing} disabled={isConfirming}>
-                  No, find my pressing
+                  {t("pressing.no")}
                 </Button>
               )}
             </Box>

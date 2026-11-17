@@ -1,0 +1,20 @@
+{
+  "brand": "Vinyl Keeper",
+  "items": {
+    "dashboard": "Bacheca",
+    "addRecord": "Aggiungi un disco",
+    "collections": "Collezioni",
+    "spinningNow": "Spinning now",
+    "atlas": "Atlas",
+    "vinylAtlas": "Vinyl Atlas",
+    "settings": "Impostazioni",
+    "admin": "Admin",
+    "emailConfirmation": "Conferma dell'e-mail",
+    "logout": "Esci"
+  },
+  "openMenu": "Apri il menu",
+  "closeMenu": "Chiudi il menu",
+  "toggleMenu": "Comprimi o espandi il menu",
+  "logIn": "Accedi",
+  "signUp": "Registrati"
+}

@@ -26,6 +26,7 @@ import VinylSpinner from "@components/UI/VinylSpinner";
 import AuthSwitchLink from "@components/Auth/AuthSwitchLink";
 import { colors } from "@styles/colors";
 import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
+import { useTranslation } from "react-i18next";
 
 interface RegisterProps {
   setRegister: (value: boolean) => void;
@@ -49,6 +50,7 @@ const Register = ({
   nextPath,
 }: RegisterProps) => {
   const userContext = useUserContext();
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -94,7 +96,7 @@ const Register = ({
       void navigate(nextPath ?? "/dashboard");
     } catch (error: unknown) {
       let errorMessage =
-        "An error occurred during registration. Please try again.";
+        t("register.error");
 
       if (isApiError(error) || error instanceof Error) {
         errorMessage = error.message;
@@ -154,12 +156,12 @@ const Register = ({
               component="h2"
               sx={{ color: colors.slate, textAlign: "center", mb: 2, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
             >
-              Create your account
+              {t("register.title")}
             </Typography>
             <Grid sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
-                label="Username"
+                label={t("fields.username")}
                 type="text"
                 variant="outlined"
                 error={!!errors.username}
@@ -179,7 +181,7 @@ const Register = ({
             <Grid sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
-                label="Email"
+                label={t("fields.email")}
                 type="email"
                 variant="outlined"
                 error={!!errors.email}
@@ -202,7 +204,7 @@ const Register = ({
             <Grid sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
-                label="Password"
+                label={t("fields.password")}
                 type={showPassword ? "text" : "password"}
                 variant="outlined"
                 error={!!errors.password}
@@ -214,6 +216,7 @@ const Register = ({
                       <InputAdornment position="end">
                         <IconButton
                           onClick={handleClickShowPassword}
+                          aria-label={showPassword ? t("common:password.hide") : t("common:password.show")}
                           onMouseDown={handleMouseDownPassword}
                           sx={{ marginRight: "-8px" }}
                         >
@@ -229,7 +232,7 @@ const Register = ({
             <Grid sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
-                label="Password confirmation"
+                label={t("fields.passwordConfirmation")}
                 type={showPassword ? "text" : "password"}
                 variant="outlined"
                 error={!!errors.passwordBis}
@@ -241,6 +244,7 @@ const Register = ({
                       <InputAdornment position="end">
                         <IconButton
                           onClick={handleClickShowPassword}
+                          aria-label={showPassword ? t("common:password.hide") : t("common:password.show")}
                           onMouseDown={handleMouseDownPassword}
                           sx={{ marginRight: "-8px" }}
                         >
@@ -254,19 +258,19 @@ const Register = ({
 
             <Grid sx={{ textAlign: "center" }}>
               <Typography variant="caption" sx={{ color: "black", mb: 2 }}>
-                I confirm that I have read, and accepted{" "}
+                {t("register.termsIntro")}{" "}
                 <span
                   style={{ fontWeight: "bold", cursor: "pointer" }}
                   onClick={() => setOpenTermsModal(true)}
                 >
                   <br />
-                  Terms and conditions
+                  {t("register.terms")}
                 </span>
               </Typography>
             </Grid>
             <Grid sx={{ display: "flex", justifyContent: "center" }}>
               <FormControlLabel
-                label="I agree"
+                label={t("register.agree")}
                 control={<Checkbox {...register("isAcceptedTerms")} />}
                 sx={{ color: "black" }}
               />
@@ -281,13 +285,13 @@ const Register = ({
                   variant="contained"
                   disabled={!isAcceptedTerms}
                 >
-                  Join now
+                  {t("register.submit")}
                 </Button>
               )}
             </Grid>
             <AuthSwitchLink
-              prompt="Already have an account?"
-              actionLabel="Log in"
+              prompt={t("register.haveAccount")}
+              actionLabel={t("register.logIn")}
               onClick={switchToLogin}
             />
           </form>

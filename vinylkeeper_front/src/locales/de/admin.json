@@ -1,0 +1,98 @@
+{
+  "feedback": {
+    "approved": "Moderationsanfrage genehmigt.",
+    "rejected": "Moderationsanfrage abgelehnt.",
+    "removed": "Spot von der Karte entfernt.",
+    "updated": "Spot auf der Karte aktualisiert."
+  },
+  "status": {
+    "pending": "Ausstehend",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt",
+    "removed": "Entfernt",
+    "total": "Gesamt"
+  },
+  "edit": {
+    "title": "Spot bearbeiten",
+    "name": "Name",
+    "address": "Adresse",
+    "city": "Stadt",
+    "country": "Land",
+    "description": "Beschreibung",
+    "website": "Website",
+    "type": "Art des Spots",
+    "failed": "Der Spot konnte nicht gespeichert werden. Versuche es erneut.",
+    "save": "Speichern",
+    "saveResolve": "Speichern und erledigen",
+    "lastUpdate": "Zuletzt aktualisiert: {{date}}",
+    "pinMoves": "Die Markierung wandert auf der Karte in die neue Stadt."
+  },
+  "detail": {
+    "title": "Details der Moderationsanfrage",
+    "spot": "Angaben zum Spot",
+    "city": "Stadt:",
+    "description": "Beschreibung:",
+    "noDescription": "Keine Beschreibung",
+    "status": "Aktueller Status:",
+    "request": "Angaben zur Anfrage",
+    "submittedBy": "Eingereicht von:",
+    "date": "Eingereicht am:",
+    "actions": "Mögliche Aktionen",
+    "approving": "Wird genehmigt...",
+    "approve": "Genehmigen",
+    "rejecting": "Wird abgelehnt...",
+    "reject": "Ablehnen"
+  },
+  "reports": {
+    "resolved": "Meldung erledigt, zusammen mit den anderen offenen Meldungen dieses Spots.",
+    "resolveFailed": "Die Meldung konnte nicht erledigt werden.",
+    "dismissed": "Meldung verworfen.",
+    "dismissFailed": "Die Meldung konnte nicht verworfen werden.",
+    "removed": "Spot von der Karte entfernt, seine Meldungen sind erledigt.",
+    "removeFailed": "Der Spot konnte nicht entfernt werden.",
+    "title": "Meldungen zu Spots ({{count}} offen)",
+    "shown": "Angezeigte Meldungen",
+    "open": "Offen",
+    "all": "Alle",
+    "loadError": "Fehler beim Laden der Meldungen",
+    "noneOpen": "Keine offene Meldung: Alle Spots scheinen zu stimmen.",
+    "none": "Noch keine Meldung.",
+    "statusResolved": "Erledigt",
+    "statusDismissed": "Verworfen",
+    "offMap": "Von der Karte entfernt",
+    "by": "Gemeldet von {{name}} am {{date}}",
+    "deletedAccount": "einem gelöschten Konto",
+    "edit": "Spot bearbeiten",
+    "resolve": "Erledigen",
+    "dismiss": "Verwerfen",
+    "remove": "Von der Karte entfernen"
+  },
+  "remove": {
+    "title": "{{name}} von der Karte entfernen?",
+    "text": "Für einen dauerhaft geschlossenen Spot. Er verschwindet aus dem Atlas und seine offenen Meldungen werden erledigt.",
+    "confirm": "Entfernen"
+  },
+  "page": {
+    "deniedTitle": "Administratorzugriff erforderlich",
+    "deniedText": "Du brauchst Administratorrechte, um diese Seite zu öffnen.",
+    "title": "Administration",
+    "loadError": "Fehler beim Laden der Moderationsanfragen",
+    "pending": "Ausstehende Anfragen ({{count}})",
+    "noPending": "Keine ausstehenden Anfragen",
+    "all": "Alle Anfragen ({{count}})"
+  },
+  "columns": {
+    "spot": "Spot",
+    "city": "Stadt",
+    "user": "Mitglied",
+    "status": "Status",
+    "date": "Datum",
+    "updated": "Zuletzt aktualisiert",
+    "actions": "Aktionen"
+  },
+  "actions": {
+    "view": "Details ansehen",
+    "edit": "Spot bearbeiten",
+    "remove": "Von der Karte entfernen"
+  }
+}

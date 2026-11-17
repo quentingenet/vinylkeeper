@@ -4,6 +4,7 @@ import vinylKeeperImg from "@assets/vinylKeeper.svg";
 import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 export const MOSAIC_COVERS_COUNT = 6;
 const MOSAIC_HEIGHT = 220;
@@ -17,6 +18,7 @@ interface CoverMosaicProps {
 /** All-or-nothing: the default artwork unless all 6 covers are usable and load. */
 export default function CoverMosaic({ images }: CoverMosaicProps) {
   const [hasBrokenCover, setHasBrokenCover] = useState(false);
+  const { t } = useTranslation("collections");
 
   const covers = images
     .map((src) => buildProxyImageUrl(src, COVER_PROXY_SIZE, COVER_PROXY_SIZE, 80, true))
@@ -28,7 +30,7 @@ export default function CoverMosaic({ images }: CoverMosaicProps) {
       <Box
         component="img"
         src={vinylKeeperImg}
-        alt="vinyl disc"
+        alt={t("coverAlt")}
         data-testid="cover-mosaic-fallback"
         sx={{
           display: "block",

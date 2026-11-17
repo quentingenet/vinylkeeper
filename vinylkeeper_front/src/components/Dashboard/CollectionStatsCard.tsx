@@ -25,16 +25,12 @@ import { growItem } from "@utils/Animations";
 import type { BreakdownEntry, CollectionBreakdown } from "@models/IDashboardStats";
 import type { SpinningNowFilters } from "@models/ISpinningNow";
 import styles from "../../styles/pages/Dashboard.module.scss";
+import { useTranslation } from "react-i18next";
+import { localizedCountry } from "@utils/i18n";
 
 type StatsTab = "eras" | "genres" | "moods" | "pressings" | "community";
 
-const TABS: { value: StatsTab; label: string }[] = [
-  { value: "eras", label: "Eras" },
-  { value: "genres", label: "Genres" },
-  { value: "moods", label: "Moods" },
-  { value: "pressings", label: "Pressings" },
-  { value: "community", label: "Community" },
-];
+const TABS: StatsTab[] = ["eras", "genres", "moods", "pressings", "community"];
 
 interface CollectionStatsCardProps {
   community: { albums: number; artists: number; places: number };
@@ -46,6 +42,7 @@ interface CollectionStatsCardProps {
  * and the community overview. Only the open tab is drawn; the breakdown is asked once, then cached.
  */
 export default function CollectionStatsCard({ community, isMobile }: CollectionStatsCardProps) {
+  const { t } = useTranslation("dashboard");
   const [tab, setTab] = useState<StatsTab>("eras");
   const [collectionId, setCollectionId] = useState<number | null>(null);
   const navigate = useNavigate();
@@ -71,11 +68,11 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
     if (data.albums_total === 0) {
       return (
         <Typography sx={{ color: "text.secondary", py: 4 }}>
-          No records here yet.{" "}
+          {t("statsCard.noRecords")}{" "}
           <Link component="button" onClick={() => openAddRecord()} sx={{ verticalAlign: "baseline" }}>
-            Add your first vinyls
+            {t("statsCard.addFirst")}
           </Link>{" "}
-          to see your collection in numbers.
+          {t("statsCard.toSeeNumbers")}
         </Typography>
       );
     }
@@ -83,7 +80,7 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
       case "eras":
         return (
           <BreakdownBarChart
-            ariaLabel="Records per decade"
+            ariaLabel={t("statsCard.perDecade")}
             entries={data.eras.map((era) => ({ label: formatDecade(era.decade), count: era.count }))}
             onSelect={(index) => openSpinningNow({ eras: [data.eras[index].decade] })}
           />
@@ -92,7 +89,7 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
         const entries = topWithOthers(data.genres);
         return (
           <BreakdownBarChart
-            ariaLabel="Records per genre"
+            ariaLabel={t("statsCard.perGenre")}
             horizontal
             entries={entries}
             onSelect={(index) => openSpinningNow({ genres: [entries[index].label] })}
@@ -102,7 +99,7 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
       case "moods":
         return (
           <BreakdownBarChart
-            ariaLabel="Records per mood"
+            ariaLabel={t("statsCard.perMood")}
             horizontal
             entries={data.moods.map((mood) => ({ label: formatMoodName(mood.label), count: mood.count }))}
             onSelect={(index) => openSpinningNow({ moods: [data.moods[index].label] })}
@@ -116,7 +113,7 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
   return (
     <Paper className={styles.card}>
       <Typography className={styles.textTitleShadow} variant="h6" gutterBottom>
-        {isCommunity ? "Community activity overview" : "Your collection in numbers"}
+        {isCommunity ? t("statsCard.communityTitle") : t("statsCard.mineTitle")}
       </Typography>
 
       <Tabs
@@ -125,11 +122,11 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
         variant={isMobile ? "scrollable" : "standard"}
         centered={!isMobile}
         allowScrollButtonsMobile
-        aria-label="Collection stats"
+        aria-label={t("statsCard.label")}
         sx={{ mb: 2 }}
       >
-        {TABS.map(({ value, label }) => (
-          <Tab key={value} value={value} label={label} />
+        {TABS.map((value) => (
+          <Tab key={value} value={value} label={t(`statsCard.tabs.${value}`)} />
         ))}
       </Tabs>
 
@@ -137,12 +134,12 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
         <TextField
           select
           size="small"
-          label="Collection"
+          label={t("statsCard.collection")}
           value={collectionId ?? "all"}
           onChange={(event) => setCollectionId(event.target.value === "all" ? null : Number(event.target.value))}
           sx={{ minWidth: 220, maxWidth: "100%", mb: 2 }}
         >
-          <MenuItem value="all">All my collections</MenuItem>
+          <MenuItem value="all">{t("statsCard.all")}</MenuItem>
           {breakdown.collections.map((collection) => (
             <MenuItem key={collection.id} value={collection.id}>
               {collection.name}
@@ -170,17 +167,17 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
                 animation: `${growItem} 1.7s ease-in-out infinite`,
               }}
             >
-              Discover community collections
+              {t("statsCard.discover")}
             </Box>
           </Box>
         </>
       ) : breakdownQuery.isError ? (
         <Typography sx={{ color: "text.secondary", py: 4 }}>
-          Your stats are unavailable right now. Please try again later.
+          {t("statsCard.unavailable")}
         </Typography>
       ) : !breakdown ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-          <CircularProgress aria-label="Loading your stats" />
+          <CircularProgress aria-label={t("statsCard.loading")} />
         </Box>
       ) : (
         <>
@@ -189,7 +186,7 @@ export default function CollectionStatsCard({ community, isMobile }: CollectionS
           </Box>
           {breakdown.albums_total > 0 && tab !== "pressings" && (
             <Typography variant="body2" sx={{ color: "text.secondary", mt: 1.5 }}>
-              Click a bar to pick a record to play in Spinning now.
+              {t("statsCard.clickBar")}
             </Typography>
           )}
         </>
@@ -216,12 +213,15 @@ function ChipList({ title, entries }: { title: string; entries: BreakdownEntry[]
 
 /** Originals against reissues, then where and how the records were pressed. */
 function PressingsPanel({ data }: { data: CollectionBreakdown }) {
-  const { originals, reissues, unknown, countries, formats } = data.pressings;
+  const { t } = useTranslation("dashboard");
+  const { originals, reissues, unknown, formats } = data.pressings;
+  // The countries of Discogs, named in the language of the interface; the formats stay as Discogs writes them
+  const countries = data.pressings.countries.map((entry) => ({ ...entry, label: localizedCountry(entry.label) }));
   const total = originals + reissues + unknown;
   const shares = [
-    { label: "Original pressings", count: originals },
-    { label: "Reissues", count: reissues },
-    ...(unknown > 0 ? [{ label: "Year unknown", count: unknown }] : []),
+    { label: t("statsCard.originals"), count: originals },
+    { label: t("statsCard.reissues"), count: reissues },
+    ...(unknown > 0 ? [{ label: t("statsCard.unknownYear"), count: unknown }] : []),
   ];
 
   return (
@@ -238,8 +238,8 @@ function PressingsPanel({ data }: { data: CollectionBreakdown }) {
           </Box>
         ))}
       </Box>
-      <ChipList title="Pressed in" entries={countries} />
-      <ChipList title="Formats" entries={formats} />
+      <ChipList title={t("statsCard.pressedIn")} entries={countries} />
+      <ChipList title={t("statsCard.formats")} entries={formats} />
     </Box>
   );
 }

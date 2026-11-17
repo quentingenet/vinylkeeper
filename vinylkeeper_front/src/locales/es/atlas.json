@@ -1,0 +1,100 @@
+{
+  "report": {
+    "issues": {
+      "name": "El nombre es incorrecto",
+      "description": "La descripción es incorrecta o está desfasada",
+      "address": "La dirección es incorrecta, o el lugar se ha mudado",
+      "website": "El enlace de la web no funciona o está desfasado",
+      "type": "El tipo de lugar es incorrecto",
+      "closed": "Cerrado definitivamente"
+    },
+    "chips": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "address": "Dirección",
+      "website": "Web",
+      "type": "Tipo",
+      "closed": "Cerrado"
+    },
+    "title": "Informar de un error",
+    "thanks": "Gracias, un administrador revisará este lugar.",
+    "what": "¿Qué está mal en {{name}}?",
+    "should": "¿Qué debería poner? (opcional)",
+    "failed": "No se pudo enviar el aviso. Inténtalo más tarde.",
+    "send": "Enviar el aviso"
+  },
+  "types": {
+    "flea market": "Rastro",
+    "shop": "Tienda",
+    "music or records exhibition": "Feria de música o de discos",
+    "other": "Otro"
+  },
+  "map": {
+    "markerAlt": "lugar del vinilo",
+    "addAria": "Añadir un lugar al Atlas",
+    "add": "Añadir un lugar",
+    "loadError": "Error al cargar los lugares. Comprueba tu conexión.",
+    "noSpots": "No se encontraron lugares en esta ubicación.",
+    "report": "Informar de un error",
+    "likes_one": "{{count}} me gusta",
+    "likes_other": "{{count}} me gusta",
+    "loading": " (Cargando...)",
+    "title": "Atlas",
+    "likes_many": "{{count}} me gusta"
+  },
+  "add": {
+    "nameRequired": "El nombre es obligatorio",
+    "nameEmpty": "El nombre no puede estar vacío",
+    "addressRequired": "La dirección es obligatoria",
+    "cityRequired": "La ciudad es obligatoria",
+    "countryRequired": "El país es obligatorio",
+    "descriptionMax": "La descripción no puede superar los 600 caracteres",
+    "urlInvalid": "Debe ser una URL válida",
+    "typeRequired": "El tipo de lugar es obligatorio",
+    "countriesFailed": "No se pudo cargar la lista de países.",
+    "loadFailed": "No se pudieron cargar los datos del formulario. Vuelve a abrir la ventana.",
+    "failed": "No se pudo añadir el lugar. Inténtalo de nuevo.",
+    "details": "Detalles del lugar",
+    "name": "Nombre del lugar",
+    "type": "Tipo de lugar",
+    "country": "País",
+    "city": "Ciudad",
+    "address": "Dirección",
+    "description": "Descripción (opcional)",
+    "source": "URL de origen (opcional)",
+    "adding": "Añadiendo...",
+    "submit": "Añadir al Atlas",
+    "submitted": "¡Lugar enviado!",
+    "thanks": "¡Gracias por tu contribución! Tu lugar se ha enviado y nuestro equipo de moderación lo revisará antes de mostrarlo en el Atlas.",
+    "why": "Así mantenemos el Vinyl Atlas exacto y fiable para toda la comunidad.",
+    "gotIt": "¡Entendido!"
+  },
+  "join": {
+    "features": [
+      "Cataloga tus discos, sus copias y sus ediciones",
+      "Conecta tu cuenta de Discogs para importar tu colección",
+      "Estima cuánto vale tu colección",
+      "Elige el disco de esta noche con Spinning now",
+      "Lleva una lista de deseos y comparte tus colecciones"
+    ],
+    "title": "Únete a Vinyl Keeper para dar me gusta a lugares y proponer otros nuevos",
+    "intro": "Vinyl Keeper es gratuito y de código abierto. Con una cuenta también puedes:",
+    "featuresLabel": "Lo que pueden hacer los miembros",
+    "lookInside": "¿Echas un vistazo dentro?"
+  },
+  "byCountry": {
+    "title": "Lugares por país",
+    "spots_one": "{{count}} lugar",
+    "spots_other": "{{count}} lugares",
+    "spots_many": "{{count}} lugares"
+  },
+  "page": {
+    "loadError": "Error al cargar el Atlas",
+    "introPublic": "📍 Explora los mejores lugares del vinilo del mundo, compartidos por la comunidad de Vinyl Keeper.",
+    "intro": "📍 Explora, añade y comparte con la comunidad los mejores lugares del vinilo del mundo."
+  },
+  "public": {
+    "metaTitle": "Vinyl Atlas: tiendas de discos, rastros y lugares del vinilo | Vinyl Keeper",
+    "metaDescription": "Encuentra tiendas de discos, rastros y lugares del vinilo de todo el mundo en el Vinyl Atlas, un mapa comunitario gratuito compartido por coleccionistas de vinilos."
+  }
+}

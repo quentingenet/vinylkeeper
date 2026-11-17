@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useForm, useWatch, Controller } from "react-hook-form";
 import type { FieldError } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -30,12 +31,13 @@ interface PasswordFormData {
 }
 
 const PASSWORD_FIELDS = [
-  { name: "currentPassword" as const, label: "Current Password" },
-  { name: "newPassword" as const, label: "New Password" },
-  { name: "confirmPassword" as const, label: "Confirm New Password" },
+  { name: "currentPassword" as const, labelKey: "password.current" },
+  { name: "newPassword" as const, labelKey: "password.new" },
+  { name: "confirmPassword" as const, labelKey: "password.confirm" },
 ];
 
 export default function ChangePasswordSection() {
+  const { t } = useTranslation("settings");
   const [showPassword, setShowPassword] = useState({
     currentPassword: false,
     newPassword: false,
@@ -68,13 +70,13 @@ export default function ChangePasswordSection() {
   const changePasswordMutation = useMutation({
     mutationFn: (data: PasswordFormData) => userApiService.changePassword(data),
     onSuccess: () => {
-      setPasswordMessage({ type: "success", text: "Password changed successfully!" });
+      setPasswordMessage({ type: "success", text: t("password.success") });
       reset();
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setPasswordMessage(null), 3000);
     },
     onError: (e: Error) => {
-      setPasswordMessage({ type: "error", text: e.message || "Failed to change password" });
+      setPasswordMessage({ type: "error", text: e.message || t("password.error") });
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setPasswordMessage(null), 5000);
     },
@@ -85,7 +87,7 @@ export default function ChangePasswordSection() {
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Lock sx={{ color: "primary.main", mr: 1 }} />
-          <Typography variant="h6">Change password</Typography>
+          <Typography variant="h6">{t("password.title")}</Typography>
         </Box>
         {passwordMessage && (
           <Alert severity={passwordMessage.type} sx={{ mb: 2 }}>
@@ -98,14 +100,14 @@ export default function ChangePasswordSection() {
           }}
         >
           <Grid container spacing={2}>
-            {PASSWORD_FIELDS.map(({ name, label }) => (
+            {PASSWORD_FIELDS.map(({ name, labelKey }) => (
               <Grid key={name} size={{ xs: 12 }}>
                 <Controller
                   name={name}
                   control={control}
                   render={({ field }) => (
                     <FormControl fullWidth variant="outlined">
-                      <InputLabel>{label}</InputLabel>
+                      <InputLabel>{t(labelKey)}</InputLabel>
                       <OutlinedInput
                         {...field}
                         type={showPassword[name] ? "text" : "password"}
@@ -113,6 +115,7 @@ export default function ChangePasswordSection() {
                         endAdornment={
                           <InputAdornment position="end">
                             <IconButton
+                              aria-label={showPassword[name] ? t("common:password.hide") : t("common:password.show")}
                               onClick={() =>
                                 setShowPassword((prev) => ({ ...prev, [name]: !prev[name] }))
                               }
@@ -122,7 +125,7 @@ export default function ChangePasswordSection() {
                             </IconButton>
                           </InputAdornment>
                         }
-                        label={label}
+                        label={t(labelKey)}
                       />
                     </FormControl>
                   )}
@@ -144,7 +147,7 @@ export default function ChangePasswordSection() {
               disabled={!isValid || changePasswordMutation.isPending}
               sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
             >
-              {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+              {changePasswordMutation.isPending ? t("password.submitting") : t("password.submit")}
             </Button>
           </Box>
         </form>

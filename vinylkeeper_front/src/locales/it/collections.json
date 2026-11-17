@@ -1,0 +1,232 @@
+{
+  "counts": {
+    "albums_one": "{{count}} album",
+    "albums_other": "{{count}} album",
+    "artists_one": "{{count}} artista",
+    "artists_other": "{{count}} artisti",
+    "records_one": "{{count}} disco",
+    "records_other": "{{count}} dischi",
+    "likes_one": "{{count}} mi piace",
+    "likes_other": "{{count}} mi piace",
+    "plusLikes_one": "+{{count}} mi piace",
+    "plusLikes_other": "+{{count}} mi piace",
+    "albums_many": "{{count}} album",
+    "artists_many": "{{count}} artisti",
+    "records_many": "{{count}} dischi",
+    "likes_many": "{{count}} mi piace",
+    "plusLikes_many": "+{{count}} mi piace"
+  },
+  "item": {
+    "nowPublic": "La tua collezione ora è pubblica e visibile agli altri membri",
+    "nowPrivate": "La tua collezione è privata e visibile solo a te",
+    "savedAs": "Salvata come «{{name}}»",
+    "saveFailed": "Non è stato possibile fare la copia di sicurezza. Riprova.",
+    "unknownOwner": "Sconosciuto",
+    "public": "Pubblica",
+    "private": "Privata",
+    "edit": "Modifica la collezione",
+    "alreadySaved": "Copia: già salvata come «{{name}}»",
+    "saveCopy": "Salva una copia di questa collezione",
+    "save": "Salva",
+    "delete": "Elimina la collezione",
+    "createdOn": "Creata il {{date}}",
+    "byOwner": " da {{name}}",
+    "deleteTitle": "Eliminare «{{name}}»?",
+    "deleteText": "La collezione <strong>«{{name}}»</strong> viene eliminata con {{contents}}. Questa azione non può essere annullata.",
+    "keepCopyFirst": "Per tenere prima una copia, annulla e usa il pulsante di copia della collezione."
+  },
+  "back": {
+    "myCollections": "Le mie collezioni",
+    "community": "Community",
+    "label": "Torna a {{label}}"
+  },
+  "export": {
+    "albumsCsv": "Album della collezione (CSV)",
+    "albumsOds": "Album della collezione (ODS)",
+    "artistsCsv": "Artisti della collezione (CSV)",
+    "artistsOds": "Artisti della collezione (ODS)",
+    "wishlistCsv": "La mia lista dei desideri (CSV)",
+    "wishlistOds": "La mia lista dei desideri (ODS)",
+    "button": "Esporta",
+    "exporting": "Esportazione…"
+  },
+  "tabs": {
+    "label": "schede della collezione",
+    "albums": "Album",
+    "artists": "Artisti",
+    "wishlist": "Lista dei desideri"
+  },
+  "unavailable": {
+    "private": {
+      "title": "Questa collezione ora è privata",
+      "text": "Il proprietario ha deciso di tenerla per sé, quindi non è più visibile."
+    },
+    "notFound": {
+      "title": "Questa collezione non esiste più",
+      "text": "Forse è stata eliminata dal proprietario, o il link è incompleto."
+    },
+    "error": {
+      "title": "Non è stato possibile caricare questa collezione",
+      "text": "Controlla la tua connessione e riprova tra poco."
+    }
+  },
+  "coverAlt": "disco in vinile",
+  "community": {
+    "loadError": "Errore nel caricamento delle collezioni pubbliche",
+    "intro": "Esplora le collezioni di vinili pubbliche e condivise dagli altri membri.",
+    "sortBy": "Ordina per",
+    "recentlyUpdated": "Aggiornate di recente",
+    "mostLiked": "Le più apprezzate",
+    "newest": "Le più recenti",
+    "empty": "Al momento non ci sono collezioni pubbliche."
+  },
+  "media": {
+    "moveToCollection": "Sposta in una collezione",
+    "delete": "Rimuovi",
+    "copies_one": "{{count}} copia",
+    "copies_other": "{{count}} copie",
+    "pressings_one": "{{count}} stampa",
+    "pressings_other": "{{count}} stampe",
+    "copies_many": "{{count}} copie",
+    "pressings_many": "{{count}} stampe"
+  },
+  "modal": {
+    "updating": "Modifica la collezione",
+    "creating": "Crea una nuova collezione",
+    "duplicateName": "Esiste già una collezione con questo nome. Scegline un altro.",
+    "createError": "Si è verificato un errore durante la creazione della collezione. Riprova.",
+    "updateError": "Si è verificato un errore durante la modifica della collezione. Riprova.",
+    "name": "Nome",
+    "description": "Descrizione",
+    "submitCreating": "Creazione...",
+    "submitUpdating": "Salvataggio...",
+    "update": "Salva",
+    "create": "Crea"
+  },
+  "move": {
+    "title": "Ce l'hai? Spostalo in una collezione",
+    "albumText": "<strong>«{{title}}»</strong> entra nella collezione che scegli ed esce dalla tua lista dei desideri. Se è già in quella collezione, guadagna una copia in più.",
+    "artistText": "<strong>«{{title}}»</strong> si unisce agli artisti della collezione che scegli ed esce dalla tua lista dei desideri.",
+    "pressing": "Stampa",
+    "exact": "È esattamente la stampa che ho",
+    "toConfirm": "Il disco entra con una stampa da confermare: nella collezione, confermala o trova quella giusta per sostituirla.",
+    "collection": "Collezione",
+    "createFirst": "Crea prima una collezione in cui spostare i dischi.",
+    "error": "Non è stato possibile spostare il disco. Riprova.",
+    "moving": "Spostamento...",
+    "move": "Sposta",
+    "done": "«{{title}}» spostato in «{{collection}}»",
+    "alreadyAlbum": "«{{title}}» era già in «{{collection}}»: aggiunta una copia in più",
+    "alreadyArtist": "«{{title}}» era già in «{{collection}}»",
+    "thisRecord": "Questo disco",
+    "thisArtist": "Questo artista"
+  },
+  "wishlist": {
+    "gotItTooltip": "Hai questo disco? Spostalo in una delle tue collezioni",
+    "artistTooltip": "Sposta questo artista in una delle tue collezioni",
+    "pressingNumber": "Stampa {{number}}",
+    "wantedPressings_one": "{{count}} stampa cercata",
+    "wantedPressings_other": "{{count}} stampe cercate",
+    "wantedLabel": "Stampe cercate",
+    "moveAria": "Sposta {{title}} in una collezione",
+    "removeTooltip": "Rimuovi questa stampa dalla tua lista dei desideri",
+    "removeAria": "Rimuovi {{title}} dalla lista dei desideri",
+    "minChars": "Scrivi almeno 2 caratteri per cercare.",
+    "noMatch": "Nessun elemento della lista dei desideri corrisponde a «{{term}}».",
+    "results_one": "Risultati per «{{term}}» ({{count}} elemento)",
+    "results_other": "Risultati per «{{term}}» ({{count}} elementi)",
+    "empty": "La tua lista dei desideri è vuota.",
+    "wantedPressings_many": "{{count}} stampe cercate",
+    "results_many": "Risultati per «{{term}}» ({{count}} elementi)"
+  },
+  "mine": {
+    "loadError": "Errore nel caricamento delle collezioni",
+    "create": "Crea una nuova collezione",
+    "shareHint1": "Condividi la tua collezione cambiando",
+    "shareHint2": "la sua visibilità da privata a pubblica.",
+    "importRunning": "Importazione da Discogs in corso",
+    "import": "Importa da Discogs",
+    "empty": "Nessuna collezione. Creane una!"
+  },
+  "share": {
+    "label": "Condividi questa collezione",
+    "private": "Rendila pubblica per condividere questa collezione con i digger\ndi tutto il mondo, su Vinyl Keeper o no",
+    "textOwner": "Dai un'occhiata alla collezione di {{name}} e scopri vinylkeeper.org",
+    "text": "Dai un'occhiata a questa collezione e scopri vinylkeeper.org",
+    "copied": "Link copiato",
+    "copyFailed": "Non è stato possibile copiare il link",
+    "copy": "Copia il link",
+    "email": "E-mail",
+    "button": "Condividi"
+  },
+  "confirm": {
+    "remove": "Rimuovi",
+    "removing": "Rimozione..."
+  },
+  "details": {
+    "searchAlbum": "Cerca un album",
+    "searchArtist": "Cerca un artista",
+    "searchBoth": "Cerca un artista o un album",
+    "searchInMine": "{{what}} nella mia collezione",
+    "searchInThis": "{{what}} in questa collezione",
+    "metaTitle": "{{name}} - VinylKeeper",
+    "browseCommunity": "Sfoglia le collezioni della community",
+    "noDescription": "Nessuna descrizione",
+    "addRecords": "Aggiungi dischi",
+    "createdOn": "Creata il {{date}}",
+    "unknownDate": "Data sconosciuta",
+    "clearSearch": "Cancella la ricerca",
+    "sortOrder": "Ordine",
+    "newest": "Prima i più recenti",
+    "oldest": "Prima i più vecchi",
+    "noAlbumMatch": "Nessun album corrisponde a «{{term}}».",
+    "noArtistMatch": "Nessun artista corrisponde a «{{term}}».",
+    "albumResults_one": "Risultati per «{{term}}» ({{count}} album)",
+    "albumResults_other": "Risultati per «{{term}}» ({{count}} album)",
+    "artistResults_one": "Risultati per «{{term}}» ({{count}} artista)",
+    "artistResults_other": "Risultati per «{{term}}» ({{count}} artisti)",
+    "albumsError": "Errore nel caricamento degli album",
+    "artistsError": "Errore nel caricamento degli artisti",
+    "noAlbums": "Ancora nessun album in questa collezione.",
+    "noArtists": "Ancora nessun artista in questa collezione.",
+    "removeAlbumTitle": "Rimuovi l'album dalla collezione",
+    "removeArtistTitle": "Rimuovi l'artista dalla collezione",
+    "removeFromCollection": "Vuoi davvero rimuovere «{{title}}» da questa collezione? Questa azione non può essere annullata.",
+    "removeWishlistTitle": "Rimuovi dalla lista dei desideri",
+    "removeFromWishlist": "Vuoi davvero rimuovere «{{title}}» dalla tua lista dei desideri? Questa azione non può essere annullata.",
+    "albumResults_many": "Risultati per «{{term}}» ({{count}} album)",
+    "artistResults_many": "Risultati per «{{term}}» ({{count}} artisti)"
+  },
+  "page": {
+    "communityTitle": "Collezioni della community - VinylKeeper",
+    "tabsLabel": "Schede delle collezioni",
+    "mine": "Le mie collezioni",
+    "community": "Community"
+  },
+  "shared": {
+    "unknown": "Sconosciuto",
+    "joinEvery": "Iscriviti a Vinyl Keeper per vedere la collezione di ogni digger.",
+    "more": {
+      "record_one": "{{count}} disco in più in questa collezione. Iscriviti a Vinyl Keeper per vederli tutti.",
+      "record_other": "{{count}} dischi in più in questa collezione. Iscriviti a Vinyl Keeper per vederli tutti.",
+      "artist_one": "{{count}} artista in più in questa collezione. Iscriviti a Vinyl Keeper per vederli tutti.",
+      "artist_other": "{{count}} artisti in più in questa collezione. Iscriviti a Vinyl Keeper per vederli tutti.",
+      "record_many": "{{count}} dischi in più in questa collezione. Iscriviti a Vinyl Keeper per vederli tutti.",
+      "artist_many": "{{count}} artisti in più in questa collezione. Iscriviti a Vinyl Keeper per vederli tutti."
+    },
+    "join": "Iscriviti a Vinyl Keeper",
+    "seeWhole": "Vedi tutta la collezione",
+    "by": "Una collezione di {{name}}",
+    "tabsLabel": "Collezione condivisa",
+    "metaTitle": "{{name}} | Vinyl Keeper",
+    "metaTitleDefault": "Collezione condivisa | Vinyl Keeper",
+    "metaDescription_one": "Dai un'occhiata alla collezione di {{owner}} e scopri vinylkeeper.org. {{count}} disco.",
+    "metaDescription_other": "Dai un'occhiata alla collezione di {{owner}} e scopri vinylkeeper.org. {{count}} dischi.",
+    "thisDigger": "questo digger",
+    "exploreAtlas": "Esplora il Vinyl Atlas",
+    "joinTitle": "Iscriviti a Vinyl Keeper per vedere tutta questa collezione",
+    "emptyRecords": "Ancora nessun disco in questa collezione.",
+    "emptyWishlist": "Ancora niente in questa lista dei desideri.",
+    "metaDescription_many": "Dai un'occhiata alla collezione di {{owner}} e scopri vinylkeeper.org. {{count}} dischi."
+  }
+}

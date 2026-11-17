@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from fastapi import BackgroundTasks
 from app.repositories.user_repository import UserRepository
 from app.core.security import verify_password_async, hash_password_async
@@ -328,7 +329,8 @@ class UserService:
             "user_uuid": str(user.user_uuid),
             "is_admin": is_admin(user),
             "is_tutorial_seen": is_tutorial_seen,
-            "number_of_connections": user.number_of_connections
+            "number_of_connections": user.number_of_connections,
+            "language": user.language,
         }
 
     async def get_user_settings(self, user: User) -> dict:
@@ -341,12 +343,19 @@ class UserService:
             "is_accepted_terms": user.is_accepted_terms,
             "is_email_confirmed": user.is_email_confirmed,
             "preferred_currency": user.preferred_currency,
+            "language": user.language,
         }
 
     async def set_preferred_currency(self, user: User, currency: str) -> None:
         """Currency the collection value is shown in (EUR or USD, checked by the schema)."""
         async with transaction_context(self.repository.db):
             user.preferred_currency = currency
+            await self.repository.update_user(user)
+
+    async def set_language(self, user: User, language: Optional[str]) -> None:
+        """Language of the interface (en, fr, es, pt, de or it, checked by the schema); None follows the device."""
+        async with transaction_context(self.repository.db):
+            user.language = language
             await self.repository.update_user(user)
 
     async def send_contact_message(self, user: User, message_data: ContactMessageRequest) -> ContactMessageResponse:

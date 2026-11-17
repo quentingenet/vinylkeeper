@@ -4,22 +4,24 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import CloudOffIcon from "@mui/icons-material/CloudOff";
 import type { CollectionUnavailableReason } from "@utils/collectionAvailability";
+import { useTranslation } from "react-i18next";
 
+// title and text: translation keys
 const SCREENS = {
   private: {
     Icon: LockOutlinedIcon,
-    title: "This collection is now private",
-    text: "Its owner chose to keep it to themselves, so it can no longer be viewed.",
+    title: "collections:unavailable.private.title",
+    text: "collections:unavailable.private.text",
   },
   gone: {
     Icon: LinkOffIcon,
-    title: "This collection no longer exists",
-    text: "It may have been deleted by its owner, or the link may be incomplete.",
+    title: "collections:unavailable.notFound.title",
+    text: "collections:unavailable.notFound.text",
   },
   error: {
     Icon: CloudOffIcon,
-    title: "This collection could not be loaded",
-    text: "Check your connection and try again in a moment.",
+    title: "collections:unavailable.error.title",
+    text: "collections:unavailable.error.text",
   },
 };
 
@@ -31,6 +33,7 @@ interface CollectionUnavailableProps {
 
 /** In place of a collection the link of which no longer leads anywhere. */
 export default function CollectionUnavailable({ reason, children }: CollectionUnavailableProps) {
+  const { t } = useTranslation();
   const { Icon, title, text } = SCREENS[reason];
 
   return (
@@ -49,10 +52,10 @@ export default function CollectionUnavailable({ reason, children }: CollectionUn
     >
       <Icon sx={{ fontSize: 56, color: "primary.main" }} />
       <Typography variant="h5" component="h1" sx={{ color: "primary.main" }}>
-        {title}
+        {t(title)}
       </Typography>
       <Typography variant="body1" sx={{ color: "text.secondary", maxWidth: 420 }}>
-        {text}
+        {t(text)}
       </Typography>
       <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1, mt: 1 }}>{children}</Box>
     </Box>

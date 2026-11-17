@@ -1,0 +1,117 @@
+{
+  "conditions": [
+    "Conecta tu cuenta de Discogs: Discogs te pide autorizar a VinylKeeper, que entonces lee tu colección y tu wantlist, nada más. Las colecciones privadas también funcionan.",
+    "Solo se importan los vinilos: los CD, casetes y otros formatos se omiten.",
+    "Los discos importados tienen una edición por confirmar: comprueba la edición de cada disco en tu colección. El país y el estado no se importan.",
+    "Tu wantlist de Discogs pasa a tu lista de deseos solo si marcas la casilla de abajo.",
+    "Los discos que ya están en la colección no se añaden dos veces.",
+    "Por defecto, los discos van a una nueva colección: eliminarla deshace la importación. Importar en una colección existente guarda antes una copia de ella."
+  ],
+  "outcome": {
+    "connected": "Tu cuenta de Discogs está conectada. Elige qué importar.",
+    "denied": "Se canceló la conexión con Discogs.",
+    "expired": "La conexión tardó demasiado. Vuelve a conectar tu cuenta de Discogs.",
+    "session": "Vuelve a conectar tu cuenta de Discogs desde este navegador, con la sesión de Vinyl Keeper iniciada.",
+    "failed": "Discogs no pudo conectar tu cuenta. Inténtalo de nuevo en unos minutos."
+  },
+  "progress": {
+    "queued": "Esperando a que termine otra importación.",
+    "connecting": "Conectando con Discogs.",
+    "readingCollection": "Leyendo tu colección de Discogs: página {{done}} de {{total}}.",
+    "readingWantlist": "Leyendo tu wantlist de Discogs: página {{done}} de {{total}}.",
+    "addingRecords": "Añadiendo discos: {{processed}} de {{total}}.",
+    "addingWishlist": "Añadiendo a tu lista de deseos: {{processed}} de {{total}}.",
+    "importing": "Importando la colección de <strong>{{name}}</strong>",
+    "label": "Progreso de la importación",
+    "canClose": "Puedes cerrar esta ventana: la importación continúa."
+  },
+  "summary": {
+    "copies_one": "{{count}} copia en total",
+    "copies_other": "{{count}} copias en total",
+    "alreadyInCollection": "{{count}} ya en la colección",
+    "otherFormats_one": "{{count}} formato distinto omitido",
+    "otherFormats_other": "{{count}} formatos distintos omitidos",
+    "savedCopy": "«{{name}}» es la copia desde la que restaurar esta colección: elimínala cuando todo esté bien.",
+    "otherPressings_one": "{{count}} disco es otra edición de un disco que ya tenías en esta colección.",
+    "otherPressings_other": "{{count}} discos son otra edición de un disco que ya tenías en esta colección.",
+    "inOtherCollections_one": "{{count}} disco ya estaba en otra de tus colecciones.",
+    "inOtherCollections_other": "{{count}} discos ya estaban en otra de tus colecciones.",
+    "open": "Abrir",
+    "last_one": "Última importación de {{name}}: {{count}} disco añadido{{details}}.",
+    "last_other": "Última importación de {{name}}: {{count}} discos añadidos{{details}}.",
+    "confirmPressings": "Recuerda confirmar la edición de cada disco.",
+    "copies_many": "{{count}} copias en total",
+    "otherFormats_many": "{{count}} formatos distintos omitidos",
+    "otherPressings_many": "{{count}} discos son otra edición de un disco que ya tenías en esta colección.",
+    "inOtherCollections_many": "{{count}} discos ya estaban en otra de tus colecciones.",
+    "last_many": "Última importación de {{name}}: {{count}} discos añadidos{{details}}."
+  },
+  "save": {
+    "oneOnly": "Solo una copia por colección: «{{name}}» ya existe. Elimínala para hacer una nueva.",
+    "existing": "Esta colección ya tiene una copia: «{{name}}». Solo una copia por colección: se conserva tal cual y no se actualiza con los discos actuales. Si está desfasada, cancela, elimina esa copia y vuelve a importar para guardar la colección tal como está ahora."
+  },
+  "wantlist": {
+    "error": "Wantlist no importada: {{error}}",
+    "alreadyThere": "{{count}} ya estaban",
+    "owned_one": "{{count}} disco que ya tienes omitido",
+    "owned_other": "{{count}} discos que ya tienes omitidos",
+    "otherFormats_one": "{{count}} formato distinto omitido",
+    "otherFormats_other": "{{count}} formatos distintos omitidos",
+    "otherPressings_one": " {{count}} de ellos es otra edición de un disco que tienes.",
+    "otherPressings_other": " {{count}} de ellos son otra edición de un disco que tienes.",
+    "added_one": "Wantlist: {{count}} disco añadido a tu lista de deseos{{details}}.{{pressings}}",
+    "added_other": "Wantlist: {{count}} discos añadidos a tu lista de deseos{{details}}.{{pressings}}",
+    "owned_many": "{{count}} discos que ya tienes omitidos",
+    "otherFormats_many": "{{count}} formatos distintos omitidos",
+    "otherPressings_many": " {{count}} de ellos son otra edición de un disco que tienes.",
+    "added_many": "Wantlist: {{count}} discos añadidos a tu lista de deseos{{details}}.{{pressings}}"
+  },
+  "preview": {
+    "empty": "Tu colección de Discogs está vacía.",
+    "withWantlist_one": "{{count}} elemento en tu colección de Discogs y {{wantlist}} en su wantlist.",
+    "withWantlist_other": "{{count}} elementos en tu colección de Discogs y {{wantlist}} en su wantlist.",
+    "found_one": "{{count}} elemento encontrado en tu colección de Discogs.",
+    "found_other": "{{count}} elementos encontrados en tu colección de Discogs.",
+    "vinylOnly": "Solo se importarán los vinilos.",
+    "withWantlist_many": "{{count}} elementos en tu colección de Discogs y {{wantlist}} en su wantlist.",
+    "found_many": "{{count}} elementos encontrados en tu colección de Discogs."
+  },
+  "unavailable": {
+    "private": "No se pudo leer tu wantlist de Discogs.",
+    "empty": "Tu wantlist de Discogs está vacía.",
+    "later": "No se pudo leer tu wantlist de Discogs ahora mismo. Inténtalo de nuevo en unos minutos."
+  },
+  "dialog": {
+    "genericError": "Algo salió mal. Inténtalo de nuevo.",
+    "importTitle": "Importar desde Discogs",
+    "connectTitle": "Conectar tu cuenta de Discogs",
+    "lastFailed": "La última importación falló. Inténtalo de nuevo.",
+    "before": "Antes de importar",
+    "conditionsLabel": "Condiciones para importar una colección de Discogs",
+    "unavailable": "La conexión de una cuenta de Discogs no está disponible ahora mismo. Inténtalo más tarde.",
+    "disconnected": "Tu cuenta de Discogs está desconectada: VinylKeeper ya no conserva su acceso. También puedes quitar VinylKeeper de las aplicaciones en los ajustes de tu cuenta de Discogs.",
+    "connect": "Conectar con Discogs",
+    "connectedAs": "Conectado a Discogs como <strong>{{name}}</strong>",
+    "disconnect": "Desconectar",
+    "importInto": "Importar en",
+    "newCollection": "Nueva colección: {{name}}",
+    "newCollectionHelp": "Se crea una colección privada: eliminarla deshace la importación.",
+    "saveTargetHelp": "Esta colección es una copia: los discos se suman a ella, sin vuelta atrás.",
+    "saveCopy": "Guardar una copia de «{{name}}» antes de importar",
+    "copyNamed": "La copia se llama «{{name}}»: elimínala cuando todo esté bien.",
+    "noCopy": "Sin copia, los discos se suman a los de esta colección: sin vuelta atrás.",
+    "alsoWantlist_one": "Importar también mi wantlist de Discogs ({{count}} elemento) a mi lista de deseos",
+    "alsoWantlist_other": "Importar también mi wantlist de Discogs ({{count}} elementos) a mi lista de deseos",
+    "alsoWantlistPlain": "Importar también mi wantlist de Discogs a mi lista de deseos",
+    "wantlistRules": "Solo se añaden vinilos; una edición que ya tienes se omite, otra edición de un disco que tienes se añade y se señala.",
+    "import": "Importar",
+    "collectionDataBy": "Datos de la colección proporcionados por",
+    "alsoWantlist_many": "Importar también mi wantlist de Discogs ({{count}} elementos) a mi lista de deseos"
+  },
+  "callback": {
+    "title": "De vuelta de Discogs",
+    "text": "Este paso termina en la app Vinyl Keeper. Si no se ha abierto sola, pulsa el botón.",
+    "openApp": "Abrir la app Vinyl Keeper",
+    "collections": "Ir a mis colecciones"
+  }
+}

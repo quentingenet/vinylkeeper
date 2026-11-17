@@ -7,6 +7,7 @@ import {
   COMMUNITY_TAB_VALUE,
   COMMUNITY_COLLECTIONS_URL,
 } from "@utils/GlobalUrls";
+import { useTranslation } from "react-i18next";
 
 interface BackToCollectionsButtonProps {
   isOwner: boolean;
@@ -27,13 +28,14 @@ function listCameFrom(state: unknown): string | null {
  */
 export default function BackToCollectionsButton({ isOwner }: BackToCollectionsButtonProps) {
   const location = useLocation();
+  const { t } = useTranslation("collections");
   const navigate = useNavigate();
   const backTo = listCameFrom(location.state);
 
   const toCommunity = backTo
     ? new URLSearchParams(backTo.split("?")[1] ?? "").get(COLLECTIONS_TAB_PARAM) === COMMUNITY_TAB_VALUE
     : !isOwner;
-  const label = toCommunity ? "Community" : "My collections";
+  const label = toCommunity ? t("back.community") : t("back.myCollections");
   const target = backTo ?? (toCommunity ? COMMUNITY_COLLECTIONS_URL : EGlobalUrls.COLLECTIONS);
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -52,7 +54,7 @@ export default function BackToCollectionsButton({ isOwner }: BackToCollectionsBu
       variant="text"
       size="small"
       startIcon={<ArrowBackIcon fontSize="small" />}
-      aria-label={`Back to ${label}`}
+      aria-label={t("back.label", { label })}
       sx={{
         minHeight: 44,
         mb: 1,

@@ -1,0 +1,28 @@
+{
+  "nothingMatches": "Nothing matches these filters yet. Try removing one.",
+  "unavailable": "Spinning now is unavailable right now. Please try again later.",
+  "empty": {
+    "before": "No records in your collections yet.",
+    "link": "Add your first vinyls",
+    "after": "and come back to pick one to play."
+  },
+  "intro": "Pick a mood, an era or a genre and find what to put on the turntable.",
+  "moreRecords": "The more records you add, the better your picks get.",
+  "notAnalysed": "Moods, eras and genres show up once your records have been analysed.",
+  "filters": {
+    "mood": "Mood",
+    "era": "Era",
+    "genre": "Genre",
+    "collection": "Collection"
+  },
+  "surprise": "Surprise me",
+  "shuffle": "Shuffle",
+  "clear": "Clear filters",
+  "noMatch": "No record matches these filters.",
+  "results_one": "{{shown}} of {{count}} record, picked at random.",
+  "results_other": "{{shown}} of {{count}} records, picked at random.",
+  "loadFailed": "Could not load records. Please try again.",
+  "play": "Play {{title}}",
+  "playBy": "Play {{title}} by {{artist}}",
+  "inCollections": "In {{names}}"
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { OTHERS_LABEL, percentOf, topWithOthers } from "@components/Dashboard/collectionStatsLabels";
+import { othersLabel, percentOf, topWithOthers } from "@components/Dashboard/collectionStatsLabels";
 
 describe("topWithOthers", () => {
   it("keeps every entry under the limit", () => {
@@ -12,7 +12,7 @@ describe("topWithOthers", () => {
     expect(topWithOthers(entries, 3)).toEqual([
       { label: "A", count: 4 },
       { label: "B", count: 3 },
-      { label: OTHERS_LABEL, count: 3, disabled: true },
+      { label: othersLabel(), count: 3, disabled: true },
     ]);
   });
 });

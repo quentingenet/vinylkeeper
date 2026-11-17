@@ -1,0 +1,218 @@
+{
+  "counts": {
+    "albums_one": "{{count}} album",
+    "albums_other": "{{count}} albums",
+    "artists_one": "{{count}} artist",
+    "artists_other": "{{count}} artists",
+    "records_one": "{{count}} record",
+    "records_other": "{{count}} records",
+    "likes_one": "{{count}} like",
+    "likes_other": "{{count}} likes",
+    "plusLikes_one": "+{{count}} like",
+    "plusLikes_other": "+{{count}} likes"
+  },
+  "item": {
+    "nowPublic": "Your collection is public and visible by other users now",
+    "nowPrivate": "Your collection is private and visible only by you",
+    "savedAs": "Saved as “{{name}}”",
+    "saveFailed": "The save could not be made. Try again.",
+    "unknownOwner": "Unknown",
+    "public": "Public",
+    "private": "Private",
+    "edit": "Edit collection",
+    "alreadySaved": "Save: already saved as “{{name}}”",
+    "saveCopy": "Save a copy of this collection",
+    "save": "Save",
+    "delete": "Delete collection",
+    "createdOn": "Created on {{date}}",
+    "byOwner": " by {{name}}",
+    "deleteTitle": "Delete “{{name}}”?",
+    "deleteText": "The collection <strong>“{{name}}”</strong> is deleted with {{contents}}. This cannot be undone.",
+    "keepCopyFirst": "To keep a copy first, cancel and use the save button of the collection."
+  },
+  "back": {
+    "myCollections": "My collections",
+    "community": "Community",
+    "label": "Back to {{label}}"
+  },
+  "export": {
+    "albumsCsv": "Collection albums (CSV)",
+    "albumsOds": "Collection albums (ODS)",
+    "artistsCsv": "Collection artists (CSV)",
+    "artistsOds": "Collection artists (ODS)",
+    "wishlistCsv": "My wishlist (CSV)",
+    "wishlistOds": "My wishlist (ODS)",
+    "button": "Export to",
+    "exporting": "Exporting…"
+  },
+  "tabs": {
+    "label": "collection tabs",
+    "albums": "Albums",
+    "artists": "Artists",
+    "wishlist": "Wishlist"
+  },
+  "unavailable": {
+    "private": {
+      "title": "This collection is now private",
+      "text": "Its owner chose to keep it to themselves, so it can no longer be viewed."
+    },
+    "notFound": {
+      "title": "This collection no longer exists",
+      "text": "It may have been deleted by its owner, or the link may be incomplete."
+    },
+    "error": {
+      "title": "This collection could not be loaded",
+      "text": "Check your connection and try again in a moment."
+    }
+  },
+  "coverAlt": "vinyl disc",
+  "community": {
+    "loadError": "Error loading public collections",
+    "intro": "Explore public and shared vinyl collections from other users on the platform.",
+    "sortBy": "Sort by",
+    "recentlyUpdated": "Recently Updated",
+    "mostLiked": "Most Liked",
+    "newest": "Newest",
+    "empty": "No public collections available at the moment."
+  },
+  "media": {
+    "moveToCollection": "Move to a collection",
+    "delete": "Remove",
+    "copies_one": "{{count}} copy",
+    "copies_other": "{{count}} copies",
+    "pressings_one": "{{count}} pressing",
+    "pressings_other": "{{count}} pressings"
+  },
+  "modal": {
+    "updating": "Updating collection",
+    "creating": "Creating a new collection",
+    "duplicateName": "Collection name already exists. Please choose a different name.",
+    "createError": "An error occurred while creating the collection. Please try again.",
+    "updateError": "An error occurred while updating the collection. Please try again.",
+    "name": "Name",
+    "description": "Description",
+    "submitCreating": "Creating...",
+    "submitUpdating": "Updating...",
+    "update": "Update",
+    "create": "Create"
+  },
+  "move": {
+    "title": "Got it? Move it to a collection",
+    "albumText": "<strong>“{{title}}”</strong> goes into the collection you pick and leaves your wishlist. Already in that collection, it gets one more copy.",
+    "artistText": "<strong>“{{title}}”</strong> joins the artists of the collection you pick and leaves your wishlist.",
+    "pressing": "Pressing",
+    "exact": "This is the exact pressing I got",
+    "toConfirm": "The record goes in with a pressing to confirm: in the collection, confirm it or find the right one to replace it.",
+    "collection": "Collection",
+    "createFirst": "Create a collection first to move records into it.",
+    "error": "The record could not be moved. Try again.",
+    "moving": "Moving...",
+    "move": "Move",
+    "done": "“{{title}}” moved to “{{collection}}”",
+    "alreadyAlbum": "“{{title}}” was in “{{collection}}” already: one more copy added",
+    "alreadyArtist": "“{{title}}” was in “{{collection}}” already",
+    "thisRecord": "This record",
+    "thisArtist": "This artist"
+  },
+  "wishlist": {
+    "gotItTooltip": "Got this record? Move it to one of your collections",
+    "artistTooltip": "Move this artist to one of your collections",
+    "pressingNumber": "Pressing {{number}}",
+    "wantedPressings_one": "{{count}} wanted pressing",
+    "wantedPressings_other": "{{count}} wanted pressings",
+    "wantedLabel": "Wanted pressings",
+    "moveAria": "Move {{title}} to a collection",
+    "removeTooltip": "Remove this pressing from your wishlist",
+    "removeAria": "Remove {{title}} from the wishlist",
+    "minChars": "Please enter at least 2 characters to search.",
+    "noMatch": "No wishlist items found matching \"{{term}}\".",
+    "results_one": "Search results for “{{term}}” ({{count}} item)",
+    "results_other": "Search results for “{{term}}” ({{count}} items)",
+    "empty": "Your wishlist is empty."
+  },
+  "mine": {
+    "loadError": "Error loading collections",
+    "create": "Create a new collection",
+    "shareHint1": "Share your collection with others by changing",
+    "shareHint2": "its visibility from private to public.",
+    "importRunning": "Discogs import in progress",
+    "import": "Import from Discogs",
+    "empty": "No collection found. Create a new one!"
+  },
+  "share": {
+    "label": "Share this collection",
+    "private": "Go public to share this collection with diggers\nall around the world, on Vinyl Keeper or not",
+    "textOwner": "Have a look at {{name}}'s collection and discover vinylkeeper.org",
+    "text": "Have a look at this collection and discover vinylkeeper.org",
+    "copied": "Link copied",
+    "copyFailed": "The link could not be copied",
+    "copy": "Copy link",
+    "email": "Email",
+    "button": "Share"
+  },
+  "confirm": {
+    "remove": "Remove",
+    "removing": "Removing..."
+  },
+  "details": {
+    "searchAlbum": "Search album",
+    "searchArtist": "Search artist",
+    "searchBoth": "Search artist or album",
+    "searchInMine": "{{what}} in my collection",
+    "searchInThis": "{{what}} in this collection",
+    "metaTitle": "{{name}} - VinylKeeper",
+    "browseCommunity": "Browse community collections",
+    "noDescription": "No description available",
+    "addRecords": "Add records",
+    "createdOn": "Created on {{date}}",
+    "unknownDate": "Unknown date",
+    "clearSearch": "Clear search",
+    "sortOrder": "Sort Order",
+    "newest": "Newest first",
+    "oldest": "Oldest first",
+    "noAlbumMatch": "No albums found matching \"{{term}}\".",
+    "noArtistMatch": "No artists found matching \"{{term}}\".",
+    "albumResults_one": "Search results for “{{term}}” ({{count}} album)",
+    "albumResults_other": "Search results for “{{term}}” ({{count}} albums)",
+    "artistResults_one": "Search results for “{{term}}” ({{count}} artist)",
+    "artistResults_other": "Search results for “{{term}}” ({{count}} artists)",
+    "albumsError": "Error loading albums",
+    "artistsError": "Error loading artists",
+    "noAlbums": "No albums in this collection yet.",
+    "noArtists": "No artists in this collection yet.",
+    "removeAlbumTitle": "Remove Album from Collection",
+    "removeArtistTitle": "Remove Artist from Collection",
+    "removeFromCollection": "Are you sure you want to remove \"{{title}}\" from this collection? This action cannot be undone.",
+    "removeWishlistTitle": "Remove from Wishlist",
+    "removeFromWishlist": "Are you sure you want to remove \"{{title}}\" from your wishlist? This action cannot be undone."
+  },
+  "page": {
+    "communityTitle": "Community collections - VinylKeeper",
+    "tabsLabel": "Collections tabs",
+    "mine": "My collections",
+    "community": "Community"
+  },
+  "shared": {
+    "unknown": "Unknown",
+    "joinEvery": "Join Vinyl Keeper to see every digger's collection.",
+    "more": {
+      "record_one": "{{count}} more record in this collection. Join Vinyl Keeper to see them all.",
+      "record_other": "{{count}} more records in this collection. Join Vinyl Keeper to see them all.",
+      "artist_one": "{{count}} more artist in this collection. Join Vinyl Keeper to see them all.",
+      "artist_other": "{{count}} more artists in this collection. Join Vinyl Keeper to see them all."
+    },
+    "join": "Join Vinyl Keeper",
+    "seeWhole": "See the whole collection",
+    "by": "A collection by {{name}}",
+    "tabsLabel": "Shared collection",
+    "metaTitle": "{{name}} | Vinyl Keeper",
+    "metaTitleDefault": "Shared collection | Vinyl Keeper",
+    "metaDescription_one": "Have a look at {{owner}}'s collection and discover vinylkeeper.org. {{count}} record.",
+    "metaDescription_other": "Have a look at {{owner}}'s collection and discover vinylkeeper.org. {{count}} records.",
+    "thisDigger": "this digger",
+    "exploreAtlas": "Explore the Vinyl Atlas",
+    "joinTitle": "Join Vinyl Keeper to see this whole collection",
+    "emptyRecords": "No records in this collection yet.",
+    "emptyWishlist": "Nothing on this wishlist yet."
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "report": {
+    "issues": {
+      "name": "Name is wrong",
+      "description": "Description is wrong or outdated",
+      "address": "Address is wrong, or the spot has moved",
+      "website": "Website link is dead or outdated",
+      "type": "Spot type is wrong",
+      "closed": "Permanently closed"
+    },
+    "chips": {
+      "name": "Name",
+      "description": "Description",
+      "address": "Address",
+      "website": "Website",
+      "type": "Type",
+      "closed": "Closed"
+    },
+    "title": "Report wrong information",
+    "thanks": "Thanks, an admin will check this spot.",
+    "what": "What is wrong about {{name}}?",
+    "should": "What should it be? (optional)",
+    "failed": "The report could not be sent. Please try again later.",
+    "send": "Send report"
+  },
+  "types": {
+    "flea market": "Flea market",
+    "shop": "Shop",
+    "music or records exhibition": "Music or records exhibition",
+    "other": "Other"
+  },
+  "map": {
+    "markerAlt": "vinyl spot",
+    "addAria": "Add a spot to the Atlas",
+    "add": "Add a spot",
+    "loadError": "Error loading places. Check your connection.",
+    "noSpots": "No spots found at this location.",
+    "report": "Report wrong information",
+    "likes_one": "{{count}} like",
+    "likes_other": "{{count}} likes",
+    "loading": " (Loading...)",
+    "title": "Atlas"
+  },
+  "add": {
+    "nameRequired": "Name is required",
+    "nameEmpty": "Name must not be empty",
+    "addressRequired": "Address is required",
+    "cityRequired": "City is required",
+    "countryRequired": "Country is required",
+    "descriptionMax": "Description must not exceed 600 characters",
+    "urlInvalid": "Must be a valid URL",
+    "typeRequired": "Spot type is required",
+    "countriesFailed": "Failed to load countries list.",
+    "loadFailed": "Failed to load form data. Please reopen the modal.",
+    "failed": "Failed to add the spot. Please try again.",
+    "details": "Spot details",
+    "name": "Spot name",
+    "type": "Spot type",
+    "country": "Country",
+    "city": "City",
+    "address": "Address",
+    "description": "Description (optional)",
+    "source": "Source URL (optional)",
+    "adding": "Adding...",
+    "submit": "Add to the Atlas",
+    "submitted": "Spot submitted!",
+    "thanks": "Thank you for your contribution! Your spot has been submitted and will be reviewed by our moderation team before being displayed on the Atlas.",
+    "why": "This helps us keep the Vinyl Atlas accurate and reliable for the whole community.",
+    "gotIt": "Got it!"
+  },
+  "join": {
+    "features": [
+      "Catalog your records, their copies and pressings",
+      "Connect your Discogs account to import your collection",
+      "Estimate what your collection is worth",
+      "Pick tonight's record with Spinning now",
+      "Keep a wishlist and share your collections"
+    ],
+    "title": "Join Vinyl Keeper to like spots and suggest new ones",
+    "intro": "Vinyl Keeper is free and open source. With an account you can also:",
+    "featuresLabel": "What members can do",
+    "lookInside": "Take a look inside?"
+  },
+  "byCountry": {
+    "title": "Spots by country",
+    "spots_one": "{{count}} spot",
+    "spots_other": "{{count}} spots"
+  },
+  "page": {
+    "loadError": "Error loading the Atlas",
+    "introPublic": "📍 Browse the best vinyl spots around the world, shared by the Vinyl Keeper community.",
+    "intro": "📍 Browse, add and share the best vinyl spots around the world with the community."
+  },
+  "public": {
+    "metaTitle": "Vinyl Atlas: record shops, flea markets and vinyl spots | Vinyl Keeper",
+    "metaDescription": "Find record shops, flea markets and vinyl spots around the world on the Vinyl Atlas, a free community map shared by vinyl collectors."
+  }
+}

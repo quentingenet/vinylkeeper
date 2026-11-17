@@ -16,6 +16,7 @@ import { buildProxyImageUrl } from "@utils/ImageProxyHelper";
 import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import styles from "../../styles/pages/Collection.module.scss";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface MediaCardItem {
   title?: string;
@@ -57,6 +58,7 @@ export default function MediaCard({
   onGotIt,
   imageSize = { w: 300, h: 300, q: 75 },
 }: MediaCardProps) {
+  const { t } = useTranslation("collections");
   const title = item.title || "";
   // Albums are stored as "Artist - Title": artist on the first line, the rest on the second.
   // Only the first separator splits, titles keep their own dashes ("Trust - Live - Paris By Night").
@@ -112,9 +114,9 @@ export default function MediaCard({
           <PlayArrowIcon sx={{ color: "white", fontSize: "20px" }} />
         </IconButton>
         {onGotIt && (
-          <Tooltip title={item.entity_type === "artist" ? ARTIST_TO_COLLECTION_TOOLTIP : GOT_IT_TOOLTIP}>
+          <Tooltip title={t(item.entity_type === "artist" ? ARTIST_TO_COLLECTION_TOOLTIP : GOT_IT_TOOLTIP)}>
             <IconButton
-              aria-label="Move to a collection"
+              aria-label={t("media.moveToCollection")}
               onClick={(e) => {
                 e.stopPropagation();
                 onGotIt();
@@ -132,6 +134,7 @@ export default function MediaCard({
               onDelete();
             }}
             sx={iconButtonSx}
+            aria-label={t("media.delete")}
           >
             <DeleteIcon sx={{ color: "white", fontSize: "20px" }} />
           </IconButton>
@@ -140,7 +143,7 @@ export default function MediaCard({
 
       {badgeCount > 1 && (
         <Box
-          aria-label={item.copies_count ? `${badgeCount} copies` : `${badgeCount} pressings`}
+          aria-label={item.copies_count ? t("media.copies", { count: badgeCount }) : t("media.pressings", { count: badgeCount })}
           sx={{
             position: "absolute",
             top: 10,

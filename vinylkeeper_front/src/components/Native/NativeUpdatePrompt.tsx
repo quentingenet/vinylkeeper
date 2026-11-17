@@ -9,6 +9,7 @@ import {
 } from "@capawesome/capacitor-app-update";
 import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { logger } from "@utils/logger";
+import { useTranslation } from "react-i18next";
 
 type Step = "idle" | "available" | "downloading" | "ready" | "installing";
 
@@ -37,6 +38,7 @@ function UpdateMessage({ text }: { text: string }) {
  * "later"). Renders nothing in a browser, and nothing for an app that was not installed from the Play Store.
  */
 export default function NativeUpdatePrompt() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("idle");
   const [progress, setProgress] = useState<number | null>(null);
   // "Later" lasts until the app is started again
@@ -154,18 +156,18 @@ export default function NativeUpdatePrompt() {
     return (
       <Snackbar
         open
-        message="A new version of Vinyl Keeper is available."
+        message={t("update.available")}
         action={
           <>
             <Button color="inherit" size="small" onClick={later}>
-              Later
+              {t("update.later")}
             </Button>
             <Button
               color="primary"
               size="small"
               onClick={() => void startUpdate()}
             >
-              Update
+              {t("update.update")}
             </Button>
           </>
         }
@@ -173,13 +175,13 @@ export default function NativeUpdatePrompt() {
     );
   }
   if (step === "downloading") {
-    const percent = progress !== null ? ` (${progress}%)` : "";
+
     return (
       <Snackbar
         open
         message={
           <UpdateMessage
-            text={`Update in progress${percent}. You can keep using the app.`}
+            text={progress !== null ? t("update.progressPercent", { percent: progress }) : t("update.progress")}
           />
         }
       />
@@ -189,10 +191,10 @@ export default function NativeUpdatePrompt() {
     return (
       <Snackbar
         open
-        message="Update downloaded. Restart to finish."
+        message={t("update.ready")}
         action={
           <Button color="primary" size="small" onClick={() => void restart()}>
-            Restart
+            {t("update.restart")}
           </Button>
         }
       />
@@ -202,7 +204,7 @@ export default function NativeUpdatePrompt() {
     return (
       <Snackbar
         open
-        message={<UpdateMessage text="Installing the update, the app will restart." />}
+        message={<UpdateMessage text={t("update.installing")} />}
       />
     );
   }

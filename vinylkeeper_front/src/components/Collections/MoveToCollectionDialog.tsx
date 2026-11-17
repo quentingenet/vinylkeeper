@@ -23,6 +23,7 @@ import type { MoveToCollectionResponse, WishlistPressing } from "@models/IExtern
 import EditionChips from "@components/Records/EditionChips";
 import { queryKeys } from "@utils/queryKeys";
 import { isApiError, type ApiError } from "@utils/apiError";
+import { Trans, useTranslation } from "react-i18next";
 
 // The API serves at most 100 collections per page: more than enough to pick one
 const COLLECTIONS_LIMIT = 100;
@@ -46,6 +47,7 @@ interface MoveToCollectionDialogProps {
 export default function MoveToCollectionDialog({ record, onClose, onMoved }: MoveToCollectionDialogProps) {
   const queryClient = useQueryClient();
   const { currentUser } = useUserContext();
+  const { t } = useTranslation("collections");
   const [picked, setPicked] = useState<number | "">("");
   // Not sure it is the very pressing got: it goes in to confirm, or to replace, in the collection
   const [exactPressing, setExactPressing] = useState(true);
@@ -79,7 +81,14 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.spinningNow.all() }),
       ]);
-      onMoved(result.message);
+      // Said by the app, in the language of the interface (the message of the API is in English)
+      const title = record?.title || t(isAlbum ? "move.thisRecord" : "move.thisArtist");
+      const key = !result.already_in_collection
+        ? "move.done"
+        : result.entity_type === "album"
+          ? "move.alreadyAlbum"
+          : "move.alreadyArtist";
+      onMoved(t(key, { title, collection: result.collection_name }));
       close();
     },
   });
@@ -94,24 +103,22 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
   return (
     <Dialog open={record !== null} onClose={close} fullWidth maxWidth="xs" aria-labelledby="move-to-collection-title">
       <DialogTitle id="move-to-collection-title" sx={{ color: "primary.main" }}>
-        Got it? Move it to a collection
+        {t("move.title")}
       </DialogTitle>
       <DialogContent>
         {isAlbum ? (
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            <strong>“{record?.title}”</strong> goes into the collection you pick and leaves your wishlist.
-            Already in that collection, it gets one more copy.
+            <Trans t={t} i18nKey="move.albumText" values={{ title: record?.title }} components={{ strong: <strong /> }} />
           </Typography>
         ) : (
           <Typography variant="body2" sx={{ mb: 2 }}>
-            <strong>“{record?.title}”</strong> joins the artists of the collection you pick and leaves your
-            wishlist.
+            <Trans t={t} i18nKey="move.artistText" values={{ title: record?.title }} components={{ strong: <strong /> }} />
           </Typography>
         )}
         {isAlbum && record?.pressing && (
           <Box sx={{ mb: 1 }}>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              Pressing
+              {t("move.pressing")}
             </Typography>
             <EditionChips
               centered={false}
@@ -129,22 +136,21 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
           <Box sx={{ mb: 2 }}>
             <FormControlLabel
               control={<Checkbox checked={exactPressing} onChange={(e) => setExactPressing(e.target.checked)} />}
-              label={<Typography variant="body2">This is the exact pressing I got</Typography>}
+              label={<Typography variant="body2">{t("move.exact")}</Typography>}
             />
             {!exactPressing && (
               <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
-                The record goes in with a pressing to confirm: in the collection, confirm it or find the right
-                one to replace it.
+                {t("move.toConfirm")}
               </Typography>
             )}
           </Box>
         )}
         {collections.length > 0 ? (
           <FormControl fullWidth size="small">
-            <InputLabel id="move-to-collection-label">Collection</InputLabel>
+            <InputLabel id="move-to-collection-label">{t("move.collection")}</InputLabel>
             <Select
               labelId="move-to-collection-label"
-              label="Collection"
+              label={t("move.collection")}
               value={collectionId}
               onChange={(e) => setPicked(Number(e.target.value))}
             >
@@ -156,17 +162,17 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
             </Select>
           </FormControl>
         ) : (
-          data && <Alert severity="info">Create a collection first to move records into it.</Alert>
+          data && <Alert severity="info">{t("move.createFirst")}</Alert>
         )}
         {move.error && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {isApiError(move.error) ? move.error.message : "The record could not be moved. Try again."}
+            {isApiError(move.error) ? move.error.message : t("move.error")}
           </Alert>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={close} disabled={move.isPending}>
-          Cancel
+          {t("common:actions.cancel")}
         </Button>
         <Button
           variant="contained"
@@ -177,7 +183,7 @@ export default function MoveToCollectionDialog({ record, onClose, onMoved }: Mov
             move.mutate({ wishlistId: record.id, collectionId, pressingConfirmed: !isAlbum || exactPressing })
           }
         >
-          {move.isPending ? "Moving..." : "Move"}
+          {move.isPending ? t("move.moving") : t("move.move")}
         </Button>
       </DialogActions>
     </Dialog>

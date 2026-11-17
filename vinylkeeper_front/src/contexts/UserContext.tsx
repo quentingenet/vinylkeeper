@@ -1,6 +1,7 @@
 import { logger } from "@utils/logger";
 import { userApiService, type UserResponse } from "@services/UserApiService";
 import { isSessionRefused } from "@utils/apiError";
+import { applyLanguagePreference } from "@utils/i18n";
 import {
   createContext,
   useContext,
@@ -130,6 +131,14 @@ export function UserContextProvider({
       queryClient.clear();
     }
   }, [isUserLoggedIn, queryClient]);
+
+  // The language a member saved once known (login, sign up, restored session), else the one of the
+  // device; after a logout, the one of the device again
+  const savedLanguage = currentUser?.language ?? null;
+  useEffect(() => {
+    if (isUserLoggedIn === null) return;
+    void applyLanguagePreference(isUserLoggedIn ? savedLanguage : null);
+  }, [isUserLoggedIn, savedLanguage]);
 
   useEffect(() => {
     void checkUserLoggedIn();

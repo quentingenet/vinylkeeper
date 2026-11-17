@@ -41,10 +41,9 @@ import {
 import { queryKeys } from "@utils/queryKeys";
 import { isApiError, type ApiError } from "@utils/apiError";
 import {
-  IMPORT_CONDITIONS,
+  importConditions,
   connectionOutcomeMessage,
   importProgress,
-  plural,
   existingSaveWarning,
   savedCopyName,
   canImportWantlist,
@@ -54,6 +53,7 @@ import {
   summaryWarnings,
   wantlistSummary,
 } from "@components/Collections/discogsImportLabels";
+import { Trans, useTranslation } from "react-i18next";
 
 // Value of the "Import into" choice creating a new collection
 const NEW_COLLECTION = "new";
@@ -110,6 +110,7 @@ export default function DiscogsImportDialog({
 }: DiscogsImportDialogProps) {
   const { isMobile } = useDetectMobile();
   const { currentUser } = useUserContext();
+  const { t } = useTranslation("discogs");
   const [dismissedId, setDismissedId] = useState<number | null>(() => readDismissedId(currentUser?.user_uuid));
   const queryClient = useQueryClient();
   const [disconnected, setDisconnected] = useState(false);
@@ -195,7 +196,7 @@ export default function DiscogsImportDialog({
   const canImport = !!connectedAs && (preview.data?.items_total ?? 0) > 0 && !isStarting;
 
   const errorMessage = (error: ApiError | null) =>
-    error && isApiError(error) ? error.message : "Something went wrong. Try again.";
+    error && isApiError(error) ? error.message : t("dialog.genericError");
 
   return (
     <Dialog open={open} onClose={onClose} fullScreen={isMobile} fullWidth maxWidth="sm" aria-labelledby="discogs-import-title">
@@ -203,8 +204,8 @@ export default function DiscogsImportDialog({
         id="discogs-import-title"
         sx={{ color: "primary.main", display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
-        {connectedAs ? "Import from Discogs" : "Connect your Discogs account"}
-        <IconButton aria-label="Close" onClick={onClose} sx={{ color: "text.primary" }}>
+        {connectedAs ? t("dialog.importTitle") : t("dialog.connectTitle")}
+        <IconButton aria-label={t("common:actions.close")} onClick={onClose} sx={{ color: "text.primary" }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -218,15 +219,15 @@ export default function DiscogsImportDialog({
             )}
             {finishedImport?.status === "failed" && (
               <Alert severity="error" sx={{ mb: 2 }} onClose={dismissResult}>
-                {finishedImport.error_message ?? "The last import failed. Try again."}
+                {finishedImport.error_message ?? t("dialog.lastFailed")}
               </Alert>
             )}
 
             <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
-              Before you import
+              {t("dialog.before")}
             </Typography>
-            <List dense disablePadding aria-label="Conditions to import a Discogs collection" sx={{ mb: 2 }}>
-              {IMPORT_CONDITIONS.map((condition) => (
+            <List dense disablePadding aria-label={t("dialog.conditionsLabel")} sx={{ mb: 2 }}>
+              {importConditions().map((condition) => (
                 <ListItem key={condition} disableGutters alignItems="flex-start" sx={{ py: 0.25 }}>
                   <ListItemIcon sx={{ minWidth: 30, mt: 0.25, color: "primary.main" }}>
                     <CheckCircleOutlineIcon fontSize="small" />
@@ -248,18 +249,17 @@ export default function DiscogsImportDialog({
               </Box>
             ) : connection.isError || !connection.data?.available ? (
               <Alert severity="info" sx={{ mb: 2 }}>
-                Connecting a Discogs account is not available right now. Try again later.
+                {t("dialog.unavailable")}
               </Alert>
             ) : !connectedAs ? (
               <Box sx={{ mb: 2 }}>
                 {disconnected && (
                   <Alert severity="info" sx={{ mb: 2 }}>
-                    Your Discogs account is disconnected: VinylKeeper no longer keeps its access. You can also remove
-                    VinylKeeper from the applications of your Discogs account settings.
+                    {t("dialog.disconnected")}
                   </Alert>
                 )}
                 <Button variant="contained" onClick={() => connect.mutate()} disabled={connect.isPending}>
-                  {connect.isPending ? <VinylSpinner size={20} /> : "Connect with Discogs"}
+                  {connect.isPending ? <VinylSpinner size={20} /> : t("dialog.connect")}
                 </Button>
                 {connect.error && (
                   <Alert severity="warning" sx={{ mt: 2 }}>
@@ -272,10 +272,10 @@ export default function DiscogsImportDialog({
                 sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 2, flexWrap: "wrap" }}
               >
                 <Typography variant="body2">
-                  Connected to Discogs as <strong>{connectedAs}</strong>
+                  <Trans t={t} i18nKey="dialog.connectedAs" values={{ name: connectedAs }} components={{ strong: <strong /> }} />
                 </Typography>
                 <Button size="small" onClick={() => disconnect.mutate()} disabled={disconnect.isPending}>
-                  Disconnect
+                  {t("dialog.disconnect")}
                 </Button>
               </Box>
             )}
@@ -298,16 +298,19 @@ export default function DiscogsImportDialog({
                 </Alert>
                 {preview.data.items_total > 0 && (
                   <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                    <InputLabel id="discogs-import-collection-label">Import into</InputLabel>
+                    <InputLabel id="discogs-import-collection-label">{t("dialog.importInto")}</InputLabel>
                     <Select
                       labelId="discogs-import-collection-label"
-                      label="Import into"
+                      label={t("dialog.importInto")}
                       value={target}
                       onChange={(e) =>
                         setTarget(e.target.value === NEW_COLLECTION ? NEW_COLLECTION : Number(e.target.value))
                       }
                     >
-                      <MenuItem value={NEW_COLLECTION}>New collection: Discogs import ({connectedAs})</MenuItem>
+                      <MenuItem value={NEW_COLLECTION}>
+                        {/* The name the API gives the new collection: not translated */}
+                        {t("dialog.newCollection", { name: `Discogs import (${connectedAs})` })}
+                      </MenuItem>
                       {collections.map((collection) => (
                         <MenuItem key={collection.id} value={collection.id}>
                           {collection.name}
@@ -316,11 +319,11 @@ export default function DiscogsImportDialog({
                     </Select>
                     {target === NEW_COLLECTION ? (
                       <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5 }}>
-                        A private collection is created: deleting it undoes the import.
+                        {t("dialog.newCollectionHelp")}
                       </Typography>
                     ) : targetIsSave ? (
                       <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5 }}>
-                        This collection is a save: the records join it, there is no undo.
+                        {t("dialog.saveTargetHelp")}
                       </Typography>
                     ) : targetSaveName ? (
                       <Alert severity="warning" sx={{ mt: 1 }}>
@@ -333,14 +336,14 @@ export default function DiscogsImportDialog({
                           control={<Checkbox checked={saveCopy} onChange={(e) => setSaveCopy(e.target.checked)} />}
                           label={
                             <Typography variant="body2">
-                              Save a copy of “{targetName}” before importing
+                              {t("dialog.saveCopy", { name: targetName })}
                             </Typography>
                           }
                         />
                         <Typography variant="caption" sx={{ color: "text.secondary" }}>
                           {saveCopy
-                            ? `The copy is named “${savedCopyName(targetName)}”: delete it once everything is fine.`
-                            : "Without a copy, the records join the ones of this collection: there is no undo."}
+                            ? t("dialog.copyNamed", { name: savedCopyName(targetName) })
+                            : t("dialog.noCopy")}
                         </Typography>
                       </>
                     )}
@@ -359,8 +362,8 @@ export default function DiscogsImportDialog({
                       label={
                         <Typography variant="body2">
                           {canImportWantlist(preview.data)
-                            ? `Also import my Discogs wantlist (${plural(preview.data.wantlist_items_total ?? 0, "item")}) into my wishlist`
-                            : "Also import my Discogs wantlist into my wishlist"}
+                            ? t("dialog.alsoWantlist", { count: preview.data.wantlist_items_total ?? 0 })
+                            : t("dialog.alsoWantlistPlain")}
                         </Typography>
                       }
                     />
@@ -371,8 +374,7 @@ export default function DiscogsImportDialog({
                     )}
                     {includeWantlist && canImportWantlist(preview.data) && (
                       <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
-                        Only vinyl records are added; a pressing you already own is skipped, another pressing of a
-                        record you own is added and pointed out.
+                        {t("dialog.wantlistRules")}
                       </Typography>
                     )}
                   </Box>
@@ -397,12 +399,12 @@ export default function DiscogsImportDialog({
                     : onStart(target, !targetIsSave && (saveCopy || targetSaveName !== null), wantlistIncluded)
                 }
               >
-                {isStarting ? <VinylSpinner size={20} /> : "Import"}
+                {isStarting ? <VinylSpinner size={20} /> : t("dialog.import")}
               </Button>
             </Box>
             <Box sx={{ pb: 1 }}>
               <DiscogsAttribution
-                lead="Collection data provided by"
+                lead={t("dialog.collectionDataBy")}
                 href={connectedAs ? discogsCollectionUrl(connectedAs) : "https://www.discogs.com"}
               />
               <Typography variant="caption" component="p" sx={{ color: "text.secondary" }}>
@@ -417,23 +419,24 @@ export default function DiscogsImportDialog({
 }
 
 function ImportInProgress({ job }: { job: DiscogsImport }) {
+  const { t } = useTranslation("discogs");
   const { label, value } = importProgress(job);
   return (
     <Box sx={{ py: 2 }} role="status" aria-live="polite">
       <Typography variant="body2" sx={{ mb: 1.5 }}>
-        Importing the collection of <strong>{job.discogs_username}</strong>
+        <Trans t={t} i18nKey="progress.importing" values={{ name: job.discogs_username }} components={{ strong: <strong /> }} />
       </Typography>
       <LinearProgress
         variant={value === null ? "indeterminate" : "determinate"}
         value={value ?? undefined}
-        aria-label="Import progress"
+        aria-label={t("progress.label")}
         sx={{ mb: 1.5, height: 6, borderRadius: 3 }}
       />
       <Typography variant="body2" sx={{ color: "text.secondary" }}>
         {label}
       </Typography>
       <Typography variant="caption" component="p" sx={{ color: "text.secondary", mt: 2 }}>
-        You can close this window: the import goes on.
+        {t("progress.canClose")}
       </Typography>
     </Box>
   );
@@ -446,6 +449,7 @@ interface ImportSummaryProps {
 }
 
 function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps) {
+  const { t } = useTranslation("discogs");
   const details = summaryDetails(job);
   const warnings = summaryWarnings(job);
   const wantlist = wantlistSummary(job);
@@ -458,17 +462,20 @@ function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps)
         <Box sx={{ display: "flex", alignItems: "center" }}>
           {job.collection_id !== null && (
             <Button component={RouterLink} to={`/collections/${job.collection_id}`} onClick={onOpenCollection} size="small">
-              Open
+              {t("summary.open")}
             </Button>
           )}
-          <IconButton aria-label="Close" size="small" color="inherit" onClick={onDismiss}>
+          <IconButton aria-label={t("common:actions.close")} size="small" color="inherit" onClick={onDismiss}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       }
     >
-      Last import from {job.discogs_username}: {plural(job.added, "record")} added
-      {details.length > 0 ? ` (${details.join(", ")})` : ""}.
+      {t("summary.last", {
+        name: job.discogs_username,
+        count: job.added,
+        details: details.length > 0 ? ` (${details.join(", ")})` : "",
+      })}
       {warnings.map((warning) => (
         <Box component="span" key={warning} sx={{ display: "block", mt: 0.5 }}>
           {warning}
@@ -480,7 +487,7 @@ function ImportSummary({ job, onOpenCollection, onDismiss }: ImportSummaryProps)
         </Box>
       )}
       <Box component="span" sx={{ display: "block", mt: 0.5 }}>
-        Remember to confirm the pressing of each record.
+        {t("summary.confirmPressings")}
       </Box>
     </Alert>
   );

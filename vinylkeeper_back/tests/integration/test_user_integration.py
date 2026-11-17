@@ -290,3 +290,49 @@ class TestLastSeen:
         assert await repo.touch_last_seen(user.id, timedelta(hours=1)) is True
         seen = (await real_session.execute(select(User.last_seen_at).where(User.id == user.id))).scalar_one()
         assert seen > datetime.now(timezone.utc) - timedelta(minutes=1)
+
+
+class TestLanguage:
+    """users.language: en, fr, es, pt, de or it, NULL following the device."""
+
+    async def test_a_new_user_follows_the_device_then_picks_a_language(self, real_session):
+        user = await make_test_user(real_session)
+        service = make_user_service(real_session)
+        assert user.language is None
+        assert (await service.get_user_me(user))["language"] is None
+
+        await service.set_language(user, "pt")
+
+        from app.models.user_model import User
+        stored = (await real_session.execute(select(User.language).where(User.id == user.id))).scalar_one()
+        assert stored == "pt"
+        assert (await service.get_user_settings(user))["language"] == "pt"
+
+    async def test_german_and_italian_are_accepted(self, real_session):
+        from app.models.user_model import User
+        user = await make_test_user(real_session)
+        service = make_user_service(real_session)
+
+        for language in ("de", "it"):
+            await service.set_language(user, language)
+            stored = (await real_session.execute(select(User.language).where(User.id == user.id))).scalar_one()
+            assert stored == language
+
+    async def test_back_to_automatic(self, real_session):
+        user = await make_test_user(real_session)
+        service = make_user_service(real_session)
+        await service.set_language(user, "fr")
+
+        await service.set_language(user, None)
+
+        assert (await service.get_user_me(user))["language"] is None
+
+    async def test_the_database_refuses_another_language(self, real_session):
+        from sqlalchemy import text
+        from sqlalchemy.exc import IntegrityError
+        user = await make_test_user(real_session)
+
+        with pytest.raises(IntegrityError):
+            async with real_session.begin_nested():
+                await real_session.execute(
+                    text("UPDATE users SET language = 'nl' WHERE id = :id"), {"id": user.id})

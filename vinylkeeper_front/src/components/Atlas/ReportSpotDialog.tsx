@@ -15,8 +15,9 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { atlasApiService } from "@services/AtlasApiService";
 import { isApiError } from "@utils/apiError";
-import { PLACE_REPORT_ISSUES, REPORT_COMMENT_MAX_LENGTH } from "@components/Atlas/placeReportLabels";
+import { PLACE_REPORT_ISSUES, REPORT_COMMENT_MAX_LENGTH, issueLabel } from "@components/Atlas/placeReportLabels";
 import type { PlaceReportIssue } from "@services/AdminApiService";
+import { useTranslation } from "react-i18next";
 
 interface ReportSpotDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface ReportSpotDialogProps {
 
 /** A member ticks what is wrong about a spot; the admins get an email and fix it. */
 export default function ReportSpotDialog({ open, onClose, placeId, placeName }: ReportSpotDialogProps) {
+  const { t } = useTranslation("atlas");
   const [issues, setIssues] = useState<PlaceReportIssue[]>([]);
   const [comment, setComment] = useState("");
 
@@ -50,31 +52,31 @@ export default function ReportSpotDialog({ open, onClose, placeId, placeName }: 
   const errorMessage = report.isError
     ? isApiError(report.error)
       ? report.error.message
-      : "The report could not be sent. Please try again later."
+      : t("report.failed")
     : null;
 
   return (
     <Dialog open={open} onClose={close} fullWidth maxWidth="sm" aria-labelledby="report-spot-title">
-      <DialogTitle id="report-spot-title">Report wrong information</DialogTitle>
+      <DialogTitle id="report-spot-title">{t("report.title")}</DialogTitle>
       <DialogContent>
         {report.isSuccess ? (
-          <Alert severity="success">Thanks, an admin will check this spot.</Alert>
+          <Alert severity="success">{t("report.thanks")}</Alert>
         ) : (
           <>
             <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
-              What is wrong about {placeName}?
+              {t("report.what", { name: placeName })}
             </Typography>
             <FormGroup>
-              {PLACE_REPORT_ISSUES.map(({ value, label }) => (
+              {PLACE_REPORT_ISSUES.map((value) => (
                 <FormControlLabel
                   key={value}
                   control={<Checkbox checked={issues.includes(value)} onChange={() => toggle(value)} />}
-                  label={label}
+                  label={issueLabel(value)}
                 />
               ))}
             </FormGroup>
             <TextField
-              label="What should it be? (optional)"
+              label={t("report.should")}
               value={comment}
               onChange={(event) => setComment(event.target.value.slice(0, REPORT_COMMENT_MAX_LENGTH))}
               multiline
@@ -93,16 +95,16 @@ export default function ReportSpotDialog({ open, onClose, placeId, placeName }: 
       </DialogContent>
       <DialogActions>
         {report.isSuccess ? (
-          <Button onClick={close}>Close</Button>
+          <Button onClick={close}>{t("common:actions.close")}</Button>
         ) : (
           <>
-            <Button onClick={close}>Cancel</Button>
+            <Button onClick={close}>{t("common:actions.cancel")}</Button>
             <Button
               variant="contained"
               onClick={() => report.mutate()}
               disabled={issues.length === 0 || report.isPending}
             >
-              Send report
+              {t("report.send")}
             </Button>
           </>
         )}

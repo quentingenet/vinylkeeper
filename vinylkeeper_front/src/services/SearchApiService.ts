@@ -4,6 +4,7 @@ import {
   IRequestToSend,
   SearchResultsPage,
 } from "@models/IRequestProxy";
+import i18n from "@utils/i18n";
 
 export class SearchApiService extends BaseApiService {
   async searchMusicPage(requestToSend: IRequestToSend): Promise<SearchResultsPage> {
@@ -14,7 +15,7 @@ export class SearchApiService extends BaseApiService {
       );
     } catch (error) {
       logger.error("Search failed:", error);
-      throw new Error("Failed to search music", { cause: error });
+      throw new Error(i18n.t("errors:search"), { cause: error });
     }
   }
 }

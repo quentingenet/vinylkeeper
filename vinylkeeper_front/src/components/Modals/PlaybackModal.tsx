@@ -29,6 +29,7 @@ import type { CollectionAlbumResponse } from "@models/Collection";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { discogsPageUrl } from "@utils/discogsLinks";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 export interface PlaybackItem {
   id: string;
@@ -67,6 +68,7 @@ export default function PlaybackModal({
   onMoveWanted,
   onRemoveWanted,
 }: PlaybackModalProps) {
+  const { t } = useTranslation("records");
   const { isMobile } = useDetectMobile();
   const { id: collectionId } = useParams<{ id: string }>();
   const { openAddRecord } = useAddRecord();
@@ -137,9 +139,9 @@ export default function PlaybackModal({
                 component="h2"
                 sx={{ color: "primary.main", fontWeight: "bold" }}
               >
-                {item.itemType === "album" ? "Album details" : "Artist details"}
+                {item.itemType === "album" ? t("playback.albumDetails") : t("playback.artistDetails")}
               </Typography>
-              <IconButton onClick={onClose} size="small">
+              <IconButton onClick={onClose} size="small" aria-label={t("common:actions.close")}>
                 <CloseIcon sx={{ color: colors.textLight }} />
               </IconButton>
             </Box>
@@ -151,7 +153,7 @@ export default function PlaybackModal({
             ) : error ? (
               <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
                 <Typography sx={{ color: colors.textMuted }}>
-                  {error instanceof Error ? error.message : "An error occurred"}
+                  {error instanceof Error ? error.message : t("playback.error")}
                 </Typography>
               </Box>
             ) : (
@@ -219,7 +221,7 @@ export default function PlaybackModal({
                   albumMetadata.genres.length > 0 && (
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-                        Genres
+                        {t("playback.genres")}
                       </Typography>
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                         {[
@@ -250,7 +252,7 @@ export default function PlaybackModal({
                 {item.itemType === "artist" && artistMetadata?.biography && (
                   <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-                      Biography
+                      {t("playback.biography")}
                     </Typography>
                     <Box sx={{ p: 2, maxHeight: 200, overflow: "auto" }}>
                       <Typography
@@ -267,7 +269,7 @@ export default function PlaybackModal({
                   artistMetadata.genres.length > 0 && (
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="subtitle1" sx={{ color: "primary.main", mb: 1 }}>
-                        Genres
+                        {t("playback.genres")}
                       </Typography>
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                         {artistMetadata.genres.map((genre, index) => (
@@ -299,8 +301,8 @@ export default function PlaybackModal({
                     sx={{ color: colors.textMuted, mt: 2, textAlign: "center" }}
                   >
                     {item.itemType === "album"
-                      ? "Tracklist not available"
-                      : "Biography not available"}
+                      ? t("playback.noTracklist")
+                      : t("playback.noBiography")}
                   </Typography>
                 ) : null}
 

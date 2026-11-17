@@ -1,0 +1,117 @@
+{
+  "conditions": [
+    "Connecte ton compte Discogs : Discogs te demande d'autoriser VinylKeeper, qui lit alors ta collection et ta wantlist, rien d'autre. Les collections privées fonctionnent aussi.",
+    "Seuls les vinyles sont importés : CD, cassettes et autres formats sont ignorés.",
+    "Les disques importés ont un pressage à confirmer : vérifie le pressage de chaque disque dans ta collection. Le pays et l'état ne sont pas importés.",
+    "Ta wantlist Discogs rejoint ta liste d'envies seulement si tu coches la case ci-dessous.",
+    "Les disques déjà dans la collection ne sont pas ajoutés deux fois.",
+    "Par défaut, les disques vont dans une nouvelle collection : la supprimer annule l'import. Importer dans une collection existante en sauvegarde d'abord une copie."
+  ],
+  "outcome": {
+    "connected": "Ton compte Discogs est connecté. Choisis quoi importer.",
+    "denied": "La connexion à Discogs a été annulée.",
+    "expired": "La connexion a pris trop de temps. Connecte à nouveau ton compte Discogs.",
+    "session": "Connecte à nouveau ton compte Discogs depuis ce navigateur, en étant connecté à Vinyl Keeper.",
+    "failed": "Discogs n'a pas pu connecter ton compte. Réessaie dans quelques minutes."
+  },
+  "progress": {
+    "queued": "En attente de la fin d'un autre import.",
+    "connecting": "Connexion à Discogs.",
+    "readingCollection": "Lecture de ta collection Discogs : page {{done}} sur {{total}}.",
+    "readingWantlist": "Lecture de ta wantlist Discogs : page {{done}} sur {{total}}.",
+    "addingRecords": "Ajout des disques : {{processed}} sur {{total}}.",
+    "addingWishlist": "Ajout à ta liste d'envies : {{processed}} sur {{total}}.",
+    "importing": "Import de la collection de <strong>{{name}}</strong>",
+    "label": "Progression de l'import",
+    "canClose": "Tu peux fermer cette fenêtre : l'import continue."
+  },
+  "summary": {
+    "copies_one": "{{count}} exemplaire en tout",
+    "copies_other": "{{count}} exemplaires en tout",
+    "alreadyInCollection": "{{count}} déjà dans la collection",
+    "otherFormats_one": "{{count}} autre format ignoré",
+    "otherFormats_other": "{{count}} autres formats ignorés",
+    "savedCopy": "« {{name}} » est la sauvegarde pour restaurer cette collection : supprime-la une fois que tout va bien.",
+    "otherPressings_one": "{{count}} disque est un autre pressage d'un disque que tu avais déjà dans cette collection.",
+    "otherPressings_other": "{{count}} disques sont un autre pressage d'un disque que tu avais déjà dans cette collection.",
+    "inOtherCollections_one": "{{count}} disque était déjà dans une autre de tes collections.",
+    "inOtherCollections_other": "{{count}} disques étaient déjà dans une autre de tes collections.",
+    "open": "Ouvrir",
+    "last_one": "Dernier import de {{name}} : {{count}} disque ajouté{{details}}.",
+    "last_other": "Dernier import de {{name}} : {{count}} disques ajoutés{{details}}.",
+    "confirmPressings": "Pense à confirmer le pressage de chaque disque.",
+    "copies_many": "{{count}} exemplaires en tout",
+    "otherFormats_many": "{{count}} autres formats ignorés",
+    "otherPressings_many": "{{count}} disques sont un autre pressage d'un disque que tu avais déjà dans cette collection.",
+    "inOtherCollections_many": "{{count}} disques étaient déjà dans une autre de tes collections.",
+    "last_many": "Dernier import de {{name}} : {{count}} disques ajoutés{{details}}."
+  },
+  "save": {
+    "oneOnly": "Une seule sauvegarde par collection : « {{name}} » existe déjà. Supprime-la pour en faire une nouvelle.",
+    "existing": "Cette collection a déjà une sauvegarde : « {{name}} ». Une seule sauvegarde par collection : elle est gardée telle quelle et n'est pas mise à jour avec les disques actuels. Si elle n'est plus à jour, annule, supprime cette sauvegarde, puis importe à nouveau pour sauvegarder la collection telle qu'elle est maintenant."
+  },
+  "wantlist": {
+    "error": "Wantlist non importée : {{error}}",
+    "alreadyThere": "{{count}} déjà présents",
+    "owned_one": "{{count}} disque que tu possèdes déjà ignoré",
+    "owned_other": "{{count}} disques que tu possèdes déjà ignorés",
+    "otherFormats_one": "{{count}} autre format ignoré",
+    "otherFormats_other": "{{count}} autres formats ignorés",
+    "otherPressings_one": " {{count}} d'entre eux est un autre pressage d'un disque que tu possèdes.",
+    "otherPressings_other": " {{count}} d'entre eux sont un autre pressage d'un disque que tu possèdes.",
+    "added_one": "Wantlist : {{count}} disque ajouté à ta liste d'envies{{details}}.{{pressings}}",
+    "added_other": "Wantlist : {{count}} disques ajoutés à ta liste d'envies{{details}}.{{pressings}}",
+    "owned_many": "{{count}} disques que tu possèdes déjà ignorés",
+    "otherFormats_many": "{{count}} autres formats ignorés",
+    "otherPressings_many": " {{count}} d'entre eux sont un autre pressage d'un disque que tu possèdes.",
+    "added_many": "Wantlist : {{count}} disques ajoutés à ta liste d'envies{{details}}.{{pressings}}"
+  },
+  "preview": {
+    "empty": "Ta collection Discogs est vide.",
+    "withWantlist_one": "{{count}} élément dans ta collection Discogs et {{wantlist}} dans sa wantlist.",
+    "withWantlist_other": "{{count}} éléments dans ta collection Discogs et {{wantlist}} dans sa wantlist.",
+    "found_one": "{{count}} élément trouvé dans ta collection Discogs.",
+    "found_other": "{{count}} éléments trouvés dans ta collection Discogs.",
+    "vinylOnly": "Seuls les vinyles seront importés.",
+    "withWantlist_many": "{{count}} éléments dans ta collection Discogs et {{wantlist}} dans sa wantlist.",
+    "found_many": "{{count}} éléments trouvés dans ta collection Discogs."
+  },
+  "unavailable": {
+    "private": "Ta wantlist Discogs n'a pas pu être lue.",
+    "empty": "Ta wantlist Discogs est vide.",
+    "later": "Ta wantlist Discogs n'a pas pu être lue pour le moment. Réessaie dans quelques minutes."
+  },
+  "dialog": {
+    "genericError": "Un problème est survenu. Réessaie.",
+    "importTitle": "Importer depuis Discogs",
+    "connectTitle": "Connecter ton compte Discogs",
+    "lastFailed": "Le dernier import a échoué. Réessaie.",
+    "before": "Avant d'importer",
+    "conditionsLabel": "Conditions pour importer une collection Discogs",
+    "unavailable": "La connexion d'un compte Discogs n'est pas disponible pour le moment. Réessaie plus tard.",
+    "disconnected": "Ton compte Discogs est déconnecté : VinylKeeper ne garde plus son accès. Tu peux aussi retirer VinylKeeper des applications dans les paramètres de ton compte Discogs.",
+    "connect": "Se connecter avec Discogs",
+    "connectedAs": "Connecté à Discogs en tant que <strong>{{name}}</strong>",
+    "disconnect": "Déconnecter",
+    "importInto": "Importer dans",
+    "newCollection": "Nouvelle collection : {{name}}",
+    "newCollectionHelp": "Une collection privée est créée : la supprimer annule l'import.",
+    "saveTargetHelp": "Cette collection est une sauvegarde : les disques la rejoignent, sans retour possible.",
+    "saveCopy": "Sauvegarder une copie de « {{name}} » avant d'importer",
+    "copyNamed": "La copie s'appelle « {{name}} » : supprime-la une fois que tout va bien.",
+    "noCopy": "Sans copie, les disques rejoignent ceux de cette collection : sans retour possible.",
+    "alsoWantlist_one": "Importer aussi ma wantlist Discogs ({{count}} élément) dans ma liste d'envies",
+    "alsoWantlist_other": "Importer aussi ma wantlist Discogs ({{count}} éléments) dans ma liste d'envies",
+    "alsoWantlistPlain": "Importer aussi ma wantlist Discogs dans ma liste d'envies",
+    "wantlistRules": "Seuls les vinyles sont ajoutés ; un pressage que tu possèdes déjà est ignoré, un autre pressage d'un disque que tu possèdes est ajouté et signalé.",
+    "import": "Importer",
+    "collectionDataBy": "Données de collection fournies par",
+    "alsoWantlist_many": "Importer aussi ma wantlist Discogs ({{count}} éléments) dans ma liste d'envies"
+  },
+  "callback": {
+    "title": "Retour de Discogs",
+    "text": "Cette étape se termine dans l'app Vinyl Keeper. Si elle ne s'est pas ouverte toute seule, touche le bouton.",
+    "openApp": "Ouvrir l'app Vinyl Keeper",
+    "collections": "Aller à mes collections"
+  }
+}

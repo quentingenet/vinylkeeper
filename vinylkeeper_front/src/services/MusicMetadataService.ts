@@ -4,6 +4,7 @@ import { AlbumMetadata, ArtistMetadata } from "@models/IRequestProxy";
 import { queryKeys } from "@utils/queryKeys";
 import { ApiErrorCode, isApiError } from "@utils/apiError";
 import { BaseApiService } from "./BaseApiService";
+import i18n from "@utils/i18n";
 
 export interface AlbumMetadataParams {
   id: string;
@@ -32,9 +33,9 @@ export const fetchAlbumMetadata = async (
     return await musicMetadataApiService.getAlbum(params.id);
   } catch (error: unknown) {
     if (isApiError(error) && error.code === ApiErrorCode.RESOURCE_NOT_FOUND) {
-      throw new Error(`Album with ID ${params.id} not found`, { cause: error });
+      throw new Error(i18n.t("errors:albumNotFound", { id: params.id }), { cause: error });
     }
-    throw new Error("Failed to fetch album metadata", { cause: error });
+    throw new Error(i18n.t("errors:albumMetadata"), { cause: error });
   }
 };
 
@@ -57,7 +58,7 @@ export const fetchArtistMetadata = async (
     return await musicMetadataApiService.getArtist(artistId);
   } catch (error) {
     logger.error("Error fetching artist metadata:", error);
-    throw new Error("Failed to fetch artist metadata", { cause: error });
+    throw new Error(i18n.t("errors:artistMetadata"), { cause: error });
   }
 };
 

@@ -1,0 +1,62 @@
+{
+  "metaDescription": "O Vinyl Keeper é uma app gratuita e de código aberto para catalogares a tua coleção de vinis, descobrires novos discos e partilhares locais de digging num mapa interativo.",
+  "enter": "Entrar",
+  "or": "ou",
+  "exploreAtlas": "explorar simplesmente o Vinyl Atlas",
+  "footer": {
+    "terms": "Termos e condições",
+    "madeWith": "feito com",
+    "by": "por Quentin Genet"
+  },
+  "founder": {
+    "photoAlt": "Quentin Genet, fundador do Vinyl Keeper",
+    "title1": "Quando a música e o código giram juntos,",
+    "title2": "acontecem coisas incríveis...",
+    "text": "Apaixonado por música e por vinil, criei o Vinyl Keeper: uma app gratuita e de código aberto para gerires os teus discos, partilhares as tuas coleções com a comunidade e descobrires os melhores locais do vinil do mundo no Vinyl Atlas. Obrigado por a usares e por manteres viva a paixão pelo vinil!"
+  },
+  "preview": {
+    "dialogLabel": "Uma espreitadela ao VinylKeeper",
+    "close": "Fechar a pré-visualização",
+    "previous": "Captura anterior",
+    "next": "Captura seguinte",
+    "show": "Mostrar a captura {{number}}: {{title}}",
+    "slides": {
+      "dashboard": {
+        "title": "Painel",
+        "description": "A tua coleção num relance: estatísticas de álbuns, artistas e coleções, as tuas últimas adições e o que a comunidade adicionou recentemente."
+      },
+      "add": {
+        "title": "Adicionar vinis",
+        "description": "Pesquisa no catálogo do Discogs por álbum ou artista e adiciona os discos que tens às tuas coleções em poucos cliques."
+      },
+      "collections": {
+        "title": "Coleções",
+        "description": "Explora, pesquisa e ordena os teus discos, mantém uma lista de desejos e torna uma coleção pública para a partilhar com a comunidade."
+      },
+      "atlas": {
+        "title": "Vinyl Atlas",
+        "description": "Descobre lojas de discos, feiras da ladra e locais do vinil no mapa comunitário do Vinyl Atlas, e sugere os teus locais favoritos."
+      }
+    }
+  },
+  "tutorial": {
+    "welcome": "Bem-vindo ao VinylKeeper",
+    "back": "Voltar",
+    "start": "Começar",
+    "next": "Seguinte",
+    "steps": {
+      "add": {
+        "title": "Adicionar vinis",
+        "content": "Depois de pesquisares um álbum ou um artista, escolhe uma coleção e adiciona as tuas descobertas!"
+      },
+      "collections": {
+        "title": "Coleções",
+        "content": "Podes gostar de coleções e tornar as tuas públicas para partilhar o conteúdo com outros membros. Basta mudar de privada para pública! Todos os membros podem explorar e gostar de uma coleção pública."
+      },
+      "atlas": {
+        "title": "Vinyl Atlas",
+        "content": "Partilha e descobre os locais da comunidade do vinil no Atlas: lojas, feiras da ladra..."
+      }
+    }
+  }
+}

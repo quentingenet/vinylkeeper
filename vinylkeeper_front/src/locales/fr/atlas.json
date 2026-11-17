@@ -1,0 +1,100 @@
+{
+  "report": {
+    "issues": {
+      "name": "Le nom est faux",
+      "description": "La description est fausse ou obsolète",
+      "address": "L'adresse est fausse, ou le lieu a déménagé",
+      "website": "Le lien du site est mort ou obsolète",
+      "type": "Le type de lieu est faux",
+      "closed": "Fermé définitivement"
+    },
+    "chips": {
+      "name": "Nom",
+      "description": "Description",
+      "address": "Adresse",
+      "website": "Site",
+      "type": "Type",
+      "closed": "Fermé"
+    },
+    "title": "Signaler une information erronée",
+    "thanks": "Merci, un admin va vérifier ce lieu.",
+    "what": "Qu'est-ce qui ne va pas avec {{name}} ?",
+    "should": "Que faudrait-il indiquer ? (facultatif)",
+    "failed": "Le signalement n'a pas pu être envoyé. Réessaie plus tard.",
+    "send": "Envoyer le signalement"
+  },
+  "types": {
+    "flea market": "Brocante",
+    "shop": "Boutique",
+    "music or records exhibition": "Salon de musique ou de disques",
+    "other": "Autre"
+  },
+  "map": {
+    "markerAlt": "lieu du vinyle",
+    "addAria": "Ajouter un lieu à l'Atlas",
+    "add": "Ajouter un lieu",
+    "loadError": "Erreur lors du chargement des lieux. Vérifie ta connexion.",
+    "noSpots": "Aucun lieu trouvé à cet endroit.",
+    "report": "Signaler une information erronée",
+    "likes_one": "{{count}} j'aime",
+    "likes_other": "{{count}} j'aime",
+    "loading": " (Chargement...)",
+    "title": "Atlas",
+    "likes_many": "{{count}} j'aime"
+  },
+  "add": {
+    "nameRequired": "Le nom est obligatoire",
+    "nameEmpty": "Le nom ne doit pas être vide",
+    "addressRequired": "L'adresse est obligatoire",
+    "cityRequired": "La ville est obligatoire",
+    "countryRequired": "Le pays est obligatoire",
+    "descriptionMax": "La description ne doit pas dépasser 600 caractères",
+    "urlInvalid": "Doit être une URL valide",
+    "typeRequired": "Le type de lieu est obligatoire",
+    "countriesFailed": "La liste des pays n'a pas pu être chargée.",
+    "loadFailed": "Les données du formulaire n'ont pas pu être chargées. Rouvre la fenêtre.",
+    "failed": "Le lieu n'a pas pu être ajouté. Réessaie.",
+    "details": "Détails du lieu",
+    "name": "Nom du lieu",
+    "type": "Type de lieu",
+    "country": "Pays",
+    "city": "Ville",
+    "address": "Adresse",
+    "description": "Description (facultatif)",
+    "source": "URL source (facultatif)",
+    "adding": "Ajout...",
+    "submit": "Ajouter à l'Atlas",
+    "submitted": "Lieu proposé !",
+    "thanks": "Merci pour ta contribution ! Ton lieu a été proposé et sera vérifié par notre équipe de modération avant d'apparaître sur l'Atlas.",
+    "why": "Cela nous aide à garder le Vinyl Atlas exact et fiable pour toute la communauté.",
+    "gotIt": "Compris !"
+  },
+  "join": {
+    "features": [
+      "Cataloguer tes disques, leurs exemplaires et leurs pressages",
+      "Connecter ton compte Discogs pour importer ta collection",
+      "Estimer ce que vaut ta collection",
+      "Choisir le disque du soir avec Spinning now",
+      "Tenir une liste d'envies et partager tes collections"
+    ],
+    "title": "Rejoins Vinyl Keeper pour aimer des lieux et en proposer de nouveaux",
+    "intro": "Vinyl Keeper est gratuit et open source. Avec un compte, tu peux aussi :",
+    "featuresLabel": "Ce que peuvent faire les membres",
+    "lookInside": "Jeter un œil à l'intérieur ?"
+  },
+  "byCountry": {
+    "title": "Lieux par pays",
+    "spots_one": "{{count}} lieu",
+    "spots_other": "{{count}} lieux",
+    "spots_many": "{{count}} lieux"
+  },
+  "page": {
+    "loadError": "Erreur lors du chargement de l'Atlas",
+    "introPublic": "📍 Parcours les meilleurs lieux du vinyle dans le monde, partagés par la communauté Vinyl Keeper.",
+    "intro": "📍 Parcours, ajoute et partage les meilleurs lieux du vinyle dans le monde avec la communauté."
+  },
+  "public": {
+    "metaTitle": "Vinyl Atlas : disquaires, brocantes et lieux du vinyle | Vinyl Keeper",
+    "metaDescription": "Trouve disquaires, brocantes et lieux du vinyle dans le monde entier sur le Vinyl Atlas, une carte communautaire gratuite partagée par des collectionneurs de vinyles."
+  }
+}

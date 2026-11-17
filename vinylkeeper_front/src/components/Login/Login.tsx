@@ -26,6 +26,7 @@ import styles from "../../styles/pages/Landpage.module.scss";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import AuthSwitchLink from "@components/Auth/AuthSwitchLink";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface LoginProps {
   setRegister: (value: boolean) => void;
@@ -48,6 +49,7 @@ export default function Login({
   nextPath,
 }: LoginProps) {
   const userContext = useUserContext();
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [openSnackBar, setOpenSnackBar] = useState(false);
@@ -86,7 +88,7 @@ export default function Login({
       userContext.setCurrentUser(userData);
       void navigate(nextPath ?? "/dashboard");
     } catch (error: unknown) {
-      setLoginError(error instanceof Error ? error.message : "Error while logging in. Try again.");
+      setLoginError(error instanceof Error ? error.message : t("login.error"));
       setOpenSnackBar(true);
     } finally {
       userContext.setIsLoading(false);
@@ -137,13 +139,13 @@ export default function Login({
             component="h2"
             sx={{ color: colors.slate, textAlign: "center", mb: 2, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
           >
-            Log in to your account
+            {t("login.title")}
           </Typography>
           {/* Right under the title: someone without an account sees at once how to create one */}
           <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
             <AuthSwitchLink
-              prompt="No account yet?"
-              actionLabel="Sign up"
+              prompt={t("login.noAccount")}
+              actionLabel={t("login.signUp")}
               onClick={switchToRegister}
             />
           </Box>
@@ -155,7 +157,7 @@ export default function Login({
           <Grid sx={{ width: "100%", mb: 2 }}>
             <TextField
               fullWidth
-              label="Email"
+              label={t("fields.email")}
               variant="outlined"
               error={!!errors.email}
               helperText={errors.email?.message}
@@ -176,7 +178,7 @@ export default function Login({
           <Grid sx={{ width: "100%" }}>
             <TextField
               fullWidth
-              label="Password"
+              label={t("fields.password")}
               type={showPassword ? "text" : "password"}
               variant="outlined"
               error={!!errors.password}
@@ -188,6 +190,7 @@ export default function Login({
                     <InputAdornment position="end">
                       <IconButton
                         sx={{ marginRight: "-8px" }}
+                        aria-label={showPassword ? t("common:password.hide") : t("common:password.show")}
                         onClick={() => setShowPassword(!showPassword)}
                         onMouseDown={(e) => e.preventDefault()}
                       >
@@ -205,7 +208,7 @@ export default function Login({
               <VinylSpinner />
             ) : (
               <Button type="submit" variant="contained">
-                Login
+                {t("login.submit")}
               </Button>
             )}
             <ButtonBase
@@ -222,10 +225,10 @@ export default function Login({
               }}
             >
               <Typography variant="caption" sx={{ lineHeight: 1.3, color: colors.slate }}>
-                Forgot password?
+                {t("login.forgot")}
               </Typography>
               <Typography variant="caption" sx={{ lineHeight: 1.3, fontWeight: "bold", color: colors.slate }}>
-                Send me a recovery link!
+                {t("login.sendLink")}
               </Typography>
             </ButtonBase>
           </Grid>

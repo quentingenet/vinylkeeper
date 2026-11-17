@@ -10,13 +10,15 @@ import Footer from "@components/Footer/Footer";
 import { Button, Link, Typography, Snackbar, Alert } from "@mui/material";
 import Background from "@components/Landpage/Background";
 import { growItem } from "@utils/Animations";
+import { useTranslation } from "react-i18next";
 
 export default function Landpage() {
+  const { t } = useTranslation("landing");
   const { isMobile } = useDetectMobile();
   // Without a session every unknown or private URL shows this page: all of them point to "/"
   usePageMeta({
-    title: "Vinyl Keeper - Catalog and share your vinyl collection",
-    description: "Vinyl Keeper is a free, open-source app to catalog your vinyl collection, discover new records, and share digging spots on an interactive map.",
+    title: t("common:meta.title"),
+    description: t("metaDescription"),
     canonicalPath: EGlobalUrls.ROOT,
   });
 
@@ -54,32 +56,29 @@ export default function Landpage() {
 
   return (
     <>
-      <div className={styles.globalContainer}>
+      <div className={`${styles.globalContainer} ${!login && !register ? styles.centered : ""}`}>
         <Background isMobile={isMobile} />
+        {/* On a phone the form covers the screen from the top: the title would show through it */}
+        {(!isMobile || (!login && !register)) && (
         <Typography
+          // A new key when a form opens or closes: the title is drawn again, fading in at its new place
+          key={!login && !register ? "home" : "form"}
           variant="h1"
-          className={
-            !login && !register ? styles.titleNormal : styles.titleHigher
-          }
+          className={`${!login && !register ? styles.titleNormal : styles.titleHigher} ${styles.titleFadeIn}`}
         >
-          Vinyl Keeper
+          {t("nav:brand")}
         </Typography>
+        )}
         <div className={styles.textContainer}>
           {!login && !register ? (
             <>
-              <p className={styles.textTypo}>
-                The free and open-source way
-                <br />
-                to manage your vinyl collection
-              </p>
-
               <div className={styles.buttonContainer}>
-                <Button onClick={handleLoginOpen}>Enter</Button>
+                <Button onClick={handleLoginOpen}>{t("enter")}</Button>
               </div>
               {/* Shadowed: readable over the bright parts of the video. The tour of the app
                   ("Take a look inside?") lives in the join popup of the public Atlas */}
               <div className={styles.secondaryLinks}>
-                <span className={styles.orSeparator}>or</span>
+                <span className={styles.orSeparator}>{t("or")}</span>
                 <Link
                   component={RouterLink}
                   to={EGlobalUrls.ATLAS}
@@ -87,7 +86,7 @@ export default function Landpage() {
                   className={`${styles.textTypo} ${styles.previewLink}`}
                   sx={{ "&:hover": { animation: `${growItem} 1s ease infinite` } }}
                 >
-                  just explore the Vinyl Atlas
+                  {t("exploreAtlas")}
                 </Link>
               </div>
             </>
@@ -126,6 +125,7 @@ export default function Landpage() {
         openTermsModal={openTermsModal}
         setOpenFounderModal={setOpenFounderModal}
         openFounderModal={openFounderModal}
+        withLanguage
       />
 
       <Snackbar

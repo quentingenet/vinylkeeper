@@ -1,26 +1,20 @@
 import type { PlaceReportIssue } from "@services/AdminApiService";
+import i18n from "@utils/i18n";
 
 /** What a member can tick when reporting a spot, in this order */
-export const PLACE_REPORT_ISSUES: { value: PlaceReportIssue; label: string }[] = [
-  { value: "name", label: "Name is wrong" },
-  { value: "description", label: "Description is wrong or outdated" },
-  { value: "address", label: "Address is wrong, or the spot has moved" },
-  { value: "website", label: "Website link is dead or outdated" },
-  { value: "type", label: "Spot type is wrong" },
-  { value: "closed", label: "Permanently closed" },
-];
+export const PLACE_REPORT_ISSUES: PlaceReportIssue[] = ["name", "description", "address", "website", "type", "closed"];
+
+/** What the member reads next to an issue they can tick */
+export const issueLabel = (issue: PlaceReportIssue): string => i18n.t(`atlas:report.issues.${issue}`);
 
 export const REPORT_COMMENT_MAX_LENGTH = 500;
 
+/** "flea market" -> "Flea market", in the language of the interface (a type the app does not know: as it comes) */
+export function placeTypeLabel(name: string): string {
+  return i18n.t(`atlas:types.${name}`, { defaultValue: name.charAt(0).toUpperCase() + name.slice(1) });
+}
+
 /** Short label of an issue, for chips in the admin panel */
 export function issueChipLabel(issue: PlaceReportIssue): string {
-  const short: Record<PlaceReportIssue, string> = {
-    name: "Name",
-    description: "Description",
-    address: "Address",
-    website: "Website",
-    type: "Type",
-    closed: "Closed",
-  };
-  return short[issue];
+  return i18n.t(`atlas:report.chips.${issue}`);
 }

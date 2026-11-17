@@ -27,6 +27,9 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { atlasApiService, PlaceTypeData } from "@services/AtlasApiService";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
+import i18n, { localizedCountry } from "@utils/i18n";
+import { placeTypeLabel } from "@components/Atlas/placeReportLabels";
 
 interface Country {
   name: string;
@@ -54,21 +57,21 @@ const schema = yup
   .object({
     name: yup
       .string()
-      .required("Name is required")
-      .min(1, "Name must not be empty"),
-    address: yup.string().required("Address is required"),
-    city: yup.string().required("City is required"),
-    country: yup.string().required("Country is required"),
+      .required(() => i18n.t("atlas:add.nameRequired"))
+      .min(1, () => i18n.t("atlas:add.nameEmpty")),
+    address: yup.string().required(() => i18n.t("atlas:add.addressRequired")),
+    city: yup.string().required(() => i18n.t("atlas:add.cityRequired")),
+    country: yup.string().required(() => i18n.t("atlas:add.countryRequired")),
     description: yup
       .string()
       .optional()
       .default("")
-      .max(600, "Description must not exceed 600 characters"),
-    source_url: yup.string().url("Must be a valid URL").optional().default(""),
+      .max(600, () => i18n.t("atlas:add.descriptionMax")),
+    source_url: yup.string().url(() => i18n.t("atlas:add.urlInvalid")).optional().default(""),
     place_type_id: yup
       .number()
-      .required("Spot type is required")
-      .positive("Spot type is required"),
+      .required(() => i18n.t("atlas:add.typeRequired"))
+      .positive(() => i18n.t("atlas:add.typeRequired")),
   })
   .required();
 
@@ -80,13 +83,14 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation("atlas");
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const { data: countries = [], isError: countriesError } = useQuery<Country[]>({
     queryKey: ["countries"],
     queryFn: async () => {
       const response = await fetch("/data/countries.json");
-      if (!response.ok) throw new Error("Failed to load countries list.");
+      if (!response.ok) throw new Error(t("add.countriesFailed"));
       return response.json() as Promise<Country[]>;
     },
     enabled: open,
@@ -101,7 +105,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
   });
 
   const loadError = countriesError || typesError
-    ? "Failed to load form data. Please reopen the modal."
+    ? t("add.loadFailed")
     : null;
 
   const {
@@ -161,7 +165,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
       setShowSuccessDialog(true);
     } catch (err: unknown) {
       logger.error("Error submitting place:", err);
-      const message = isApiError(err) ? err.message : "Failed to add the spot. Please try again.";
+      const message = isApiError(err) ? err.message : t("add.failed");
       setError(message);
     } finally {
       setIsLoading(false);
@@ -231,7 +235,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
               color: "primary.main",
             }}
           >
-            🎯 Add a spot to the Atlas
+            🎯 {t("map.addAria")}
           </Typography>
 
           {(error || loadError) && (
@@ -243,12 +247,12 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
           <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }}>
             <Box sx={{ maxWidth: "600px", margin: "0 auto" }}>
               <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                Spot details
+                {t("add.details")}
               </Typography>
 
               <TextField
                 fullWidth
-                label="Spot name"
+                label={t("add.name")}
                 {...register("name")}
                 error={!!errors.name}
                 helperText={errors.name?.message}
@@ -260,16 +264,16 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth sx={formFieldStyle}>
-                    <InputLabel>Spot type</InputLabel>
+                    <InputLabel>{t("add.type")}</InputLabel>
                     <Select
                       {...field}
                       value={field.value ?? ""}
                       error={!!errors.place_type_id}
-                      label="Spot type"
+                      label={t("add.type")}
                     >
                       {placeTypes.map((type) => (
                         <MenuItem key={type.id} value={type.id}>
-                          {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                          {placeTypeLabel(type.name)}
                         </MenuItem>
                       ))}
                     </Select>
@@ -282,11 +286,11 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth sx={formFieldStyle}>
-                    <InputLabel>Country</InputLabel>
+                    <InputLabel>{t("add.country")}</InputLabel>
                     <Select
                       {...field}
                       error={!!errors.country}
-                      label="Country"
+                      label={t("add.country")}
                       MenuProps={{
                         slotProps: {
                           paper: {
@@ -299,7 +303,8 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
                     >
                       {countries.map((country) => (
                         <MenuItem key={country.code} value={country.name}>
-                          {country.name}
+                          {/* Stored in English, as the Atlas keeps it; shown in the language of the interface */}
+                          {localizedCountry(country.name)}
                         </MenuItem>
                       ))}
                     </Select>
@@ -309,7 +314,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
 
               <TextField
                 fullWidth
-                label="City"
+                label={t("add.city")}
                 {...register("city")}
                 error={!!errors.city}
                 helperText={errors.city?.message}
@@ -318,7 +323,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
 
               <TextField
                 fullWidth
-                label="Address"
+                label={t("add.address")}
                 {...register("address")}
                 error={!!errors.address}
                 helperText={errors.address?.message}
@@ -327,7 +332,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
 
               <TextField
                 fullWidth
-                label="Description (optional)"
+                label={t("add.description")}
                 multiline
                 rows={3}
                 {...register("description")}
@@ -338,7 +343,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
 
               <TextField
                 fullWidth
-                label="Source URL (optional)"
+                label={t("add.source")}
                 {...register("source_url")}
                 error={!!errors.source_url}
                 helperText={errors.source_url?.message}
@@ -347,7 +352,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
 
               <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
                 <Button variant="outlined" onClick={handleClose}>
-                  Cancel
+                  {t("common:actions.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -366,7 +371,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
                     },
                   }}
                 >
-                  {isLoading ? "Adding..." : "Add to the Atlas"}
+                  {isLoading ? t("add.adding") : t("add.submit")}
                 </Button>
               </Stack>
             </Box>
@@ -400,17 +405,14 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
           }}
         >
           <CheckCircle sx={{ color: "primary.main" }} />
-          Spot submitted!
+          {t("add.submitted")}
         </DialogTitle>
         <DialogContent>
           <Typography sx={{ color: "text.primary", mb: 2 }}>
-            Thank you for your contribution! Your spot has been submitted and
-            will be reviewed by our moderation team before being displayed on
-            the Atlas.
+            {t("add.thanks")}
           </Typography>
           <Typography sx={{ color: colors.textMuted, fontSize: "0.9rem" }}>
-            This helps us keep the Vinyl Atlas accurate and reliable for the
-            whole community.
+            {t("add.why")}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -424,7 +426,7 @@ const AtlasSpotAddModal: React.FC<AtlasSpotAddModalProps> = ({
               },
             }}
           >
-            Got it!
+            {t("add.gotIt")}
           </Button>
         </DialogActions>
       </Dialog>

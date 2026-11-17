@@ -62,6 +62,52 @@
         margin-top: 2rem;
     }
 
+    // Desktop: the title at the same height, form open or not
+    @media only screen and (min-width: 768px) {
+        .titleHigher {
+            margin-top: 3rem;
+        }
+    }
+
+    // The title shows up softly where it lands when a form opens or closes, instead of jumping there
+    .titleFadeIn {
+        animation: fadeIn 0.8s ease-in-out;
+    }
+
+    // Home page, before a form is opened: the title, the button and the Atlas link in the middle of the
+    // screen. The bottom padding keeps the fixed footer out of the centering.
+    &.centered {
+        // The screen minus the default margins of the body (8px above and below): no scroll
+        min-height: calc(100dvh - 16px);
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-bottom: 3rem;
+
+        .titleNormal {
+            margin-top: 0;
+            // Higher than the rest, on its own: a transform moves it without moving the button and link below
+            transform: translateY(-3rem);
+        }
+
+        // Desktop: the title stays where it is once a form is open (top of the page, as .titleHigher),
+        // out of the centering; the button and the link alone are centered, a little below the middle
+        @media only screen and (min-width: 768px) {
+            padding-top: 3rem;
+            padding-bottom: 0;
+
+            .titleNormal {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                margin-top: 3rem;
+                transform: none;
+            }
+        }
+    }
+
     .textContainer {
         display: flex;
         justify-content: center;

@@ -15,6 +15,9 @@ vi.mock("react-router-dom", async (importOriginal) => ({
   useNavigate: () => navigate,
 }));
 
+import { RESET_LINK_UNUSABLE } from "@utils/resetLink";
+
+// The service rejects with the key; the form shows its English text
 const LINK_UNUSABLE = "This link has expired or was already used. Request a new one from the login page.";
 
 beforeEach(() => {
@@ -90,7 +93,7 @@ describe("ResetPasswordForm", () => {
   });
 
   it("replaces the form by a clear message when the link was already used or has expired", async () => {
-    api.checkResetToken.mockRejectedValue(new Error(LINK_UNUSABLE));
+    api.checkResetToken.mockRejectedValue(new Error(RESET_LINK_UNUSABLE));
     renderForm();
 
     expect(await screen.findByText(LINK_UNUSABLE)).toBeInTheDocument();
@@ -109,7 +112,7 @@ describe("ResetPasswordForm", () => {
   });
 
   it("says the link is unusable when sending the new password gets that answer", async () => {
-    api.resetPassword.mockRejectedValue(new Error(LINK_UNUSABLE));
+    api.resetPassword.mockRejectedValue(new Error(RESET_LINK_UNUSABLE));
     renderForm();
 
     await fill("secret12", "secret12");

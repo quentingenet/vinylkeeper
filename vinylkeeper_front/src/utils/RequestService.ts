@@ -1,5 +1,6 @@
 import ky, { HTTPError } from "ky";
 import { ApiError, isApiError } from "./apiError";
+import i18n from "@utils/i18n";
 
 type AppError = ApiError;
 
@@ -21,11 +22,12 @@ const refreshSession = (apiTarget: string): Promise<void> => {
   return refreshInFlight;
 };
 
-const SESSION_EXPIRED = {
+// A getter: the message is in the language of the moment it is thrown
+const sessionExpired = (): AppError => ({
   code: 401,
-  message: "Session expired. Please log in again.",
+  message: i18n.t("errors:sessionExpired"),
   details: {},
-} satisfies AppError;
+});
 
 interface RequestOptions {
   apiTarget: string;
@@ -91,11 +93,11 @@ const requestService = async <T = unknown>({
   } catch (error: unknown) {
     if (error instanceof HTTPError && error.response?.status === 401 && !skipRefresh) {
       // Refused again right after a refresh: the session is really gone
-      if (retrying) throw { ...SESSION_EXPIRED, details: {} };
+      if (retrying) throw { ...sessionExpired(), details: {} };
       try {
         await refreshSession(apiTarget);
       } catch {
-        throw { ...SESSION_EXPIRED, details: {} };
+        throw { ...sessionExpired(), details: {} };
       }
       // Outside the try: an error of the replayed request reaches the caller as it is
       return requestService<T>({
@@ -117,7 +119,7 @@ const requestService = async <T = unknown>({
       throw { code: error.response.status, message: error.message, details: {} } satisfies AppError;
     }
 
-    const message = error instanceof Error ? error.message : "Unknown error occurred";
+    const message = error instanceof Error ? error.message : i18n.t("errors:unknown");
     throw { code: 9999, message, details: {} } satisfies AppError;
   }
 };

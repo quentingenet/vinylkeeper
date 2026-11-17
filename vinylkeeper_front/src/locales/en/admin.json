@@ -1,0 +1,98 @@
+{
+  "feedback": {
+    "approved": "Moderation request approved.",
+    "rejected": "Moderation request rejected.",
+    "removed": "Spot removed from the map.",
+    "updated": "Spot updated on the map."
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "removed": "Removed",
+    "total": "Total"
+  },
+  "edit": {
+    "title": "Edit spot",
+    "name": "Name",
+    "address": "Address",
+    "city": "City",
+    "country": "Country",
+    "description": "Description",
+    "website": "Website",
+    "type": "Spot type",
+    "failed": "The spot could not be saved. Please try again.",
+    "save": "Save",
+    "saveResolve": "Save and resolve",
+    "lastUpdate": "Last update: {{date}}",
+    "pinMoves": "The pin moves to the new city on the map."
+  },
+  "detail": {
+    "title": "Moderation Request Details",
+    "spot": "Spot information",
+    "city": "City:",
+    "description": "Description:",
+    "noDescription": "No description",
+    "status": "Current Status:",
+    "request": "Request Information",
+    "submittedBy": "Submitted by:",
+    "date": "Submission Date:",
+    "actions": "Available Actions",
+    "approving": "Approving...",
+    "approve": "Approve",
+    "rejecting": "Rejecting...",
+    "reject": "Reject"
+  },
+  "reports": {
+    "resolved": "Report resolved, with the other open reports of this spot.",
+    "resolveFailed": "The report could not be resolved.",
+    "dismissed": "Report dismissed.",
+    "dismissFailed": "The report could not be dismissed.",
+    "removed": "Spot removed from the map, its reports are resolved.",
+    "removeFailed": "The spot could not be removed.",
+    "title": "Spot reports ({{count}} open)",
+    "shown": "Reports shown",
+    "open": "Open",
+    "all": "All",
+    "loadError": "Error loading spot reports",
+    "noneOpen": "No open report: every spot looks right.",
+    "none": "No report yet.",
+    "statusResolved": "Resolved",
+    "statusDismissed": "Dismissed",
+    "offMap": "Removed from the map",
+    "by": "Reported by {{name}} on {{date}}",
+    "deletedAccount": "a deleted account",
+    "edit": "Edit spot",
+    "resolve": "Resolve",
+    "dismiss": "Dismiss",
+    "remove": "Remove from the map"
+  },
+  "remove": {
+    "title": "Remove {{name}} from the map?",
+    "text": "For a spot that closed for good. It disappears from the Atlas and its open reports are resolved.",
+    "confirm": "Remove"
+  },
+  "page": {
+    "deniedTitle": "Administrator Access Required",
+    "deniedText": "You must have administrator privileges to access this page.",
+    "title": "Administration",
+    "loadError": "Error loading moderation requests",
+    "pending": "Pending Requests ({{count}})",
+    "noPending": "No pending requests",
+    "all": "All Requests ({{count}})"
+  },
+  "columns": {
+    "spot": "Spot",
+    "city": "City",
+    "user": "User",
+    "status": "Status",
+    "date": "Date",
+    "updated": "Last update",
+    "actions": "Actions"
+  },
+  "actions": {
+    "view": "View details",
+    "edit": "Edit spot",
+    "remove": "Remove from the map"
+  }
+}

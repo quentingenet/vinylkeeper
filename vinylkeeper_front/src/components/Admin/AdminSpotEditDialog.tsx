@@ -16,6 +16,7 @@ import { adminApiService, type AdminPlaceUpdate, type ReportedPlace } from "@ser
 import { atlasApiService, type PlaceTypeData } from "@services/AtlasApiService";
 import { isApiError } from "@utils/apiError";
 import { formatDate } from "./adminUtils";
+import { useTranslation } from "react-i18next";
 
 interface AdminSpotEditDialogProps {
   place: ReportedPlace | null;
@@ -63,6 +64,7 @@ function changes(place: ReportedPlace, form: Form): AdminPlaceUpdate {
 
 /** The admin corrects a spot: published at once, without moderation. */
 export default function AdminSpotEditDialog({ place, onClose, onSaved, canResolve = true }: AdminSpotEditDialogProps) {
+  const { t } = useTranslation("admin");
   const [form, setForm] = useState<Form | null>(null);
 
   useEffect(() => {
@@ -94,31 +96,31 @@ export default function AdminSpotEditDialog({ place, onClose, onSaved, canResolv
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="edit-spot-title">
-      <DialogTitle id="edit-spot-title">Edit spot</DialogTitle>
+      <DialogTitle id="edit-spot-title">{t("edit.title")}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           {place.updated_at && (
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Last update: {formatDate(place.updated_at)}
+              {t("edit.lastUpdate", { date: formatDate(place.updated_at) })}
             </Typography>
           )}
-          <TextField label="Name" required {...field("name")} slotProps={{ htmlInput: { maxLength: 255 } }} />
-          <TextField label="Address" required {...field("address")} slotProps={{ htmlInput: { maxLength: 255 } }} />
+          <TextField label={t("edit.name")} required {...field("name")} slotProps={{ htmlInput: { maxLength: 255 } }} />
+          <TextField label={t("edit.address")} required {...field("address")} slotProps={{ htmlInput: { maxLength: 255 } }} />
           <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
-            <TextField label="City" required {...field("city")} slotProps={{ htmlInput: { maxLength: 100 } }} />
-            <TextField label="Country" required {...field("country")} slotProps={{ htmlInput: { maxLength: 100 } }} />
+            <TextField label={t("edit.city")} required {...field("city")} slotProps={{ htmlInput: { maxLength: 100 } }} />
+            <TextField label={t("edit.country")} required {...field("country")} slotProps={{ htmlInput: { maxLength: 100 } }} />
           </Box>
           <TextField
-            label="Description"
+            label={t("edit.description")}
             multiline
             minRows={3}
             {...field("description")}
             slotProps={{ htmlInput: { maxLength: 600 } }}
           />
-          <TextField label="Website" placeholder="https://" {...field("source_url")} />
+          <TextField label={t("edit.website")} placeholder="https://" {...field("source_url")} />
           <TextField
             select
-            label="Spot type"
+            label={t("edit.type")}
             value={form.place_type_id}
             onChange={(event) => setForm({ ...form, place_type_id: Number(event.target.value) })}
             fullWidth
@@ -132,23 +134,23 @@ export default function AdminSpotEditDialog({ place, onClose, onSaved, canResolv
             )}
           </TextField>
           {(update.city !== undefined || update.country !== undefined) && (
-            <Alert severity="info">The pin moves to the new city on the map.</Alert>
+            <Alert severity="info">{t("edit.pinMoves")}</Alert>
           )}
           {save.isError && (
             <Alert severity="error">
-              {isApiError(save.error) ? save.error.message : "The spot could not be saved. Please try again."}
+              {isApiError(save.error) ? save.error.message : t("edit.failed")}
             </Alert>
           )}
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t("common:actions.cancel")}</Button>
         <Button
           variant={canResolve ? "text" : "contained"}
           onClick={() => save.mutate({ update, resolve: false })}
           disabled={nothingChanged || requiredMissing || save.isPending}
         >
-          Save
+          {t("edit.save")}
         </Button>
         {canResolve && (
           <Button
@@ -156,7 +158,7 @@ export default function AdminSpotEditDialog({ place, onClose, onSaved, canResolv
             onClick={() => save.mutate({ update, resolve: true })}
             disabled={nothingChanged || requiredMissing || save.isPending}
           >
-            Save and resolve
+            {t("edit.saveResolve")}
           </Button>
         )}
       </DialogActions>

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApiService, ModerationRequest, type ReportedPlace } from "@services/AdminApiService";
 import { editablePlace } from "@components/Admin/adminUtils";
 import { queryKeys } from "@utils/queryKeys";
+import i18n from "@utils/i18n";
 
 interface FeedbackState {
   open: boolean;
@@ -14,7 +15,7 @@ const FEEDBACK_CLOSED: FeedbackState = { open: false, severity: "success", messa
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message) return error.message;
-  return "An unexpected error occurred. Please try again.";
+  return i18n.t("errors:unexpected");
 };
 
 export function useModerationActions() {
@@ -49,7 +50,7 @@ export function useModerationActions() {
     onSuccess: async () => {
       await invalidateModerationQueries();
       setModerationActionError(null);
-      setFeedback({ open: true, severity: "success", message: "Moderation request approved." });
+      setFeedback({ open: true, severity: "success", message: i18n.t("admin:feedback.approved") });
       closeDialog();
     },
     onError: (error: unknown) => {
@@ -64,7 +65,7 @@ export function useModerationActions() {
     onSuccess: async () => {
       await invalidateModerationQueries();
       setModerationActionError(null);
-      setFeedback({ open: true, severity: "success", message: "Moderation request rejected." });
+      setFeedback({ open: true, severity: "success", message: i18n.t("admin:feedback.rejected") });
       closeDialog();
     },
     onError: (error: unknown) => {
@@ -101,7 +102,7 @@ export function useModerationActions() {
         // Its open reports are resolved too
         queryClient.invalidateQueries({ queryKey: queryKeys.moderation.allPlaceReports() }),
       ]);
-      setFeedback({ open: true, severity: "success", message: "Spot removed from the map." });
+      setFeedback({ open: true, severity: "success", message: i18n.t("admin:feedback.removed") });
     },
     onError: (error: unknown) => setFeedback({ open: true, severity: "error", message: getErrorMessage(error) }),
   });
@@ -113,7 +114,7 @@ export function useModerationActions() {
   const handleSpotSaved = async () => {
     setEditingPlace(null);
     await invalidateModerationQueries();
-    setFeedback({ open: true, severity: "success", message: "Spot updated on the map." });
+    setFeedback({ open: true, severity: "success", message: i18n.t("admin:feedback.updated") });
   };
 
   return {

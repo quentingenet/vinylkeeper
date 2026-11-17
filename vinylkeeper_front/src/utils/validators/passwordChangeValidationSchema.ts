@@ -1,4 +1,5 @@
 import * as yup from "yup";
+import i18n from "@utils/i18n";
 import {
   passwordAtLeast8,
   passwordWithLetter,
@@ -6,21 +7,21 @@ import {
 } from "@utils/Regex";
 
 export const passwordChangeValidationSchema = yup.object({
-  currentPassword: yup.string().required("Enter your current password."),
+  currentPassword: yup.string().required(() => i18n.t("validation:password.currentRequired")),
   newPassword: yup
     .string()
-    .required("Enter your new password.")
-    .matches(passwordWithLetter, "Your password must contain a letter")
-    .matches(passwordWithNumber, "Your password must contain a number")
+    .required(() => i18n.t("validation:password.newRequired"))
+    .matches(passwordWithLetter, () => i18n.t("validation:password.letter"))
+    .matches(passwordWithNumber, () => i18n.t("validation:password.number"))
     .matches(
       passwordAtLeast8,
-      "Your password must contain at least 8 characters"
+      () => i18n.t("validation:password.length")
     ),
   confirmPassword: yup
     .string()
-    .required("Confirm your new password.")
+    .required(() => i18n.t("validation:password.confirmNewRequired"))
     .oneOf(
       [yup.ref("newPassword"), ""],
-      "It must be the same as the new password"
+      () => i18n.t("validation:password.mismatchNew")
     ),
 });

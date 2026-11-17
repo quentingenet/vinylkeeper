@@ -1,0 +1,29 @@
+{
+  "nothingMatches": "Noch passt nichts zu diesen Filtern. Entferne mal einen.",
+  "unavailable": "Spinning now ist gerade nicht verfügbar. Versuche es später erneut.",
+  "empty": {
+    "before": "Noch keine Platten in deinen Sammlungen.",
+    "link": "Füge deine ersten Platten hinzu",
+    "after": "und komm zurück, um eine zum Hören auszuwählen."
+  },
+  "intro": "Wähle eine Stimmung, eine Epoche oder ein Genre und finde, was auf den Plattenteller kommt.",
+  "moreRecords": "Je mehr Platten du hinzufügst, desto besser die Vorschläge.",
+  "notAnalysed": "Stimmungen, Epochen und Genres erscheinen, sobald deine Platten analysiert wurden.",
+  "filters": {
+    "mood": "Stimmung",
+    "era": "Epoche",
+    "genre": "Genre",
+    "collection": "Sammlung"
+  },
+  "surprise": "Überrasch mich",
+  "shuffle": "Mischen",
+  "clear": "Filter löschen",
+  "noMatch": "Keine Platte passt zu diesen Filtern.",
+  "results_one": "{{shown}} von {{count}} Platte, zufällig ausgewählt.",
+  "results_other": "{{shown}} von {{count}} Platten, zufällig ausgewählt.",
+  "loadFailed": "Die Platten konnten nicht geladen werden. Versuche es erneut.",
+  "play": "{{title}} hören",
+  "playBy": "{{title}} von {{artist}} hören",
+  "inCollections": "In {{names}}",
+  "results_many": "{{shown}} von {{count}} Platten, zufällig ausgewählt."
+}

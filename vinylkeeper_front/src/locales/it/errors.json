@@ -1,0 +1,17 @@
+{
+  "sessionExpired": "Sessione scaduta. Accedi di nuovo.",
+  "exportFailed": "Esportazione non riuscita ({{status}})",
+  "unknown": "Errore sconosciuto",
+  "unexpected": "Si è verificato un errore imprevisto. Riprova.",
+  "addToWishlist": "Impossibile aggiungere alla lista dei desideri",
+  "addToCollection": "Impossibile aggiungere alla collezione",
+  "checkCollections": "Impossibile controllare le tue collezioni",
+  "replacePressing": "Impossibile sostituire la stampa",
+  "removeFromWishlist": "Impossibile rimuovere dalla lista dei desideri",
+  "fetchWishlist": "Impossibile caricare la lista dei desideri",
+  "albumNotFound": "Album con ID {{id}} non trovato",
+  "albumMetadata": "Impossibile caricare le informazioni dell'album",
+  "artistMetadata": "Impossibile caricare le informazioni dell'artista",
+  "search": "La ricerca non è riuscita",
+  "fileUnreadable": "File illeggibile"
+}

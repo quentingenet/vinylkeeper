@@ -17,9 +17,11 @@ import {
 } from "@mui/material";
 import { Email, Send, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import i18n from "@utils/i18n";
 import { userApiService } from "@services/UserApiService";
 import { emailValidator } from "@utils/Regex";
 import { colors } from "@styles/colors";
@@ -39,13 +41,14 @@ type Message = { type: "success" | "error"; text: string } | null;
 const emailChangeSchema = yup.object({
   newEmail: yup
     .string()
-    .required("Enter your new email address.")
-    .test("email", "Email not valid", (value) => (value ? emailValidator.test(value) : false)),
-  currentPassword: yup.string().required("Enter your current password."),
+    .required(() => i18n.t("validation:email.newRequired"))
+    .test("email", () => i18n.t("validation:email.invalid"), (value) => (value ? emailValidator.test(value) : false)),
+  currentPassword: yup.string().required(() => i18n.t("validation:password.currentRequired")),
 });
 
 /** Email of the account: confirmation status, a new link, and a change confirmed from the new address. */
 export default function EmailSection({ email, isEmailConfirmed }: EmailSectionProps) {
+  const { t } = useTranslation("settings");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<Message>(null);
 
@@ -62,17 +65,15 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
 
   const resendMutation = useMutation({
     mutationFn: () => userApiService.resendEmailConfirmation(),
-    onSuccess: (data) => setMessage({ type: "success", text: data.message }),
+    // The API answers in English: the app says it in the language of the interface
+    onSuccess: () => setMessage({ type: "success", text: t("email.linkSent") }),
     onError: (e: Error) => setMessage({ type: "error", text: e.message }),
   });
 
   const changeMutation = useMutation({
     mutationFn: (data: EmailFormData) => userApiService.requestEmailChange(data),
-    onSuccess: (data) => {
-      setMessage({
-        type: "success",
-        text: `${data.message}. Your current email address stays in use until you open that link.`,
-      });
+    onSuccess: () => {
+      setMessage({ type: "success", text: t("email.changeSent") });
       reset();
     },
     onError: (e: Error) => setMessage({ type: "error", text: e.message }),
@@ -83,7 +84,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Email sx={{ color: "primary.main", mr: 1 }} />
-          <Typography variant="h6">Email address</Typography>
+          <Typography variant="h6">{t("email.title")}</Typography>
         </Box>
         {message && (
           <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
@@ -91,9 +92,9 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
           </Alert>
         )}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 3 }}>
-          <TextField label="Current email" value={email} disabled sx={{ flexGrow: 1, minWidth: 220 }} />
+          <TextField label={t("email.current")} value={email} disabled sx={{ flexGrow: 1, minWidth: 220 }} />
           <Chip
-            label={isEmailConfirmed ? "Confirmed" : "Not confirmed"}
+            label={isEmailConfirmed ? t("email.confirmed") : t("email.notConfirmed")}
             color={isEmailConfirmed ? "success" : "warning"}
             variant="outlined"
           />
@@ -104,13 +105,13 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
               onClick={() => resendMutation.mutate()}
               disabled={resendMutation.isPending}
             >
-              {resendMutation.isPending ? "Sending..." : "Send a new link"}
+              {resendMutation.isPending ? t("common:actions.sending") : t("email.sendLink")}
             </Button>
           )}
         </Box>
 
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          Change your email address
+          {t("email.changeTitle")}
         </Typography>
         <form
           onSubmit={(e) => {
@@ -127,7 +128,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
                     {...field}
                     fullWidth
                     type="email"
-                    label="New email"
+                    label={t("email.newEmail")}
                     autoComplete="email"
                     error={Boolean(errors.newEmail)}
                     helperText={errors.newEmail?.message}
@@ -141,17 +142,17 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel>Current Password</InputLabel>
+                    <InputLabel>{t("email.currentPassword")}</InputLabel>
                     <OutlinedInput
                       {...field}
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
                       error={Boolean(errors.currentPassword)}
-                      label="Current Password"
+                      label={t("email.currentPassword")}
                       endAdornment={
                         <InputAdornment position="end">
                           <IconButton
-                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-label={showPassword ? t("common:password.hide") : t("common:password.show")}
                             onClick={() => setShowPassword((prev) => !prev)}
                             edge="end"
                           >
@@ -173,7 +174,7 @@ export default function EmailSection({ email, isEmailConfirmed }: EmailSectionPr
               disabled={!isValid || changeMutation.isPending}
               sx={{ bgcolor: "primary.main", "&:hover": { bgcolor: colors.goldDark } }}
             >
-              {changeMutation.isPending ? "Sending..." : "Change email"}
+              {changeMutation.isPending ? t("common:actions.sending") : t("email.change")}
             </Button>
           </Box>
         </form>

@@ -11,6 +11,8 @@ import {
 } from "chart.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
+import { formatNumber } from "@utils/i18n";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -23,6 +25,7 @@ interface CommunityOverviewChartProps {
 
 /** Albums, artists and Atlas spots of the whole community, in one doughnut. */
 export default function CommunityOverviewChart({ albums, artists, places, isMobile }: CommunityOverviewChartProps) {
+  const { t } = useTranslation("dashboard");
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // Real center of the doughnut (in px, relative to its container): the legend
   // below the ring shifts it, so a fixed percentage is off on small screens
@@ -76,10 +79,10 @@ export default function CommunityOverviewChart({ albums, artists, places, isMobi
   }, [albums, artists, places]);
 
   const chartData = {
-    labels: ["Albums", "Artists", "Atlas spots"],
+    labels: [t("chart.albums"), t("chart.artists"), t("chart.spots")],
     datasets: [
       {
-        label: "Global Totals",
+        label: t("chart.totals"),
         data: [albums, artists, places],
         backgroundColor: [colors.gold, colors.textSecondary, colors.copper],
         borderColor: "grey",
@@ -126,7 +129,7 @@ export default function CommunityOverviewChart({ albums, artists, places, isMobi
             const value = context.parsed || (context.raw as number) || 0;
             const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-            return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+            return `${label}: ${formatNumber(value)} (${percentage}%)`;
           },
         },
       },
@@ -181,7 +184,7 @@ export default function CommunityOverviewChart({ albums, artists, places, isMobi
             }),
           }}
         >
-          {(albums + artists + places).toLocaleString()}
+          {formatNumber(albums + artists + places)}
         </Typography>
         <Typography
           variant="body2"
@@ -191,7 +194,7 @@ export default function CommunityOverviewChart({ albums, artists, places, isMobi
             textShadow: "1px 1px 2px rgba(0, 0, 0, 0.5)",
           }}
         >
-          items
+          {t("chart.items")}
         </Typography>
       </Box>
     </Box>

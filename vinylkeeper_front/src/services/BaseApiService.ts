@@ -4,6 +4,7 @@ import { isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { API_VK_URL } from "@utils/GlobalUtils";
 import { type ApiError } from "@utils/apiError";
 import { extractFilenameFromContentDisposition } from "@utils/DownloadUtils";
+import i18n from "@utils/i18n";
 
 export abstract class BaseApiService {
   protected readonly baseUrl: string = API_VK_URL;
@@ -62,13 +63,13 @@ export abstract class BaseApiService {
           credentials: "include",
         });
         if (!refreshResp.ok) {
-          throw { code: 401, message: "Session expired. Please log in again.", details: {} } satisfies ApiError;
+          throw { code: 401, message: i18n.t("errors:sessionExpired"), details: {} } satisfies ApiError;
         }
         return execute(true);
       }
 
       if (!response.ok) {
-        let message = `Export failed (${response.status})`;
+        let message = i18n.t("errors:exportFailed", { status: response.status });
         try {
           const data = (await response.json()) as { message?: string };
           message = data.message ?? message;

@@ -20,14 +20,8 @@ import { loginUrl, registerUrl } from "@utils/GlobalUrls";
 import { growItem } from "@utils/Animations";
 import PreviewModal from "@components/Landpage/PreviewModal";
 import { previewSlides } from "@components/Landpage/previewSlides";
+import { useTranslation } from "react-i18next";
 
-const MEMBER_FEATURES = [
-  "Catalog your records, their copies and pressings",
-  "Connect your Discogs account to import your collection",
-  "Estimate what your collection is worth",
-  "Pick tonight's record with Spinning now",
-  "Keep a wishlist and share your collections",
-];
 
 interface JoinVinylKeeperDialogProps {
   open: boolean;
@@ -41,9 +35,10 @@ interface JoinVinylKeeperDialogProps {
 export default function JoinVinylKeeperDialog({
   open,
   onClose,
-  title = "Join Vinyl Keeper to like spots and suggest new ones",
+  title,
   nextPath,
 }: JoinVinylKeeperDialogProps) {
+  const { t } = useTranslation("atlas");
   const [openPreview, setOpenPreview] = useState(false);
   const navigate = useNavigate();
 
@@ -54,17 +49,17 @@ export default function JoinVinylKeeperDialog({
           id="join-vinyl-keeper-title"
           sx={{ color: "primary.main", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}
         >
-          {title}
-          <IconButton aria-label="Close" onClick={onClose} sx={{ color: "text.primary" }}>
+          {title ?? t("join.title")}
+          <IconButton aria-label={t("common:actions.close")} onClick={onClose} sx={{ color: "text.primary" }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Vinyl Keeper is free and open source. With an account you can also:
+            {t("join.intro")}
           </Typography>
-          <List dense disablePadding aria-label="What members can do">
-            {MEMBER_FEATURES.map((feature) => (
+          <List dense disablePadding aria-label={t("join.featuresLabel")}>
+            {(t("join.features", { returnObjects: true }) as string[]).map((feature) => (
               <ListItem key={feature} disableGutters sx={{ py: 0.25 }}>
                 <ListItemIcon sx={{ minWidth: 30, color: "primary.main" }}>
                   <CheckCircleOutlineIcon fontSize="small" />
@@ -92,16 +87,16 @@ export default function JoinVinylKeeperDialog({
               "@media (prefers-reduced-motion: reduce)": { animation: "none" },
             }}
           >
-            Take a look inside?
+            {t("join.lookInside")}
           </Link>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button component={RouterLink} to={loginUrl(nextPath)} rel="nofollow" variant="text">
-              Log in
+              {t("nav:logIn")}
             </Button>
             <Button component={RouterLink} to={registerUrl(nextPath)} rel="nofollow" variant="contained">
-              Sign up
+              {t("nav:signUp")}
             </Button>
           </Box>
         </DialogActions>

@@ -4,6 +4,7 @@ import { LibraryAdd, Public } from "@mui/icons-material";
 import Counter from "@utils/Counter";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 /** The look of the "Latest Album" and "Latest Artist" cards below them: icon and title, then the content. */
 function InfoCard({
@@ -55,6 +56,7 @@ interface NewMemberCardsProps {
  * counters: an invitation to start the collection, then the Atlas, which has something to show.
  */
 export default function NewMemberCards({ spotsCount, onOpenAtlas, onAddRecord }: NewMemberCardsProps) {
+  const { t } = useTranslation("dashboard");
   const { isMobile } = useDetectMobile();
 
   return (
@@ -68,22 +70,22 @@ export default function NewMemberCards({ spotsCount, onOpenAtlas, onAddRecord }:
       }}
     >
       <Box sx={{ flex: 1 }}>
-        <InfoCard title="Start your collection" icon={<LibraryAdd />} color={colors.gold}>
+        <InfoCard title={t("newMember.start")} icon={<LibraryAdd />} color={colors.gold}>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Add now to your collection some records or artists.
+            {t("newMember.addHint")}
           </Typography>
           <Button variant="contained" onClick={onAddRecord}>
-            Add a record
+            {t("newMember.add")}
           </Button>
         </InfoCard>
       </Box>
       <Box sx={{ flex: 1 }}>
-        <InfoCard title="Atlas spots" icon={<Public />} color={colors.gold} onClick={onOpenAtlas}>
+        <InfoCard title={t("newMember.spots")} icon={<Public />} color={colors.gold} onClick={onOpenAtlas}>
           <Typography variant="h4" sx={{ fontWeight: "bold" }}>
             {spotsCount === 0 ? "-" : <Counter target={spotsCount} duration={900} />}
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
-            places to dig, shared by the community
+            {t("newMember.spotsHint")}
           </Typography>
         </InfoCard>
       </Box>

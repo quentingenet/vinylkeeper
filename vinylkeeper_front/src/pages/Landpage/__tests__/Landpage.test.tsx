@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import Landpage from "@pages/Landpage/Landpage";
 
@@ -18,9 +19,11 @@ afterEach(cleanup);
 
 const renderLandpage = (url = "/") =>
   render(
+    <QueryClientProvider client={new QueryClient()}>
     <MemoryRouter initialEntries={[url]}>
       <Landpage />
     </MemoryRouter>
+    </QueryClientProvider>
   );
 
 describe("Landpage", () => {

@@ -1,0 +1,100 @@
+{
+  "report": {
+    "issues": {
+      "name": "O nome está errado",
+      "description": "A descrição está errada ou desatualizada",
+      "address": "A morada está errada, ou o local mudou-se",
+      "website": "A ligação do site não funciona ou está desatualizada",
+      "type": "O tipo de local está errado",
+      "closed": "Encerrado definitivamente"
+    },
+    "chips": {
+      "name": "Nome",
+      "description": "Descrição",
+      "address": "Morada",
+      "website": "Site",
+      "type": "Tipo",
+      "closed": "Encerrado"
+    },
+    "title": "Reportar informação errada",
+    "thanks": "Obrigado, um administrador vai verificar este local.",
+    "what": "O que está errado em {{name}}?",
+    "should": "O que deveria constar? (opcional)",
+    "failed": "Não foi possível enviar o reporte. Tenta mais tarde.",
+    "send": "Enviar o reporte"
+  },
+  "types": {
+    "flea market": "Feira da ladra",
+    "shop": "Loja",
+    "music or records exhibition": "Feira de música ou de discos",
+    "other": "Outro"
+  },
+  "map": {
+    "markerAlt": "local do vinil",
+    "addAria": "Adicionar um local ao Atlas",
+    "add": "Adicionar um local",
+    "loadError": "Erro ao carregar os locais. Verifica a tua ligação.",
+    "noSpots": "Nenhum local encontrado nesta localização.",
+    "report": "Reportar informação errada",
+    "likes_one": "{{count}} gosto",
+    "likes_other": "{{count}} gostos",
+    "loading": " (A carregar...)",
+    "title": "Atlas",
+    "likes_many": "{{count}} gostos"
+  },
+  "add": {
+    "nameRequired": "O nome é obrigatório",
+    "nameEmpty": "O nome não pode estar vazio",
+    "addressRequired": "A morada é obrigatória",
+    "cityRequired": "A cidade é obrigatória",
+    "countryRequired": "O país é obrigatório",
+    "descriptionMax": "A descrição não pode ultrapassar 600 caracteres",
+    "urlInvalid": "Tem de ser um URL válido",
+    "typeRequired": "O tipo de local é obrigatório",
+    "countriesFailed": "Não foi possível carregar a lista de países.",
+    "loadFailed": "Não foi possível carregar os dados do formulário. Volta a abrir a janela.",
+    "failed": "Não foi possível adicionar o local. Tenta novamente.",
+    "details": "Detalhes do local",
+    "name": "Nome do local",
+    "type": "Tipo de local",
+    "country": "País",
+    "city": "Cidade",
+    "address": "Morada",
+    "description": "Descrição (opcional)",
+    "source": "URL de origem (opcional)",
+    "adding": "A adicionar...",
+    "submit": "Adicionar ao Atlas",
+    "submitted": "Local enviado!",
+    "thanks": "Obrigado pela tua contribuição! O teu local foi enviado e será verificado pela nossa equipa de moderação antes de aparecer no Atlas.",
+    "why": "Assim mantemos o Vinyl Atlas exato e fiável para toda a comunidade.",
+    "gotIt": "Entendido!"
+  },
+  "join": {
+    "features": [
+      "Cataloga os teus discos, os exemplares e as prensagens",
+      "Liga a tua conta Discogs para importar a tua coleção",
+      "Estima quanto vale a tua coleção",
+      "Escolhe o disco desta noite com o Spinning now",
+      "Mantém uma lista de desejos e partilha as tuas coleções"
+    ],
+    "title": "Junta-te ao Vinyl Keeper para gostar de locais e sugerir novos",
+    "intro": "O Vinyl Keeper é gratuito e de código aberto. Com uma conta também podes:",
+    "featuresLabel": "O que os membros podem fazer",
+    "lookInside": "Queres espreitar lá dentro?"
+  },
+  "byCountry": {
+    "title": "Locais por país",
+    "spots_one": "{{count}} local",
+    "spots_other": "{{count}} locais",
+    "spots_many": "{{count}} locais"
+  },
+  "page": {
+    "loadError": "Erro ao carregar o Atlas",
+    "introPublic": "📍 Explora os melhores locais do vinil do mundo, partilhados pela comunidade Vinyl Keeper.",
+    "intro": "📍 Explora, adiciona e partilha com a comunidade os melhores locais do vinil do mundo."
+  },
+  "public": {
+    "metaTitle": "Vinyl Atlas: lojas de discos, feiras da ladra e locais do vinil | Vinyl Keeper",
+    "metaDescription": "Encontra lojas de discos, feiras da ladra e locais do vinil de todo o mundo no Vinyl Atlas, um mapa comunitário gratuito partilhado por colecionadores de vinis."
+  }
+}

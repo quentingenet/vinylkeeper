@@ -1,0 +1,105 @@
+{
+  "conditions": [
+    "Connect your Discogs account: Discogs asks you to authorize VinylKeeper, which then reads your collection and your wantlist, nothing else. Private collections work too.",
+    "Only vinyl records are imported: CDs, cassettes and other formats are skipped.",
+    "Imported records have a pressing to confirm: check the pressing of each record in your collection. Country and condition are not imported.",
+    "Your Discogs wantlist goes into your wishlist only if you tick the box below.",
+    "Records already in the collection are not added twice.",
+    "By default the records go into a new collection: deleting it undoes the import. Importing into an existing collection saves a copy of it first."
+  ],
+  "outcome": {
+    "connected": "Your Discogs account is connected. Choose what to import.",
+    "denied": "The connection to Discogs was cancelled.",
+    "expired": "The connection took too long. Connect your Discogs account again.",
+    "session": "Connect your Discogs account again from this browser, while logged in to Vinyl Keeper.",
+    "failed": "Discogs could not connect your account. Try again in a few minutes."
+  },
+  "progress": {
+    "queued": "Waiting for another import to finish.",
+    "connecting": "Connecting to Discogs.",
+    "readingCollection": "Reading your Discogs collection: page {{done}} of {{total}}.",
+    "readingWantlist": "Reading your Discogs wantlist: page {{done}} of {{total}}.",
+    "addingRecords": "Adding records: {{processed}} of {{total}}.",
+    "addingWishlist": "Adding to your wishlist: {{processed}} of {{total}}.",
+    "importing": "Importing the collection of <strong>{{name}}</strong>",
+    "label": "Import progress",
+    "canClose": "You can close this window: the import goes on."
+  },
+  "summary": {
+    "copies_one": "{{count}} copy in all",
+    "copies_other": "{{count}} copies in all",
+    "alreadyInCollection": "{{count}} already in the collection",
+    "otherFormats_one": "{{count}} other format skipped",
+    "otherFormats_other": "{{count}} other formats skipped",
+    "savedCopy": "“{{name}}” is the save to restore this collection from: delete it once everything is fine.",
+    "otherPressings_one": "{{count}} record is another pressing of a record you already had in this collection.",
+    "otherPressings_other": "{{count}} records are another pressing of a record you already had in this collection.",
+    "inOtherCollections_one": "{{count}} record was already in another of your collections.",
+    "inOtherCollections_other": "{{count}} records were already in another of your collections.",
+    "open": "Open",
+    "last_one": "Last import from {{name}}: {{count}} record added{{details}}.",
+    "last_other": "Last import from {{name}}: {{count}} records added{{details}}.",
+    "confirmPressings": "Remember to confirm the pressing of each record."
+  },
+  "save": {
+    "oneOnly": "Only one save per collection: “{{name}}” already exists. Delete it to make a new one.",
+    "existing": "This collection already has a save: “{{name}}”. Only one save per collection: it is kept as it is and is not updated with the current records. If it is out of date, cancel, delete that save, then import again to save the collection as it is now."
+  },
+  "wantlist": {
+    "error": "Wantlist not imported: {{error}}",
+    "alreadyThere": "{{count}} already there",
+    "owned_one": "{{count}} record you already own skipped",
+    "owned_other": "{{count}} records you already own skipped",
+    "otherFormats_one": "{{count}} other format skipped",
+    "otherFormats_other": "{{count}} other formats skipped",
+    "otherPressings_one": " {{count}} of them is another pressing of a record you own.",
+    "otherPressings_other": " {{count}} of them are another pressing of a record you own.",
+    "added_one": "Wantlist: {{count}} record added to your wishlist{{details}}.{{pressings}}",
+    "added_other": "Wantlist: {{count}} records added to your wishlist{{details}}.{{pressings}}"
+  },
+  "preview": {
+    "empty": "Your Discogs collection is empty.",
+    "withWantlist_one": "{{count}} item in your Discogs collection and {{wantlist}} in its wantlist.",
+    "withWantlist_other": "{{count}} items in your Discogs collection and {{wantlist}} in its wantlist.",
+    "found_one": "{{count}} item found in your Discogs collection.",
+    "found_other": "{{count}} items found in your Discogs collection.",
+    "vinylOnly": "Only the vinyl records will be imported."
+  },
+  "unavailable": {
+    "private": "Your Discogs wantlist could not be read.",
+    "empty": "Your Discogs wantlist is empty.",
+    "later": "Your Discogs wantlist could not be read right now. Try again in a few minutes."
+  },
+  "dialog": {
+    "genericError": "Something went wrong. Try again.",
+    "importTitle": "Import from Discogs",
+    "connectTitle": "Connect your Discogs account",
+    "lastFailed": "The last import failed. Try again.",
+    "before": "Before you import",
+    "conditionsLabel": "Conditions to import a Discogs collection",
+    "unavailable": "Connecting a Discogs account is not available right now. Try again later.",
+    "disconnected": "Your Discogs account is disconnected: VinylKeeper no longer keeps its access. You can also remove VinylKeeper from the applications of your Discogs account settings.",
+    "connect": "Connect with Discogs",
+    "connectedAs": "Connected to Discogs as <strong>{{name}}</strong>",
+    "disconnect": "Disconnect",
+    "importInto": "Import into",
+    "newCollection": "New collection: {{name}}",
+    "newCollectionHelp": "A private collection is created: deleting it undoes the import.",
+    "saveTargetHelp": "This collection is a save: the records join it, there is no undo.",
+    "saveCopy": "Save a copy of “{{name}}” before importing",
+    "copyNamed": "The copy is named “{{name}}”: delete it once everything is fine.",
+    "noCopy": "Without a copy, the records join the ones of this collection: there is no undo.",
+    "alsoWantlist_one": "Also import my Discogs wantlist ({{count}} item) into my wishlist",
+    "alsoWantlist_other": "Also import my Discogs wantlist ({{count}} items) into my wishlist",
+    "alsoWantlistPlain": "Also import my Discogs wantlist into my wishlist",
+    "wantlistRules": "Only vinyl records are added; a pressing you already own is skipped, another pressing of a record you own is added and pointed out.",
+    "import": "Import",
+    "collectionDataBy": "Collection data provided by"
+  },
+  "callback": {
+    "title": "Back from Discogs",
+    "text": "This step finishes in the Vinyl Keeper app. If it did not open by itself, tap the button.",
+    "openApp": "Open the Vinyl Keeper app",
+    "collections": "Go to my collections"
+  }
+}

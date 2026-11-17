@@ -1,6 +1,7 @@
 import { Box, Card, CardContent, Typography, CircularProgress } from "@mui/material";
 import { colors } from "@styles/colors";
 import type { ModerationStats } from "@services/AdminApiService";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   stats: ModerationStats | undefined;
@@ -8,13 +9,14 @@ interface Props {
 }
 
 const STAT_CARDS = [
-  { key: "total" as const, label: "Total", color: "primary.main" },
-  { key: "pending" as const, label: "Pending", color: colors.warning },
-  { key: "approved" as const, label: "Approved", color: colors.success },
-  { key: "rejected" as const, label: "Rejected", color: colors.error },
+  { key: "total" as const, label: "admin:status.total", color: "primary.main" },
+  { key: "pending" as const, label: "admin:status.pending", color: colors.warning },
+  { key: "approved" as const, label: "admin:status.approved", color: colors.success },
+  { key: "rejected" as const, label: "admin:status.rejected", color: colors.error },
 ];
 
 export default function ModerationStatsCards({ stats, isLoading }: Props) {
+  const { t } = useTranslation();
   return (
     <Box sx={{ justifyContent: "center" }}>
       <Box
@@ -48,7 +50,7 @@ export default function ModerationStatsCards({ stats, isLoading }: Props) {
                 variant="h6"
                 sx={{ color, fontSize: { xs: "0.875rem", sm: "1.25rem" } }}
               >
-                {label}
+                {t(label)}
               </Typography>
               <Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}>
                 {isLoading ? <CircularProgress size={24} /> : (stats?.[key] ?? 0)}

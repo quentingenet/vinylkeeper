@@ -34,6 +34,7 @@ import {
 } from "@services/CollectionApiService";
 import { isDuplicateCollectionName } from "@utils/collectionAvailability";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface IModalCollectionProps {
   openModal: boolean;
@@ -53,6 +54,7 @@ export default function ModalCollection({
   collection,
   isPublic,
 }: IModalCollectionProps) {
+  const { t } = useTranslation("collections");
   const userContext = useUserContext();
   const queryClient = useQueryClient();
   const { isMobile } = useDetectMobile();
@@ -112,14 +114,12 @@ export default function ModalCollection({
       if (isDuplicateCollectionName(error)) {
         setErrorSnackbar({
           open: true,
-          message:
-            "Collection name already exists. Please choose a different name.",
+          message: t("modal.duplicateName"),
         });
       } else {
         setErrorSnackbar({
           open: true,
-          message:
-            "An error occurred while creating the collection. Please try again.",
+          message: t("modal.createError"),
         });
       }
     },
@@ -168,14 +168,12 @@ export default function ModalCollection({
       if (isDuplicateCollectionName(error)) {
         setErrorSnackbar({
           open: true,
-          message:
-            "Collection name already exists. Please choose a different name.",
+          message: t("modal.duplicateName"),
         });
       } else {
         setErrorSnackbar({
           open: true,
-          message:
-            "An error occurred while updating the collection. Please try again.",
+          message: t("modal.updateError"),
         });
       }
       userContext.setIsLoading(false);
@@ -225,7 +223,7 @@ export default function ModalCollection({
           <form onSubmit={(e) => { void handleSubmit(submitCollection)(e); }}>
             <Box sx={style}>
               <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                <IconButton onClick={handleClose}>
+                <IconButton onClick={handleClose} aria-label={t("common:actions.close")}>
                   <CloseIcon />
                 </IconButton>
               </Box>
@@ -246,8 +244,7 @@ export default function ModalCollection({
                   component="h2"
                   sx={{ color: colors.gold, marginBottom: 1, textAlign: "center", width: isMobile ? "75%" : "50%" }}
                 >
-                  {isUpdatingCollection ? "Updating" : "Creating a new"}
-                  {" collection"}
+                  {isUpdatingCollection ? t("modal.updating") : t("modal.creating")}
                 </Typography>
                 <FormControlLabel
                   sx={{ width: isMobile ? "25%" : "15%" }}
@@ -258,7 +255,7 @@ export default function ModalCollection({
                       {...register("is_public")}
                     />
                   }
-                  label={isPublicChecked ? "Public" : "Private"}
+                  label={isPublicChecked ? t("item.public") : t("item.private")}
                 />
               </Box>
               <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
@@ -269,7 +266,7 @@ export default function ModalCollection({
                     alignSelf: "center",
                   }}
                   error={!!errors.name?.message}
-                  label="Name"
+                  label={t("modal.name")}
                   helperText={errors.name?.message}
                   {...register("name")}
                 />
@@ -282,7 +279,7 @@ export default function ModalCollection({
                   error={!!errors.description?.message}
                   helperText={errors.description?.message}
                   multiline
-                  label="Description"
+                  label={t("modal.description")}
                   rows={4}
                   {...register("description")}
                 />
@@ -299,12 +296,12 @@ export default function ModalCollection({
                   }
                 >
                   {createCollectionMutation.isPending
-                    ? "Creating..."
+                    ? t("modal.submitCreating")
                     : updateMutation.isPending
-                    ? "Updating..."
+                    ? t("modal.submitUpdating")
                     : isUpdatingCollection
-                    ? "Update"
-                    : "Create"}
+                    ? t("modal.update")
+                    : t("modal.create")}
                 </Button>
               </Box>
             </Box>

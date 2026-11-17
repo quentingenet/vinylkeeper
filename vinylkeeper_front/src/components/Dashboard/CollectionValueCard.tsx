@@ -20,6 +20,8 @@ import { queryKeys } from "@utils/queryKeys";
 import { isApiError } from "@utils/apiError";
 import type { Currency, ValueScope } from "@models/IDashboardStats";
 import styles from "../../styles/pages/Dashboard.module.scss";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "@utils/i18n";
 
 // The button stays disabled that long after a click, whatever the answer: no double request
 const CLICK_COOLDOWN_MS = 10_000;
@@ -33,6 +35,7 @@ const PENDING_POLL_MS = 5_000;
  * what is shown.
  */
 export default function CollectionValueCard() {
+  const { t } = useTranslation("dashboard");
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<ValueScope>("largest");
   const [coolingDown, setCoolingDown] = useState(false);
@@ -63,14 +66,14 @@ export default function CollectionValueCard() {
     },
     // Every collection is re-evaluated: each value shown is read again
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["dashboard-stats", "value"] }),
-    onError: (e: unknown) => setError(isApiError(e) ? e.message : "The re-evaluation could not start. Please try again later."),
+    onError: (e: unknown) => setError(isApiError(e) ? e.message : t("value.startFailed")),
   });
 
   if (valueQuery.isError) {
     return (
       <Paper className={styles.card}>
         <Typography sx={{ color: "text.secondary", py: 2 }}>
-          The value of your collection is unavailable right now. Please try again later.
+          {t("value.unavailable")}
         </Typography>
       </Paper>
     );
@@ -78,7 +81,7 @@ export default function CollectionValueCard() {
   if (!value) {
     return (
       <Paper className={styles.card} sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-        <CircularProgress aria-label="Loading the value of your collection" />
+        <CircularProgress aria-label={t("value.loading")} />
       </Paper>
     );
   }
@@ -87,27 +90,27 @@ export default function CollectionValueCard() {
   const amounts =
     value.amounts.find((a) => a.currency === (shownCurrency ?? value.currency)) ?? value.amounts[0];
   const shares = [
-    { label: "Low", amount: amounts.low },
-    { label: "Average", amount: amounts.average },
-    { label: "High", amount: amounts.high },
+    { label: t("value.low"), amount: amounts.low },
+    { label: t("value.average"), amount: amounts.average },
+    { label: t("value.high"), amount: amounts.high },
   ];
 
   return (
     <Paper className={styles.card}>
       <Typography className={styles.textTitleShadow} variant="h6" gutterBottom>
-        Collection value
+        {t("value.title")}
       </Typography>
 
       {value.collections.length > 1 && (
         <TextField
           select
           size="small"
-          label="Collection"
+          label={t("value.collection")}
           value={value.collection_id ?? "all"}
           onChange={(event) => setScope(event.target.value === "all" ? "all" : Number(event.target.value))}
           sx={{ minWidth: 220, maxWidth: "100%", mb: 2 }}
         >
-          <MenuItem value="all">All my collections</MenuItem>
+          <MenuItem value="all">{t("value.all")}</MenuItem>
           {value.collections.map((collection) => (
             <MenuItem key={collection.id} value={collection.id}>
               {collection.name}
@@ -118,7 +121,7 @@ export default function CollectionValueCard() {
 
       {value.records_total === 0 ? (
         <Typography sx={{ color: "text.secondary", py: 2 }}>
-          No records here yet: add some to see what your collection is worth.
+          {t("value.empty")}
         </Typography>
       ) : (
         <>
@@ -149,7 +152,7 @@ export default function CollectionValueCard() {
               size="small"
               value={amounts.currency}
               onChange={(_event, next: Currency | null) => next && setShownCurrency(next)}
-              aria-label="Currency"
+              aria-label={t("value.currency")}
               sx={{ mt: 2 }}
             >
               {value.amounts.map((a) => (
@@ -161,14 +164,14 @@ export default function CollectionValueCard() {
           )}
 
           <Typography variant="body2" sx={{ color: "text.secondary", mt: 2 }}>
-            Estimated on {value.records_priced} of {value.records_total} records.{" "}
-            {value.estimated_at ? `Last estimate on ${formatWhen(value.estimated_at)}.` : "Not estimated yet."}
+            {t("value.estimatedOn", { priced: value.records_priced, count: value.records_total })}{" "}
+            {value.estimated_at ? t("value.lastEstimate", { when: formatWhen(value.estimated_at) }) : t("value.notEstimated")}
           </Typography>
 
           <Alert severity="info" sx={{ mt: 2, textAlign: "left" }}>
-            The more exact the pressings in your collection, the closer the estimate.
+            {t("value.exactness")}
             {value.pressings_to_confirm > 0 &&
-              ` ${value.pressings_to_confirm} pressing${value.pressings_to_confirm > 1 ? "s are" : " is"} not confirmed yet.`}
+              t("value.toConfirm", { count: value.pressings_to_confirm })}
           </Alert>
         </>
       )}
@@ -194,9 +197,9 @@ export default function CollectionValueCard() {
       </Box>
 
       <Typography variant="caption" component="p" sx={{ color: "text.secondary", mt: 2 }}>
-        Discogs suggested prices: Very Good for low, Very Good Plus for average, Near Mint for high.
+        {t("value.sources")}
         {amounts.currency !== "EUR" && value.usd_rate && value.rate_date &&
-          ` Converted from euros at the ECB rate of ${value.rate_date} (1 EUR = ${value.usd_rate} USD).`}
+          t("value.converted", { date: formatDate(value.rate_date), rate: value.usd_rate })}
       </Typography>
     </Paper>
   );

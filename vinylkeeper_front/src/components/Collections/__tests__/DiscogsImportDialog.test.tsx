@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import DiscogsImportDialog, { RESULT_DURATION_MS } from "@components/Collections/DiscogsImportDialog";
-import { IMPORT_CONDITIONS } from "@components/Collections/discogsImportLabels";
+import { importConditions } from "@components/Collections/discogsImportLabels";
 import { DISCOGS_DISCLAIMER } from "@utils/discogsLinks";
 import type { DiscogsImport } from "@models/IDiscogsImport";
 
@@ -61,7 +61,7 @@ describe("DiscogsImportDialog", () => {
     renderDialog();
 
     const conditions = screen.getByRole("list", { name: "Conditions to import a Discogs collection" });
-    IMPORT_CONDITIONS.forEach((condition) => expect(conditions).toHaveTextContent(condition));
+    importConditions().forEach((condition) => expect(conditions).toHaveTextContent(condition));
     expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
   });
 

@@ -2,13 +2,15 @@ import Atlas from "@pages/Atlas/Atlas";
 import PublicPage from "@components/Layout/PublicPage";
 import { usePageMeta } from "@hooks/usePageMeta";
 import { EGlobalUrls } from "@utils/GlobalUrls";
+import { useTranslation } from "react-i18next";
 
 /** The Vinyl Atlas for visitors: read only. */
 export default function PublicAtlas() {
+  const { t } = useTranslation("atlas");
   usePageMeta({
-    title: "Vinyl Atlas: record shops, flea markets and vinyl spots | Vinyl Keeper",
+    title: t("public.metaTitle"),
     description:
-      "Find record shops, flea markets and vinyl spots around the world on the Vinyl Atlas, a free community map shared by vinyl collectors.",
+      t("public.metaDescription"),
     canonicalPath: EGlobalUrls.ATLAS,
   });
 

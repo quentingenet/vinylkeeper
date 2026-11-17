@@ -32,8 +32,10 @@ import {
 } from "@utils/Regex";
 import { colors } from "@styles/colors";
 import PasswordStrengthIndicator from "@components/UI/PasswordStrengthIndicator";
+import { useTranslation } from "react-i18next";
 
 export default function ResetPasswordForm() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { isMobile } = useDetectMobile();
   const styleResetPassword = {
@@ -62,7 +64,7 @@ export default function ResetPasswordForm() {
   const [openSnackBar, setOpenSnackBar] = useState(false);
   // Why the link cannot be used, known before the person types anything (null: it can, or not checked yet)
   const [linkProblem, setLinkProblem] = useState<string | null>(token ? null : RESET_LINK_UNUSABLE);
-  const [errorMessage, setErrorMessage] = useState("Error while resetting password. Try again.");
+  const [errorMessage, setErrorMessage] = useState(() => t("reset.error"));
 
   useEffect(() => {
     if (!token) return;
@@ -85,17 +87,14 @@ export default function ResetPasswordForm() {
   const validationSchema = yup.object({
     password: yup
       .string()
-      .required("You must enter your password.")
-      .matches(passwordWithLetter, "Your password must contain a letter")
-      .matches(passwordWithNumber, "Your password must contain a number")
-      .matches(
-        passwordAtLeast8,
-        "Your password must contain at least 8 characters"
-      ),
+      .required(t("validation:password.required"))
+      .matches(passwordWithLetter, t("validation:password.letter"))
+      .matches(passwordWithNumber, t("validation:password.number"))
+      .matches(passwordAtLeast8, t("validation:password.length")),
     passwordBis: yup
       .string()
-      .oneOf([yup.ref("password"), undefined], "Passwords must match.")
-      .required("Please confirm your password."),
+      .oneOf([yup.ref("password"), undefined], t("reset.mustMatch"))
+      .required(t("reset.confirmRequired")),
   });
 
   const {
@@ -131,7 +130,7 @@ export default function ResetPasswordForm() {
           setLinkProblem(RESET_LINK_UNUSABLE);
           return;
         }
-        setErrorMessage("Error while resetting password. Try again.");
+        setErrorMessage(t("reset.error"));
         setOpenSnackBar(true);
       })
       .finally(() => setIsLoading(false));
@@ -151,13 +150,13 @@ export default function ResetPasswordForm() {
           component="h2"
           sx={{ color: colors.slate, textAlign: "center", mb: 2, "&.MuiTypography-root": { fontFamily: "Oswald-Medium, sans-serif" } }}
         >
-          Choose a new password
+          {t("reset.title")}
         </Typography>
         {linkProblem ? (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <Alert severity="warning">{linkProblem}</Alert>
+            <Alert severity="warning">{t(linkProblem)}</Alert>
             <Button variant="contained" onClick={() => void navigate("/")}>
-              Back to login
+              {t("reset.backToLogin")}
             </Button>
           </Box>
         ) : (
@@ -170,7 +169,7 @@ export default function ResetPasswordForm() {
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Password"
+                  label={t("fields.password")}
                   type={showPassword ? "text" : "password"}
                   variant="outlined"
                   error={!!errors.password}
@@ -180,7 +179,7 @@ export default function ResetPasswordForm() {
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton
-                            aria-label="toggle password visibility"
+                            aria-label={showPassword ? t("common:password.hide") : t("common:password.show")}
                             onClick={handleClickShowPassword}
                             onMouseDown={handleMouseDownPassword}
                             edge="end"
@@ -204,7 +203,7 @@ export default function ResetPasswordForm() {
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Confirm new password"
+                  label={t("fields.confirmNewPassword")}
                   type={showPassword ? "text" : "password"}
                   variant="outlined"
                   error={!!errors.passwordBis}
@@ -214,7 +213,7 @@ export default function ResetPasswordForm() {
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton
-                            aria-label="toggle password visibility"
+                            aria-label={showPassword ? t("common:password.hide") : t("common:password.show")}
                             onClick={handleClickShowPassword}
                             onMouseDown={handleMouseDownPassword}
                             edge="end"
@@ -244,7 +243,7 @@ export default function ResetPasswordForm() {
                   size="large"
                   disabled={!isValid}
                 >
-                  Submit
+                  {t("reset.submit")}
                 </Button>
               </div>
             )}

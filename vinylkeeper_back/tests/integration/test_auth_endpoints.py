@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.main import app
@@ -619,3 +620,40 @@ class TestDeleteMyAccount:
 
         assert resp.status_code == 401  # UserNotFoundError, as before
         log_activity.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/users/me/language
+# ---------------------------------------------------------------------------
+
+class TestSetMyLanguage:
+    @pytest.mark.parametrize("language", ["en", "fr", "es", "pt", "de", "it", None])
+    async def test_sets_the_language_of_the_current_user(self, auth_client, language):
+        client, mock_service, mock_user = auth_client
+        mock_service.set_language = AsyncMock()
+
+        resp = await client.put("/api/users/me/language", json={"language": language})
+
+        assert resp.status_code == 200
+        mock_service.set_language.assert_awaited_once_with(mock_user, language)
+
+    @pytest.mark.parametrize("body", [
+        {"language": "nl"},
+        {"language": "FR"},
+        {"language": "fr-FR"},
+        {},
+        # The user is the one of the token: no identifier is accepted from the client
+        {"language": "fr", "user_uuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"},
+    ])
+    async def test_refuses_anything_else(self, auth_client, body):
+        client, mock_service, _ = auth_client
+        mock_service.set_language = AsyncMock()
+
+        resp = await client.put("/api/users/me/language", json=body)
+
+        assert resp.status_code == 422
+        mock_service.set_language.assert_not_awaited()
+
+    async def test_needs_a_session(self, client):
+        resp = await client.put("/api/users/me/language", json={"language": "fr"})
+        assert resp.status_code in (401, 403)

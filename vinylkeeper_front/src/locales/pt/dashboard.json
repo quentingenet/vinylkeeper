@@ -1,0 +1,105 @@
+{
+  "latest": {
+    "addedBy": "Adicionado por",
+    "none": "Sem adições recentes",
+    "album": "Último álbum",
+    "artist": "Último artista"
+  },
+  "stats": {
+    "myAlbums": "Os meus álbuns",
+    "myArtists": "Os meus artistas",
+    "atlasSpots": "Locais do Atlas"
+  },
+  "community": {
+    "recent": "Adicionados recentemente pela comunidade",
+    "collections": "Coleções da comunidade",
+    "shared": "coleções partilhadas",
+    "worldwide": "por amantes do vinil de todo o mundo",
+    "explore": "Explorar as coleções",
+    "inspire": "Torna pública uma das tuas coleções e inspira os outros..."
+  },
+  "decade": "anos {{decade}}",
+  "statsCard": {
+    "tabs": {
+      "eras": "Épocas",
+      "genres": "Géneros",
+      "moods": "Estados de espírito",
+      "pressings": "Prensagens",
+      "community": "Comunidade"
+    },
+    "noRecords": "Ainda não há discos aqui.",
+    "addFirst": "Adiciona os teus primeiros vinis",
+    "perDecade": "Discos por década",
+    "perGenre": "Discos por género",
+    "perMood": "Discos por estado de espírito",
+    "communityTitle": "Resumo da atividade da comunidade",
+    "mineTitle": "A tua coleção em números",
+    "label": "Estatísticas da coleção",
+    "collection": "Coleção",
+    "all": "Todas as minhas coleções",
+    "discover": "Descobrir as coleções da comunidade",
+    "unavailable": "As tuas estatísticas estão indisponíveis neste momento. Tenta mais tarde.",
+    "loading": "A carregar as tuas estatísticas",
+    "clickBar": "Clica numa barra para escolher um disco para ouvir no Spinning now.",
+    "originals": "Prensagens originais",
+    "reissues": "Reedições",
+    "unknownYear": "Ano desconhecido",
+    "pressedIn": "Prensado em",
+    "formats": "Formatos",
+    "others": "Outros",
+    "records": "Discos",
+    "toSeeNumbers": "para veres a tua coleção em números."
+  },
+  "value": {
+    "title": "Valor da coleção",
+    "startFailed": "Não foi possível iniciar a reavaliação. Tenta mais tarde.",
+    "unavailable": "O valor da tua coleção está indisponível neste momento. Tenta mais tarde.",
+    "loading": "A carregar o valor da tua coleção",
+    "low": "Baixo",
+    "average": "Médio",
+    "high": "Alto",
+    "collection": "Coleção",
+    "all": "Todas as minhas coleções",
+    "empty": "Ainda não há discos aqui: adiciona alguns para saberes quanto vale a tua coleção.",
+    "currency": "Moeda",
+    "estimatedOn_one": "Estimado com base em {{priced}} de {{count}} disco.",
+    "estimatedOn_other": "Estimado com base em {{priced}} de {{count}} discos.",
+    "lastEstimate": "Última estimativa em {{when}}.",
+    "notEstimated": "Ainda não estimado.",
+    "exactness": "Quanto mais exatas forem as prensagens da tua coleção, mais fiável é a estimativa.",
+    "sources": "Preços sugeridos pelo Discogs: Very Good para o baixo, Very Good Plus para o médio, Near Mint para o alto.",
+    "converted": " Convertido a partir dos euros ao câmbio do BCE de {{date}} (1 EUR = {{rate}} USD).",
+    "toConfirm_one": " {{count}} prensagem ainda não está confirmada.",
+    "toConfirm_other": " {{count}} prensagens ainda não estão confirmadas.",
+    "estimatedOn_many": "Estimado com base em {{priced}} de {{count}} discos.",
+    "toConfirm_many": " {{count}} prensagens ainda não estão confirmadas."
+  },
+  "refresh": {
+    "pending": "A reavaliar, faltam {{count}}",
+    "pendingHint": "Os preços do Discogs são pedidos um a um, a estimativa atualiza-se à medida que chegam.",
+    "button": "Reavaliar",
+    "nextOn": "Uma reavaliação por dia. A próxima é possível em {{when}}.",
+    "oncePerDay": "Uma reavaliação por dia.",
+    "upToDate": "Atualizado",
+    "upToDateHint": "Todos os preços das tuas coleções têm menos de um dia.",
+    "hint": "Atualiza todas as tuas coleções, uma vez por dia. Os preços são pedidos de novo em segundo plano, podes sair da página."
+  },
+  "chart": {
+    "albums": "Álbuns",
+    "artists": "Artistas",
+    "spots": "Locais do Atlas",
+    "totals": "Totais",
+    "items": "elementos",
+    "recordsTooltip_one": "{{count}} disco",
+    "recordsTooltip_other": "{{count}} discos",
+    "recordsTooltip_many": "{{count}} discos"
+  },
+  "newMember": {
+    "start": "Começa a tua coleção",
+    "addHint": "Adiciona já alguns discos ou artistas à tua coleção.",
+    "add": "Adicionar um disco",
+    "spots": "Locais do Atlas",
+    "spotsHint": "locais para procurar discos, partilhados pela comunidade"
+  },
+  "loadFailed": "Não foi possível carregar os dados do painel."
+}

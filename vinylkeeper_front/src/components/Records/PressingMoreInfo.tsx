@@ -4,6 +4,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useAlbumMetadata } from "@services/MusicMetadataService";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { releasedLabel } from "@components/Records/pressingMarks";
+import { useTranslation } from "react-i18next";
 
 interface PressingMoreInfoProps {
   // Discogs release of the pressing
@@ -29,6 +30,7 @@ function Mark({ label, values }: { label: string; values: string[] }) {
 
 /** Barcode, matrix and release date of a pressing, loaded from Discogs only when asked for. */
 export default function PressingMoreInfo({ releaseId }: PressingMoreInfoProps) {
+  const { t } = useTranslation("records");
   const [open, setOpen] = useState(false);
   const { data, isLoading, isError } = useAlbumMetadata(open ? { id: releaseId, artist: "", title: "" } : undefined);
   const released = releasedLabel(data?.released);
@@ -46,7 +48,7 @@ export default function PressingMoreInfo({ releaseId }: PressingMoreInfoProps) {
         }
         sx={{ textTransform: "none", px: 0.5, minHeight: 0 }}
       >
-        More about this pressing
+        {t("more.title")}
       </Button>
       <Collapse in={open} unmountOnExit>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1, pl: 0.5 }}>
@@ -54,17 +56,17 @@ export default function PressingMoreInfo({ releaseId }: PressingMoreInfoProps) {
             <VinylSpinner size={24} />
           ) : isError ? (
             <Typography variant="body2" color="error">
-              Could not load the pressing details. Please try again.
+              {t("more.failed")}
             </Typography>
           ) : hasMarks ? (
             <>
-              <Mark label="Released" values={released ? [released] : []} />
-              <Mark label="Barcode" values={data?.barcode ? [data.barcode] : []} />
-              <Mark label="Matrix / Runout" values={data?.matrix ?? []} />
+              <Mark label={t("more.released")} values={released ? [released] : []} />
+              <Mark label={t("more.barcode")} values={data?.barcode ? [data.barcode] : []} />
+              <Mark label={t("more.matrix")} values={data?.matrix ?? []} />
             </>
           ) : (
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              No more details on Discogs for this pressing.
+              {t("more.none")}
             </Typography>
           )}
         </Box>

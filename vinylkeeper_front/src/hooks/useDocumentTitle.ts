@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { titleToRestore } from "@utils/i18n";
 
 export const useDocumentTitle = (title: string | null | undefined) => {
   useEffect(() => {
@@ -6,7 +7,7 @@ export const useDocumentTitle = (title: string | null | undefined) => {
     const previous = document.title;
     document.title = title;
     return () => {
-      document.title = previous;
+      document.title = titleToRestore(previous);
     };
   }, [title]);
 };

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import Terms, { DELETE_ACCOUNT_ANCHOR } from "../Terms";
 import { TERMS_LAST_UPDATED } from "@components/Modals/ModalTermsVinylKeeper";
@@ -8,9 +9,11 @@ afterEach(cleanup);
 
 const renderTerms = (standalone = false) =>
   render(
+    <QueryClientProvider client={new QueryClient()}>
     <MemoryRouter>
       <Terms standalone={standalone} />
     </MemoryRouter>
+    </QueryClientProvider>
   );
 
 describe("Terms page", () => {

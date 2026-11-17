@@ -1,0 +1,100 @@
+{
+  "report": {
+    "issues": {
+      "name": "Il nome è sbagliato",
+      "description": "La descrizione è sbagliata o superata",
+      "address": "L'indirizzo è sbagliato, o il luogo si è trasferito",
+      "website": "Il link del sito non funziona o è superato",
+      "type": "Il tipo di luogo è sbagliato",
+      "closed": "Chiuso definitivamente"
+    },
+    "chips": {
+      "name": "Nome",
+      "description": "Descrizione",
+      "address": "Indirizzo",
+      "website": "Sito",
+      "type": "Tipo",
+      "closed": "Chiuso"
+    },
+    "title": "Segnala un'informazione errata",
+    "thanks": "Grazie, un admin controllerà questo luogo.",
+    "what": "Cosa c'è di sbagliato in {{name}}?",
+    "should": "Cosa dovrebbe esserci? (facoltativo)",
+    "failed": "Non è stato possibile inviare la segnalazione. Riprova più tardi.",
+    "send": "Invia la segnalazione"
+  },
+  "types": {
+    "flea market": "Mercatino",
+    "shop": "Negozio",
+    "music or records exhibition": "Fiera di musica o di dischi",
+    "other": "Altro"
+  },
+  "map": {
+    "markerAlt": "luogo del vinile",
+    "addAria": "Aggiungi un luogo all'Atlas",
+    "add": "Aggiungi un luogo",
+    "loadError": "Errore nel caricamento dei luoghi. Controlla la tua connessione.",
+    "noSpots": "Nessun luogo trovato in questa posizione.",
+    "report": "Segnala un'informazione errata",
+    "likes_one": "{{count}} mi piace",
+    "likes_other": "{{count}} mi piace",
+    "loading": " (Caricamento...)",
+    "title": "Atlas",
+    "likes_many": "{{count}} mi piace"
+  },
+  "add": {
+    "nameRequired": "Il nome è obbligatorio",
+    "nameEmpty": "Il nome non può essere vuoto",
+    "addressRequired": "L'indirizzo è obbligatorio",
+    "cityRequired": "La città è obbligatoria",
+    "countryRequired": "Il paese è obbligatorio",
+    "descriptionMax": "La descrizione non può superare i 600 caratteri",
+    "urlInvalid": "Deve essere un URL valido",
+    "typeRequired": "Il tipo di luogo è obbligatorio",
+    "countriesFailed": "Non è stato possibile caricare l'elenco dei paesi.",
+    "loadFailed": "Non è stato possibile caricare i dati del modulo. Riapri la finestra.",
+    "failed": "Non è stato possibile aggiungere il luogo. Riprova.",
+    "details": "Dettagli del luogo",
+    "name": "Nome del luogo",
+    "type": "Tipo di luogo",
+    "country": "Paese",
+    "city": "Città",
+    "address": "Indirizzo",
+    "description": "Descrizione (facoltativa)",
+    "source": "URL di origine (facoltativo)",
+    "adding": "Aggiunta...",
+    "submit": "Aggiungi all'Atlas",
+    "submitted": "Luogo inviato!",
+    "thanks": "Grazie per il tuo contributo! Il tuo luogo è stato inviato e sarà verificato dal nostro team di moderazione prima di comparire sull'Atlas.",
+    "why": "Così il Vinyl Atlas resta preciso e affidabile per tutta la community.",
+    "gotIt": "Ho capito!"
+  },
+  "join": {
+    "features": [
+      "Cataloga i tuoi dischi, le loro copie e le loro stampe",
+      "Collega il tuo account Discogs per importare la tua collezione",
+      "Stima quanto vale la tua collezione",
+      "Scegli il disco di stasera con Spinning now",
+      "Tieni una lista dei desideri e condividi le tue collezioni"
+    ],
+    "title": "Iscriviti a Vinyl Keeper per mettere mi piace ai luoghi e proporne di nuovi",
+    "intro": "Vinyl Keeper è gratuito e open source. Con un account puoi anche:",
+    "featuresLabel": "Cosa possono fare i membri",
+    "lookInside": "Vuoi dare un'occhiata dentro?"
+  },
+  "byCountry": {
+    "title": "Luoghi per paese",
+    "spots_one": "{{count}} luogo",
+    "spots_other": "{{count}} luoghi",
+    "spots_many": "{{count}} luoghi"
+  },
+  "page": {
+    "loadError": "Errore nel caricamento dell'Atlas",
+    "introPublic": "📍 Esplora i migliori luoghi del vinile al mondo, condivisi dalla community di Vinyl Keeper.",
+    "intro": "📍 Esplora, aggiungi e condividi con la community i migliori luoghi del vinile al mondo."
+  },
+  "public": {
+    "metaTitle": "Vinyl Atlas: negozi di dischi, mercatini e luoghi del vinile | Vinyl Keeper",
+    "metaDescription": "Trova negozi di dischi, mercatini e luoghi del vinile in tutto il mondo sul Vinyl Atlas, una mappa gratuita della community condivisa da collezionisti di vinili."
+  }
+}

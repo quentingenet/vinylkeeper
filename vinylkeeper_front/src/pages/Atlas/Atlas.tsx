@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@utils/queryKeys";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import { colors } from "@styles/colors";
+import { useTranslation } from "react-i18next";
 
 interface AtlasProps {
   /** Visitor without an account: read only, liking or suggesting a spot invites to join */
@@ -21,6 +22,7 @@ interface AtlasProps {
 }
 
 export default function Atlas({ isPublic = false }: AtlasProps) {
+  const { t } = useTranslation("atlas");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const openJoin = () => setIsJoinOpen(true);
@@ -59,7 +61,7 @@ export default function Atlas({ isPublic = false }: AtlasProps) {
     return (
       <Box>
         <Typography variant="h6" sx={{ color: "white" }}>
-          Error loading the Atlas
+          {t("page.loadError")}
         </Typography>
       </Box>
     );
@@ -83,8 +85,8 @@ export default function Atlas({ isPublic = false }: AtlasProps) {
             sx={{ textAlign: "center", fontWeight: "bold", mb: 3 }}
           >
             {isPublic
-              ? "📍 Browse the best vinyl spots around the world, shared by the Vinyl Keeper community."
-              : "📍 Browse, add and share the best vinyl spots around the world with the community."}
+              ? t("page.introPublic")
+              : t("page.intro")}
           </Typography>
         </Box>
 

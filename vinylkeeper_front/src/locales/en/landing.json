@@ -1,0 +1,62 @@
+{
+  "metaDescription": "Vinyl Keeper is a free, open-source app to catalog your vinyl collection, discover new records, and share digging spots on an interactive map.",
+  "enter": "Enter",
+  "or": "or",
+  "exploreAtlas": "just explore the Vinyl Atlas",
+  "footer": {
+    "terms": "Terms and conditions",
+    "madeWith": "made with",
+    "by": "by Quentin Genet"
+  },
+  "founder": {
+    "photoAlt": "Quentin Genet, founder of Vinyl Keeper",
+    "title1": "When music and code spin together,",
+    "title2": "cool happens...",
+    "text": "Passionate about music and vinyl, I built Vinyl Keeper: a free, open-source app to manage your records, share your collections with the community, and discover the best vinyl spots around the world on the Vinyl Atlas. Thank you for using it, and for keeping the passion for vinyl alive!"
+  },
+  "preview": {
+    "dialogLabel": "A look inside VinylKeeper",
+    "close": "Close preview",
+    "previous": "Previous screenshot",
+    "next": "Next screenshot",
+    "show": "Show screenshot {{number}}: {{title}}",
+    "slides": {
+      "dashboard": {
+        "title": "Dashboard",
+        "description": "Your collection at a glance: albums, artists and collections stats, your latest additions and what the community has added recently."
+      },
+      "add": {
+        "title": "Add vinyls",
+        "description": "Search the Discogs catalogue by album or artist and add the records you own to your collections in a few clicks."
+      },
+      "collections": {
+        "title": "Collections",
+        "description": "Browse, search and sort your records, keep a wishlist, and make a collection public to share it with the community."
+      },
+      "atlas": {
+        "title": "Vinyl Atlas",
+        "description": "Discover record shops, flea markets and vinyl spots on the community map of the Vinyl Atlas, and suggest your own favourite spots."
+      }
+    }
+  },
+  "tutorial": {
+    "welcome": "Welcome to VinylKeeper",
+    "back": "Back",
+    "start": "Get Started",
+    "next": "Next",
+    "steps": {
+      "add": {
+        "title": "Add Vinyls",
+        "content": "After searching for an album or artist, you can select a collection and add your discoveries!"
+      },
+      "collections": {
+        "title": "Collections",
+        "content": "You can like collections and choose to make your collections public to share their content with other users. Simply switch between private and public! If a collection is public, all users can explore it and like it."
+      },
+      "atlas": {
+        "title": "Vinyl Atlas",
+        "content": "Share and discover the spots of the vinyl culture community on the Atlas: shops, flea markets..."
+      }
+    }
+  }
+}
