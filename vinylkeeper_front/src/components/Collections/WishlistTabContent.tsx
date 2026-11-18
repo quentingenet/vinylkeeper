@@ -4,7 +4,7 @@ import MediaCard from "@components/Collections/MediaCard";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
 import LoadingCenter from "@components/UI/LoadingCenter";
 import EmptyState from "@components/UI/EmptyState";
-import styles from "../../styles/pages/Collection.module.scss";
+import CardGrid from "@components/Collections/CardGrid";
 import { useTranslation } from "react-i18next";
 
 interface WishlistTabContentProps {
@@ -59,7 +59,7 @@ export default function WishlistTabContent({
         <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
           {t("wishlist.results", { term: debouncedSearchTerm, count: total })}
         </Typography>
-        <div className={styles.resultsContainer}>
+        <CardGrid>
           {items.map((item) => (
             <MediaCard
               key={item.id}
@@ -71,7 +71,7 @@ export default function WishlistTabContent({
               imageSize={{ w: 300, h: 300, q: 75 }}
             />
           ))}
-        </div>
+        </CardGrid>
         {totalPages > 1 && (
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
             <PaginationWithEllipsis count={totalPages} page={page} onChange={onPageChange} />
@@ -87,7 +87,7 @@ export default function WishlistTabContent({
 
   return (
     <>
-      <div className={styles.resultsContainer}>
+      <CardGrid>
         {items.map((item) => (
           <MediaCard
             key={item.id}
@@ -99,7 +99,7 @@ export default function WishlistTabContent({
             imageSize={{ w: 500, h: 500, q: 85 }}
           />
         ))}
-      </div>
+      </CardGrid>
       {totalPages > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <PaginationWithEllipsis count={totalPages} page={page} onChange={onPageChange} />

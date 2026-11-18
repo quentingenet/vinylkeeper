@@ -73,7 +73,7 @@ export default function Atlas({ isPublic = false }: AtlasProps) {
         backgroundColor: colors.raised,
         color: colors.textMuted,
         // Public: under the bar of PublicAtlas, the page fills what is left of the screen, no more
-        ...(isPublic ? { flex: 1, pb: 5 } : { minHeight: "100vh" }),
+        ...(isPublic ? { flex: 1, pb: 5 } : { minHeight: "var(--app-height)" }),
         position: "relative",
       }}
     >

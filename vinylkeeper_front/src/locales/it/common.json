@@ -54,6 +54,7 @@
     "home": "Vai alla home"
   },
   "scanner": {
-    "installing": "Lo scanner è in fase di installazione, riprova tra poco."
+    "installing": "Lo scanner è in fase di installazione, riprova tra poco.",
+    "cameraDenied": "Consenti a Vinyl Keeper di usare la fotocamera nelle Impostazioni del telefono per scansionare un codice a barre."
   }
 }

@@ -21,7 +21,8 @@
     // The scrollbar compensation of the popups (mui-fixed) is a padding: it must stay inside the width
     box-sizing: border-box;
     position: fixed;
-    bottom: 0;
+    // Above the home bar of the iPhone (0 elsewhere)
+    bottom: var(--safe-bottom);
     animation: fadeIn 4s;
 
     & > * {

@@ -1,11 +1,12 @@
-import { SecureStorage } from "@aparajita/capacitor-secure-storage";
+import { KeychainAccess, SecureStorage } from "@aparajita/capacitor-secure-storage";
+import { getPlatform } from "./CapacitorUtils";
 import { logger } from "./logger";
 
 /**
- * The session of the Android app. The browser keeps its tokens in httpOnly cookies; the app has
+ * The session of the native app. The browser keeps its tokens in httpOnly cookies; the app has
  * no cookie to trust, it holds its two tokens itself and sends them as "Authorization: Bearer".
- * They live in the Android Keystore (encrypted at rest), never in localStorage, which any script
- * of the WebView can read. A copy stays in memory so a request does not wait on the Keystore.
+ * They live in the Android Keystore or the iOS Keychain (encrypted at rest), never in localStorage,
+ * which any script of the WebView can read. A copy stays in memory so a request does not wait on them.
  */
 export interface NativeTokens {
   accessToken: string;
@@ -24,6 +25,11 @@ const loaded = (): Promise<void> => {
   loading ??= (async () => {
     try {
       await SecureStorage.setKeyPrefix(KEY_PREFIX);
+      if (getPlatform() === "ios") {
+        // Readable only while the phone is unlocked, and only on this phone: never copied to a backup restored
+        // on another device, nor synchronized with iCloud
+        await SecureStorage.setDefaultKeychainAccess(KeychainAccess.whenUnlockedThisDeviceOnly);
+      }
       const [accessToken, refreshToken] = await Promise.all([
         SecureStorage.getItem(ACCESS_KEY),
         SecureStorage.getItem(REFRESH_KEY),

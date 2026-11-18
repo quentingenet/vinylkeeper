@@ -50,7 +50,7 @@
     "dismissFailed": "Não foi possível descartar o reporte.",
     "removed": "Local retirado do mapa, os seus reportes estão resolvidos.",
     "removeFailed": "Não foi possível retirar o local.",
-    "title": "Reportes de locais ({{count}} abertos)",
+    "title": "Reportes de locais (abertos: {{count}})",
     "shown": "Reportes mostrados",
     "open": "Abertos",
     "all": "Todos",
@@ -94,5 +94,53 @@
     "view": "Ver os detalhes",
     "edit": "Editar o local",
     "remove": "Retirar do mapa"
+  },
+  "discogsUsage": {
+    "title": "Utilização da API do Discogs",
+    "loading": "A carregar a utilização do Discogs",
+    "loadError": "Não foi possível carregar a utilização do Discogs.",
+    "currentHour": "Esta hora",
+    "last24Hours": "Últimas 24 horas",
+    "calls": "{{calls}} de {{capacity}} pedidos",
+    "rateLimited_one": "{{count}} pedido recusado pelo Discogs (429) em 24 horas",
+    "rateLimited_other": "{{count}} pedidos recusados pelo Discogs (429) em 24 horas",
+    "lowestRemaining_one": "Quota restante mais baixa vista: {{count}} pedido por minuto",
+    "lowestRemaining_other": "Quota restante mais baixa vista: {{count}} pedidos por minuto",
+    "hoursChart": "Pedidos por hora nas últimas 24 horas",
+    "hourBar_one": "{{hour}}: {{count}} pedido",
+    "hourBar_other": "{{hour}}: {{count}} pedidos",
+    "delay_one": "Os contadores podem ter até {{count}} segundo de atraso.",
+    "delay_other": "Os contadores podem ter até {{count}} segundos de atraso.",
+    "columns": {
+      "source": "Origem",
+      "currentHour": "Esta hora",
+      "last24Hours": "24 horas",
+      "rateLimitedColumn": "Recusados (429)"
+    },
+    "sources": {
+      "search": "Pesquisa",
+      "metadata": "Fichas de discos e artistas",
+      "price": "Valor das coleções",
+      "import": "Importação do Discogs",
+      "enrichment": "Enriquecimento noturno",
+      "oauth": "Ligação ao Discogs"
+    },
+    "rateLimited_many": "{{count}} pedidos recusados pelo Discogs (429) em 24 horas",
+    "lowestRemaining_many": "Quota restante mais baixa vista: {{count}} pedidos por minuto",
+    "hourBar_many": "{{hour}}: {{count}} pedidos",
+    "delay_many": "Os contadores podem ter até {{count}} segundos de atraso."
+  },
+  "collectionReports": {
+    "title": "Denúncias de coleções (abertas: {{count}})",
+    "loadError": "Erro ao carregar as denúncias de coleções",
+    "noneOpen": "Nenhuma denúncia aberta: todas as coleções públicas parecem corretas.",
+    "owner": "de {{name}}",
+    "privateNow": "Agora privada",
+    "resolved": "Denúncia resolvida, com as outras denúncias abertas desta coleção.",
+    "reasons": {
+      "offensive": "Ofensivo",
+      "spam": "Spam",
+      "other": "Outro"
+    }
   }
 }

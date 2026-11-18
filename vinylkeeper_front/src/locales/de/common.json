@@ -54,6 +54,7 @@
     "home": "Zur Startseite"
   },
   "scanner": {
-    "installing": "Der Scanner wird installiert, versuche es gleich noch einmal."
+    "installing": "Der Scanner wird installiert, versuche es gleich noch einmal.",
+    "cameraDenied": "Erlaube Vinyl Keeper in den Einstellungen deines Telefons, die Kamera zu nutzen, um einen Barcode zu scannen."
   }
 }

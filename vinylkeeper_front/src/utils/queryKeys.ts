@@ -35,7 +35,10 @@ export const queryKeys = {
     pendingList: (page: number, limit: number) => ["pending-moderation-requests", page, limit] as const,
     stats: () => ["moderation-stats"] as const,
     placeReports: (status: string, page: number) => ["place-reports", status, page] as const,
+    discogsUsage: () => ["discogs-usage"] as const,
     allPlaceReports: () => ["place-reports"] as const,
+    collectionReports: (status: string, page: number) => ["collection-reports", status, page] as const,
+    allCollectionReports: () => ["collection-reports"] as const,
   },
   dashboard: {
     stats: () => ["dashboard-stats"] as const,

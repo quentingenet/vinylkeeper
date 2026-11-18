@@ -24,7 +24,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: "100vh",
+    minHeight: "var(--app-height)",
     backgroundColor: colors.raised,
     color: colors.textLight,
     textAlign: "center",

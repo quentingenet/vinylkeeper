@@ -78,11 +78,17 @@
     "pending": "A reavaliar, faltam {{count}}",
     "pendingHint": "Os preços do Discogs são pedidos um a um, a estimativa atualiza-se à medida que chegam.",
     "button": "Reavaliar",
-    "nextOn": "Uma reavaliação por dia. A próxima é possível em {{when}}.",
-    "oncePerDay": "Uma reavaliação por dia.",
+    "nextIn": "Podes reavaliar de novo dentro de {{remaining}}.",
+    "oncePer_one": "Uma reavaliação por dia.",
+    "oncePer_other": "Uma reavaliação a cada {{count}} dias.",
+    "oncePer_many": "Uma reavaliação a cada {{count}} dias.",
     "upToDate": "Atualizado",
-    "upToDateHint": "Todos os preços das tuas coleções têm menos de um dia.",
-    "hint": "Atualiza todas as tuas coleções, uma vez por dia. Os preços são pedidos de novo em segundo plano, podes sair da página."
+    "upToDateHint_one": "Todos os preços das tuas coleções têm menos de um dia.",
+    "upToDateHint_other": "Todos os preços das tuas coleções têm menos de {{count}} dias.",
+    "upToDateHint_many": "Todos os preços das tuas coleções têm menos de {{count}} dias.",
+    "hint_one": "Atualiza todas as tuas coleções, uma vez por dia. Os preços são pedidos de novo em segundo plano, podes sair da página.",
+    "hint_other": "Atualiza todas as tuas coleções, uma vez a cada {{count}} dias. Os preços são pedidos de novo em segundo plano, podes sair da página.",
+    "hint_many": "Atualiza todas as tuas coleções, uma vez a cada {{count}} dias. Os preços são pedidos de novo em segundo plano, podes sair da página."
   },
   "chart": {
     "albums": "Álbuns",

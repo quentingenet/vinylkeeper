@@ -82,6 +82,9 @@ export interface CollectionValue {
   refreshable: number;
   refreshes_left: number;
   next_refresh_at: string | null;
+  // Set in the .env of the API: days between two re-evaluations, and age past which a price is asked again
+  refresh_interval_days: number;
+  price_max_age_days: number;
 }
 
 export interface ValueRefresh {

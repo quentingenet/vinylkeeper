@@ -34,6 +34,8 @@ const value: CollectionValue = {
   refreshable: 40,
   refreshes_left: 2,
   next_refresh_at: null,
+  refresh_interval_days: 7,
+  price_max_age_days: 7,
 };
 
 const renderCard = () =>
@@ -79,7 +81,7 @@ describe("CollectionValueCard", () => {
     renderCard();
 
     const button = await screen.findByRole("button", { name: "Re-evaluate" });
-    expect(screen.getByText(/Updates every collection you own, once a day\./)).toBeInTheDocument();
+    expect(screen.getByText(/Updates every collection you own, once every 7 days\./)).toBeInTheDocument();
     await userEvent.click(button);
 
     expect(api.refreshValue).toHaveBeenCalledWith();
@@ -93,12 +95,22 @@ describe("CollectionValueCard", () => {
     expect(await screen.findByRole("button", { name: "Re-evaluating, 12 left" })).toBeDisabled();
   });
 
-  it("says when the next re-evaluation is possible once both are used", async () => {
-    api.getValue.mockResolvedValue({ ...value, refreshes_left: 0, next_refresh_at: "2026-10-31T08:00:00Z" });
+  it("counts down to the next re-evaluation once it is used", async () => {
+    const inThreeDays = new Date(Date.now() + (3 * 24 * 60 + 2 * 60 + 30) * 60 * 1000).toISOString();
+    api.getValue.mockResolvedValue({ ...value, refreshes_left: 0, next_refresh_at: inThreeDays });
     renderCard();
 
     expect(await screen.findByRole("button", { name: "Re-evaluate" })).toBeDisabled();
-    expect(screen.getByText(/One re-evaluation a day\. Next one possible on/)).toBeInTheDocument();
+    expect(screen.getByText(/^You can re-evaluate again in 3 days 2 hrs?\.$/)).toBeInTheDocument();
+  });
+
+  it("reads the value again when the wait is over", async () => {
+    const past = new Date(Date.now() - 60 * 1000).toISOString();
+    api.getValue.mockResolvedValue({ ...value, refreshes_left: 0, next_refresh_at: past });
+    renderCard();
+
+    await screen.findByRole("button", { name: "Re-evaluate" });
+    await waitFor(() => expect(api.getValue.mock.calls.length).toBeGreaterThan(1));
   });
 
   it("does not offer a re-evaluation when every price is fresh", async () => {

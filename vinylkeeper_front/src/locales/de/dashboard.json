@@ -78,11 +78,17 @@
     "pending": "Neubewertung läuft, noch {{count}}",
     "pendingHint": "Die Discogs-Preise werden einzeln abgefragt, die Schätzung aktualisiert sich nach und nach.",
     "button": "Neu bewerten",
-    "nextOn": "Eine Neubewertung pro Tag. Die nächste ist am {{when}} möglich.",
-    "oncePerDay": "Eine Neubewertung pro Tag.",
+    "nextIn": "Du kannst in {{remaining}} wieder neu bewerten.",
+    "oncePer_one": "Eine Neubewertung pro Tag.",
+    "oncePer_other": "Eine Neubewertung alle {{count}} Tage.",
+    "oncePer_many": "Eine Neubewertung alle {{count}} Tage.",
     "upToDate": "Aktuell",
-    "upToDateHint": "Alle Preise deiner Sammlungen sind weniger als einen Tag alt.",
-    "hint": "Aktualisiert alle deine Sammlungen, einmal pro Tag. Die Preise werden im Hintergrund neu abgefragt, du kannst die Seite verlassen."
+    "upToDateHint_one": "Alle Preise deiner Sammlungen sind weniger als einen Tag alt.",
+    "upToDateHint_other": "Alle Preise deiner Sammlungen sind weniger als {{count}} Tage alt.",
+    "upToDateHint_many": "Alle Preise deiner Sammlungen sind weniger als {{count}} Tage alt.",
+    "hint_one": "Aktualisiert alle deine Sammlungen, einmal pro Tag. Die Preise werden im Hintergrund neu abgefragt, du kannst die Seite verlassen.",
+    "hint_other": "Aktualisiert alle deine Sammlungen, einmal alle {{count}} Tage. Die Preise werden im Hintergrund neu abgefragt, du kannst die Seite verlassen.",
+    "hint_many": "Aktualisiert alle deine Sammlungen, einmal alle {{count}} Tage. Die Preise werden im Hintergrund neu abgefragt, du kannst die Seite verlassen."
   },
   "chart": {
     "albums": "Alben",

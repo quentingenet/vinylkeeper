@@ -78,11 +78,17 @@
     "pending": "Réévaluation, encore {{count}}",
     "pendingHint": "Les prix Discogs sont demandés un par un, l'estimation se met à jour au fur et à mesure.",
     "button": "Réévaluer",
-    "nextOn": "Une réévaluation par jour. Prochaine possible le {{when}}.",
-    "oncePerDay": "Une réévaluation par jour.",
+    "nextIn": "Tu pourras réévaluer dans {{remaining}}.",
+    "oncePer_one": "Une réévaluation par jour.",
+    "oncePer_other": "Une réévaluation tous les {{count}} jours.",
+    "oncePer_many": "Une réévaluation tous les {{count}} jours.",
     "upToDate": "À jour",
-    "upToDateHint": "Tous les prix de tes collections datent de moins d'un jour.",
-    "hint": "Met à jour toutes tes collections, une fois par jour. Les prix sont redemandés en arrière-plan, tu peux quitter la page."
+    "upToDateHint_one": "Tous les prix de tes collections datent de moins d'un jour.",
+    "upToDateHint_other": "Tous les prix de tes collections datent de moins de {{count}} jours.",
+    "upToDateHint_many": "Tous les prix de tes collections datent de moins de {{count}} jours.",
+    "hint_one": "Met à jour toutes tes collections, une fois par jour. Les prix sont redemandés en arrière-plan, tu peux quitter la page.",
+    "hint_other": "Met à jour toutes tes collections, une fois tous les {{count}} jours. Les prix sont redemandés en arrière-plan, tu peux quitter la page.",
+    "hint_many": "Met à jour toutes tes collections, une fois tous les {{count}} jours. Les prix sont redemandés en arrière-plan, tu peux quitter la page."
   },
   "chart": {
     "albums": "Albums",

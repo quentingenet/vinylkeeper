@@ -1,15 +1,5 @@
-// The small menus and buttons of a collection (Export to, Share): same text on desktop and mobile
-
-export const desktopMenuTextSx = {
-  fontSize: "0.875rem",
-  fontFamily: "Oswald",
-  lineHeight: 1.6,
-};
-
-export const collectionMenuPaperSx = (isMobile: boolean) => ({
-  "& .MuiMenuItem-root": { py: 0.25, minHeight: 32 },
-  "& .MuiTypography-root": isMobile ? { fontSize: "0.95rem" } : desktopMenuTextSx,
-});
+// The small text buttons of a collection that open a menu (Export to, Share to, the language).
+// The menus themselves share the one format of the app: components/UI/appMenuStyles.ts
 
 export const collectionActionButtonSx = {
   minHeight: 30,

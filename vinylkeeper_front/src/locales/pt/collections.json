@@ -228,5 +228,21 @@
     "emptyRecords": "Ainda não há discos nesta coleção.",
     "emptyWishlist": "Ainda não há nada nesta lista de desejos.",
     "metaDescription_many": "Vê a coleção de {{owner}} e descobre vinylkeeper.org. {{count}} discos."
+  },
+  "report": {
+    "more": "Mais ações",
+    "action": "Denunciar abuso",
+    "title": "Denunciar esta coleção",
+    "why": "Porque denuncias {{name}}? Um admin vai verificar. O dono não saberá quem a denunciou.",
+    "reasonLabel": "Motivo da denúncia",
+    "reasons": {
+      "offensive": "Conteúdo ofensivo ou inapropriado",
+      "spam": "Spam ou publicidade",
+      "other": "Outra coisa"
+    },
+    "comment": "Conta-nos mais (opcional)",
+    "send": "Denunciar",
+    "thanks": "Obrigado, um admin vai verificar esta coleção.",
+    "failed": "Não foi possível enviar a denúncia. Tenta mais tarde."
   }
 }

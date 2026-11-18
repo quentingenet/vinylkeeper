@@ -50,7 +50,7 @@
     "dismissFailed": "Le signalement n'a pas pu être écarté.",
     "removed": "Lieu retiré de la carte, ses signalements sont résolus.",
     "removeFailed": "Le lieu n'a pas pu être retiré.",
-    "title": "Signalements de lieux ({{count}} ouverts)",
+    "title": "Signalements de lieux (ouverts : {{count}})",
     "shown": "Signalements affichés",
     "open": "Ouverts",
     "all": "Tous",
@@ -94,5 +94,53 @@
     "view": "Voir les détails",
     "edit": "Modifier le lieu",
     "remove": "Retirer de la carte"
+  },
+  "discogsUsage": {
+    "title": "Utilisation de l'API Discogs",
+    "loading": "Chargement de l'utilisation de Discogs",
+    "loadError": "L'utilisation de Discogs n'a pas pu être chargée.",
+    "currentHour": "Cette heure",
+    "last24Hours": "Dernières 24 heures",
+    "calls": "{{calls}} appels sur {{capacity}}",
+    "rateLimited_one": "{{count}} appel refusé par Discogs (429) en 24 heures",
+    "rateLimited_other": "{{count}} appels refusés par Discogs (429) en 24 heures",
+    "lowestRemaining_one": "Quota restant le plus bas vu : {{count}} appel par minute",
+    "lowestRemaining_other": "Quota restant le plus bas vu : {{count}} appels par minute",
+    "hoursChart": "Appels par heure sur les dernières 24 heures",
+    "hourBar_one": "{{hour}} : {{count}} appel",
+    "hourBar_other": "{{hour}} : {{count}} appels",
+    "delay_one": "Les compteurs peuvent avoir jusqu'à {{count}} seconde de retard.",
+    "delay_other": "Les compteurs peuvent avoir jusqu'à {{count}} secondes de retard.",
+    "columns": {
+      "source": "Source",
+      "currentHour": "Cette heure",
+      "last24Hours": "24 heures",
+      "rateLimitedColumn": "Refusés (429)"
+    },
+    "sources": {
+      "search": "Recherche",
+      "metadata": "Fiches disques et artistes",
+      "price": "Valeur des collections",
+      "import": "Import Discogs",
+      "enrichment": "Enrichissement de nuit",
+      "oauth": "Connexion Discogs"
+    },
+    "rateLimited_many": "{{count}} appels refusés par Discogs (429) en 24 heures",
+    "lowestRemaining_many": "Quota restant le plus bas vu : {{count}} appels par minute",
+    "hourBar_many": "{{hour}} : {{count}} appels",
+    "delay_many": "Les compteurs peuvent avoir jusqu'à {{count}} secondes de retard."
+  },
+  "collectionReports": {
+    "title": "Signalements de collections (ouverts : {{count}})",
+    "loadError": "Erreur de chargement des signalements de collections",
+    "noneOpen": "Aucun signalement ouvert : toutes les collections publiques ont l'air correctes.",
+    "owner": "de {{name}}",
+    "privateNow": "Privée désormais",
+    "resolved": "Signalement résolu, avec les autres signalements ouverts de cette collection.",
+    "reasons": {
+      "offensive": "Choquant",
+      "spam": "Spam",
+      "other": "Autre"
+    }
   }
 }

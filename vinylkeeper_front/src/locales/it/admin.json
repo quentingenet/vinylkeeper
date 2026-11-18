@@ -50,7 +50,7 @@
     "dismissFailed": "Non è stato possibile archiviare la segnalazione.",
     "removed": "Luogo rimosso dalla mappa, le sue segnalazioni sono risolte.",
     "removeFailed": "Non è stato possibile rimuovere il luogo.",
-    "title": "Segnalazioni di luoghi ({{count}} aperte)",
+    "title": "Segnalazioni di luoghi (aperte: {{count}})",
     "shown": "Segnalazioni mostrate",
     "open": "Aperte",
     "all": "Tutte",
@@ -94,5 +94,53 @@
     "view": "Vedi i dettagli",
     "edit": "Modifica il luogo",
     "remove": "Rimuovi dalla mappa"
+  },
+  "discogsUsage": {
+    "title": "Utilizzo dell'API Discogs",
+    "loading": "Caricamento dell'utilizzo di Discogs",
+    "loadError": "Impossibile caricare l'utilizzo di Discogs.",
+    "currentHour": "Quest'ora",
+    "last24Hours": "Ultime 24 ore",
+    "calls": "{{calls}} su {{capacity}} richieste",
+    "rateLimited_one": "{{count}} richiesta rifiutata da Discogs (429) in 24 ore",
+    "rateLimited_other": "{{count}} richieste rifiutate da Discogs (429) in 24 ore",
+    "lowestRemaining_one": "Quota residua più bassa vista: {{count}} richiesta al minuto",
+    "lowestRemaining_other": "Quota residua più bassa vista: {{count}} richieste al minuto",
+    "hoursChart": "Richieste per ora nelle ultime 24 ore",
+    "hourBar_one": "{{hour}}: {{count}} richiesta",
+    "hourBar_other": "{{hour}}: {{count}} richieste",
+    "delay_one": "I contatori possono avere fino a {{count}} secondo di ritardo.",
+    "delay_other": "I contatori possono avere fino a {{count}} secondi di ritardo.",
+    "columns": {
+      "source": "Origine",
+      "currentHour": "Quest'ora",
+      "last24Hours": "24 ore",
+      "rateLimitedColumn": "Rifiutate (429)"
+    },
+    "sources": {
+      "search": "Ricerca",
+      "metadata": "Schede di dischi e artisti",
+      "price": "Valore delle collezioni",
+      "import": "Importazione da Discogs",
+      "enrichment": "Arricchimento notturno",
+      "oauth": "Connessione a Discogs"
+    },
+    "rateLimited_many": "{{count}} richieste rifiutate da Discogs (429) in 24 ore",
+    "lowestRemaining_many": "Quota residua più bassa vista: {{count}} richieste al minuto",
+    "hourBar_many": "{{hour}}: {{count}} richieste",
+    "delay_many": "I contatori possono avere fino a {{count}} secondi di ritardo."
+  },
+  "collectionReports": {
+    "title": "Segnalazioni di collezioni (aperte: {{count}})",
+    "loadError": "Errore nel caricamento delle segnalazioni di collezioni",
+    "noneOpen": "Nessuna segnalazione aperta: tutte le collezioni pubbliche sembrano a posto.",
+    "owner": "di {{name}}",
+    "privateNow": "Ora privata",
+    "resolved": "Segnalazione risolta, con le altre segnalazioni aperte di questa collezione.",
+    "reasons": {
+      "offensive": "Offensivo",
+      "spam": "Spam",
+      "other": "Altro"
+    }
   }
 }

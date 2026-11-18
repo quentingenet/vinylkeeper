@@ -4,10 +4,6 @@ import {
   Box,
   Button,
   IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
   Snackbar,
   Tooltip,
   type Theme,
@@ -16,13 +12,10 @@ import type { SystemStyleObject } from "@mui/system";
 import ShareIcon from "@mui/icons-material/Share";
 import LinkIcon from "@mui/icons-material/Link";
 import EmailIcon from "@mui/icons-material/Email";
-import useDetectMobile from "@hooks/useDetectMobile";
 import { SITE_URL } from "@hooks/usePageMeta";
-import {
-  collectionActionButtonSx,
-  collectionMenuPaperSx,
-  desktopMenuTextSx,
-} from "@components/Collections/collectionMenuStyles";
+import { collectionActionButtonSx } from "@components/Collections/collectionMenuStyles";
+import AppMenu from "@components/UI/AppMenu";
+import AppMenuItem from "@components/UI/AppMenuItem";
 import { sharedCollectionUrl } from "@utils/GlobalUrls";
 import { useTranslation } from "react-i18next";
 
@@ -50,7 +43,6 @@ export default function ShareCollectionButton({
   const { t } = useTranslation("collections");
   const SHARE_LABEL = t("share.label");
   const PRIVATE_LABEL = t("share.private");
-  const { isMobile } = useDetectMobile();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -135,26 +127,11 @@ export default function ShareCollectionButton({
           )}
         </Box>
       </Tooltip>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { sx: collectionMenuPaperSx(isMobile) }, list: { dense: true } }}
-      >
+      <AppMenu anchorEl={anchorEl} onClose={() => setAnchorEl(null)}>
         {options.map(({ label, Icon, action }) => (
-          <MenuItem key={label} onClick={action}>
-            <ListItemIcon sx={{ minWidth: 28 }}>
-              <Icon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary={label}
-              // On the component itself: wins over the ListItemText size of the theme
-              sx={isMobile ? undefined : { "& .MuiListItemText-primary": desktopMenuTextSx }}
-              slotProps={{ primary: { variant: "caption" } }}
-            />
-          </MenuItem>
+          <AppMenuItem key={label} onClick={action} icon={<Icon />} label={label} />
         ))}
-      </Menu>
+      </AppMenu>
       <Snackbar open={message !== null} autoHideDuration={3000} onClose={() => setMessage(null)}>
         <Alert severity="info" onClose={() => setMessage(null)}>
           {message}

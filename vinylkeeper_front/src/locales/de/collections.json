@@ -228,5 +228,21 @@
     "emptyRecords": "Noch keine Platten in dieser Sammlung.",
     "emptyWishlist": "Noch nichts auf dieser Wunschliste.",
     "metaDescription_many": "Schau dir die Sammlung von {{owner}} an und entdecke vinylkeeper.org. {{count}} Platten."
+  },
+  "report": {
+    "more": "Weitere Aktionen",
+    "action": "Missbrauch melden",
+    "title": "Diese Sammlung melden",
+    "why": "Warum meldest du {{name}}? Ein Admin prüft es. Der Besitzer erfährt nicht, wer sie gemeldet hat.",
+    "reasonLabel": "Grund der Meldung",
+    "reasons": {
+      "offensive": "Anstößiger oder unangemessener Inhalt",
+      "spam": "Spam oder Werbung",
+      "other": "Etwas anderes"
+    },
+    "comment": "Erzähl uns mehr (optional)",
+    "send": "Melden",
+    "thanks": "Danke, ein Admin prüft diese Sammlung.",
+    "failed": "Die Meldung konnte nicht gesendet werden. Bitte versuche es später erneut."
   }
 }

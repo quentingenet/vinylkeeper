@@ -30,7 +30,7 @@ function App() {
 
   if (userContext.isUserLoggedIn === null)
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "var(--app-height)" }}>
         <VinylSpinner />
       </div>
     );
@@ -43,7 +43,7 @@ function App() {
     <ErrorBoundary>
     <Suspense
       fallback={
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "var(--app-height)" }}>
           <VinylSpinner />
         </div>
       }

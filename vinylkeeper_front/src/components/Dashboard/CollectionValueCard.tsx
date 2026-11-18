@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
 import MoneyCounter from "@components/Dashboard/MoneyCounter";
-import { formatWhen, refreshButtonState } from "@components/Dashboard/collectionValueLabels";
+import { formatWhen, refreshAllowedAgain, refreshButtonState } from "@components/Dashboard/collectionValueLabels";
 import { dashboardApiService } from "@services/DashboardApiService";
 import { queryKeys } from "@utils/queryKeys";
 import { isApiError } from "@utils/apiError";
@@ -27,6 +27,8 @@ import { formatDate } from "@utils/i18n";
 const CLICK_COOLDOWN_MS = 10_000;
 // While prices are being asked again, the estimate is read again that often
 const PENDING_POLL_MS = 5_000;
+// The countdown to the next re-evaluation shows minutes: twice a minute is enough
+const COUNTDOWN_TICK_MS = 30_000;
 
 /**
  * Low, average and high value of a collection (the largest by default), from Discogs suggested
@@ -57,6 +59,25 @@ export default function CollectionValueCard() {
   });
   const value = valueQuery.data;
 
+  // Countdown to the next re-evaluation: the clock only ticks while one is awaited
+  const counting = !!value && value.refreshes_left === 0 && !!value.next_refresh_at;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!counting) return;
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, COUNTDOWN_TICK_MS);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [counting]);
+  // The wait is over: the value is read again, which gives the button back
+  const allowedAgain = !!value && refreshAllowedAgain(value, now);
+  useEffect(() => {
+    if (allowedAgain) void queryClient.invalidateQueries({ queryKey: ["dashboard-stats", "value"] });
+  }, [allowedAgain, queryClient]);
+
   const refresh = useMutation({
     mutationFn: () => dashboardApiService.refreshValue(),
     onMutate: () => {
@@ -86,7 +107,7 @@ export default function CollectionValueCard() {
     );
   }
 
-  const button = refreshButtonState(value);
+  const button = refreshButtonState(value, now);
   const amounts =
     value.amounts.find((a) => a.currency === (shownCurrency ?? value.currency)) ?? value.amounts[0];
   const shares = [

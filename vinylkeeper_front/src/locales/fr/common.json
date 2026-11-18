@@ -54,6 +54,7 @@
     "home": "Aller à l'accueil"
   },
   "scanner": {
-    "installing": "Le scanner est en cours d'installation, réessaie dans un instant."
+    "installing": "Le scanner est en cours d'installation, réessaie dans un instant.",
+    "cameraDenied": "Autorise Vinyl Keeper à utiliser l'appareil photo dans les Réglages de ton téléphone pour scanner un code-barres."
   }
 }

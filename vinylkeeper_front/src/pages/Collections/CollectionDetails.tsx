@@ -53,6 +53,8 @@ import CollectionExportMenu from "@components/Collections/CollectionExportMenu";
 import BackToCollectionsButton from "@components/Collections/BackToCollectionsButton";
 import CollectionUnavailable from "@components/Collections/CollectionUnavailable";
 import ShareCollectionButton from "@components/Collections/ShareCollectionButton";
+import CollectionReportMenu from "@components/Collections/CollectionReportMenu";
+import { canReportCollection } from "@components/Collections/collectionReportRules";
 import CollectionItemGrid from "@components/Collections/CollectionItemGrid";
 import WishlistTabContent from "@components/Collections/WishlistTabContent";
 import LoadingCenter from "@components/UI/LoadingCenter";
@@ -509,6 +511,12 @@ export default function CollectionDetails() {
 
   // Both ids are needed: two missing ones must not read as the same person
   const isOwner = !!currentUser?.user_uuid && currentUser.user_uuid === collectionDetails.owner?.user_uuid;
+  const canReport = canReportCollection({
+    isLoggedIn: !!isUserLoggedIn,
+    currentUserUuid: currentUser?.user_uuid,
+    ownerUuid: collectionDetails.owner?.user_uuid,
+    isPublic: collectionDetails.is_public,
+  });
 
   return (
     <Box
@@ -524,7 +532,7 @@ export default function CollectionDetails() {
     >
       <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start" }}>
         <BackToCollectionsButton isOwner={isOwner} />
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
           <Typography
             variant="h4"
             component="h1"
@@ -533,6 +541,7 @@ export default function CollectionDetails() {
           >
             {collectionDetails.name || "Collection"}
           </Typography>
+          {canReport && <CollectionReportMenu collectionId={collectionId} collectionName={collectionDetails.name} />}
         </Box>
         <Typography variant="body1" sx={{ color: "text.secondary", marginBottom: "16px" }}>
           {collectionDetails.description || t("details.noDescription")}

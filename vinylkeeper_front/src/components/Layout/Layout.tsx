@@ -70,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <AddRecordProvider>
     <ScrollToTop />
-    <Box sx={{ display: "flex", minHeight: "100vh", overflow: "hidden" }}>
+    <Box sx={{ display: "flex", minHeight: "var(--app-height)", overflow: "hidden" }}>
       {isMobile ? (
         <MobileNavBar setTitlePage={setTitlePage} titlePage={titlePage} />
       ) : (

@@ -54,6 +54,7 @@
     "home": "Ir para o início"
   },
   "scanner": {
-    "installing": "O leitor está a ser instalado, tenta novamente daqui a pouco."
+    "installing": "O leitor está a ser instalado, tenta novamente daqui a pouco.",
+    "cameraDenied": "Permite que o Vinyl Keeper use a câmara nas Definições do teu telemóvel para ler um código de barras."
   }
 }

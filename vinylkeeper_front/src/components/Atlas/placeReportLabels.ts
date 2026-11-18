@@ -7,8 +7,6 @@ export const PLACE_REPORT_ISSUES: PlaceReportIssue[] = ["name", "description", "
 /** What the member reads next to an issue they can tick */
 export const issueLabel = (issue: PlaceReportIssue): string => i18n.t(`atlas:report.issues.${issue}`);
 
-export const REPORT_COMMENT_MAX_LENGTH = 500;
-
 /** "flea market" -> "Flea market", in the language of the interface (a type the app does not know: as it comes) */
 export function placeTypeLabel(name: string): string {
   return i18n.t(`atlas:types.${name}`, { defaultValue: name.charAt(0).toUpperCase() + name.slice(1) });

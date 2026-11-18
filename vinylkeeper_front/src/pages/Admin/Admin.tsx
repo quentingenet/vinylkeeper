@@ -25,6 +25,8 @@ import { useModerationActions } from "@hooks/useModerationActions";
 import ModerationStatsCards from "@components/Admin/ModerationStatsCards";
 import ModerationDetailDialog from "@components/Admin/ModerationDetailDialog";
 import PlaceReportsPanel from "@components/Admin/PlaceReportsPanel";
+import CollectionReportsPanel from "@components/Admin/CollectionReportsPanel";
+import DiscogsUsagePanel from "@components/Admin/DiscogsUsagePanel";
 import AdminSpotEditDialog from "@components/Admin/AdminSpotEditDialog";
 import RemoveSpotDialog from "@components/Admin/RemoveSpotDialog";
 import { ADMIN_LIVE_QUERY, getStatusChip, formatDate, tablePaginationSx } from "@components/Admin/adminUtils";
@@ -145,6 +147,10 @@ const Admin: React.FC = () => {
       )}
 
       <PlaceReportsPanel />
+
+      <CollectionReportsPanel />
+
+      <DiscogsUsagePanel />
 
       {/* Pending Requests */}
       <Typography variant="h5" sx={{ color: "primary.main", mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>

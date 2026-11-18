@@ -7,7 +7,7 @@ import {
   AppUpdateResultCode,
   FlexibleUpdateInstallStatus,
 } from "@capawesome/capacitor-app-update";
-import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { getPlatform } from "@utils/CapacitorUtils";
 import { logger } from "@utils/logger";
 import { useTranslation } from "react-i18next";
 
@@ -35,7 +35,7 @@ function UpdateMessage({ text }: { text: string }) {
 /**
  * In the Android app, offers the update published on Google Play: a flexible update, which downloads in the
  * background while the app stays usable, then asks to restart. Asked once per launch (closing the message is
- * "later"). Renders nothing in a browser, and nothing for an app that was not installed from the Play Store.
+ * "later"). Renders nothing in a browser or on iOS, and nothing for an app that was not installed from the Play Store.
  */
 export default function NativeUpdatePrompt() {
   const { t } = useTranslation();
@@ -76,7 +76,9 @@ export default function NativeUpdatePrompt() {
   }, []);
 
   useEffect(() => {
-    if (!isCapacitorPlatform()) return;
+    // In-app updates are a feature of Google Play: an iPhone app cannot download its own update, so on iOS the
+    // App Store is not asked for nothing at each launch (a link to the App Store page can come once it is published)
+    if (getPlatform() !== "android") return;
     let active = true;
     const safeCheck = () => {
       if (active) void check();

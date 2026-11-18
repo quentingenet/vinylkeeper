@@ -1,4 +1,5 @@
 import { BaseApiService } from "./BaseApiService";
+import type { CollectionReportReason } from "./CollectionApiService";
 
 interface ModerationStatus {
   id: number;
@@ -59,7 +60,27 @@ export interface ModerationStats {
 }
 
 export type PlaceReportIssue = "name" | "description" | "address" | "website" | "type" | "closed";
-type PlaceReportStatus = "open" | "resolved" | "dismissed";
+export type ReportStatus = "open" | "resolved" | "dismissed";
+type PlaceReportStatus = ReportStatus;
+
+/** What every member report shows to the admin, whatever is reported */
+export interface ReportBase {
+  id: number;
+  comment: string | null;
+  status: ReportStatus;
+  reporter: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+/** A page of reports, open ones first */
+export interface ReportList<Report extends ReportBase> {
+  items: Report[];
+  total: number;
+  page: number;
+  limit: number;
+  open_count: number;
+}
 
 /** Every field of a spot an admin can correct, as it is now */
 export interface ReportedPlace {
@@ -77,24 +98,28 @@ export interface ReportedPlace {
   updated_at?: string | null;
 }
 
-export interface PlaceReport {
-  id: number;
+export interface PlaceReport extends ReportBase {
   place: ReportedPlace;
   issues: PlaceReportIssue[];
-  comment: string | null;
-  status: PlaceReportStatus;
-  reporter: string | null;
-  created_at: string;
-  resolved_at: string | null;
 }
 
-export interface PlaceReportList {
-  items: PlaceReport[];
-  total: number;
-  page: number;
-  limit: number;
-  open_count: number;
+export type PlaceReportList = ReportList<PlaceReport>;
+
+/** The reported collection, as it is now */
+export interface ReportedCollection {
+  id: number;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  owner: string | null;
 }
+
+export interface CollectionReport extends ReportBase {
+  collection: ReportedCollection;
+  reason: CollectionReportReason;
+}
+
+export type CollectionReportList = ReportList<CollectionReport>;
 
 export interface AdminPlaceUpdate {
   name?: string;
@@ -104,6 +129,30 @@ export interface AdminPlaceUpdate {
   description?: string | null;
   source_url?: string | null;
   place_type_id?: number;
+}
+
+/** The parts of the app that call Discogs, as counted by the API */
+export type DiscogsUsageSource = "search" | "metadata" | "price" | "import" | "enrichment" | "oauth";
+
+export interface DiscogsUsageTotals {
+  calls: number;
+  rate_limited: number;
+  capacity: number;
+}
+
+export interface DiscogsUsage {
+  current_hour: DiscogsUsageTotals;
+  last_24_hours: DiscogsUsageTotals;
+  by_source: {
+    source: DiscogsUsageSource;
+    calls_current_hour: number;
+    calls_last_24_hours: number;
+    rate_limited_last_24_hours: number;
+  }[];
+  // The last 24 hours, oldest first, the current one last
+  hours: { hour: string; calls: number; rate_limited: number }[];
+  lowest_remaining: number | null;
+  delay_seconds: number;
 }
 
 class AdminApiService extends BaseApiService {
@@ -141,6 +190,26 @@ class AdminApiService extends BaseApiService {
 
   async getModerationStats(): Promise<ModerationStats> {
     return this.get<ModerationStats>("/vk-admin/moderation-stats");
+  }
+
+  /** Calls made to the Discogs API in the current hour and the last 24 hours */
+  async getDiscogsUsage(): Promise<DiscogsUsage> {
+    return this.get<DiscogsUsage>("/vk-admin/discogs-usage");
+  }
+
+  /** Reports of abuse in public collections, open ones first */
+  async getCollectionReports(status: ReportStatus | "all", page = 1, limit = 20): Promise<CollectionReportList> {
+    return this.get<CollectionReportList>(`/vk-admin/collection-reports?status=${status}&page=${page}&limit=${limit}`);
+  }
+
+  /** The collection was dealt with: every open report of it is resolved */
+  async resolveCollectionReport(reportId: number): Promise<CollectionReport> {
+    return this.post<CollectionReport>(`/vk-admin/collection-reports/${reportId}/resolve`);
+  }
+
+  /** Nothing was wrong: only this report is closed */
+  async dismissCollectionReport(reportId: number): Promise<CollectionReport> {
+    return this.post<CollectionReport>(`/vk-admin/collection-reports/${reportId}/dismiss`);
   }
 
   /** Reports of wrong information on Atlas spots, open ones first */

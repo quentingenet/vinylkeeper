@@ -76,11 +76,14 @@
     "pending": "Re-evaluating, {{count}} left",
     "pendingHint": "Discogs prices are asked one by one, the estimate updates as they come.",
     "button": "Re-evaluate",
-    "nextOn": "One re-evaluation a day. Next one possible on {{when}}.",
-    "oncePerDay": "One re-evaluation a day.",
+    "nextIn": "You can re-evaluate again in {{remaining}}.",
+    "oncePer_one": "One re-evaluation a day.",
+    "oncePer_other": "One re-evaluation every {{count}} days.",
     "upToDate": "Up to date",
-    "upToDateHint": "Every price of your collections is less than a day old.",
-    "hint": "Updates every collection you own, once a day. Prices are asked again in the background, you can leave the page."
+    "upToDateHint_one": "Every price of your collections is less than a day old.",
+    "upToDateHint_other": "Every price of your collections is less than {{count}} days old.",
+    "hint_one": "Updates every collection you own, once a day. Prices are asked again in the background, you can leave the page.",
+    "hint_other": "Updates every collection you own, once every {{count}} days. Prices are asked again in the background, you can leave the page."
   },
   "chart": {
     "albums": "Albums",

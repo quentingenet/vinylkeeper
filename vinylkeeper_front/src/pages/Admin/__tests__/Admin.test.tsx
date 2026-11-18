@@ -13,6 +13,10 @@ const admin = vi.hoisted(() => ({
 const atlas = vi.hoisted(() => ({ getPlaceTypes: vi.fn() }));
 vi.mock("@services/AdminApiService", () => ({ adminApiService: admin }));
 vi.mock("@services/AtlasApiService", () => ({ atlasApiService: atlas }));
+// The Discogs gauge has tests of its own (DiscogsUsagePanel.test.tsx)
+vi.mock("@components/Admin/DiscogsUsagePanel", () => ({ default: () => null }));
+// The collection reports too (CollectionReportsPanel.test.tsx)
+vi.mock("@components/Admin/CollectionReportsPanel", () => ({ default: () => null }));
 vi.mock("@contexts/UserContext", () => ({ useUserContext: () => ({ currentUser: { is_admin: true } }) }));
 
 const UPDATED_AT = "2026-10-31T09:15:00Z";
@@ -75,7 +79,9 @@ describe("Admin moderation lists", () => {
     expect(within(dialog).queryByRole("button", { name: "Save and resolve" })).not.toBeInTheDocument();
 
     const website = within(dialog).getByRole("textbox", { name: "Website" });
-    await userEvent.type(website, "https://millerecords.it");
+    // Pasted at once: typed key by key, the dialog renders 23 times and the test outlasts its timeout under load
+    await userEvent.click(website);
+    await userEvent.paste("https://millerecords.it");
     await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() =>

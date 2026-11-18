@@ -2,7 +2,7 @@ import { Box, Typography, Button, Accordion, AccordionSummary, AccordionDetails 
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { streamingHref, streamingPlatforms, streamingQuery } from "@services/MusicStreamingService";
-import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { getPlatform, isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { openInMusicApp } from "@utils/StreamingLauncher";
 import { colors } from "@styles/colors";
 import { useTranslation } from "react-i18next";
@@ -22,8 +22,11 @@ export default function StreamingLinksAccordion({
   const { isMobile } = useDetectMobile();
   const query = streamingQuery(itemTitle, itemArtist, itemType);
   // Intent links are for mobile browsers: the WebView of the native app does not open them, the app
-  // asks the system itself (see openInMusicApp)
+  // asks the system itself. Android: its own plugin (see openInMusicApp). iOS: the plain https link, which
+  // Capacitor hands to the system; iOS opens the music app when it declares the link (universal link),
+  // the web page otherwise
   const isNativeApp = isCapacitorPlatform();
+  const opensWithPlugin = getPlatform() === "android";
   const userAgent = isNativeApp ? "" : navigator.userAgent;
 
   return (
@@ -55,7 +58,7 @@ export default function StreamingLinksAccordion({
               key={platform.name}
               component="a"
               href={streamingHref(platform, query, userAgent)}
-              {...(isNativeApp && {
+              {...(opensWithPlugin && {
                 onClick: (event: React.MouseEvent) => {
                   event.preventDefault();
                   void openInMusicApp(platform, query);

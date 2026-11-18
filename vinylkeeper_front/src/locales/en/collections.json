@@ -214,5 +214,21 @@
     "joinTitle": "Join Vinyl Keeper to see this whole collection",
     "emptyRecords": "No records in this collection yet.",
     "emptyWishlist": "Nothing on this wishlist yet."
+  },
+  "report": {
+    "more": "More actions",
+    "action": "Report abuse",
+    "title": "Report this collection",
+    "why": "Why do you report {{name}}? An admin will check it. The owner is not told who reported it.",
+    "reasonLabel": "Reason of the report",
+    "reasons": {
+      "offensive": "Offensive or inappropriate content",
+      "spam": "Spam or advertising",
+      "other": "Something else"
+    },
+    "comment": "Tell us more (optional)",
+    "send": "Report",
+    "thanks": "Thanks, an admin will check this collection.",
+    "failed": "The report could not be sent. Please try again later."
   }
 }

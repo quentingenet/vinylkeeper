@@ -54,6 +54,7 @@
     "home": "Ir al inicio"
   },
   "scanner": {
-    "installing": "El escáner se está instalando, inténtalo de nuevo en un momento."
+    "installing": "El escáner se está instalando, inténtalo de nuevo en un momento.",
+    "cameraDenied": "Permite que Vinyl Keeper use la cámara en los Ajustes de tu teléfono para escanear un código de barras."
   }
 }

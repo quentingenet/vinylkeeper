@@ -14,4 +14,17 @@ describe("DiscogsCallback", () => {
     expect(screen.getByRole("link", { name: "Open the Vinyl Keeper app" })).toHaveAttribute("href", window.location.href);
     expect(screen.getByRole("link", { name: "Go to my collections" })).toHaveAttribute("href", "/collections");
   });
+
+  it("in the sign-in sheet of the iOS app, hands the answer of Discogs to the app", () => {
+    window.history.replaceState({}, "", "/discogs/callback?app=ios&oauth_token=t&oauth_verifier=v");
+    render(
+      <MemoryRouter>
+        <DiscogsCallback />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("link", { name: "Open the Vinyl Keeper app" })).toHaveAttribute(
+      "href", "org.vinylkeeper.app://discogs/callback?oauth_token=t&oauth_verifier=v");
+    window.history.replaceState({}, "", "/");
+  });
 });

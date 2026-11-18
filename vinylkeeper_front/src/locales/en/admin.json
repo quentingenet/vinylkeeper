@@ -94,5 +94,49 @@
     "view": "View details",
     "edit": "Edit spot",
     "remove": "Remove from the map"
+  },
+  "discogsUsage": {
+    "title": "Discogs API usage",
+    "loading": "Loading the Discogs usage",
+    "loadError": "The Discogs usage could not be loaded.",
+    "currentHour": "This hour",
+    "last24Hours": "Last 24 hours",
+    "calls": "{{calls}} of {{capacity}} calls",
+    "rateLimited_one": "{{count}} call refused by Discogs (429) in 24 hours",
+    "rateLimited_other": "{{count}} calls refused by Discogs (429) in 24 hours",
+    "lowestRemaining_one": "Lowest quota left seen: {{count}} call per minute",
+    "lowestRemaining_other": "Lowest quota left seen: {{count}} calls per minute",
+    "hoursChart": "Calls per hour over the last 24 hours",
+    "hourBar_one": "{{hour}}: {{count}} call",
+    "hourBar_other": "{{hour}}: {{count}} calls",
+    "delay_one": "The counts can be up to {{count}} second late.",
+    "delay_other": "The counts can be up to {{count}} seconds late.",
+    "columns": {
+      "source": "Source",
+      "currentHour": "This hour",
+      "last24Hours": "24 hours",
+      "rateLimitedColumn": "Refused (429)"
+    },
+    "sources": {
+      "search": "Search",
+      "metadata": "Record and artist pages",
+      "price": "Collection value",
+      "import": "Discogs import",
+      "enrichment": "Nightly enrichment",
+      "oauth": "Discogs connection"
+    }
+  },
+  "collectionReports": {
+    "title": "Collection reports ({{count}} open)",
+    "loadError": "Error loading collection reports",
+    "noneOpen": "No open report: every public collection looks fine.",
+    "owner": "by {{name}}",
+    "privateNow": "Private now",
+    "resolved": "Report resolved, with the other open reports of this collection.",
+    "reasons": {
+      "offensive": "Offensive",
+      "spam": "Spam",
+      "other": "Other"
+    }
   }
 }

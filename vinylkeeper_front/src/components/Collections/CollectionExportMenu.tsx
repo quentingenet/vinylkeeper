@@ -2,22 +2,15 @@ import { logger } from "@utils/logger";
 import { useState } from "react";
 import {
   Button,
-  Menu,
-  MenuItem,
-  ListItemText,
-  Typography,
   Box,
 } from "@mui/material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import VinylSpinner from "@components/UI/VinylSpinner";
 import { collectionApiService } from "@services/CollectionApiService";
 import { deliverFile } from "@utils/DownloadUtils";
-import useDetectMobile from "@hooks/useDetectMobile";
-import {
-  collectionActionButtonSx,
-  collectionMenuPaperSx,
-  desktopMenuTextSx,
-} from "@components/Collections/collectionMenuStyles";
+import { collectionActionButtonSx } from "@components/Collections/collectionMenuStyles";
+import AppMenu from "@components/UI/AppMenu";
+import AppMenuItem from "@components/UI/AppMenuItem";
 import { useTranslation } from "react-i18next";
 
 // Desktop: the size of the texts around the menu ("Created on", the buttons), in the font
@@ -31,7 +24,6 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
   const { t } = useTranslation("collections");
   const [activeExportKey, setActiveExportKey] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const { isMobile } = useDetectMobile();
 
   const finishExport = () => {
     window.setTimeout(() => {
@@ -123,37 +115,24 @@ export default function CollectionExportMenu({ collectionId }: CollectionExportM
       >
         {t("export.button")}
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-        slotProps={{
-          paper: {
-            sx: collectionMenuPaperSx(isMobile),
-          },
-          list: { dense: true },
-        }}
-      >
+      <AppMenu anchorEl={anchorEl} onClose={handleClose}>
         {exportItems.map(({ key, label, action }) => (
-          <MenuItem key={key} onClick={() => void action()}>
-            {isExporting && activeExportKey === key ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <VinylSpinner size={18} />
-                <Typography variant="caption">{t("export.exporting")}</Typography>
-              </Box>
-            ) : (
-              <ListItemText
-                primary={label}
-                // On the component itself: wins over the ListItemText size of the theme
-                sx={isMobile ? undefined : { "& .MuiListItemText-primary": desktopMenuTextSx }}
-                slotProps={{
-                  primary: { variant: "caption" },
-                }}
-              />
-            )}
-          </MenuItem>
+          <AppMenuItem
+            key={key}
+            onClick={() => void action()}
+            label={
+              isExporting && activeExportKey === key ? (
+                <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+                  <VinylSpinner size={16} />
+                  {t("export.exporting")}
+                </Box>
+              ) : (
+                label
+              )
+            }
+          />
         ))}
-      </Menu>
+      </AppMenu>
     </>
   );
 }

@@ -8,8 +8,10 @@ export class DiscogsImportApiService extends BaseApiService {
   }
 
   /** The Discogs page where the user authorizes VinylKeeper; Discogs then sends them back to the app */
-  async connect(): Promise<string> {
-    return (await this.post<{ authorize_url: string }>("/discogs-import/connect")).authorize_url;
+  async connect(platform?: "ios"): Promise<string> {
+    // The iOS app comes back through its own relay: the back marks its callback (app=ios)
+    const body = platform ? { platform } : undefined;
+    return (await this.post<{ authorize_url: string }>("/discogs-import/connect", body)).authorize_url;
   }
 
   /** The Android app is back from Discogs through its App Link: its own session finishes the connection */

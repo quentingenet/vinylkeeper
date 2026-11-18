@@ -31,7 +31,7 @@ export default function AddRecordFab() {
         sx={{
           position: "fixed",
           right: { xs: 16, md: 32 },
-          bottom: { xs: 16, md: 32 },
+          bottom: { xs: "calc(16px + var(--safe-bottom))", md: 32 },
           gap: 1,
           backgroundColor: "primary.main",
           color: colors.deep,

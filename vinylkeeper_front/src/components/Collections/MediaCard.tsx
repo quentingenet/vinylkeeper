@@ -17,6 +17,7 @@ import { fadeInImageStyle, revealImage } from "@utils/ImageFadeIn";
 import styles from "../../styles/pages/Collection.module.scss";
 import { colors } from "@styles/colors";
 import { useTranslation } from "react-i18next";
+import { useCompactCards } from "@components/Collections/compactCards";
 
 interface MediaCardItem {
   title?: string;
@@ -38,6 +39,9 @@ interface MediaCardProps {
   imageSize?: { w: number; h: number; q: number };
 }
 
+// Two cards per row on a phone (CardGrid): everything is drawn smaller, the cover keeps its square
+const COMPACT = { button: "28px", icon: "16px", titleSize: "1rem", subtitleSize: "0.8rem", badgeSize: "0.75rem" };
+
 const iconButtonSx = {
   backgroundColor: "rgba(0, 0, 0, 0.5)",
   width: "32px",
@@ -58,6 +62,11 @@ export default function MediaCard({
   onGotIt,
   imageSize = { w: 300, h: 300, q: 75 },
 }: MediaCardProps) {
+  const compact = useCompactCards();
+  const buttonSx = compact ? { ...iconButtonSx, width: COMPACT.button, height: COMPACT.button } : iconButtonSx;
+  const buttonIconSx = { color: "white", fontSize: compact ? COMPACT.icon : "20px" };
+  // A square cover as wide as the card, instead of 250px high
+  const coverSx = compact ? { width: "100%", height: "auto", aspectRatio: "1 / 1" } : { height: 250 };
   const { t } = useTranslation("collections");
   const title = item.title || "";
   // Albums are stored as "Artist - Title": artist on the first line, the rest on the second.
@@ -82,8 +91,8 @@ export default function MediaCard({
       onClick={onPlay}
       className={styles.resultCard}
       sx={{
-        width: 250,
-        height: 350,
+        width: compact ? "100%" : 250,
+        height: compact ? "100%" : 350,
         borderRadius: "8px",
         cursor: "pointer",
         position: "relative",
@@ -96,8 +105,8 @@ export default function MediaCard({
       <Box
         sx={{
           position: "absolute",
-          top: 10,
-          right: 10,
+          top: compact ? 6 : 10,
+          right: compact ? 6 : 10,
           display: "flex",
           flexDirection: "row",
           gap: 1,
@@ -109,9 +118,9 @@ export default function MediaCard({
             e.stopPropagation();
             onPlay();
           }}
-          sx={iconButtonSx}
+          sx={buttonSx}
         >
-          <PlayArrowIcon sx={{ color: "white", fontSize: "20px" }} />
+          <PlayArrowIcon sx={buttonIconSx} />
         </IconButton>
         {onGotIt && (
           <Tooltip title={t(item.entity_type === "artist" ? ARTIST_TO_COLLECTION_TOOLTIP : GOT_IT_TOOLTIP)}>
@@ -121,9 +130,9 @@ export default function MediaCard({
                 e.stopPropagation();
                 onGotIt();
               }}
-              sx={iconButtonSx}
+              sx={buttonSx}
             >
-              <DoubleArrowIcon sx={{ color: "white", fontSize: "20px" }} />
+              <DoubleArrowIcon sx={buttonIconSx} />
             </IconButton>
           </Tooltip>
         )}
@@ -133,10 +142,10 @@ export default function MediaCard({
               e.stopPropagation();
               onDelete();
             }}
-            sx={iconButtonSx}
+            sx={buttonSx}
             aria-label={t("media.delete")}
           >
-            <DeleteIcon sx={{ color: "white", fontSize: "20px" }} />
+            <DeleteIcon sx={buttonIconSx} />
           </IconButton>
         )}
       </Box>
@@ -146,8 +155,8 @@ export default function MediaCard({
           aria-label={item.copies_count ? t("media.copies", { count: badgeCount }) : t("media.pressings", { count: badgeCount })}
           sx={{
             position: "absolute",
-            top: 10,
-            left: 10,
+            top: compact ? 6 : 10,
+            left: compact ? 6 : 10,
             zIndex: 2,
             px: 1,
             py: 0.25,
@@ -155,7 +164,7 @@ export default function MediaCard({
             backgroundColor: "primary.main",
             color: colors.deep,
             fontWeight: "bold",
-            fontSize: "0.9rem",
+            fontSize: compact ? COMPACT.badgeSize : "0.9rem",
           }}
         >
           ×{badgeCount}
@@ -166,9 +175,8 @@ export default function MediaCard({
         <CardMedia
           key={item.image_url}
           component="img"
-          height={250}
           onLoad={revealImage}
-          sx={{ ...fadeInImageStyle, objectFit: "contain" }}
+          sx={{ ...fadeInImageStyle, ...coverSx, objectFit: "contain" }}
           image={
             buildProxyImageUrl(
               item.image_url,
@@ -183,13 +191,13 @@ export default function MediaCard({
       ) : (
         <Box
           sx={{
-            height: 250,
+            ...coverSx,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Album sx={{ opacity: 0.7, width: 150, height: 150, color: "primary.main" }} />
+          <Album sx={{ opacity: 0.7, width: compact ? "55%" : 150, height: compact ? "55%" : 150, color: "primary.main" }} />
         </Box>
       )}
 
@@ -207,15 +215,15 @@ export default function MediaCard({
           width: "100%",
           // The padding stays inside the card width, or the centered content overflows both sides
           boxSizing: "border-box",
-          px: 2.5,
-          py: 1.25,
-          "&:last-child": { pb: 1.25 },
-          gap: 0.5,
+          px: compact ? 1 : 2.5,
+          py: compact ? 1 : 1.25,
+          "&:last-child": { pb: compact ? 1 : 1.25 },
+          gap: compact ? 0.25 : 0.5,
         }}
       >
         <Typography
           sx={{
-            fontSize: "1.4rem",
+            fontSize: compact ? COMPACT.titleSize : "1.4rem",
             textAlign: "center",
             color: "primary.main",
             fontWeight: "bold",
@@ -234,7 +242,7 @@ export default function MediaCard({
           <Typography
             variant="h6"
             sx={{
-              fontSize: "1rem",
+              fontSize: compact ? COMPACT.subtitleSize : "1rem",
               textAlign: "center",
               lineHeight: 1.2,
               width: "100%",
@@ -248,7 +256,7 @@ export default function MediaCard({
         )}
         {entityBadge !== null && (
           <Typography
-            sx={{ fontSize: "0.9rem", textAlign: "center", color: "text.secondary" }}
+            sx={{ fontSize: compact ? COMPACT.subtitleSize : "0.9rem", textAlign: "center", color: "text.secondary" }}
           >
             {entityBadge}
           </Typography>

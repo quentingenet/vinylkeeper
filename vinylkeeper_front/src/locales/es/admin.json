@@ -50,7 +50,7 @@
     "dismissFailed": "No se pudo descartar el aviso.",
     "removed": "Lugar retirado del mapa, sus avisos están resueltos.",
     "removeFailed": "No se pudo retirar el lugar.",
-    "title": "Avisos de lugares ({{count}} abiertos)",
+    "title": "Avisos de lugares (abiertos: {{count}})",
     "shown": "Avisos mostrados",
     "open": "Abiertos",
     "all": "Todos",
@@ -94,5 +94,53 @@
     "view": "Ver los detalles",
     "edit": "Editar el lugar",
     "remove": "Retirar del mapa"
+  },
+  "discogsUsage": {
+    "title": "Uso de la API de Discogs",
+    "loading": "Cargando el uso de Discogs",
+    "loadError": "No se pudo cargar el uso de Discogs.",
+    "currentHour": "Esta hora",
+    "last24Hours": "Últimas 24 horas",
+    "calls": "{{calls}} de {{capacity}} llamadas",
+    "rateLimited_one": "{{count}} llamada rechazada por Discogs (429) en 24 horas",
+    "rateLimited_other": "{{count}} llamadas rechazadas por Discogs (429) en 24 horas",
+    "lowestRemaining_one": "Cuota restante más baja vista: {{count}} llamada por minuto",
+    "lowestRemaining_other": "Cuota restante más baja vista: {{count}} llamadas por minuto",
+    "hoursChart": "Llamadas por hora en las últimas 24 horas",
+    "hourBar_one": "{{hour}}: {{count}} llamada",
+    "hourBar_other": "{{hour}}: {{count}} llamadas",
+    "delay_one": "Los contadores pueden llevar hasta {{count}} segundo de retraso.",
+    "delay_other": "Los contadores pueden llevar hasta {{count}} segundos de retraso.",
+    "columns": {
+      "source": "Origen",
+      "currentHour": "Esta hora",
+      "last24Hours": "24 horas",
+      "rateLimitedColumn": "Rechazadas (429)"
+    },
+    "sources": {
+      "search": "Búsqueda",
+      "metadata": "Fichas de discos y artistas",
+      "price": "Valor de las colecciones",
+      "import": "Importación de Discogs",
+      "enrichment": "Enriquecimiento nocturno",
+      "oauth": "Conexión con Discogs"
+    },
+    "rateLimited_many": "{{count}} llamadas rechazadas por Discogs (429) en 24 horas",
+    "lowestRemaining_many": "Cuota restante más baja vista: {{count}} llamadas por minuto",
+    "hourBar_many": "{{hour}}: {{count}} llamadas",
+    "delay_many": "Los contadores pueden llevar hasta {{count}} segundos de retraso."
+  },
+  "collectionReports": {
+    "title": "Denuncias de colecciones (abiertas: {{count}})",
+    "loadError": "Error al cargar las denuncias de colecciones",
+    "noneOpen": "Ninguna denuncia abierta: todas las colecciones públicas parecen correctas.",
+    "owner": "de {{name}}",
+    "privateNow": "Ahora privada",
+    "resolved": "Denuncia resuelta, con las demás denuncias abiertas de esta colección.",
+    "reasons": {
+      "offensive": "Ofensivo",
+      "spam": "Spam",
+      "other": "Otro"
+    }
   }
 }

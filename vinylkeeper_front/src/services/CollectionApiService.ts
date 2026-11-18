@@ -39,6 +39,10 @@ export interface CollectionCopyResponse {
   name: string;
 }
 
+/** Why a member reports a public collection */
+export type CollectionReportReason = "offensive" | "spam" | "other";
+export const COLLECTION_REPORT_REASONS: CollectionReportReason[] = ["offensive", "spam", "other"];
+
 export class CollectionApiService extends BaseApiService {
   constructor() {
     super();
@@ -115,6 +119,18 @@ export class CollectionApiService extends BaseApiService {
 
   async unlikeCollection(collectionId: number): Promise<LikeStatusResponse> {
     return this.delete<LikeStatusResponse>(`/collections/${collectionId}/like`);
+  }
+
+  /** Abuse in a public collection of another member: the admins check it */
+  async reportCollection(
+    collectionId: number,
+    reason: CollectionReportReason,
+    comment: string,
+  ): Promise<{ message: string }> {
+    return this.post<{ message: string }>(`/collections/${collectionId}/reports`, {
+      reason,
+      comment: comment.trim() || null,
+    });
   }
 
   async getCollections(
@@ -257,6 +273,8 @@ export const collectionApiService = {
     collectionApiServiceInstance.likeCollection(collectionId),
   unlikeCollection: (collectionId: number) =>
     collectionApiServiceInstance.unlikeCollection(collectionId),
+  reportCollection: (collectionId: number, reason: CollectionReportReason, comment: string) =>
+    collectionApiServiceInstance.reportCollection(collectionId, reason, comment),
   getCollections: (page: number = 1, itemsPerPage: number = ITEMS_PER_PAGE) =>
     collectionApiServiceInstance.getCollections(page, itemsPerPage),
   getPublicCollections: (

@@ -12,9 +12,15 @@ const storage = {
     store.delete(key);
     return Promise.resolve();
   }),
+  setDefaultKeychainAccess: vi.fn(() => Promise.resolve()),
 };
+const platform = vi.hoisted(() => ({ value: "android" as "android" | "ios" }));
 
-vi.mock("@aparajita/capacitor-secure-storage", () => ({ SecureStorage: storage }));
+vi.mock("@aparajita/capacitor-secure-storage", () => ({
+  SecureStorage: storage,
+  KeychainAccess: { whenUnlockedThisDeviceOnly: 1 },
+}));
+vi.mock("../CapacitorUtils", () => ({ getPlatform: () => platform.value }));
 vi.mock("../logger", () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
 
 /** The module keeps its tokens in memory: each test starts from a fresh load. */
@@ -27,6 +33,22 @@ describe("nativeSession", () => {
   beforeEach(() => {
     store.clear();
     vi.clearAllMocks();
+    platform.value = "android";
+  });
+
+  it("keeps the iOS tokens on this phone only, readable while it is unlocked", async () => {
+    platform.value = "ios";
+    const session = await freshSession();
+    await session.getAccessToken();
+
+    expect(storage.setDefaultKeychainAccess).toHaveBeenCalledWith(1);
+  });
+
+  it("leaves the Android Keystore as it is", async () => {
+    const session = await freshSession();
+    await session.getAccessToken();
+
+    expect(storage.setDefaultKeychainAccess).not.toHaveBeenCalled();
   });
 
   it("has no session on a fresh device", async () => {

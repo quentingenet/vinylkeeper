@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
-const native = vi.hoisted(() => ({ value: true }));
-vi.mock("@utils/CapacitorUtils", () => ({ isCapacitorPlatform: () => native.value }));
+const native = vi.hoisted(() => ({ value: true, platform: "android" as "android" | "ios" }));
+vi.mock("@utils/CapacitorUtils", () => ({
+  isCapacitorPlatform: () => native.value,
+  getPlatform: () => (native.value ? native.platform : "web"),
+}));
 
 const launcher = vi.hoisted(() => ({ open: vi.fn() }));
 vi.mock("@capacitor/core", async (importOriginal) => ({
@@ -26,6 +29,7 @@ describe("StreamingLinksAccordion in the Android app", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     native.value = true;
+    native.platform = "android";
     vi.stubEnv("VITE_SPOTIFY_WEB_URL", "https://open.spotify.com/search");
     vi.stubEnv("VITE_SPOTIFY_MOBILE_URL", "spotify:search");
     vi.stubEnv("VITE_DEEZER_WEB_URL", "https://www.deezer.com/search");
@@ -70,5 +74,18 @@ describe("StreamingLinksAccordion in the Android app", () => {
     fireEvent.click(screen.getByRole("link", { name: /Listen on Spotify/ }));
 
     expect(launcher.open).not.toHaveBeenCalled();
+  });
+
+  it("on iOS, follows the plain https link: iOS opens the music app it belongs to, or the web page", () => {
+    native.platform = "ios";
+    renderAccordion();
+
+    const link = screen.getByRole("link", { name: /Listen on Deezer/ });
+    const followed = fireEvent.click(link);
+
+    expect(followed).toBe(true);
+    expect(link).toHaveAttribute("href", "https://www.deezer.com/search/Miles%20Davis%20Kind%20Of%20Blue");
+    expect(launcher.open).not.toHaveBeenCalled();
+    expect(browser.open).not.toHaveBeenCalled();
   });
 });

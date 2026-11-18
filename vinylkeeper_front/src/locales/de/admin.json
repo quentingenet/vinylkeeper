@@ -94,5 +94,53 @@
     "view": "Details ansehen",
     "edit": "Spot bearbeiten",
     "remove": "Von der Karte entfernen"
+  },
+  "discogsUsage": {
+    "title": "Nutzung der Discogs-API",
+    "loading": "Discogs-Nutzung wird geladen",
+    "loadError": "Die Discogs-Nutzung konnte nicht geladen werden.",
+    "currentHour": "Diese Stunde",
+    "last24Hours": "Letzte 24 Stunden",
+    "calls": "{{calls}} von {{capacity}} Anfragen",
+    "rateLimited_one": "{{count}} Anfrage von Discogs abgelehnt (429) in 24 Stunden",
+    "rateLimited_other": "{{count}} Anfragen von Discogs abgelehnt (429) in 24 Stunden",
+    "lowestRemaining_one": "Niedrigstes gesehenes Restkontingent: {{count}} Anfrage pro Minute",
+    "lowestRemaining_other": "Niedrigstes gesehenes Restkontingent: {{count}} Anfragen pro Minute",
+    "hoursChart": "Anfragen pro Stunde in den letzten 24 Stunden",
+    "hourBar_one": "{{hour}}: {{count}} Anfrage",
+    "hourBar_other": "{{hour}}: {{count}} Anfragen",
+    "delay_one": "Die Zähler können bis zu {{count}} Sekunde verspätet sein.",
+    "delay_other": "Die Zähler können bis zu {{count}} Sekunden verspätet sein.",
+    "columns": {
+      "source": "Quelle",
+      "currentHour": "Diese Stunde",
+      "last24Hours": "24 Stunden",
+      "rateLimitedColumn": "Abgelehnt (429)"
+    },
+    "sources": {
+      "search": "Suche",
+      "metadata": "Platten- und Künstlerseiten",
+      "price": "Sammlungswert",
+      "import": "Discogs-Import",
+      "enrichment": "Nächtliche Anreicherung",
+      "oauth": "Discogs-Verbindung"
+    },
+    "rateLimited_many": "{{count}} Anfragen von Discogs abgelehnt (429) in 24 Stunden",
+    "lowestRemaining_many": "Niedrigstes gesehenes Restkontingent: {{count}} Anfragen pro Minute",
+    "hourBar_many": "{{hour}}: {{count}} Anfragen",
+    "delay_many": "Die Zähler können bis zu {{count}} Sekunden verspätet sein."
+  },
+  "collectionReports": {
+    "title": "Meldungen zu Sammlungen ({{count}} offen)",
+    "loadError": "Fehler beim Laden der Meldungen zu Sammlungen",
+    "noneOpen": "Keine offene Meldung: alle öffentlichen Sammlungen sehen gut aus.",
+    "owner": "von {{name}}",
+    "privateNow": "Jetzt privat",
+    "resolved": "Meldung erledigt, zusammen mit den anderen offenen Meldungen dieser Sammlung.",
+    "reasons": {
+      "offensive": "Anstößig",
+      "spam": "Spam",
+      "other": "Anderes"
+    }
   }
 }

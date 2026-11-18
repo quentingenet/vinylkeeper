@@ -3,9 +3,10 @@ import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import NativeUpdatePrompt from "@components/Native/NativeUpdatePrompt";
 
-const native = vi.hoisted(() => ({ value: true }));
+const native = vi.hoisted(() => ({ value: true, platform: "android" as "android" | "ios" }));
 vi.mock("@utils/CapacitorUtils", () => ({
   isCapacitorPlatform: () => native.value,
+  getPlatform: () => (native.value ? native.platform : "web"),
 }));
 vi.mock("@utils/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
 const app = vi.hoisted(() => ({
@@ -72,6 +73,7 @@ const available = {
 
 describe("NativeUpdatePrompt", () => {
   beforeEach(() => {
+    native.platform = "android";
     native.value = true;
     update.stateListener = undefined;
     app.resume = undefined;
@@ -87,6 +89,14 @@ describe("NativeUpdatePrompt", () => {
 
     expect(update.getAppUpdateInfo).not.toHaveBeenCalled();
     expect(screen.queryByText(/new version/i)).toBeNull();
+  });
+
+  it("does not ask the App Store on iOS: in-app updates are a Google Play feature", () => {
+    native.platform = "ios";
+    render(<NativeUpdatePrompt />);
+
+    expect(update.getAppUpdateInfo).not.toHaveBeenCalled();
+    expect(update.stateListener).toBeUndefined();
   });
 
   it("offers the update, downloads it, then asks to restart", async () => {

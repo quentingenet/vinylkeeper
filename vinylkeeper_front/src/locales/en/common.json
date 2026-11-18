@@ -54,6 +54,7 @@
     "home": "Go to home page"
   },
   "scanner": {
-    "installing": "The scanner is being installed, try again in a moment."
+    "installing": "The scanner is being installed, try again in a moment.",
+    "cameraDenied": "Allow Vinyl Keeper to use the camera in the Settings of your phone to scan a barcode."
   }
 }

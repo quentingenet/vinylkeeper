@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -27,7 +27,10 @@ import VinylSpinner from "@components/UI/VinylSpinner";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { DISCOGS_DISCLAIMER, discogsCollectionUrl } from "@utils/discogsLinks";
 import { Browser } from "@capacitor/browser";
-import { isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { getPlatform, isCapacitorPlatform } from "@utils/CapacitorUtils";
+import { DiscogsAuthSession } from "@utils/DiscogsAuthSession";
+import { discogsOutcomeUrl, parseIosDiscogsReturn } from "@utils/NativeLinks";
+import { useFinishDiscogsConnection } from "@hooks/useFinishDiscogsConnection";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
 import { collectionApiService, type PaginatedCollectionListResponse } from "@services/CollectionApiService";
@@ -146,13 +149,31 @@ export default function DiscogsImportDialog({
     retry: false,
   });
 
+  const navigate = useNavigate();
+  const finishDiscogsConnection = useFinishDiscogsConnection();
+  const isIos = getPlatform() === "ios";
+
+  /** iOS: the Discogs page in the sign-in sheet of iOS, which hands the return back to the app itself */
+  const connectInIosSheet = async (authorizeUrl: string) => {
+    try {
+      const { url } = await DiscogsAuthSession.start({ url: authorizeUrl });
+      const target = parseIosDiscogsReturn(url);
+      await finishDiscogsConnection(target ?? { kind: "discogs-denied" });
+    } catch (error) {
+      // Sheet closed by the member: same as refusing on Discogs; anything else: a failed connection
+      const cancelled = (error as { code?: string } | null)?.code === "CANCELLED";
+      void navigate(discogsOutcomeUrl(cancelled ? "denied" : "error"));
+    }
+  };
+
   const connect = useMutation<string, ApiError>({
-    mutationFn: () => discogsImportApiService.connect(),
+    mutationFn: () => discogsImportApiService.connect(isIos ? "ios" : undefined),
     // Discogs asks the user to authorize VinylKeeper, then sends them back to the collections
     onSuccess: (authorizeUrl) => {
-      // In the app, a Custom Tab over it: the WebView would be left for Discogs and could not come back.
+      if (isIos) void connectInIosSheet(authorizeUrl);
+      // In the Android app, a Custom Tab over it: the WebView would be left for Discogs and could not come back.
       // Discogs then sends the user to the App Link of the site, which reopens the app.
-      if (isCapacitorPlatform()) void Browser.open({ url: authorizeUrl });
+      else if (isCapacitorPlatform()) void Browser.open({ url: authorizeUrl });
       else window.location.assign(authorizeUrl);
     },
   });

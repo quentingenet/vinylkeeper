@@ -1,15 +1,24 @@
+import { useEffect } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { Box, Button, Typography } from "@mui/material";
 import { EGlobalUrls } from "@utils/GlobalUrls";
+import { iosReturnUrl } from "@utils/NativeLinks";
 import { useTranslation } from "react-i18next";
 
 /**
  * Where Discogs sends the user back to. On a phone with the app, the App Link opens the app and
  * this page is never seen. If the link opened in the browser instead (the app is not installed,
  * or the browser did not hand over), the button is a link the system can hand to the app.
+ * In the sign-in sheet of the iOS app, the page hands the answer of Discogs straight to the app.
  */
 export default function DiscogsCallback() {
   const { t } = useTranslation("discogs");
+  const iosReturn = iosReturnUrl(window.location.search);
+
+  useEffect(() => {
+    if (iosReturn) window.location.replace(iosReturn);
+  }, [iosReturn]);
+
   return (
     <Box
       sx={{
@@ -29,7 +38,7 @@ export default function DiscogsCallback() {
       <Typography>
         {t("callback.text")}
       </Typography>
-      <Button variant="contained" href={window.location.href}>
+      <Button variant="contained" href={iosReturn ?? window.location.href}>
         {t("callback.openApp")}
       </Button>
       <Button component={RouterLink} to={EGlobalUrls.COLLECTIONS}>

@@ -1,3 +1,45 @@
+// The safe areas of the iOS app (notch, home bar) and the height of the screen. 0 and 100vh on the web and on
+// Android; iOS (html.platform-ios, see utils/iosShell.ts) gives its own values.
+:root {
+    --safe-top: 0px;
+    --safe-right: 0px;
+    --safe-bottom: 0px;
+    --safe-left: 0px;
+    --app-height: 100vh;
+}
+
+html.platform-ios {
+    --safe-top: env(safe-area-inset-top);
+    --safe-right: env(safe-area-inset-right);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+    // The visible height, the safe areas left out: they are the padding of the body
+    --app-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+
+    body {
+        padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+        box-sizing: border-box;
+        // No rubber band past the top and the bottom of the page
+        overscroll-behavior-y: none;
+    }
+
+    // iOS zooms into a field whose text is smaller than 16px when it gets the focus
+    input,
+    textarea,
+    select,
+    .MuiInputBase-input,
+    .MuiSelect-select {
+        font-size: 16px;
+    }
+
+    // Full screen popups and menus are fixed: the padding of the body does not move them
+    .MuiDialog-paperFullScreen,
+    .MuiDrawer-paper {
+        padding-top: var(--safe-top);
+        padding-bottom: var(--safe-bottom);
+    }
+}
+
 html {
     background-color: $color-raised;
 }

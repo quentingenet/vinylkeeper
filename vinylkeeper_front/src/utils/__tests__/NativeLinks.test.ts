@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { discogsOutcomeUrl, parseAppLink } from "../NativeLinks";
+import { discogsOutcomeUrl, iosReturnUrl, parseAppLink, parseIosDiscogsReturn } from "../NativeLinks";
 
 const TOKEN = "0123456789abcdef0123456789abcdef";
 
@@ -55,5 +55,29 @@ describe("discogsOutcomeUrl", () => {
   it("goes to the collections page, where the import dialog tells the outcome", () => {
     expect(discogsOutcomeUrl("connected")).toBe("/collections?discogs=connected");
     expect(discogsOutcomeUrl("a&b")).toBe("/collections?discogs=a%26b");
+  });
+});
+
+describe("the return of the iOS app", () => {
+  it("the page relays the answer of Discogs to the sign-in sheet, without the mark of the back", () => {
+    expect(iosReturnUrl("?app=ios&oauth_token=t&oauth_verifier=v")).toBe(
+      "org.vinylkeeper.app://discogs/callback?oauth_token=t&oauth_verifier=v");
+    expect(iosReturnUrl("?app=ios&denied=t")).toBe("org.vinylkeeper.app://discogs/callback?denied=t");
+  });
+
+  it("any other return stays on the page (browser, Android)", () => {
+    expect(iosReturnUrl("?oauth_token=t&oauth_verifier=v")).toBeNull();
+    expect(iosReturnUrl("?app=android&oauth_token=t")).toBeNull();
+  });
+
+  it("the app reads what the sheet hands back, and nothing else", () => {
+    expect(parseIosDiscogsReturn("org.vinylkeeper.app://discogs/callback?oauth_token=t&oauth_verifier=v")).toEqual(
+      { kind: "discogs-authorized", oauthToken: "t", oauthVerifier: "v" });
+    expect(parseIosDiscogsReturn("org.vinylkeeper.app://discogs/callback?denied=t")).toEqual({ kind: "discogs-denied" });
+    expect(parseIosDiscogsReturn("org.vinylkeeper.app://discogs/callback?oauth_token=t")).toBeNull();
+    expect(parseIosDiscogsReturn("org.vinylkeeper.app://elsewhere?oauth_token=t&oauth_verifier=v")).toBeNull();
+    expect(parseIosDiscogsReturn("https://evil.example/discogs/callback?oauth_token=t&oauth_verifier=v")).toBeNull();
+    expect(parseIosDiscogsReturn(`org.vinylkeeper.app://discogs/callback?oauth_token=${"x".repeat(300)}&oauth_verifier=v`))
+      .toBeNull();
   });
 });

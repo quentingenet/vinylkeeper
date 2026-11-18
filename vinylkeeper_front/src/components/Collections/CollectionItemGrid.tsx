@@ -5,7 +5,7 @@ import {
 } from "@services/CollectionApiService";
 import MediaCard from "@components/Collections/MediaCard";
 import PaginationWithEllipsis from "@components/UI/PaginationWithEllipsis";
-import styles from "../../styles/pages/Collection.module.scss";
+import CardGrid from "@components/Collections/CardGrid";
 
 type CollectionItem = CollectionAlbumResponse | CollectionArtistResponse;
 
@@ -37,7 +37,7 @@ export default function CollectionItemGrid({
 }: CollectionItemGridProps) {
   return (
     <>
-      <div className={styles.resultsContainer}>
+      <CardGrid>
         {items.map((item) => (
           <MediaCard
             key={item.id}
@@ -48,7 +48,7 @@ export default function CollectionItemGrid({
             imageSize={imageSize}
           />
         ))}
-      </div>
+      </CardGrid>
       {totalPages && totalPages > 1 && page && onPageChange && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
           <PaginationWithEllipsis

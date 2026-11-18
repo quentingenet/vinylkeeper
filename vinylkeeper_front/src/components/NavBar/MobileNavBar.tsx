@@ -139,7 +139,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
   return (
     <>
-      <AppBar position="fixed" sx={{ backgroundColor: colors.deep }}>
+      <AppBar position="fixed" sx={{ backgroundColor: colors.deep, pt: "var(--safe-top)" }}>
         <Toolbar>
           <IconButton edge="start" color="inherit" onClick={handleMenuToggle} aria-label={t("nav:openMenu")}>
             <MenuIcon
