@@ -1,0 +1,148 @@
+# Build of the iOS app without signing, on a macOS runner: proves that the web app, the Capacitor plugins and the
+# Swift code of the app compile for iOS, before any Apple account. Separate from ci.yml (no deployment here).
+# Artifacts: an unsigned .ipa (to sign with a free Apple ID and install on an iPhone), the simulator app (to try in
+# a browser, Appetize for instance), a screenshot of the app started in the simulator, and the Podfile.lock.
+name: iOS build
+
+# On main when the app changes (the API alone does not), on an ios-v* tag (to try a branch before it is merged),
+# or by hand once this file is on main
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["ios-v*"]
+    paths:
+      - "vinylkeeper_front/**"
+      - ".github/workflows/ios-build.yml"
+
+permissions:
+  contents: read
+
+# A new run of the same ref replaces the one in progress
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: iOS app (unsigned)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: vinylkeeper_front
+    env:
+      # The public settings of the production build (repository variables, the values of .env.production)
+      VITE_API_VK_URL: ${{ vars.VITE_API_VK_URL }}
+      VITE_SPOTIFY_WEB_URL: ${{ vars.VITE_SPOTIFY_WEB_URL }}
+      VITE_SPOTIFY_MOBILE_URL: ${{ vars.VITE_SPOTIFY_MOBILE_URL }}
+      VITE_DEEZER_WEB_URL: ${{ vars.VITE_DEEZER_WEB_URL }}
+      VITE_DEEZER_MOBILE_URL: ${{ vars.VITE_DEEZER_MOBILE_URL }}
+      VITE_YOUTUBE_MUSIC_URL: ${{ vars.VITE_YOUTUBE_MUSIC_URL }}
+      WORKSPACE: ios/App/App.xcworkspace
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The production settings are there
+        run: |
+          missing=0
+          for name in VITE_API_VK_URL VITE_SPOTIFY_WEB_URL VITE_DEEZER_WEB_URL VITE_YOUTUBE_MUSIC_URL; do
+            if [ -z "${!name}" ]; then echo "::error::Repository variable $name is not set"; missing=1; fi
+          done
+          exit $missing
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: vinylkeeper_front/package-lock.json
+
+      - run: npm ci
+
+      # The iOS app shows the version of the Android app (npm run version:set changes both)
+      - name: Same version as Android
+        run: npm run -s version:check
+
+      - name: CocoaPods cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            vinylkeeper_front/ios/App/Pods
+            ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('vinylkeeper_front/ios/App/Podfile', 'vinylkeeper_front/ios/App/Podfile.lock', 'vinylkeeper_front/package-lock.json') }}
+
+      # Production build, check that it calls the production API, copy into ios/ and pod install
+      - run: npm run mobile:ios:prod:sync
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      # Must pass: every Swift file, every pod and every plugin compiled for a real iPhone
+      - name: Build for an iPhone, unsigned
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild -workspace "$WORKSPACE" -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee build/device.log | grep -E "error:|warning: .*deprecated|BUILD (SUCCEEDED|FAILED)" || true
+          test -d build/device/Build/Products/Release-iphoneos/App.app
+
+      - name: Package the unsigned .ipa
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/App.app build/ipa/Payload/
+          (cd build/ipa && zip -qry ../VinylKeeper-unsigned.ipa Payload)
+
+      # ML Kit may lack the arm64 simulator slice: the Apple Silicon simulator is tried first, then the Intel one
+      - name: Build for the simulator
+        id: simulator
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          build() {
+            xcodebuild -workspace "$WORKSPACE" -scheme App -configuration Debug \
+              -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" CODE_SIGNING_ALLOWED=NO "$@" \
+              build | tee -a build/sim.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
+          }
+          build || build ARCHS=x86_64 ONLY_ACTIVE_ARCH=NO
+          test -d build/sim/Build/Products/Debug-iphonesimulator/App.app
+
+      - name: Start the app in an iPhone simulator
+        if: steps.simulator.outcome == 'success'
+        run: |
+          set -euo pipefail
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          echo "Simulator: $udid"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl install "$udid" build/sim/Build/Products/Debug-iphonesimulator/App.app
+          xcrun simctl launch "$udid" org.vinylkeeper.app
+          # The time for the web app to load and draw its first page
+          sleep 25
+          mkdir -p build/screens
+          xcrun simctl io "$udid" screenshot build/screens/launch.png
+          # Still running: a crash at launch (a wrong storyboard class, a missing plugin) fails here
+          if ! xcrun simctl spawn "$udid" launchctl list | grep -q "org.vinylkeeper.app"; then
+            echo "::error::The app is not running anymore after its launch"
+            exit 1
+          fi
+          (cd build/sim/Build/Products/Debug-iphonesimulator && zip -qry ../../../../VinylKeeper-simulator.zip App.app)
+
+      - name: Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-${{ github.run_number }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            vinylkeeper_front/build/VinylKeeper-unsigned.ipa
+            vinylkeeper_front/build/VinylKeeper-simulator.zip
+            vinylkeeper_front/build/screens/
+            vinylkeeper_front/build/*.log
+            vinylkeeper_front/ios/App/Podfile.lock
