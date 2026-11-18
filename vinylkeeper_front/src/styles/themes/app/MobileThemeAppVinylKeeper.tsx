@@ -50,6 +50,24 @@ const MobileThemeAppVinylKeeper = createTheme({
     },
   },
   components: {
+    // Full screen dialogs (add a record, Discogs import...) keep out of the notch and the home bar of the iPhone
+    // (the --safe-* variables are 0 on the web and on Android)
+    MuiDialog: {
+      styleOverrides: {
+        // A tall dialog that is not full screen keeps its 32px from the edges, out of the notch and the home bar too
+        paper: {
+          "&:not(.MuiDialog-paperFullScreen)": {
+            marginTop: "calc(32px + var(--safe-top))",
+            marginBottom: "calc(32px + var(--safe-bottom))",
+            maxHeight: "calc(100% - 64px - var(--safe-top) - var(--safe-bottom))",
+          },
+        },
+        paperFullScreen: {
+          paddingTop: "var(--safe-top)",
+          paddingBottom: "var(--safe-bottom)",
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {

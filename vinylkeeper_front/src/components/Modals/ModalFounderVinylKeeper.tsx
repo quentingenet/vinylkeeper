@@ -66,7 +66,7 @@ const ModalFounderVinylKeeper: React.FC<ModalFounderVinylKeeperProps> = ({
               // Whatever the phone: 16px from each edge, and scrollable if the screen is short
               width: isMobile ? "calc(100vw - 32px)" : "620px",
               maxWidth: "620px",
-              maxHeight: "calc(100dvh - 32px)",
+              maxHeight: "calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom))",
               overflowY: "auto",
               boxSizing: "border-box",
               textAlign: "center",

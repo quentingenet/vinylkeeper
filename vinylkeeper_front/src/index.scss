@@ -32,8 +32,7 @@ html.platform-ios {
         font-size: 16px;
     }
 
-    // Full screen popups and menus are fixed: the padding of the body does not move them
-    .MuiDialog-paperFullScreen,
+    // Full screen menus are fixed: the padding of the body does not move them (full screen dialogs: the mobile theme)
     .MuiDrawer-paper {
         padding-top: var(--safe-top);
         padding-bottom: var(--safe-bottom);

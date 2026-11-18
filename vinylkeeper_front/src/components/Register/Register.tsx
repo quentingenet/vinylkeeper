@@ -139,7 +139,7 @@ const Register = ({
             maxHeight: isMobile ? "80dvh" : "90vh",
             overflowY: "auto",
             boxShadow: 6,
-            mt: isMobile ? "5dvh" : 0,
+            mt: isMobile ? "calc(5dvh + var(--safe-top))" : 0,
             mb: isMobile ? "5dvh" : 0,
             p: isMobile ? 2 : 4,
             opacity: 0.92,

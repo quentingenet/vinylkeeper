@@ -27,10 +27,12 @@ import VinylSpinner from "@components/UI/VinylSpinner";
 import DiscogsAttribution from "@components/UI/DiscogsAttribution";
 import { DISCOGS_DISCLAIMER, discogsCollectionUrl } from "@utils/discogsLinks";
 import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 import { getPlatform, isCapacitorPlatform } from "@utils/CapacitorUtils";
 import { DiscogsAuthSession } from "@utils/DiscogsAuthSession";
 import { discogsOutcomeUrl, parseIosDiscogsReturn } from "@utils/NativeLinks";
 import { useFinishDiscogsConnection } from "@hooks/useFinishDiscogsConnection";
+import { logger } from "@utils/logger";
 import useDetectMobile from "@hooks/useDetectMobile";
 import { useUserContext } from "@contexts/UserContext";
 import { collectionApiService, type PaginatedCollectionListResponse } from "@services/CollectionApiService";
@@ -162,6 +164,10 @@ export default function DiscogsImportDialog({
     } catch (error) {
       // Sheet closed by the member: same as refusing on Discogs; anything else: a failed connection
       const cancelled = (error as { code?: string } | null)?.code === "CANCELLED";
+      if (!cancelled) {
+        logger.error("Discogs sign-in sheet failed:", error,
+          "plugin available:", Capacitor.isPluginAvailable("DiscogsAuthSession"));
+      }
       void navigate(discogsOutcomeUrl(cancelled ? "denied" : "error"));
     }
   };

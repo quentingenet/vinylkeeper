@@ -7,5 +7,6 @@ import Capacitor
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(DiscogsAuthSessionPlugin())
+        CAPLog.print("⚡️  Vinyl Keeper plugins registered: DiscogsAuthSession")
     }
 }
