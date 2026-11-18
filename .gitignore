@@ -32,9 +32,10 @@ node_modules
 .claudeignore
 .cursorignore
 
-#Capacitor files (android/ and capacitor.config.ts are versioned; the generated copy of the config is not)
-ios/
+#Capacitor files (android/, ios/ and capacitor.config.ts are versioned; the generated copy of the config is not)
+# ios/.gitignore leaves out the Pods, the copied web app and the Xcode build and user files
 build/
+*.xcuserstate
 dist/
 capacitor.config.json
 
@@ -166,6 +167,9 @@ cache/
 keystore.properties
 local.properties
 google-services.json
+
+# iOS project (vinylkeeper_front/ios): the icon and the launch image are part of it
+!vinylkeeper_front/ios/App/App/Assets.xcassets/**
 
 # Dozzle logins and settings (VPS only)
 vinylkeeper_back/dozzle/
