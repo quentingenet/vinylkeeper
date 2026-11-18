@@ -138,7 +138,9 @@ export class CollectionApiService extends BaseApiService {
     itemsPerPage: number = ITEMS_PER_PAGE
   ): Promise<PaginatedCollectionListResponse> {
     return this.get<PaginatedCollectionListResponse>(
-      this.buildPaginatedEndpoint("/collections", page, itemsPerPage)
+      // The exact path of the API route ("/collections/"): without the slash FastAPI answers with a redirect, which
+      // the native request of the iOS app does not follow with its token
+      this.buildPaginatedEndpoint("/collections/", page, itemsPerPage)
     );
   }
 

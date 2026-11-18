@@ -97,20 +97,25 @@ jobs:
           cp -R build/device/Build/Products/Release-iphoneos/App.app build/ipa/Payload/
           (cd build/ipa && zip -qry ../VinylKeeper-unsigned.ipa Payload)
 
-      # ML Kit may lack the arm64 simulator slice: the Apple Silicon simulator is tried first, then the Intel one
+      # For the Apple Silicon simulator (arm64, what Appetize runs): ML Kit has no arm64 simulator slice, so this build
+      # leaves the barcode scanner out (a simulator has no camera; Capacitor skips a missing plugin). The iPhone build
+      # above keeps it.
       - name: Build for the simulator
         id: simulator
         continue-on-error: true
         run: |
           set -o pipefail
-          build() {
-            xcodebuild -workspace "$WORKSPACE" -scheme App -configuration Debug \
-              -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim \
-              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" CODE_SIGNING_ALLOWED=NO "$@" \
-              build | tee -a build/sim.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
-          }
-          build || build ARCHS=x86_64 ONLY_ACTIVE_ARCH=NO
+          # The complete lock (with ML Kit) is kept for the artifacts before this build changes it
+          cp ios/App/Podfile.lock build/Podfile.lock
+          sed -i '' '/CapacitorMlkitBarcodeScanning/d' ios/App/Podfile
+          (cd ios/App && pod install)
+          xcodebuild -workspace "$WORKSPACE" -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CURRENT_PROJECT_VERSION="$BUILD_NUMBER" CODE_SIGNING_ALLOWED=NO \
+            build | tee -a build/sim.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
           test -d build/sim/Build/Products/Debug-iphonesimulator/App.app
+          # Appetize refuses an Intel-only simulator app
+          lipo -archs build/sim/Build/Products/Debug-iphonesimulator/App.app/App | grep -q arm64
 
       - name: Start the app in an iPhone simulator
         if: steps.simulator.outcome == 'success'
@@ -158,4 +163,4 @@ jobs:
             vinylkeeper_front/build/VinylKeeper-simulator.zip
             vinylkeeper_front/build/screens/
             vinylkeeper_front/build/*.log
-            vinylkeeper_front/ios/App/Podfile.lock
+            vinylkeeper_front/build/Podfile.lock
