@@ -34,6 +34,8 @@ html.platform-ios {
 
     // Full screen menus are fixed: the padding of the body does not move them (full screen dialogs: the mobile theme)
     .MuiDrawer-paper {
+        // Inside its 100% height, not added to it
+        box-sizing: border-box;
         padding-top: var(--safe-top);
         padding-bottom: var(--safe-bottom);
     }

@@ -63,6 +63,9 @@ const MobileThemeAppVinylKeeper = createTheme({
           },
         },
         paperFullScreen: {
+          // Inside its 100% height: added to it, the dialog would overflow and be centered, half of it pushed back
+          // under the notch
+          boxSizing: "border-box",
           paddingTop: "var(--safe-top)",
           paddingBottom: "var(--safe-bottom)",
         },
