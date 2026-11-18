@@ -52,4 +52,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- The invisible activity of the ML Kit barcode scanner is portrait: without this, Google Play would require a
+         portrait screen and refuse the app to tablets, desktops and XR headsets that have none -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
 </manifest>

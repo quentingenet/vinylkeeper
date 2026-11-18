@@ -22,6 +22,7 @@
     "check:prod-bundle": "bash scripts/check-prod-bundle.sh",
     "version:check": "node scripts/app-version.mjs",
     "version:set": "node scripts/app-version.mjs set",
+    "version:bump": "node scripts/app-version.mjs bump",
     "mobile:ios:dev": "npm run build:mobile && npx cap sync ios && npx cap run ios",
     "mobile:ios:prod:sync": "npm run build:prod && npm run check:prod-bundle && npx cap sync ios",
     "mobile:ios:prod": "npm run mobile:ios:prod:sync && npx cap open ios",

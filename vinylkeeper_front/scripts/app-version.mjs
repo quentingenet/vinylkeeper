@@ -4,6 +4,7 @@
 //
 //   npm run version:check          the two apps have the same version (exit 1 otherwise)
 //   npm run version:set -- 1.2.0   new version on both apps, versionCode + 1 (a new Google Play upload)
+//   npm run version:bump           same version, versionCode + 1 (a bundle of that version was already uploaded)
 //
 // The build number of iOS is not kept here: the iOS build of GitHub Actions takes the number of its run.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -55,6 +56,13 @@ function set(next) {
   console.log(`Once committed on main: git tag v${next} && git push origin v${next}`);
 }
 
+function bump() {
+  const { gradle, versionName, versionCode } = read();
+  writeFileSync(GRADLE, gradle.replace(/versionCode\s+\d+/, `versionCode ${versionCode + 1}`));
+  console.log(`${versionName}: versionCode ${versionCode} -> ${versionCode + 1} (iOS keeps ${versionName})`);
+}
+
 const [command, value] = process.argv.slice(2);
 if (command === "set") set(value);
+else if (command === "bump") bump();
 else check();
