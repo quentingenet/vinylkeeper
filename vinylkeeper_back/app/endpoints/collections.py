@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Response, status, Path, Query, Body
+from fastapi import APIRouter, BackgroundTasks, Depends, Response, status, Path, Query, Body
 from app.utils.pagination import page_count
 from app.schemas.user_schema import MessageResponse
 from app.schemas.collection_schema import (
@@ -20,7 +20,10 @@ from app.schemas.collection_schema import (
 )
 from app.schemas.like_schema import LikeStatusResponse
 from app.services.collection_service import CollectionService
-from app.deps.deps import get_collection_service, get_export_service
+from app.deps.deps import get_collection_report_service, get_collection_service, get_export_service
+from app.schemas.collection_report_schema import CollectionReportCreate
+from app.schemas.report_schema import ReportCreatedResponse
+from app.services.collection_report_service import CollectionReportService
 from app.utils.auth_utils.auth import get_current_user
 from app.models.user_model import User
 from app.services.export_service import ExportService
@@ -224,6 +227,19 @@ async def remove_artist_from_collection(
 ):
     await service.remove_artist_from_collection(user.id, collection_id, artist_id)
     log_activity(user.username, f"removed artist #{artist_id} from collection #{collection_id}")
+
+
+@router.post("/{collection_id}/reports", status_code=status.HTTP_201_CREATED, response_model=ReportCreatedResponse)
+async def report_collection(
+    background_tasks: BackgroundTasks,
+    collection_id: int = Path(..., gt=0, title="Collection ID"),
+    data: CollectionReportCreate = Body(...),
+    user: User = Depends(get_current_user),
+    service: CollectionReportService = Depends(get_collection_report_service),
+):
+    """Report abuse in a public collection of another member (members only): the admins check it."""
+    await service.report_collection(user, collection_id, data, background_tasks)
+    return ReportCreatedResponse(message="Thanks, an admin will check this collection.")
 
 
 @router.post("/{collection_id}/like", response_model=LikeStatusResponse, status_code=status.HTTP_200_OK)

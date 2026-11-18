@@ -17,6 +17,7 @@ from app.core.logging import logger
 from app.db.session import AsyncSessionLocal
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
 from app.repositories.mood_assignment_repository import MoodAssignmentRepository
+from app.services.discogs_usage_service import DiscogsSource, discogs_usage
 from app.services.mood_assignment_service import MoodAssignmentService
 from app.utils.discogs_release import is_discogs_image, join_artist_credit, parse_release_edition
 
@@ -44,11 +45,15 @@ class DiscogsClient:
     def __init__(
         self,
         http_client: httpx.AsyncClient,
+        *,
+        source: str,
         max_attempts: int = len(RATE_LIMIT_BACKOFF_SECONDS),
         min_interval: float = DISCOGS_MIN_INTERVAL_SECONDS,
         authorization: Optional[Callable[[], str]] = None,
     ):
         self.http_client = http_client
+        # The part of the app its calls are counted for (DiscogsSource)
+        self.source = source
         self.max_attempts = max_attempts
         self.min_interval = min_interval
         self._last_request_at = 0.0
@@ -79,6 +84,7 @@ class DiscogsClient:
                 response = await self.http_client.get(url, headers=headers)
             except httpx.HTTPError as e:
                 raise DiscogsUnavailableError(f"Network error on {path}: {e}") from e
+            discogs_usage.record(self.source, response)
 
             if response.status_code == 429:
                 if attempt + 1 < self.max_attempts:
@@ -319,7 +325,8 @@ async def enrich_album_in_background(external_album_id: str) -> None:
                 if album_id is None:
                     return
                 # A single attempt: never hold a request worker on Discogs backoff.
-                service = AlbumEnrichmentService(repository, DiscogsClient(http_client, max_attempts=1))
+                service = AlbumEnrichmentService(repository, DiscogsClient(
+                    http_client, source=DiscogsSource.ENRICHMENT, max_attempts=1))
                 outcome = await service.enrich_release(album_id, external_album_id)
                 await db.commit()
                 if outcome == "enriched":

@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import httpx
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
+from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode
 from app.core.logging import logger
 
@@ -33,9 +34,9 @@ class ImageProxyService:
     MAX_CACHE_BYTES = 2 * 1024 * 1024 * 1024
     PRUNE_TARGET_RATIO = 0.8
     PRUNE_PROBABILITY = 1 / 200
-    # A cover stays at most 30 days on disk, then at most 30 days in the browser (endpoint
-    # Cache-Control). Past that it is fetched again from Discogs.
-    CACHE_LIFETIME_SECONDS = 30 * 24 * 3600
+    # How long a cover stays on disk, then in the browser (endpoint Cache-Control): set in the
+    # .env. Past that it is fetched again from Discogs.
+    CACHE_LIFETIME_SECONDS = settings.IMAGE_CACHE_LIFETIME_SECONDS
 
     def __init__(self, http_client: Optional[httpx.AsyncClient] = None):
         cache_path = os.getenv("IMAGE_CACHE_DIR")

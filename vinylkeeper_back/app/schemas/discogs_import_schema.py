@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -79,6 +79,13 @@ class DiscogsConnectionStatus(BaseModel):
     connected: bool
     discogs_username: Optional[str] = None
     connected_at: Optional[datetime] = None
+
+
+class DiscogsConnectRequest(BaseModel):
+    """Which app starts the connection: the iOS app comes back through its own relay (see ios_callback)."""
+    model_config = ConfigDict(extra="forbid")
+
+    platform: Optional[Literal["android", "ios"]] = Field(None, description="The native app asking, if any")
 
 
 class DiscogsAuthorizeResponse(BaseModel):

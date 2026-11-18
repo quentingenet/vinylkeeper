@@ -16,7 +16,7 @@ import time
 from datetime import timedelta
 from functools import lru_cache
 from typing import Optional
-from urllib.parse import parse_qs, quote, urlencode
+from urllib.parse import parse_qs, parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
@@ -26,6 +26,7 @@ from app.core.exceptions import ErrorCode, ServerError, ValidationError
 from app.core.logging import log_activity, logger
 from app.models.user_model import User
 from app.repositories.discogs_connection_repository import DiscogsConnectionRepository
+from app.services.discogs_usage_service import DiscogsSource, discogs_usage
 
 REQUEST_TOKEN_URL = "https://api.discogs.com/oauth/request_token"
 AUTHORIZE_URL = "https://www.discogs.com/oauth/authorize"
@@ -47,6 +48,17 @@ def credentials_configured() -> bool:
     """What signing and storing tokens needs, whichever client asks."""
     return all((settings.DISCOGS_CONSUMER_KEY, settings.DISCOGS_CONSUMER_SECRET)) \
         and _valid_token_key(settings.DISCOGS_TOKEN_KEY)
+
+
+def ios_callback(native_callback: str) -> str:
+    """
+    The callback of the iOS app: the one of the native app with app=ios. Discogs sends the user back to it
+    unchanged, and the page relays to the app (org.vinylkeeper.app://discogs/callback), which an
+    ASWebAuthenticationSession catches: iOS needs no App Link there, so no Apple account is needed.
+    """
+    parts = urlsplit(native_callback)
+    query = [(key, value) for key, value in parse_qsl(parts.query) if key != "app"] + [("app", "ios")]
+    return urlunsplit(parts._replace(query=urlencode(query)))
 
 
 def oauth_configured(native: bool = False) -> bool:
@@ -126,6 +138,7 @@ class DiscogsOAuthService:
             })
         except httpx.HTTPError as e:
             raise DiscogsOAuthError("unavailable") from e
+        discogs_usage.record(DiscogsSource.OAUTH, response)
         if response.status_code != 200:
             logger.warning(f"Discogs OAuth: {url} answered {response.status_code}")
             raise DiscogsOAuthError("refused" if response.status_code in (400, 401, 403) else "unavailable")
@@ -134,10 +147,15 @@ class DiscogsOAuthService:
             raise DiscogsOAuthError("unavailable")
         return values
 
-    async def start(self, user: User, native: bool = False) -> str:
-        """The Discogs page where the user authorizes VinylKeeper (it sends them back to their client)."""
+    async def start(self, user: User, native: bool = False, ios: bool = False) -> str:
+        """
+        The Discogs page where the user authorizes VinylKeeper (it sends them back to their client). ios: the
+        iOS app, which comes back through the same callback as Android, marked app=ios (see ios_callback).
+        """
         self._require_configuration(native)
         callback = settings.DISCOGS_OAUTH_NATIVE_CALLBACK_URL if native else settings.DISCOGS_OAUTH_CALLBACK_URL
+        if native and ios:
+            callback = ios_callback(callback)
         try:
             values = await self._post(REQUEST_TOKEN_URL, oauth_header(oauth_callback=callback))
         except DiscogsOAuthError as e:
@@ -184,6 +202,7 @@ class DiscogsOAuthService:
                 "Authorization": oauth_header(access_token, access_secret), "User-Agent": settings.USER_AGENT})
         except httpx.HTTPError as e:
             raise DiscogsOAuthError("unavailable") from e
+        discogs_usage.record(DiscogsSource.OAUTH, response)
         identity = response.json() if response.status_code == 200 else {}
         if not isinstance(identity.get("id"), int) or not identity.get("username"):
             raise DiscogsOAuthError("unavailable")

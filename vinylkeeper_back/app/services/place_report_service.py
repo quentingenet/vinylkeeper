@@ -1,18 +1,14 @@
 """
 Members report wrong information on an Atlas spot; the admin fixes the spot from the admin panel,
-without touching the database by hand.
+without touching the database by hand. Shared rules of every report: ReportService.
 """
 from fastapi import BackgroundTasks
-from datetime import timedelta
 from typing import Optional
 
-from sqlalchemy.exc import IntegrityError
-
-from app.core.config_env import settings
-from app.core.exceptions import QuotaExceededError, ResourceNotFoundError, ValidationError, ErrorCode
-from app.core.logging import log_activity, logger
+from app.core.exceptions import ResourceNotFoundError, ValidationError, ErrorCode
+from app.core.logging import log_activity
 from app.core.transaction import transaction_context
-from app.mails.client_mail import MailSubject, send_mail
+from app.mails.client_mail import MailSubject
 from app.models.place_model import Place
 from app.models.place_report_model import PlaceReport
 from app.models.user_model import User
@@ -25,11 +21,11 @@ from app.schemas.place_report_schema import (
     ReportedPlace,
 )
 from app.schemas.place_schema import PlaceUpdate
+from app.services.report_service import ReportService
 from app.utils.geocoding import geocode_city
 
 # A member reports at most that many spots a day: enough for real mistakes, not for spam
 MAX_REPORTS_PER_DAY = 10
-REPORT_WINDOW = timedelta(hours=24)
 
 
 def reported_place(place: Place) -> ReportedPlace:
@@ -49,10 +45,21 @@ def report_response(report: PlaceReport) -> PlaceReportResponse:
     )
 
 
-class PlaceReportService:
+class PlaceReportService(ReportService[PlaceReport]):
+    repository: PlaceReportRepository
+
     def __init__(self, repository: PlaceReportRepository, atlas_repository: AtlasRepository):
-        self.repository = repository
+        super().__init__(repository)
         self.atlas_repository = atlas_repository
+
+    def max_reports_per_day(self) -> int:
+        return MAX_REPORTS_PER_DAY
+
+    def already_reported_message(self) -> str:
+        return "You already reported this spot: an admin will check it."
+
+    def quota_message(self) -> str:
+        return f"You can report {MAX_REPORTS_PER_DAY} spots a day. Please try again tomorrow."
 
     async def report_place(
         self, user: User, place_id: int, data: PlaceReportCreate, background_tasks: BackgroundTasks
@@ -62,40 +69,15 @@ class PlaceReportService:
         if not place.is_moderated:
             # Not on the map yet: the admin reviews it anyway
             raise ResourceNotFoundError("Spot", place_id)
-        if await self.repository.has_open_report(place_id, user.id):
-            raise self._already_reported()
-        if await self.repository.count_recent_by_user(user.id, REPORT_WINDOW) >= MAX_REPORTS_PER_DAY:
-            raise QuotaExceededError(f"You can report {MAX_REPORTS_PER_DAY} spots a day. Please try again tomorrow.")
-        try:
-            async with transaction_context(self.repository.db):
-                await self.repository.create(place_id, user.id, data.issues, data.comment)
-        except IntegrityError:
-            # The same member reporting twice at once: the unique open report wins
-            raise self._already_reported()
+        await self.ensure_can_report(place_id, user)
+        await self.save_once(lambda: self.repository.create(place_id, user.id, data.issues, data.comment))
         log_activity(user.username, f"reported Atlas spot #{place_id} {place.name!r} ({', '.join(data.issues)})")
         # After the response: a slow SMTP must not hold the request
         background_tasks.add_task(
-            self._notify_admin, place.id,
+            self.notify_admin, MailSubject.AtlasSpotReported, f"place_id={place.id}",
             place_name=place.name, place_city=place.city, place_country=place.country,
             issues=data.issues, username=user.username, user_email=user.email, comment=data.comment,
         )
-
-    @staticmethod
-    def _already_reported() -> ValidationError:
-        return ValidationError(
-            error_code=ErrorCode.RESOURCE_ALREADY_EXISTS,
-            message="You already reported this spot: an admin will check it.",
-        )
-
-    @staticmethod
-    async def _notify_admin(place_id: int, **mail_fields) -> None:
-        """Background task, plain values only. Never raises: the report is already saved and listed."""
-        try:
-            sent = await send_mail(to=settings.EMAIL_ADMIN, subject=MailSubject.AtlasSpotReported, **mail_fields)
-            if not sent:
-                logger.warning("Atlas spot report email could not be sent for place_id=%s", place_id)
-        except Exception as mail_error:
-            logger.error("Atlas spot report email failed for place_id=%s: %s", place_id, mail_error)
 
     async def list_reports(self, status: Optional[str], page: int, limit: int) -> PlaceReportListResponse:
         reports, total = await self.repository.list_reports(status, page, limit)
@@ -106,32 +88,11 @@ class PlaceReportService:
 
     async def resolve(self, report_id: int, admin: User) -> PlaceReportResponse:
         """The spot was fixed: every open report of it is resolved."""
-        report = await self._open_report(report_id)
-        async with transaction_context(self.repository.db):
-            await self.repository.close_open_for_place(report.place_id, admin.id)
-        return await self._reloaded(report_id)
+        return report_response(await self.resolve_report(report_id, admin))
 
     async def dismiss(self, report_id: int, admin: User) -> PlaceReportResponse:
         """Nothing was wrong: only this report is closed."""
-        await self._open_report(report_id)
-        async with transaction_context(self.repository.db):
-            await self.repository.close(report_id, "dismissed", admin.id)
-        return await self._reloaded(report_id)
-
-    async def _open_report(self, report_id: int) -> PlaceReport:
-        report = await self.repository.get(report_id)
-        if report is None:
-            raise ResourceNotFoundError("Report", report_id)
-        if report.status != "open":
-            raise ValidationError(error_code=ErrorCode.INVALID_RESOURCE_STATE,
-                                  message=f"This report is already {report.status}.")
-        return report
-
-    async def _reloaded(self, report_id: int) -> PlaceReportResponse:
-        self.repository.db.expire_all()
-        report = await self.repository.get(report_id)
-        assert report is not None
-        return report_response(report)
+        return report_response(await self.dismiss_report(report_id, admin))
 
     async def update_place(self, admin: User, place_id: int, data: PlaceUpdate) -> ReportedPlace:
         """

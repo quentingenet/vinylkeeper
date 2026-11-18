@@ -50,7 +50,10 @@ async def refresh_collection_value(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
     user=Depends(get_current_user)
 ):
-    """Re-evaluate every collection of the user: prices older than a day are asked Discogs again, in the background."""
+    """
+    Re-evaluate every collection of the user: prices older than PRICE_MAX_AGE_DAYS are asked
+    Discogs again, in the background.
+    """
     result = await dashboard_service.request_value_refresh(user)
     if result.pending:
         background_tasks.add_task(run_price_requests)

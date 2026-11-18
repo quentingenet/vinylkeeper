@@ -10,6 +10,7 @@ from app.models.collection_model import Collection
 from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.album_price_model import AlbumPrice, AlbumPriceRequest
 from app.models.reference_data.external_sources import ExternalSource
+from app.core.config_env import settings
 from app.core.enums import ExternalSourceEnum
 from app.models.place_model import Place
 from app.models.association_tables import CollectionArtist
@@ -321,14 +322,12 @@ class DashboardRepository:
         )
         return (await self._rows(query, "compute collection value"))[0]
 
-    async def refreshable_album_ids(
-        self, user_id: int, collection_ids: Sequence[int] = (), min_age_hours: int = 24
-    ) -> list[int]:
+    async def refreshable_album_ids(self, user_id: int, collection_ids: Sequence[int] = ()) -> list[int]:
         """
         Discogs pressings of the user (saved copies left out) without a price or with one older
-        than min_age_hours, and not queued yet: what a re-evaluation would ask Discogs again.
+        than PRICE_MAX_AGE_DAYS (.env), and not queued yet: what a re-evaluation would ask Discogs again.
         """
-        stale = func.now() - func.make_interval(0, 0, 0, 0, min_age_hours)
+        stale = func.now() - func.make_interval(0, 0, 0, settings.PRICE_MAX_AGE_DAYS)
         query = (
             select(CollectionAlbum.album_id)
             .join(Collection, Collection.id == CollectionAlbum.collection_id)

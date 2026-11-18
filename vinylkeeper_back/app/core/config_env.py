@@ -1,5 +1,6 @@
 import os
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -64,6 +65,14 @@ class Settings(BaseSettings):
     DISCOGS_OAUTH_NATIVE_CALLBACK_URL: str = ""
     # Background Discogs enrichment of newly created albums (disabled in tests)
     ALBUM_ENRICHMENT_ENABLED: bool = True
+
+    # Cache lifetimes, set in the .env only (no value in the public code)
+    # A cover in the disk cache, and in the browser through Cache-Control, in seconds
+    IMAGE_CACHE_LIFETIME_SECONDS: int = Field(gt=0)
+    # Age past which the Discogs suggested price of a release is fetched again, in days
+    PRICE_MAX_AGE_DAYS: int = Field(gt=0)
+    # A user re-evaluates the value of their collections once per this many days
+    PRICE_REFRESH_INTERVAL_DAYS: int = Field(gt=0)
 
     # User-Agent
     USER_AGENT: str

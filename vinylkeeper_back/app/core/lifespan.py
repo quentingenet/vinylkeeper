@@ -1,10 +1,12 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI
 import httpx
 
 from app.db.session import AsyncSessionLocal, engine
 from app.db.init_references_data_db import insert_reference_values, check_reference_data_exists
 from app.core.logging import logger
+from app.services.discogs_usage_service import discogs_usage
 
 
 @asynccontextmanager
@@ -27,7 +29,16 @@ async def lifespan(app: FastAPI):
     )
     logger.info("✅ Shared HTTP client initialized.")
 
+    # Startup: the calls to Discogs this worker counts are written about once a minute (admin gauge)
+    usage_writer = asyncio.create_task(discogs_usage.run())
+
     yield
+
+    # Shutdown: the counts not written yet are, before the database goes
+    usage_writer.cancel()
+    with suppress(asyncio.CancelledError):
+        await usage_writer
+    await discogs_usage.flush()
 
     # Shutdown: close HTTP client
     try:

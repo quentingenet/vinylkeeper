@@ -17,6 +17,7 @@ from app.services.album_enrichment_service import (
     DiscogsUnavailableError,
     EnrichmentReport,
 )
+from app.services.discogs_usage_service import DiscogsSource
 
 PRICE_CURRENCY = "EUR"
 # Currencies a user can pick besides EUR
@@ -102,30 +103,6 @@ class AlbumPriceService:
             await self.repository.db.commit()
         return report
 
-    async def refresh_prices(
-        self, limit: Optional[int] = None, commit_every: int = 25, report: Optional[EnrichmentReport] = None
-    ) -> EnrichmentReport:
-        """Missing prices first, then the oldest ones. Stops at once if Discogs refuses prices."""
-        report = report or EnrichmentReport()
-        pending = await self.repository.list_pending_prices(limit)
-        logger.info(f"Album prices: {len(pending)} release(s) to price")
-        for index, (album_id, external_album_id) in enumerate(pending, 1):
-            try:
-                await self.price_release(album_id, external_album_id, report)
-            except (DiscogsAccessDeniedError, PriceCurrencyError) as e:
-                # Seller settings undone or another currency: every next call would fail the same way
-                logger.warning(f"Album prices stopped: {e}")
-                report.prices_blocked = True
-                break
-            except DiscogsUnavailableError as e:
-                logger.warning(f"Album prices: release {external_album_id} skipped: {e}")
-                report.failed.append(f"price:{external_album_id}")
-            if index % commit_every == 0:
-                await self.repository.db.commit()
-                logger.info(f"Album prices: {index}/{len(pending)} releases processed")
-        await self.repository.db.commit()
-        return report
-
 
 async def refresh_exchange_rates(repository: AlbumPriceRepository, http_client: httpx.AsyncClient) -> bool:
     """Today's EUR rates. Keeps the previous ones when the source does not answer."""
@@ -161,7 +138,8 @@ async def run_price_requests() -> None:
                         repository = AlbumPriceRepository(db)
                         # A re-evaluation shows today's dollar too: one call, the previous rate stays on failure
                         await refresh_exchange_rates(repository, http_client)
-                        client = DiscogsClient(http_client, min_interval=REQUEST_MIN_INTERVAL_SECONDS)
+                        client = DiscogsClient(http_client, source=DiscogsSource.PRICE,
+                                               min_interval=REQUEST_MIN_INTERVAL_SECONDS)
                         await AlbumPriceService(repository, client).work_requests()
             finally:
                 await lock_connection.execute(select(func.pg_advisory_unlock(PRICE_LOCK_KEY)))

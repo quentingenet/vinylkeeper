@@ -18,7 +18,9 @@ from app.repositories.atlas_repository import AtlasRepository
 from app.repositories.moderation_request_repository import ModerationRequestRepository
 from app.repositories.spinning_now_repository import SpinningNowRepository
 from app.repositories.place_report_repository import PlaceReportRepository
+from app.repositories.collection_report_repository import CollectionReportRepository
 from app.repositories.discogs_import_repository import DiscogsImportRepository
+from app.repositories.discogs_usage_repository import DiscogsUsageRepository
 from app.repositories.refresh_session_repository import RefreshSessionRepository
 
 # Services
@@ -34,6 +36,8 @@ from app.services.export_service import ExportService
 from app.services.wishlist_export_service import WishlistExportService
 from app.services.spinning_now_service import SpinningNowService
 from app.services.place_report_service import PlaceReportService
+from app.services.collection_report_service import CollectionReportService
+from app.services.discogs_usage_service import DiscogsUsageService
 from app.services.session_service import SessionService
 
 # Database
@@ -95,6 +99,14 @@ def get_spinning_now_repository(db: AsyncSession = Depends(get_db)) -> SpinningN
 
 def get_atlas_repository(db: AsyncSession = Depends(get_db)) -> AtlasRepository:
     return AtlasRepository(db)
+
+
+def get_discogs_usage_service(db: AsyncSession = Depends(get_db)) -> DiscogsUsageService:
+    return DiscogsUsageService(DiscogsUsageRepository(db))
+
+
+def get_collection_report_service(db: AsyncSession = Depends(get_db)) -> CollectionReportService:
+    return CollectionReportService(CollectionReportRepository(db), CollectionRepository(db))
 
 
 def get_place_report_service(db: AsyncSession = Depends(get_db)) -> PlaceReportService:

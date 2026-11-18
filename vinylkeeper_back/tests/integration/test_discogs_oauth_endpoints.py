@@ -61,6 +61,24 @@ class TestConnection:
 
         assert [call.kwargs["native"] for call in oauth.start.await_args_list] == [True, False]
 
+    async def test_the_ios_app_says_so_and_only_a_native_app_can(self, auth_client, oauth):
+        client, *_ = auth_client
+        app_ = {"Authorization": "Bearer t"}
+        await client.post("/api/discogs-import/connect", json={"platform": "ios"}, headers=app_)
+        await client.post("/api/discogs-import/connect", json={"platform": "android"}, headers=app_)
+        # A browser saying ios is still a browser
+        await client.post("/api/discogs-import/connect", json={"platform": "ios"})
+
+        assert [(call.kwargs["native"], call.kwargs["ios"]) for call in oauth.start.await_args_list] == [
+            (True, True), (True, False), (False, False)]
+
+    async def test_an_unknown_platform_is_refused(self, auth_client, oauth):
+        client, *_ = auth_client
+        response = await client.post("/api/discogs-import/connect", json={"platform": "windows"},
+                                     headers={"Authorization": "Bearer t"})
+
+        assert response.status_code == 422
+
     async def test_availability_depends_on_the_callback_of_the_client(self, auth_client, oauth, monkeypatch):
         monkeypatch.setattr(oauth_module.settings, "DISCOGS_CONSUMER_KEY", "k")
         monkeypatch.setattr(oauth_module.settings, "DISCOGS_CONSUMER_SECRET", "s")

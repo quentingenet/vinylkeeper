@@ -33,6 +33,10 @@ os.environ.setdefault("DISCOGS_API_URL", "https://api.discogs.com")
 os.environ.setdefault("DISCOGS_API_KEY", "test_discogs_key")
 os.environ.setdefault("USER_AGENT", "VinylKeeperTest/1.0")
 os.environ.setdefault("ALBUM_ENRICHMENT_ENABLED", "false")
+# Test values only: the real lifetimes are set in the .env of each environment
+os.environ.setdefault("IMAGE_CACHE_LIFETIME_SECONDS", "3600")
+os.environ.setdefault("PRICE_MAX_AGE_DAYS", "7")
+os.environ.setdefault("PRICE_REFRESH_INTERVAL_DAYS", "7")
 
 # Génère les clés RSA de test si elles n'existent pas déjà
 _KEYS_DIR = pathlib.Path(__file__).parent.parent / "app" / "keys"

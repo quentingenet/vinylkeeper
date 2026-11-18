@@ -4,21 +4,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 import app.cli.enrich_albums as cli
+from app.services.album_price_service import AlbumPriceService
 from app.services.mood_assignment_service import MoodAssignmentReport
 
 
 @pytest.fixture(autouse=True)
 def prices():
-    """The prices pass runs by default: no database, no Discogs, no exchange rates here."""
+    """The queued re-evaluations are finished by default: no database, no Discogs here."""
     repository = MagicMock()
-    repository.list_pending_prices = AsyncMock(return_value=[])
+    repository.count_requests = AsyncMock(return_value=0)
     service = MagicMock()
-    service.refresh_prices = AsyncMock()
     service.work_requests = AsyncMock()
     with patch.object(cli, "AlbumPriceRepository", return_value=repository), \
-            patch.object(cli, "AlbumPriceService", return_value=service), \
-            patch.object(cli, "refresh_exchange_rates", new=AsyncMock()) as rates:
-        yield MagicMock(repository=repository, service=service, rates=rates)
+            patch.object(cli, "AlbumPriceService", return_value=service):
+        yield MagicMock(repository=repository, service=service)
 
 
 def patched_session():
@@ -47,7 +46,7 @@ async def test_dry_run_counts_without_calling_discogs(capsys):
         await cli.run(cli.parse_args(["--dry-run"]))
 
     service_cls.assert_not_called()
-    assert "2 release(s), 1 master(s), 1 pressing(s), 0 title(s), 0 price(s)" in capsys.readouterr().out
+    assert "2 release(s), 1 master(s), 1 pressing(s), 0 title(s), 0 queued price(s)" in capsys.readouterr().out
 
 
 async def test_run_fetches_releases_then_masters_then_pressings():
@@ -168,7 +167,7 @@ async def test_refresh_titles_only_when_asked():
     assert service.refresh_stale_titles.await_args.args == (5,)
 
 
-async def test_rates_then_prices_unless_skipped(prices):
+async def test_only_the_queued_re_evaluations_are_priced_unless_skipped(prices):
     service = MagicMock()
     for name in ("enrich_pending_releases", "enrich_pending_masters", "enrich_pending_editions"):
         setattr(service, name, AsyncMock())
@@ -177,13 +176,13 @@ async def test_rates_then_prices_unless_skipped(prices):
             patch.object(cli, "AlbumEnrichmentRepository"), \
             patch.object(cli, "AlbumEnrichmentService", return_value=service):
         await cli.run(cli.parse_args(["--limit", "40"]))
-        prices.rates.assert_awaited_once()
         prices.service.work_requests.assert_awaited_once()
-        assert prices.service.refresh_prices.await_args.args == (40,)
+        # No sweep of every collection: the service offers none any more
+        assert not hasattr(AlbumPriceService, "refresh_prices")
 
-        prices.service.refresh_prices.reset_mock()
+        prices.service.work_requests.reset_mock()
         await cli.run(cli.parse_args(["--skip-prices"]))
-        prices.service.refresh_prices.assert_not_called()
+        prices.service.work_requests.assert_not_called()
 
 
 async def test_refresh_editions_only_when_asked():

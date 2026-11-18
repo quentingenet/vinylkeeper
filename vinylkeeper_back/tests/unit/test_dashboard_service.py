@@ -6,6 +6,7 @@ import pytest
 import app.services.dashboard_service as dashboard_service_module
 from datetime import datetime, timedelta, timezone
 
+from app.core.config_env import settings
 from app.core.exceptions import QuotaExceededError, ResourceNotFoundError
 from app.services.dashboard_service import DashboardService
 
@@ -204,7 +205,7 @@ class TestCollectionValue:
 
 
 class TestReEvaluationAllowance:
-    async def test_one_a_day_then_refused_until_it_leaves_the_window(self):
+    async def test_one_per_interval_then_refused_until_it_leaves_the_window(self):
         service, _, prices = make_value_service()
         last = datetime(2026, 10, 30, 8, tzinfo=timezone.utc)
         prices.recent_refreshes.return_value = [last]
@@ -213,7 +214,8 @@ class TestReEvaluationAllowance:
         with pytest.raises(QuotaExceededError) as refused:
             await service.request_value_refresh(make_value_user())
 
-        assert (value.refreshes_left, value.next_refresh_at) == (0, last + timedelta(hours=24))
+        assert (value.refreshes_left, value.next_refresh_at) == (
+            0, last + timedelta(days=settings.PRICE_REFRESH_INTERVAL_DAYS))
         assert refused.value.status_code == 429
         prices.request_refresh.assert_not_called()
 
@@ -222,7 +224,11 @@ class TestReEvaluationAllowance:
         logged = []
         monkeypatch.setattr(dashboard_service_module, "log_activity", lambda who, what: logged.append(f"{who} {what}"))
 
-        assert (await service.get_value(make_value_user())).refreshes_left == 1
+        value = await service.get_value(make_value_user())
+        assert value.refreshes_left == 1
+        # The front shows the real durations of the .env, not values of its own
+        assert (value.refresh_interval_days, value.price_max_age_days) == (
+            settings.PRICE_REFRESH_INTERVAL_DAYS, settings.PRICE_MAX_AGE_DAYS)
         await service.request_value_refresh(make_value_user())
 
         prices.record_refresh.assert_awaited_once_with(1)

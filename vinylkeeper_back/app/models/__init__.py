@@ -13,7 +13,9 @@ from .album_mood_model import AlbumMood
 from .tag_mood_rule_model import TagMoodRule
 from .discogs_import_model import DiscogsImport
 from .album_price_model import AlbumPrice, AlbumPriceRequest, ExchangeRate, ValueRefresh
+from .discogs_api_usage_model import DiscogsApiUsage
 from .place_report_model import PlaceReport
+from .collection_report_model import CollectionReport
 from .discogs_connection_model import DiscogsConnection, DiscogsOAuthRequest
 from .refresh_session_model import RefreshSession
 
@@ -50,10 +52,12 @@ __all__ = [
     "TagMoodRule",
     "DiscogsImport",
     "AlbumPrice",
+    "DiscogsApiUsage",
     "AlbumPriceRequest",
     "ExchangeRate",
     "ValueRefresh",
     "PlaceReport",
+    "CollectionReport",
     "DiscogsConnection",
     "DiscogsOAuthRequest",
     "RefreshSession",

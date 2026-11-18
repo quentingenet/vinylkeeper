@@ -97,8 +97,10 @@ class CollectionValueResponse(BaseModel):
     estimated_at: Optional[datetime] = Field(None, description="When the latest price was fetched")
     refresh_pending: int = Field(0, description="Pressings of any collection of the user queued for a re-evaluation")
     refreshable: int = Field(0, description="Pressings of any collection a re-evaluation would ask Discogs again")
-    refreshes_left: int = Field(0, description="Re-evaluations the user has left in the last 24 hours")
+    refreshes_left: int = Field(0, description="Re-evaluations the user has left in the current window")
     next_refresh_at: Optional[datetime] = Field(None, description="When a re-evaluation is allowed again")
+    refresh_interval_days: int = Field(..., description="Days between two re-evaluations of a user")
+    price_max_age_days: int = Field(..., description="Age in days past which a re-evaluation asks a price again")
 
 
 class ValueRefreshResponse(BaseModel):

@@ -7,6 +7,7 @@ import httpx
 from app.core.config_env import settings
 from app.core.exceptions import ValidationError, ServerError, ErrorCode, ResourceNotFoundError
 from app.core.logging import logger
+from app.services.discogs_usage_service import DiscogsSource, discogs_usage
 from app.utils.discogs_release import (
     DISCOGS_IMAGE_HOST, clean_artist_name, clean_discogs_markup, format_values, parse_release_edition,
     parse_release_marks,
@@ -96,6 +97,7 @@ class SearchService:
                 params=params,
                 headers=self.headers,
             )
+            discogs_usage.record(DiscogsSource.SEARCH, response)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
@@ -291,6 +293,7 @@ class SearchService:
 
         try:
             response = await self.http_client.get(url, headers=self.headers)
+            discogs_usage.record(DiscogsSource.METADATA, response)
             response.raise_for_status()
             data = response.json()
 
@@ -327,6 +330,7 @@ class SearchService:
                 f"{self.base_url}/artists/{artist_id}/releases",
                 headers=self.headers,
             )
+            discogs_usage.record(DiscogsSource.METADATA, releases_data)
             releases_data.raise_for_status()
             releases_data = releases_data.json()
 
@@ -413,6 +417,7 @@ class SearchService:
 
         try:
             response = await self.http_client.get(url, headers=self.headers)
+            discogs_usage.record(DiscogsSource.METADATA, response)
             response.raise_for_status()
             data = response.json()
 

@@ -1,17 +1,12 @@
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import ExternalSourceEnum
 from app.models.album_model import Album
 from app.models.album_price_model import AlbumPrice, AlbumPriceRequest, ExchangeRate, ValueRefresh
-from app.models.collection_album import CollectionAlbum
-from app.models.reference_data.external_sources import ExternalSource
-
-PRICE_MAX_AGE_DAYS = 30
 
 
 class AlbumPriceRepository:
@@ -19,25 +14,6 @@ class AlbumPriceRepository:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    async def list_pending_prices(self, limit: Optional[int] = None) -> list[tuple[int, str]]:
-        """
-        Releases kept in a collection without a price yet, then those whose price is older
-        than PRICE_MAX_AGE_DAYS, oldest first.
-        """
-        stale = func.now() - func.make_interval(0, 0, 0, PRICE_MAX_AGE_DAYS)
-        query = (
-            select(Album.id, Album.external_album_id)
-            .join(ExternalSource, ExternalSource.id == Album.external_source_id)
-            .outerjoin(AlbumPrice, AlbumPrice.album_id == Album.id)
-            .where(ExternalSource.name == ExternalSourceEnum.DISCOGS.value,
-                   Album.id.in_(select(CollectionAlbum.album_id)),
-                   or_(AlbumPrice.album_id.is_(None), AlbumPrice.fetched_at < stale))
-            .order_by(AlbumPrice.fetched_at.asc().nulls_first(), Album.id)
-        )
-        if limit:
-            query = query.limit(limit)
-        return [(row.id, row.external_album_id) for row in (await self.db.execute(query)).all()]
 
     async def save_prices(self, album_id: int, values: dict) -> None:
         statement = insert(AlbumPrice).values(album_id=album_id, fetched_at=func.now(), **values)
@@ -78,6 +54,10 @@ class AlbumPriceRepository:
             .limit(limit)
         )
         return [(row.album_id, row.external_album_id) for row in (await self.db.execute(query)).all()]
+
+    async def count_requests(self) -> int:
+        """Releases waiting in the re-evaluation queue."""
+        return (await self.db.execute(select(func.count()).select_from(AlbumPriceRequest))).scalar_one()
 
     async def delete_request(self, album_id: int) -> None:
         await self.db.execute(delete(AlbumPriceRequest).where(AlbumPriceRequest.album_id == album_id))

@@ -60,36 +60,6 @@ def make_service(get):
     return AlbumPriceService(repository, client), repository
 
 
-class TestRefreshPrices:
-    async def test_prices_are_saved_and_counted(self):
-        service, repository = make_service(AsyncMock(side_effect=[SUGGESTIONS, {}]))
-        repository.list_pending_prices = AsyncMock(return_value=[(1, "380980"), (2, "9")])
-
-        report = await service.refresh_prices()
-
-        assert (report.prices_done, report.prices_missing) == (1, 1)
-        assert repository.save_prices.await_args_list[1].args == (2, parse_price_suggestions({}))
-        repository.delete_request.assert_awaited_with(2)
-
-    @pytest.mark.parametrize("error", [DiscogsAccessDeniedError("seller settings"), PriceCurrencyError("USD")])
-    async def test_a_refusal_stops_at_once_without_marking_anything(self, error):
-        service, repository = make_service(AsyncMock(side_effect=error))
-        repository.list_pending_prices = AsyncMock(return_value=[(1, "a"), (2, "b")])
-
-        report = await service.refresh_prices()
-
-        assert report.prices_blocked
-        repository.save_prices.assert_not_called()
-
-    async def test_a_transient_failure_skips_the_release(self):
-        service, repository = make_service(AsyncMock(side_effect=[DiscogsUnavailableError("429"), SUGGESTIONS]))
-        repository.list_pending_prices = AsyncMock(return_value=[(1, "a"), (2, "b")])
-
-        report = await service.refresh_prices()
-
-        assert report.failed == ["price:a"] and report.prices_done == 1
-
-
 class TestWorkRequests:
     async def test_works_through_the_queue_until_empty(self):
         service, repository = make_service(AsyncMock(return_value=SUGGESTIONS))
@@ -109,6 +79,17 @@ class TestWorkRequests:
         assert report.prices_done == 1 and not report.prices_blocked
         repository.delete_request.assert_awaited_once_with(1)
         repository.db.commit.assert_awaited()
+
+    @pytest.mark.parametrize("error", [DiscogsAccessDeniedError("seller settings"), PriceCurrencyError("USD")])
+    async def test_a_refusal_stops_at_once_and_keeps_the_queue(self, error):
+        service, repository = make_service(AsyncMock(side_effect=error))
+        repository.next_requests = AsyncMock(return_value=[(1, "a"), (2, "b")])
+
+        report = await service.work_requests()
+
+        assert report.prices_blocked
+        repository.save_prices.assert_not_called()
+        repository.delete_request.assert_not_called()
 
 
 class TestExchangeRates:

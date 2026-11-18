@@ -2,7 +2,7 @@ from datetime import timedelta
 from typing import Optional
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
 from app.core.config_env import settings
@@ -15,12 +15,14 @@ from app.repositories.discogs_import_repository import DiscogsImportRepository
 from app.schemas.discogs_import_schema import (
     DiscogsAuthorizeResponse,
     DiscogsConnectionStatus,
+    DiscogsConnectRequest,
     DiscogsOAuthComplete,
     DiscogsImportCreate,
     DiscogsImportPreview,
     DiscogsImportResponse,
 )
 from app.services.album_enrichment_service import DiscogsClient
+from app.services.discogs_usage_service import DiscogsSource
 from app.services.discogs_import_service import (
     DiscogsImportError,
     DiscogsImportService,
@@ -77,15 +79,18 @@ async def get_discogs_connection(
 @router.post("/connect", response_model=DiscogsAuthorizeResponse)
 async def connect_discogs(
     request: Request,
+    data: Optional[DiscogsConnectRequest] = Body(None),
     current_user: User = Depends(get_current_user),
     oauth: DiscogsOAuthService = Depends(get_oauth_service),
 ):
     """
     Start the connection: the frontend sends the user to the returned Discogs page. The native app
-    (Bearer) gets Discogs to send the user back to its own App Link instead of the browser callback.
+    (Bearer) gets Discogs to send the user back to its own App Link instead of the browser callback;
+    the iOS app says so ({"platform": "ios"}) and comes back through the relay of that page.
     """
     native = bearer_token(request) is not None
-    return DiscogsAuthorizeResponse(authorize_url=await oauth.start(current_user, native=native))
+    ios = native and data is not None and data.platform == "ios"
+    return DiscogsAuthorizeResponse(authorize_url=await oauth.start(current_user, native=native, ios=ios))
 
 
 @router.post("/oauth/complete", response_model=DiscogsConnectionStatus)
@@ -170,7 +175,8 @@ async def preview_discogs_collection(
         raise not_connected_error()
     discogs_username, authorization = connection
     # A single attempt: a request worker never waits on Discogs backoff
-    client = DiscogsClient(request.app.state.http_client, max_attempts=1, authorization=authorization)
+    client = DiscogsClient(request.app.state.http_client, source=DiscogsSource.IMPORT, max_attempts=1,
+                           authorization=authorization)
     try:
         preview = await DiscogsImportService(repository, client).preview(discogs_username)
     except DiscogsImportError as e:

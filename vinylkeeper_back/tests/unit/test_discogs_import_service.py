@@ -286,7 +286,7 @@ async def test_a_private_wantlist_does_not_fail_the_preview():
 async def test_discogs_client_reports_a_refused_resource():
     transport = httpx.MockTransport(lambda request: httpx.Response(403, json={"message": "private"}))
     async with httpx.AsyncClient(transport=transport) as http_client:
-        client = DiscogsClient(http_client, max_attempts=1, min_interval=0)
+        client = DiscogsClient(http_client, source="enrichment", max_attempts=1, min_interval=0)
         with pytest.raises(DiscogsAccessDeniedError):
             await client.get("/users/kent/collection/folders/0/releases")
 

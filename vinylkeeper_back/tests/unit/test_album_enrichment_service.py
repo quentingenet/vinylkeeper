@@ -10,6 +10,7 @@ import httpx
 import pytest
 
 import app.services.album_enrichment_service as enrichment_module
+from app.services.discogs_usage_service import DiscogsUsageRecorder
 from app.services.album_enrichment_service import (
     AlbumEnrichmentService,
     DiscogsAccessDeniedError,
@@ -41,7 +42,7 @@ def no_real_sleep():
 
 def make_client(handler, max_attempts: int = 5) -> DiscogsClient:
     http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-    return DiscogsClient(http_client, max_attempts=max_attempts, min_interval=0)
+    return DiscogsClient(http_client, source="enrichment", max_attempts=max_attempts, min_interval=0)
 
 
 class TestParseRelease:
@@ -183,6 +184,20 @@ class TestParseMasterYear:
 
 
 class TestDiscogsClient:
+    async def test_every_answer_is_counted_for_its_source_429_included(self):
+        ok = httpx.Response(200, json={"id": 1}, headers={"X-Discogs-Ratelimit-Remaining": "17"})
+        answers = iter([httpx.Response(429), ok])
+        client = make_client(lambda request: next(answers))
+        recorder = DiscogsUsageRecorder()
+
+        with patch.object(enrichment_module, "discogs_usage", recorder):
+            assert await client.get("/releases/1") == {"id": 1}
+
+        counted = recorder.take()
+        assert [source for _, source in counted] == ["enrichment"]
+        (counts,) = counted.values()
+        assert (counts.calls, counts.rate_limited, counts.min_remaining) == (2, 1, 17)
+
     async def test_returns_json_and_sends_auth_and_user_agent(self):
         seen = {}
 

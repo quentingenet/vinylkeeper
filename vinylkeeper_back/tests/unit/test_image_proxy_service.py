@@ -6,6 +6,7 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
+from app.core.config_env import settings
 from app.core.exceptions import ValidationError
 from app.services.image_proxy_service import ImageProxyService
 
@@ -71,8 +72,8 @@ async def test_a_cover_older_than_its_lifetime_is_fetched_again(service, monkeyp
     assert len(fetched) == 2
 
 
-def test_a_cover_stays_cached_thirty_days():
-    assert ImageProxyService.CACHE_LIFETIME_SECONDS == 30 * 24 * 3600
+def test_the_cover_lifetime_comes_from_the_settings():
+    assert ImageProxyService.CACHE_LIFETIME_SECONDS == settings.IMAGE_CACHE_LIFETIME_SECONDS
 
 
 def test_pruning_removes_expired_covers_and_keeps_fresh_ones(service):

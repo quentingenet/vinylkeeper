@@ -3,10 +3,18 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.report_schema import (
+    REPORTS_DEFAULT_LIMIT,
+    REPORTS_MAX_LIMIT,
+    ReportCreatedResponse,
+    ReportStatus,
+    blank_is_none,
+)
+
 PlaceReportIssue = Literal["name", "description", "address", "website", "type", "closed"]
-PlaceReportStatus = Literal["open", "resolved", "dismissed"]
-PLACE_REPORTS_DEFAULT_LIMIT = 20
-PLACE_REPORTS_MAX_LIMIT = 50
+PlaceReportStatus = ReportStatus
+PLACE_REPORTS_DEFAULT_LIMIT = REPORTS_DEFAULT_LIMIT
+PLACE_REPORTS_MAX_LIMIT = REPORTS_MAX_LIMIT
 
 
 class PlaceReportCreate(BaseModel):
@@ -23,12 +31,11 @@ class PlaceReportCreate(BaseModel):
 
     @field_validator("comment")
     @classmethod
-    def blank_is_none(cls, v: Optional[str]) -> Optional[str]:
-        return v.strip() or None if v is not None else None
+    def blank_comment_is_none(cls, v: Optional[str]) -> Optional[str]:
+        return blank_is_none(v)
 
 
-class PlaceReportCreatedResponse(BaseModel):
-    message: str
+PlaceReportCreatedResponse = ReportCreatedResponse
 
 
 class ReportedPlace(BaseModel):

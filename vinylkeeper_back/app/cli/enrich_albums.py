@@ -1,9 +1,9 @@
 """
 Backfill Discogs metadata on albums. Resumable and idempotent: only albums that
 are not enriched yet are fetched, so it can be interrupted and run again.
-Albums enriched by a run also get their rule-based moods. Then the Discogs suggested prices
-of the releases kept in collections (missing ones, then those older than 30 days) and the
-day's EUR exchange rates are refreshed.
+Albums enriched by a run also get their rule-based moods. Then the collection value
+re-evaluations asked from the dashboard and left unfinished are worked through: prices are only
+fetched on demand, never for every collection (exchange rates have their own job, refresh_rates).
 
 Usage (from vinylkeeper_back/):
     poetry run python -m app.cli.enrich_albums [--limit N] [--dry-run] [--skip-masters] [--skip-editions]
@@ -19,7 +19,7 @@ Usage (from vinylkeeper_back/):
     --refresh-editions-before YYYY-MM-DD
                       also fetch again the pressing details stored before that day (UTC), to get
                       the full format ('180 Gram', colours, '2 × Vinyl'), one call each; resumable
-    --skip-prices     do not refresh prices and exchange rates
+    --skip-prices     do not finish the re-evaluations queued from the dashboard
 """
 import argparse
 import asyncio
@@ -31,14 +31,16 @@ from app.core.logging import logger
 from app.db.session import AsyncSessionLocal, engine
 from app.repositories.album_enrichment_repository import AlbumEnrichmentRepository
 from app.repositories.album_price_repository import AlbumPriceRepository
-from app.repositories.mood_assignment_repository import MoodAssignmentRepository
 from app.services.album_enrichment_service import (
     DISCOGS_MIN_INTERVAL_SECONDS,
     AlbumEnrichmentService,
     DiscogsClient,
     EnrichmentReport,
 )
-from app.services.album_price_service import AlbumPriceService, refresh_exchange_rates
+from app.repositories.discogs_usage_repository import DiscogsUsageRepository
+from app.repositories.mood_assignment_repository import MoodAssignmentRepository
+from app.services.album_price_service import AlbumPriceService
+from app.services.discogs_usage_service import DiscogsSource, DiscogsUsageService, discogs_usage
 from app.services.mood_assignment_service import MoodAssignmentService
 
 
@@ -53,7 +55,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Rewrite titles of albums enriched before they followed Discogs")
     parser.add_argument("--refresh-editions-before", type=_utc_day, default=None, metavar="YYYY-MM-DD",
                         help="Fetch again the pressing details stored before that day (UTC)")
-    parser.add_argument("--skip-prices", action="store_true", help="Do not refresh prices and exchange rates")
+    parser.add_argument("--skip-prices", action="store_true",
+                        help="Do not finish the re-evaluations queued from the dashboard")
     return parser.parse_args(argv)
 
 
@@ -72,16 +75,16 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
             titles = await repository.list_stale_titles(args.limit) if args.refresh_titles else []
             if args.refresh_editions_before:
                 editions += await repository.list_stale_editions(args.refresh_editions_before, args.limit)
-            prices = [] if args.skip_prices else await AlbumPriceRepository(db).list_pending_prices(args.limit)
-            calls = len(releases) + len(masters) + len(editions) + len(titles) + len(prices)
+            prices = 0 if args.skip_prices else await AlbumPriceRepository(db).count_requests()
+            calls = len(releases) + len(masters) + len(editions) + len(titles) + prices
             minutes = calls * DISCOGS_MIN_INTERVAL_SECONDS / 60
             print(f"Pending: {len(releases)} release(s), {len(masters)} master(s), {len(editions)} pressing(s), "
-                  f"{len(titles)} title(s), {len(prices)} price(s) "
+                  f"{len(titles)} title(s), {prices} queued price(s) "
                   f"(~{minutes:.0f} min; masters of pending releases are not counted yet)")
             return report
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as http_client:
-            service = AlbumEnrichmentService(repository, DiscogsClient(http_client))
+            service = AlbumEnrichmentService(repository, DiscogsClient(http_client, source=DiscogsSource.ENRICHMENT))
             await service.enrich_pending_releases(args.limit, report=report)
             # Styles are known now: moods do not wait for the (longer) masters pass
             if report.enriched_album_ids:
@@ -97,12 +100,14 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
             if args.refresh_editions_before:
                 await service.refresh_stale_editions(args.refresh_editions_before, args.limit, report=report)
             if not args.skip_prices:
-                price_repository = AlbumPriceRepository(db)
-                await refresh_exchange_rates(price_repository, http_client)
-                price_service = AlbumPriceService(price_repository, service.client)
-                # Re-evaluations asked from the dashboard and left by a stopped worker first
-                await price_service.work_requests(report=report)
-                await price_service.refresh_prices(args.limit, report=report)
+                # Re-evaluations asked from the dashboard and left by a stopped or rate-limited run
+                price_client = DiscogsClient(http_client, source=DiscogsSource.PRICE)
+                await AlbumPriceService(AlbumPriceRepository(db), price_client).work_requests(report=report)
+        # The counts of the admin gauge are kept a month
+        purged = await DiscogsUsageService(DiscogsUsageRepository(db)).purge()
+        await db.commit()
+        if purged:
+            print(f"Discogs usage: {purged} hour row(s) older than a month removed")
 
     print(
         f"Done: {report.enriched} enriched, {report.not_found} not found on Discogs, "
@@ -120,9 +125,13 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
 
 def main(argv: list[str] | None = None) -> None:
     async def _main() -> None:
+        # The calls of a long run show on the admin gauge while it runs, not only at the end
+        writer = asyncio.create_task(discogs_usage.run())
         try:
             await run(parse_args(argv))
         finally:
+            writer.cancel()
+            await discogs_usage.flush()
             await engine.dispose()
 
     asyncio.run(_main())

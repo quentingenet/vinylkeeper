@@ -20,13 +20,15 @@ from app.schemas.dashboard_schema import (
     ValueRefreshResponse,
 )
 from app.services.album_price_service import REQUEST_MIN_INTERVAL_SECONDS
+from app.core.config_env import settings
 from app.core.exceptions import QuotaExceededError, ResourceNotFoundError
 from app.core.logging import log_activity
 
 _CACHE_TTL = 30.0
-# A user re-evaluates their collections once a day at most: each one spends the Discogs quota
-VALUE_REFRESHES_PER_DAY = 1
-VALUE_REFRESH_WINDOW = timedelta(hours=24)
+# A user re-evaluates their collections once per PRICE_REFRESH_INTERVAL_DAYS (.env) at most: each one
+# spends the Discogs quota
+VALUE_REFRESHES_PER_WINDOW = 1
+VALUE_REFRESH_WINDOW = timedelta(days=settings.PRICE_REFRESH_INTERVAL_DAYS)
 _cache: dict[int, tuple[Any, float]] = {}
 
 
@@ -77,14 +79,16 @@ class DashboardService:
             refreshable=len(refreshable),
             refreshes_left=refreshes_left,
             next_refresh_at=next_refresh_at,
+            refresh_interval_days=settings.PRICE_REFRESH_INTERVAL_DAYS,
+            price_max_age_days=settings.PRICE_MAX_AGE_DAYS,
         )
 
     async def _refresh_allowance(self, user: User) -> tuple[int, Optional[datetime]]:
         """Re-evaluations left in the window, and when the next one is allowed if none is left."""
         recent = await self.price_repository.recent_refreshes(user.id, VALUE_REFRESH_WINDOW)
-        left = max(VALUE_REFRESHES_PER_DAY - len(recent), 0)
+        left = max(VALUE_REFRESHES_PER_WINDOW - len(recent), 0)
         # The oldest use counted leaves the window first
-        return left, None if left else recent[-VALUE_REFRESHES_PER_DAY] + VALUE_REFRESH_WINDOW
+        return left, None if left else recent[-VALUE_REFRESHES_PER_WINDOW] + VALUE_REFRESH_WINDOW
 
     async def _value_scope(
         self, user: User, collection_id: Optional[int], all_collections: bool
@@ -103,15 +107,15 @@ class DashboardService:
 
     async def request_value_refresh(self, user: User) -> ValueRefreshResponse:
         """
-        Queue every pressing of the user whose price is missing or older than a day, whatever the
-        collection shown, once a day at most: the button cannot drain the Discogs quota shared with
-        the live search.
+        Queue every pressing of the user whose price is missing or older than PRICE_MAX_AGE_DAYS,
+        whatever the collection shown, once per PRICE_REFRESH_INTERVAL_DAYS at most: the button
+        cannot drain the Discogs quota shared with the live search.
         """
         refreshes_left, next_refresh_at = await self._refresh_allowance(user)
         if not refreshes_left:
             log_activity(user.username, f"asked a collection value re-evaluation, refused until {next_refresh_at}")
             raise QuotaExceededError(
-                "One re-evaluation a day: the next one is possible later",
+                "No re-evaluation left for now: the next one is possible later",
                 details={"next_refresh_at": next_refresh_at.isoformat() if next_refresh_at else None},
             )
         album_ids = await self.dashboard_repository.refreshable_album_ids(user.id)

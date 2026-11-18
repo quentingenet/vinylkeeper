@@ -5,8 +5,9 @@ everything runs in an outer transaction that is rolled back.
 """
 from datetime import date, timedelta
 
-from sqlalchemy import text, update
+from sqlalchemy import func, text, update
 
+from app.core.config_env import settings
 from app.models.album_price_model import AlbumPrice
 from app.models.collection_album import CollectionAlbumCopy
 from app.repositories.album_price_repository import AlbumPriceRepository
@@ -67,7 +68,7 @@ class TestCollectionValue:
 
 
 class TestReEvaluationQueue:
-    async def test_only_missing_or_day_old_prices_are_queued_once(self, real_session):
+    async def test_only_missing_or_outdated_prices_are_queued_once(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
         missing, fresh, old = [await make_pressing(real_session) for _ in range(3)]
@@ -77,7 +78,8 @@ class TestReEvaluationQueue:
         await prices.save_prices(fresh.id, priced(1, 2, 3))
         await prices.save_prices(old.id, priced(1, 2, 3))
         await real_session.execute(update(AlbumPrice).where(AlbumPrice.album_id == old.id)
-                                   .values(fetched_at=text("now() - interval '2 days'")))
+                                   .values(fetched_at=func.now() - func.make_interval(
+                                       0, 0, 0, settings.PRICE_MAX_AGE_DAYS + 1)))
         repo = DashboardRepository(real_session)
 
         refreshable = set(await repo.refreshable_album_ids(user.id))
@@ -103,20 +105,6 @@ class TestReEvaluationQueue:
         await prices.delete_request(album.id)
 
         assert (await DashboardRepository(real_session).collection_value(user.id)).pending == 0
-
-    async def test_pending_prices_put_the_missing_ones_first(self, real_session):
-        user = await make_test_user(real_session)
-        collection = await make_test_collection(real_session, owner_id=user.id)
-        album = await make_pressing(real_session)
-        await put_album_in_collection(real_session, collection.id, album.id)
-
-        pending = [album_id for album_id, _ in await AlbumPriceRepository(real_session).list_pending_prices()]
-
-        assert album.id in pending
-        missing_ids = set((await real_session.execute(text(
-            "SELECT ca.album_id FROM collection_album ca LEFT JOIN album_prices p ON p.album_id = ca.album_id "
-            "WHERE p.album_id IS NULL"))).scalars())
-        assert set(pending[:len(missing_ids)]) <= missing_ids | {album.id}
 
 
 class TestAllowanceAndCurrency:

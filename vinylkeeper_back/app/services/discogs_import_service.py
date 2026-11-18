@@ -35,6 +35,7 @@ from app.services.album_enrichment_service import (
 )
 from app.services.collection_service import save_collection_copy
 from app.services.discogs_oauth_service import DiscogsOAuthService
+from app.services.discogs_usage_service import DiscogsSource
 from app.services.mood_assignment_service import MoodAssignmentService
 from app.utils.discogs_release import is_discogs_image
 
@@ -502,7 +503,8 @@ async def import_client(
     connection = await connections.authorization_for(job.user_id)
     if connection is None or connection[0] != job.discogs_username:
         return None
-    return DiscogsClient(http_client, min_interval=IMPORT_MIN_INTERVAL_SECONDS, authorization=connection[1])
+    return DiscogsClient(http_client, source=DiscogsSource.IMPORT, min_interval=IMPORT_MIN_INTERVAL_SECONDS,
+                         authorization=connection[1])
 
 
 def raise_for_preview(error: DiscogsImportError) -> None:

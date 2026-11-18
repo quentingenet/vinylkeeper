@@ -19,8 +19,19 @@ from app.schemas.place_report_schema import (
 )
 from app.schemas.place_schema import PlaceUpdate
 from app.services.moderation_service import ModerationService
+from app.schemas.collection_report_schema import CollectionReportListResponse, CollectionReportResponse
+from app.schemas.discogs_usage_schema import DiscogsUsageResponse
+from app.schemas.report_schema import REPORTS_DEFAULT_LIMIT, REPORTS_MAX_LIMIT
+from app.services.collection_report_service import CollectionReportService
+from app.services.discogs_usage_service import DiscogsUsageService
 from app.services.place_report_service import PlaceReportService
-from app.deps.deps import get_moderation_service, get_place_report_service, require_admin
+from app.deps.deps import (
+    get_collection_report_service,
+    get_discogs_usage_service,
+    get_moderation_service,
+    get_place_report_service,
+    require_admin,
+)
 from app.models.user_model import User
 from app.core.logging import log_activity
 
@@ -115,6 +126,15 @@ async def get_moderation_stats(
     return stats
 
 
+@router.get("/discogs-usage", response_model=DiscogsUsageResponse, status_code=status.HTTP_200_OK)
+async def get_discogs_usage(
+    user: User = Depends(require_admin),
+    service: DiscogsUsageService = Depends(get_discogs_usage_service),
+):
+    """Calls made to the Discogs API in the current hour and the last 24 hours, per source (admin only)"""
+    return await service.usage()
+
+
 @router.get("/place-reports", response_model=PlaceReportListResponse, status_code=status.HTTP_200_OK)
 async def get_place_reports(
     report_status: Literal["open", "resolved", "dismissed", "all"] = Query("open", alias="status"),
@@ -149,6 +169,45 @@ async def dismiss_place_report(
     """Nothing was wrong: only this report is closed (admin only)"""
     report = await service.dismiss(report_id, user)
     log_activity(f"admin {user.username}", f"dismissed report #{report_id} on Atlas spot #{report.place.id}")
+    return report
+
+
+@router.get("/collection-reports", response_model=CollectionReportListResponse, status_code=status.HTTP_200_OK)
+async def get_collection_reports(
+    report_status: Literal["open", "resolved", "dismissed", "all"] = Query("open", alias="status"),
+    page: int = Query(1, gt=0),
+    limit: int = Query(REPORTS_DEFAULT_LIMIT, gt=0, le=REPORTS_MAX_LIMIT),
+    user: User = Depends(require_admin),
+    service: CollectionReportService = Depends(get_collection_report_service),
+):
+    """Reports of abuse in public collections, open ones first (admin only)"""
+    return await service.list_reports(None if report_status == "all" else report_status, page, limit)
+
+
+@router.post("/collection-reports/{report_id}/resolve", response_model=CollectionReportResponse,
+             status_code=status.HTTP_200_OK)
+async def resolve_collection_report(
+    report_id: int = Path(..., gt=0),
+    user: User = Depends(require_admin),
+    service: CollectionReportService = Depends(get_collection_report_service),
+):
+    """The collection was dealt with: every open report of it is resolved (admin only)"""
+    report = await service.resolve(report_id, user)
+    log_activity(f"admin {user.username}",
+                 f"resolved the reports of collection #{report.collection.id} {report.collection.name!r}")
+    return report
+
+
+@router.post("/collection-reports/{report_id}/dismiss", response_model=CollectionReportResponse,
+             status_code=status.HTTP_200_OK)
+async def dismiss_collection_report(
+    report_id: int = Path(..., gt=0),
+    user: User = Depends(require_admin),
+    service: CollectionReportService = Depends(get_collection_report_service),
+):
+    """Nothing was wrong: only this report is closed (admin only)"""
+    report = await service.dismiss(report_id, user)
+    log_activity(f"admin {user.username}", f"dismissed report #{report_id} on collection #{report.collection.id}")
     return report
 
 

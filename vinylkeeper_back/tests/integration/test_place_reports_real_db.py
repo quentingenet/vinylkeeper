@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import BackgroundTasks
-from sqlalchemy import select
+from sqlalchemy import select, text, update
 
 from app.core.exceptions import QuotaExceededError, ResourceNotFoundError, ValidationError
 from app.models.place_model import Place
@@ -18,6 +18,7 @@ from app.repositories.place_report_repository import PlaceReportRepository
 from app.schemas.place_report_schema import PlaceReportCreate
 from app.schemas.place_schema import PlaceUpdate
 from app.services import place_report_service as service_module
+from app.services import report_service as report_service_module
 from app.services.place_report_service import PlaceReportService
 
 from tests.integration.conftest import make_real_test_user as make_test_user
@@ -26,7 +27,7 @@ from tests.integration.test_atlas_moderation_integration import pick_existing_pl
 
 @pytest.fixture(autouse=True)
 def mail():
-    with patch.object(service_module, "send_mail", new_callable=AsyncMock, return_value=True) as send:
+    with patch.object(report_service_module, "send_mail", new_callable=AsyncMock, return_value=True) as send:
         yield send
 
 
@@ -70,6 +71,22 @@ class TestReportSpot:
 
         with pytest.raises(ValidationError, match="already reported"):
             await service.report_place(user, spot.id, PlaceReportCreate(issues=["address"]), BackgroundTasks())
+
+    async def test_once_a_day_per_spot_even_once_the_admin_closed_it(self, real_session):
+        member, admin = await make_test_user(real_session), await make_test_user(real_session)
+        spot = await make_spot(real_session)
+        service = make_service(real_session)
+        await service.report_place(member, spot.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
+        report_id = (await real_session.execute(
+            select(PlaceReport.id).where(PlaceReport.place_id == spot.id))).scalar_one()
+        await service.dismiss(report_id, admin)
+
+        with pytest.raises(ValidationError, match="already reported"):
+            await service.report_place(member, spot.id, PlaceReportCreate(issues=["name"]), BackgroundTasks())
+
+        await real_session.execute(update(PlaceReport).where(PlaceReport.place_id == spot.id)
+                                   .values(created_at=text("now() - interval '25 hours'")))
+        await service.report_place(member, spot.id, PlaceReportCreate(issues=["address"]), BackgroundTasks())
 
     async def test_a_spot_not_on_the_map_cannot_be_reported(self, real_session):
         user = await make_test_user(real_session)
