@@ -12,4 +12,20 @@ export function applyIosShell(doc: Document = document): void {
   const viewport = doc.querySelector<HTMLMetaElement>('meta[name="viewport"]');
   // Without it, iOS reports safe areas of 0 to the page
   if (viewport && !viewport.content.includes("viewport-fit")) viewport.content += ", viewport-fit=cover";
+  // Once laid out: the safe areas iOS gives the page, in the logs of the app (the notch of the full screen dialogs)
+  setTimeout(() => logSafeAreas(doc), 1500);
+}
+
+function logSafeAreas(doc: Document): void {
+  const probe = doc.createElement("div");
+  probe.style.cssText =
+    "position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:var(--safe-bottom);" +
+    "margin-top:var(--safe-top)";
+  doc.body.appendChild(probe);
+  const style = getComputedStyle(probe);
+  console.info(
+    `[ios] safe area top=${style.paddingTop} (--safe-top=${style.marginTop}, --safe-bottom=${style.paddingBottom}),`,
+    `viewport=${window.innerWidth}x${window.innerHeight}`,
+  );
+  probe.remove();
 }
