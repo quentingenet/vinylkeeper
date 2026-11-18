@@ -12,7 +12,7 @@
 
 **VinylKeeper** is a free and open source app to manage your vinyl collection, share it with a community of collectors, and decide what to put on the turntable tonight.
 
-It is **live in production** at **[vinylkeeper.org](https://vinylkeeper.org/)** on the web, and an Android app is in progress.
+It is **live in production** at **[vinylkeeper.org](https://vinylkeeper.org/)** on the web. The Android app is in testing on Google Play, and an iPhone app is in progress.
 
 <p align="center">
   <a href="https://vinylkeeper.org/">
@@ -29,7 +29,7 @@ Pick a mood, an era, a genre or a collection, and get records from your own shel
 Organize your records into collections and keep a wishlist. Own the same record more than once? Each copy keeps its own record condition, cover condition and acquisition date, and the cover shows a ×2, ×3 badge. Different pressings of the same album share a single cover, with one section per pressing. Export everything to CSV or ODS, one row per copy.
 
 **👥 Community**
-Make a collection public, browse and like other collectors' collections.
+Make a collection public, browse and like other collectors' collections, and report abuse to the admins.
 
 **➕ Add a record, from anywhere**
 A floating "Add a record" button opens a quick search of the Discogs catalogue on any page. Every result shows its pressing (year, country, label, catalogue number, format) so you add the exact one on your shelf, to any collection or to your wishlist. Adding a record you already own asks whether it is another copy or another pressing. Genres, styles, years and moods are filled in automatically in the background.
@@ -41,10 +41,10 @@ Records added before pressings were shown can be confirmed in one click, or swit
 A community map of record shops, flea markets and vinyl spots. New spots go through moderation.
 
 **📊 Dashboard**
-Your collection at a glance and what the community added recently.
+Your collection at a glance, an estimate of its value, and what the community added recently.
 
 **📱 Web and mobile**
-Responsive web app. An Android app built with Capacitor is in progress.
+Responsive web app, and Android and iPhone apps built with Capacitor, with a barcode scanner to find a record.
 
 <p align="center">
   <img src="vinylkeeper_front/public/vk_preview/preview_vk_1.webp" alt="Dashboard" width="49%">
@@ -55,7 +55,7 @@ Responsive web app. An Android app built with Capacitor is in progress.
 
 ### Data enrichment and moods, with no LLM at runtime
 
-Records are enriched once from Discogs (genres, styles, pressing year, original year from the master release), then stored. Spinning now, the moods and the dashboard never call Discogs at request time; the search and the artist and album pages query Discogs live.
+Genres, styles and years come from Discogs, in the background. Spinning now, the moods and the dashboard never call Discogs at request time; the search and the artist and album pages query Discogs live.
 
 Moods (calm, groovy, laid back, dark...) come from **400+ versioned rules** mapping Discogs styles and genres to moods, kept in [`tag_mood_rules.py`](vinylkeeper_back/app/data/tag_mood_rules.py) and reviewed like code.
 
@@ -64,20 +64,20 @@ Moods (calm, groovy, laid back, dark...) come from **400+ versioned rules** mapp
 Other details:
 - **Copies and pressings**: a Discogs master groups every pressing of a work. Collection grids, counters, Spinning now and the dashboard all count works, so a record never shows twice, while each physical copy lives in its own table with its own condition.
 - **Reissues are dated correctly**: a 2019 pressing of *Kind of Blue* is filed under the 1950s, thanks to the master release year.
-- **Resilient to Discogs rate limits**: requests are throttled to the 60/min limit with backoff, the backfill is resumable, and a nightly job catches up anything that failed.
+- **Resilient to Discogs rate limits**: requests are throttled with backoff, and a nightly job catches up anything that failed.
 
 ### Security
 - JWT (RS256) in **HttpOnly cookies**, with refresh tokens and **CSRF double-submit** protection
 - Refresh tokens are tied to a session: they rotate and can be revoked
 - Argon2 password hashing
-- Image proxy with a domain allowlist and size limits (SSRF protection), with on-disk caching
+- Image proxy with a domain allowlist and size limits (SSRF protection)
 
 ### Architecture
 
 ```mermaid
 flowchart LR
     Web["React + TypeScript<br/>(web)"] --> API
-    App["Android app<br/>(Capacitor, in progress)"] --> API
+    App["Android and iOS apps<br/>(Capacitor)"] --> API
     API["FastAPI<br/>endpoints, services, repositories"] --> DB[("PostgreSQL")]
     API -- "search, enrichment" --> Discogs["Discogs API"]
     Cron["Nightly job"] -- "enrich_albums" --> API
@@ -106,6 +106,7 @@ flowchart LR
 - **The API deploys itself** when `main` changes under `vinylkeeper_back/`: a `git pull`, a Docker rebuild with the Alembic migrations, and a health check that fails the run if the API does not answer.
 - **Least privilege**: GitHub holds an SSH key restricted by a forced command on the server. Whatever it asks, it can only run the deployment script: no shell, no tunnel. The server is pinned by its host key, and the script lives outside the repository, so no commit can change what the deployment key is allowed to run.
 - **One deployment at a time**, and a push that only touches the web app leaves the API running.
+- **The iPhone app is built on a macOS runner** ([workflow](.github/workflows/ios-build.yml)) when the app changes on `main`: a build without signing and a launch in the simulator.
 
 ## Getting started
 
@@ -141,7 +142,7 @@ The API runs at **http://localhost:8000**, with interactive docs at **/docs**.
 Optional, to fill in Discogs metadata and moods for existing records:
 ```bash
 poetry run python -m app.cli.sync_mood_rules       # load the mood rules
-poetry run python -m app.cli.enrich_albums         # fetch Discogs metadata and prices, then assign moods
+poetry run python -m app.cli.enrich_albums         # fetch Discogs metadata, then assign moods
 poetry run python -m app.cli.refresh_rates         # today's EUR/USD rate (ECB), for the collection value
 ```
 
@@ -155,7 +156,7 @@ npm run dev
 
 Open **http://localhost:5173**. The API URL is set in [`.env.development`](vinylkeeper_front/.env.development).
 
-### Android app (in progress)
+### Android app
 
 The Capacitor project is in [`vinylkeeper_front/android`](vinylkeeper_front/android). You need Java 21, the Android SDK and a phone with USB debugging on.
 
@@ -165,6 +166,10 @@ npm run development:mobile
 ```
 
 The API URL comes from `.env.mobile`. Icons and splash screens are generated from [`resources/`](vinylkeeper_front/resources) with `npm run assets:android`. Release builds are signed with a private key that is never part of the repository.
+
+### iPhone app (in progress)
+
+The Xcode project is in [`vinylkeeper_front/ios`](vinylkeeper_front/ios). It needs a Mac with Xcode (`npm run mobile:ios:prod`).
 
 ### Tests
 
@@ -192,6 +197,12 @@ Contributions are welcome:
 3. Run the tests and linters (`poetry run pytest`, `poetry run flake8 app tests`, `npm run test`, `npm run lint`).
 4. Open a Pull Request.
 
+## Credits
+
+Data provided by [Discogs](https://www.discogs.com).
+
+This application uses Discogs’ API but is not affiliated with, sponsored or endorsed by Discogs. ‘Discogs’ is a trademark of Zink Media, LLC.
+
 ## License
 
 VinylKeeper is released under the [GNU GPL v3](LICENSE). You are free to use, study, share and modify it, as long as modified versions stay free under the same license.
@@ -199,5 +210,3 @@ VinylKeeper is released under the [GNU GPL v3](LICENSE). You are free to use, st
 ## Author
 
 **Quentin Genet**, full stack developer (React, TypeScript, FastAPI, PostgreSQL).
-
-If you love vinyl, music and web development, contributions and feedback are very welcome.
