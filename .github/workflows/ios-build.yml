@@ -32,13 +32,14 @@ jobs:
       run:
         working-directory: vinylkeeper_front
     env:
-      # The public settings of the production build (repository variables, the values of .env.production)
-      VITE_API_VK_URL: ${{ vars.VITE_API_VK_URL }}
-      VITE_SPOTIFY_WEB_URL: ${{ vars.VITE_SPOTIFY_WEB_URL }}
-      VITE_SPOTIFY_MOBILE_URL: ${{ vars.VITE_SPOTIFY_MOBILE_URL }}
-      VITE_DEEZER_WEB_URL: ${{ vars.VITE_DEEZER_WEB_URL }}
-      VITE_DEEZER_MOBILE_URL: ${{ vars.VITE_DEEZER_MOBILE_URL }}
-      VITE_YOUTUBE_MUSIC_URL: ${{ vars.VITE_YOUTUBE_MUSIC_URL }}
+      # The public settings of the production build: repository variables (Settings, Secrets and variables, Actions,
+      # Variables tab), the values of .env.production; repository secrets of the same names are read too
+      VITE_API_VK_URL: ${{ vars.VITE_API_VK_URL || secrets.VITE_API_VK_URL }}
+      VITE_SPOTIFY_WEB_URL: ${{ vars.VITE_SPOTIFY_WEB_URL || secrets.VITE_SPOTIFY_WEB_URL }}
+      VITE_SPOTIFY_MOBILE_URL: ${{ vars.VITE_SPOTIFY_MOBILE_URL || secrets.VITE_SPOTIFY_MOBILE_URL }}
+      VITE_DEEZER_WEB_URL: ${{ vars.VITE_DEEZER_WEB_URL || secrets.VITE_DEEZER_WEB_URL }}
+      VITE_DEEZER_MOBILE_URL: ${{ vars.VITE_DEEZER_MOBILE_URL || secrets.VITE_DEEZER_MOBILE_URL }}
+      VITE_YOUTUBE_MUSIC_URL: ${{ vars.VITE_YOUTUBE_MUSIC_URL || secrets.VITE_YOUTUBE_MUSIC_URL }}
       WORKSPACE: ios/App/App.xcworkspace
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
@@ -48,7 +49,7 @@ jobs:
         run: |
           missing=0
           for name in VITE_API_VK_URL VITE_SPOTIFY_WEB_URL VITE_DEEZER_WEB_URL VITE_YOUTUBE_MUSIC_URL; do
-            if [ -z "${!name}" ]; then echo "::error::Repository variable $name is not set"; missing=1; fi
+            if [ -z "${!name}" ]; then echo "::error::$name is not set: add it as a repository variable (not an environment one)"; missing=1; fi
           done
           exit $missing
 
@@ -65,7 +66,7 @@ jobs:
         run: npm run -s version:check
 
       - name: CocoaPods cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             vinylkeeper_front/ios/App/Pods
@@ -135,7 +136,7 @@ jobs:
 
       - name: Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-build-${{ github.run_number }}
           retention-days: 14
