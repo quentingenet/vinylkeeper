@@ -122,16 +122,28 @@ jobs:
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
           xcrun simctl install "$udid" build/sim/Build/Products/Debug-iphonesimulator/App.app
-          xcrun simctl launch "$udid" org.vinylkeeper.app
-          # The time for the web app to load and draw its first page
-          sleep 25
           mkdir -p build/screens
-          xcrun simctl io "$udid" screenshot build/screens/launch.png
+          # The output of the app (Capacitor writes what it loads and the errors of the web app), kept as it runs
+          xcrun simctl launch --console-pty "$udid" org.vinylkeeper.app > build/app-console.log 2>&1 &
+          console=$!
+          # Two screenshots: a slow first load is not taken for a blank app
+          sleep 20
+          xcrun simctl io "$udid" screenshot build/screens/launch-20s.png
+          sleep 40
+          xcrun simctl io "$udid" screenshot build/screens/launch-60s.png
+          # What iOS logged for the app ("Unknown class" of a storyboard, WebKit and Capacitor messages)
+          xcrun simctl spawn "$udid" log show --last 5m --style compact \
+            --predicate 'process == "App" OR subsystem BEGINSWITH "com.apple.WebKit" OR eventMessage CONTAINS "Unknown class"' \
+            > build/app-system.log 2>&1 || true
           # Still running: a crash at launch (a wrong storyboard class, a missing plugin) fails here
           if ! xcrun simctl spawn "$udid" launchctl list | grep -q "org.vinylkeeper.app"; then
             echo "::error::The app is not running anymore after its launch"
+            kill "$console" 2>/dev/null || true
             exit 1
           fi
+          kill "$console" 2>/dev/null || true
+          echo "--- app console (last lines)"; tail -n 40 build/app-console.log || true
+          echo "--- unknown classes"; grep -i "unknown class" build/app-system.log || echo "none"
           (cd build/sim/Build/Products/Debug-iphonesimulator && zip -qry ../../../../VinylKeeper-simulator.zip App.app)
 
       - name: Artifacts
