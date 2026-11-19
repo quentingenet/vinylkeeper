@@ -4,6 +4,7 @@ from app.core.handlers import register_exception_handlers
 from app.endpoints import users, collections, request_proxy, dashboard, atlas, admin
 from app.endpoints import external_references, images, spinning_now, discogs_import
 from app.core.lifespan import lifespan
+from app.core.logging import LogActorMiddleware
 
 from app.core.config_env import settings
 
@@ -22,6 +23,8 @@ app = FastAPI(
 )
 
 configure_cors(app)
+# Each request starts with no actor in the error logs (set once its user is known)
+app.add_middleware(LogActorMiddleware)
 register_exception_handlers(app)
 
 app.include_router(users.router, prefix="/api/users")

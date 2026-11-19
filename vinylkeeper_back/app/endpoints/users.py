@@ -32,7 +32,7 @@ from app.utils.auth_utils.auth import (
 )
 from app.core.config_env import settings
 from app.deps.deps import get_session_service, get_user_service
-from app.core.logging import log_activity
+from app.core.logging import log_activity, mask_email, set_log_actor
 from app.utils.auth_utils.auth import (
     TokenType, bearer_token, decode_refresh_token, get_current_user, get_refresh_user,
 )
@@ -84,6 +84,7 @@ async def login(
     user_service: UserService = Depends(get_user_service),
     sessions: SessionService = Depends(get_session_service),
 ) -> LoginResponse:
+    set_log_actor(mask_email(user_data.email))
     user = await user_service.authenticate(user_data.email, user_data.password)
     if not user.is_active:
         raise AccountLockedError()
@@ -104,6 +105,7 @@ async def register(
     user_service: UserService = Depends(get_user_service),
     sessions: SessionService = Depends(get_session_service),
 ) -> RegisterResponse:
+    set_log_actor(new_user.username)
     user = await user_service.create_user(new_user)
     tokens = await start_session(response, user, new_user.client == "native", sessions)
     log_activity(user.username, "signed up")
@@ -119,6 +121,7 @@ async def forgot_password(
     background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service)
 ) -> MessageResponse:
+    set_log_actor(mask_email(data.email))
     await user_service.send_password_reset_email(data.email, background_tasks)
     return MessageResponse(message="If an account exists with this email, a password reset link has been sent")
 

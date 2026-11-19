@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.exceptions import AppException, ErrorCode
 from app.core.config_env import settings
-from app.core.logging import logger, extract_file_info, mask_email
+from app.core.logging import logger, extract_file_info, log_actor, mask_email
 
 
 def register_exception_handlers(app):
@@ -20,7 +20,8 @@ def register_exception_handlers(app):
             tb = traceback.extract_tb(exc.__traceback__)
             file_info = extract_file_info(tb)
 
-            error_details = f"AppException (code {exc.detail['code']}): {exc.detail['message']} - File: {file_info}"
+            error_details = (f"AppException (code {exc.detail['code']}) by {log_actor()}: {exc.detail['message']}"
+                             f" - File: {file_info}")
             if exc.detail.get('details'):
                 error_details += f" - Details: {exc.detail['details']}"
             # DuplicateEmailError carries the address: the response gives it back, the log does not
@@ -46,7 +47,7 @@ def register_exception_handlers(app):
             errors.append(error_dict)
 
         logged = [{key: error[key] for key in ("type", "loc", "msg")} for error in errors]
-        logger.error(mask_email(f"Validation error: {logged} - File: {file_info}"))
+        logger.error(mask_email(f"Validation error by {log_actor()}: {logged} - File: {file_info}"))
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
@@ -74,7 +75,7 @@ def register_exception_handlers(app):
         if should_log:
             tb = traceback.extract_tb(exc.__traceback__)
             file_info = extract_file_info(tb)
-            logger.error(f"HTTP {exc.status_code} - {exc.detail} | {file_info}")
+            logger.error(f"HTTP {exc.status_code} by {log_actor()} - {exc.detail} | {file_info}")
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -94,7 +95,8 @@ def register_exception_handlers(app):
         # The one place where an unexpected error (a database error included) becomes a 500
         # The route template, not the path: a path can carry a share token
         route = getattr(request.scope.get("route"), "path", "?")
-        logger.error(f"Unhandled exception occurred on {request.method} {route} - File: {file_info}", exc_info=exc)
+        logger.error(f"Unhandled exception occurred on {request.method} {route} by {log_actor()} - File: {file_info}",
+                     exc_info=exc)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={

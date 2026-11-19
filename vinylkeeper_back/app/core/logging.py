@@ -1,7 +1,9 @@
+from contextvars import ContextVar
 import logging
 import os
 import re
 from logging.config import dictConfig
+from typing import Optional
 
 # Same levels in every environment
 default_level = "INFO"
@@ -96,6 +98,36 @@ log_config = {
 dictConfig(log_config)
 
 logger = logging.getLogger("app")
+
+
+# Who the request is from, for the error logs: the username once the session is known, the masked email on the
+# routes without a session that receive one (login, sign up, forgot password). Each request runs in its own task,
+# so the value never leaks from one request to the next.
+_log_actor: ContextVar[Optional[str]] = ContextVar("log_actor", default=None)
+
+
+def set_log_actor(who: str) -> None:
+    """A username, or an email masked with mask_email: never a password, a token or a full address."""
+    _log_actor.set(who)
+
+
+def log_actor() -> str:
+    return _log_actor.get() or "anonymous"
+
+
+class LogActorMiddleware:
+    """
+    Every request starts with no actor, whatever ran before in the same context. Cleared at the start, not at the
+    end: the handler of unexpected errors runs outside the middlewares and still reads it.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            _log_actor.set(None)
+        await self.app(scope, receive, send)
 
 
 def log_activity(who: str, what: str) -> None:

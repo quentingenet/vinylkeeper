@@ -126,11 +126,33 @@ jobs:
           echo "Simulator: $udid"
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
+          # The simulator app for Appetize, kept whatever the launch below gives
+          (cd build/sim/Build/Products/Debug-iphonesimulator && zip -qry ../../../../VinylKeeper-simulator.zip App.app)
           xcrun simctl install "$udid" build/sim/Build/Products/Debug-iphonesimulator/App.app
           mkdir -p build/screens
-          # The output of the app (Capacitor writes what it loads and the errors of the web app), kept as it runs
-          xcrun simctl launch --console-pty "$udid" org.vinylkeeper.app > build/app-console.log 2>&1 &
-          console=$!
+          # The output of the app (Capacitor writes what it loads and the errors of the web app), kept as it runs.
+          # A slow runner may ignore the first launch: up to three attempts, each waiting a minute for the app
+          launch_app() {
+            xcrun simctl launch --console-pty --terminate-running-process "$udid" org.vinylkeeper.app \
+              > build/app-console.log 2>&1 &
+            console=$!
+            for _ in $(seq 1 30); do
+              sleep 2
+              if xcrun simctl spawn "$udid" launchctl list | grep -q "org.vinylkeeper.app"; then return 0; fi
+            done
+            kill "$console" 2>/dev/null || true
+            return 1
+          }
+          started=false
+          for attempt in 1 2 3; do
+            if launch_app; then started=true; break; fi
+            echo "::warning::Launch attempt $attempt did not start the app, trying again"
+          done
+          if [ "$started" != true ]; then
+            xcrun simctl io "$udid" screenshot build/screens/never-started.png || true
+            echo "::error::The app never started in the simulator (a slow runner rather than a crash: no output at all)"
+            exit 1
+          fi
           # Two screenshots: a slow first load is not taken for a blank app
           sleep 20
           xcrun simctl io "$udid" screenshot build/screens/launch-20s.png
@@ -142,14 +164,13 @@ jobs:
             > build/app-system.log 2>&1 || true
           # Still running: a crash at launch (a wrong storyboard class, a missing plugin) fails here
           if ! xcrun simctl spawn "$udid" launchctl list | grep -q "org.vinylkeeper.app"; then
-            echo "::error::The app is not running anymore after its launch"
+            echo "::error::The app started, then stopped: a crash (see build/app-console.log and app-system.log)"
             kill "$console" 2>/dev/null || true
             exit 1
           fi
           kill "$console" 2>/dev/null || true
           echo "--- app console (last lines)"; tail -n 40 build/app-console.log || true
           echo "--- unknown classes"; grep -i "unknown class" build/app-system.log || echo "none"
-          (cd build/sim/Build/Products/Debug-iphonesimulator && zip -qry ../../../../VinylKeeper-simulator.zip App.app)
 
       - name: Artifacts
         if: always()

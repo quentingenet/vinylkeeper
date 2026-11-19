@@ -24,7 +24,7 @@ from app.core.exceptions import (
     CsrfValidationError,
 )
 from app.core.enums import RoleEnum
-from app.core.logging import logger
+from app.core.logging import logger, set_log_actor
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
@@ -179,6 +179,8 @@ async def get_refresh_user(
     """
     payload = decode_refresh_token(request)
     user = await UserRepository(db).get_user_by_uuid(payload["sub"])
+    if user is not None:
+        set_log_actor(user.username)
     user = check_user_session(user, payload)
     sid = payload.get("sid")
     if sid:
@@ -290,6 +292,8 @@ async def get_current_user(
         if not request.cookies.get("csrf_token"):
             set_csrf_cookie(response, generate_csrf_token(), REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     user = await user_repository.get_user_by_uuid(payload["sub"])
+    if user is not None:
+        set_log_actor(user.username)
     return check_user_session(user, payload)
 
 
