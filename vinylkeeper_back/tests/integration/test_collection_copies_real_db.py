@@ -27,6 +27,7 @@ from app.schemas.external_reference_schema import (
 )
 from app.schemas.collection_schema import CollectionCreate, CollectionUpdate
 from app.services.export_service import ExportService
+from tests.integration.conftest import make_real_test_albums
 from tests.integration.test_real_db_relationships import (
     make_collection_service,
     make_external_reference_service,
@@ -36,14 +37,15 @@ from tests.integration.test_real_db_relationships import (
 )
 
 
-async def existing_albums(session: AsyncSession, count: int) -> list[Album]:
-    return list((await session.execute(select(Album).order_by(Album.id).limit(count))).scalars().all())
+async def new_albums(session: AsyncSession, count: int) -> list[Album]:
+    """Records made for the test: the tests never depend on the records already in the database."""
+    return await make_real_test_albums(session, count)
 
 
 async def owned_collection_with_album(session: AsyncSession, **states):
     user = await make_test_user(session)
     collection = await make_test_collection(session, owner_id=user.id)
-    [album] = await existing_albums(session, 1)
+    [album] = await new_albums(session, 1)
     await put_album_in_collection(session, collection.id, album.id, **states)
     # Reads below start from a clean session, like a new request does
     session.expunge_all()
@@ -127,7 +129,7 @@ class TestAddFromSearch:
     async def test_new_album_gets_the_states(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
 
         response = await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, self.request(album, state_record="mint", acquisition_month_year="2021-03"))
@@ -139,7 +141,7 @@ class TestAddFromSearch:
     async def test_same_release_again_updates_the_given_states_only(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
         service = make_external_reference_service(real_session)
         await service.add_to_collection(
             user.id, collection.id, self.request(album, state_record="mint", state_cover="good"))
@@ -155,7 +157,7 @@ class TestCollectionCreatedWithAlbums:
     async def test_albums_start_without_states(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        albums = await existing_albums(real_session, 2)
+        albums = await new_albums(real_session, 2)
 
         await CollectionRepository(real_session).add_albums(collection, [a.id for a in albums])
 
@@ -228,7 +230,7 @@ class TestCopies:
     async def test_a_copy_of_another_album_is_not_found(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        first_album, second_album = await existing_albums(real_session, 2)
+        first_album, second_album = await new_albums(real_session, 2)
         service = make_collection_service(real_session)
         for album in (first_album, second_album):
             await put_album_in_collection(real_session, collection.id, album.id)
@@ -275,7 +277,7 @@ class TestCollectionLevelResponses:
 
     async def test_create_collection_with_albums(self, real_session):
         user = await make_test_user(real_session)
-        albums = await existing_albums(real_session, 2)
+        albums = await new_albums(real_session, 2)
 
         response = await make_collection_service(real_session).create_collection(
             CollectionCreate(name=f"itest {user.id}", is_public=False, album_ids=[a.id for a in albums]), user.id)
@@ -301,7 +303,7 @@ class TestPressingConfirmation:
     async def test_added_by_a_client_unaware_of_pressings_is_unconfirmed(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
 
         await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, TestAddFromSearch.request(album))
@@ -312,7 +314,7 @@ class TestPressingConfirmation:
     async def test_picked_with_its_pressing_in_sight_is_confirmed(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
         request = TestAddFromSearch.request(album).model_copy(update={"pressing_confirmed": True})
 
         await make_external_reference_service(real_session).add_to_collection(user.id, collection.id, request)
@@ -324,7 +326,7 @@ class TestPressingConfirmation:
             self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
         service = make_external_reference_service(real_session)
         await service.add_to_collection(user.id, collection.id, TestAddFromSearch.request(album))
 
@@ -386,7 +388,7 @@ class TestReplacePressing:
     async def test_copies_are_gathered_when_the_pressing_is_already_in_the_collection(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        wrong, right = await existing_albums(real_session, 2)
+        wrong, right = await new_albums(real_session, 2)
         service = make_collection_service(real_session)
         await put_album_in_collection(real_session, collection.id, right.id, state_record="good")
         await put_album_in_collection(real_session, collection.id, wrong.id, state_record="mint")
@@ -418,7 +420,7 @@ class TestReplacePressing:
     async def test_album_not_in_the_collection(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
 
         with pytest.raises(ResourceNotFoundError):
             await make_external_reference_service(real_session).replace_pressing(
@@ -433,7 +435,7 @@ class TestAddAnotherCopy:
     async def test_add_copy_keeps_the_first_copy_and_adds_one(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
         service = make_external_reference_service(real_session)
         await service.add_to_collection(user.id, collection.id, TestAddFromSearch.request(album, state_record="mint"))
 
@@ -448,7 +450,7 @@ class TestAddAnotherCopy:
     async def test_add_copy_of_a_new_album_is_a_plain_add(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        [album] = await existing_albums(real_session, 1)
+        [album] = await new_albums(real_session, 1)
 
         response = await make_external_reference_service(real_session).add_to_collection(
             user.id, collection.id, TestAddFromSearch.request(album).model_copy(update={"add_copy": True}))
@@ -461,7 +463,7 @@ class TestOwnedPressings:
     async def test_same_release_and_other_pressings_of_the_work(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        original, reissue, other_work = await existing_albums(real_session, 3)
+        original, reissue, other_work = await new_albums(real_session, 3)
         master = f"itest-{uuid.uuid4().hex[:8]}"
         original.external_master_id = master
         reissue.external_master_id = master
@@ -499,7 +501,7 @@ class TestCollectionCountsWorks:
     async def test_pressings_of_one_work_count_once(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        original, reissue, other = await existing_albums(real_session, 3)
+        original, reissue, other = await new_albums(real_session, 3)
         master = f"itest-{uuid.uuid4().hex[:8]}"
         original.external_master_id = master
         reissue.external_master_id = master
@@ -517,7 +519,7 @@ class TestCollectionRecords:
         """Kind of Blue in two pressings (the first one in two copies), plus another record added last."""
         user = await make_test_user(session)
         collection = await make_test_collection(session, owner_id=user.id)
-        original, reissue, other = await existing_albums(session, 3)
+        original, reissue, other = await new_albums(session, 3)
         master = f"itest-{uuid.uuid4().hex[:8]}"
         original.external_master_id = master
         reissue.external_master_id = master
@@ -595,7 +597,7 @@ class TestCollectionMosaic:
     async def test_one_cover_per_work(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        original, reissue = await existing_albums(real_session, 2)
+        original, reissue = await new_albums(real_session, 2)
         master = f"itest-{uuid.uuid4().hex[:8]}"
         for album, cover in ((original, "https://i.discogs.com/a.jpg"), (reissue, "https://i.discogs.com/b.jpg")):
             album.external_master_id = master
@@ -611,7 +613,7 @@ class TestExportOrder:
     async def test_rows_follow_the_titles(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        albums = await existing_albums(real_session, 3)
+        albums = await new_albums(real_session, 3)
         for album, title in zip(albums, ("Zappa - Hot Rats", "brel - Brel", "Miles Davis - Kind Of Blue")):
             album.title = title
         await CollectionRepository(real_session).add_albums(collection, [a.id for a in albums])

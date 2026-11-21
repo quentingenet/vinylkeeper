@@ -85,7 +85,7 @@ flowchart LR
 
 - **Backend**: layered architecture (endpoints, services, repositories) with dependency injection through FastAPI `Depends`, async SQLAlchemy 2 with explicit loading (`lazy="raise"`), Alembic migrations.
 - **Frontend**: React 19, TypeScript in strict mode, TanStack Query, MUI, custom hooks for data logic.
-- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint. GitHub Actions runs all of them on every push except the real-database tests, which run locally against a copy of the database.
+- **Quality**: extensive backend and frontend test suites to prevent regressions and bugs: unit, endpoint and real-database integration tests run inside rolled-back transactions on the backend, Vitest and Testing Library on the frontend, plus flake8 and ESLint. GitHub Actions runs all of them on every push, the real-database tests included, on a freshly migrated PostgreSQL.
 - **Deployment**: continuous deployment of the API to a Linux VPS with Docker Compose, migrations applied on container start; the web app is deployed by Netlify.
 
 ### Continuous integration and deployment
@@ -102,7 +102,7 @@ flowchart LR
     Push --> Netlify["Netlify<br/>web app"]
 ```
 
-- **Every push and pull request** runs the backend and frontend suites in parallel, the real-database tests aside ([workflow](.github/workflows/ci.yml)). A failing API suite blocks the API deployment: production keeps the last version that passed.
+- **Every push and pull request** runs the backend and frontend suites in parallel, the real-database tests included, on an empty PostgreSQL migrated first ([workflow](.github/workflows/ci.yml)). A failing API suite blocks the API deployment: production keeps the last version that passed.
 - **The API deploys itself** when `main` changes under `vinylkeeper_back/`: a `git pull`, a Docker rebuild with the Alembic migrations, and a health check that fails the run if the API does not answer.
 - **Least privilege**: GitHub holds an SSH key restricted by a forced command on the server. Whatever it asks, it can only run the deployment script: no shell, no tunnel. The server is pinned by its host key, and the script lives outside the repository, so no commit can change what the deployment key is allowed to run.
 - **One deployment at a time**, and a push that only touches the web app leaves the API running.
@@ -180,7 +180,7 @@ cd vinylkeeper_front && npm run test
 
 Unit and endpoint tests need no database and no `.env` file: the test settings are set in [`tests/conftest.py`](vinylkeeper_back/tests/conftest.py).
 
-The real-database integration tests run against a local PostgreSQL copy of the database, migrated with `alembic upgrade head` (some tests read existing albums). Each test runs inside a transaction rolled back at the end, so nothing is ever written. Point them to the database in `vinylkeeper_back/.env.test`, a file ignored by git:
+The real-database integration tests run against a PostgreSQL database migrated with `alembic upgrade head`: an empty one, as in the CI, or a local copy of the database. Each test makes its own records inside a transaction rolled back at the end, so nothing is ever written; an empty database only gets the reference data the API inserts at startup. Point them to the database in `vinylkeeper_back/.env.test`, a file ignored by git:
 
 ```bash
 TEST_DATABASE_URL=postgresql+asyncpg://<user>:<password>@localhost:5432/<database>

@@ -1,4 +1,5 @@
 import os
+import random
 import uuid
 from pathlib import Path
 
@@ -11,13 +12,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from dotenv import dotenv_values
 
+from app.db.init_references_data_db import check_reference_data_exists, insert_reference_values
 from app.main import app
 from app.deps.deps import get_session_service, get_user_service
 from app.utils.auth_utils.auth import get_current_user, create_access_token
 from tests.conftest import make_legacy_refresh_token
 from app.core.security import hash_password
 from app.models.user_model import User
+from app.models.album_model import Album
+from app.models.artist_model import Artist
+from app.models.reference_data.external_sources import ExternalSource
 from app.models.reference_data.roles import Role
+from app.core.enums import ExternalSourceEnum
 from tests.conftest import make_user
 
 
@@ -113,20 +119,33 @@ async def client(fake_sessions):
 # Infra tests d'intégration réels (Phase B) — vraie AsyncSession Postgres
 #
 # Opt-in uniquement : seuls les tests qui demandent real_session déclenchent
-# une vraie connexion. La base pointée contient une copie des données de
-# prod — chaque test tourne dans une transaction externe + SAVEPOINT
+# une vraie connexion. La base pointée est une copie de la prod (en local) ou
+# une base vide migrée (CI) : chaque test crée ses propres données
+# (make_real_test_user, make_real_test_album...), sans dépendre de celles qui
+# existent. Chaque test tourne dans une transaction externe + SAVEPOINT
 # (join_transaction_mode="create_savepoint"), annulée à la fin. Même les
 # session.commit() internes de transaction_context() ne libèrent qu'un
 # SAVEPOINT, jamais la transaction externe : rien n'est jamais écrit
-# durablement.
+# durablement, sauf les données de référence d'une base vide (ensure_reference_data).
 # ---------------------------------------------------------------------------
 
 # Read from the environment, or from vinylkeeper_back/.env.test (ignored by git).
-# Unset: the real-database tests are skipped, the others still run (CI).
+# Unset: the real-database tests are skipped, the others still run. The CI sets it to its own database.
 REAL_TEST_DATABASE_URL = (
     os.getenv("TEST_DATABASE_URL")
     or dotenv_values(Path(__file__).parents[2] / ".env.test").get("TEST_DATABASE_URL")
 )
+
+
+async def ensure_reference_data(engine) -> None:
+    """
+    Roles, states, moods... as the API inserts them at startup. Only an empty database (the CI, a fresh
+    migration) lacks them: it gets them for good, like a first start of the API. A copy that has them
+    gets nothing written.
+    """
+    async with async_sessionmaker(bind=engine)() as session:
+        if not await check_reference_data_exists(session):
+            await insert_reference_values(session)
 
 
 @pytest_asyncio.fixture
@@ -136,6 +155,7 @@ async def real_engine():
     if not REAL_TEST_DATABASE_URL:
         pytest.skip("TEST_DATABASE_URL not set: real-database test skipped")
     engine = create_async_engine(REAL_TEST_DATABASE_URL)
+    await ensure_reference_data(engine)
     yield engine
     await engine.dispose()
 
@@ -176,6 +196,48 @@ async def make_real_test_user(session: AsyncSession, **overrides) -> User:
     # constructed+flushed instance. Refresh so callers can read user.role.
     await session.refresh(user, attribute_names=["role"])
     return user
+
+
+def fresh_numeric_external_id() -> str:
+    """12 digits: real Discogs ids are far shorter, so no record of a copy of production is ever reused."""
+    return str(random.randint(10**11, 10**12 - 1))
+
+
+async def discogs_source_id(session: AsyncSession) -> int:
+    return (await session.execute(
+        select(ExternalSource.id).where(ExternalSource.name == ExternalSourceEnum.DISCOGS.value))).scalar_one()
+
+
+async def make_real_test_album(session: AsyncSession, **overrides) -> Album:
+    """A new Discogs release, so that a test never depends on the records already in the database."""
+    values = dict(
+        external_album_id=fresh_numeric_external_id(),
+        external_source_id=await discogs_source_id(session),
+        title=f"itest artist - itest album {uuid.uuid4().hex[:8]}",
+        image_url="https://i.discogs.com/itest.jpg",
+    )
+    values.update(overrides)
+    album = Album(**values)
+    session.add(album)
+    await session.flush()
+    return album
+
+
+async def make_real_test_albums(session: AsyncSession, count: int) -> list[Album]:
+    return [await make_real_test_album(session) for _ in range(count)]
+
+
+async def make_real_test_artist(session: AsyncSession, **overrides) -> Artist:
+    values = dict(
+        external_artist_id=fresh_numeric_external_id(),
+        external_source_id=await discogs_source_id(session),
+        title=f"itest artist {uuid.uuid4().hex[:8]}",
+    )
+    values.update(overrides)
+    artist = Artist(**values)
+    session.add(artist)
+    await session.flush()
+    return artist
 
 
 # ---------------------------------------------------------------------------

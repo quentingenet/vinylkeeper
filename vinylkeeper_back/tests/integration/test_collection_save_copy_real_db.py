@@ -11,7 +11,6 @@ import pytest
 from sqlalchemy import select
 
 from app.core.exceptions import ForbiddenError, ValidationError
-from app.models.artist_model import Artist
 from app.models.association_tables import CollectionArtist
 from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.collection_model import Collection
@@ -19,7 +18,8 @@ from app.repositories.collection_album_repository import CollectionAlbumReposito
 from app.repositories.discogs_import_repository import DiscogsImportRepository
 from app.services.discogs_import_service import DiscogsImportService
 
-from tests.integration.test_collection_copies_real_db import existing_albums
+from tests.integration.conftest import make_real_test_artist
+from tests.integration.test_collection_copies_real_db import new_albums
 from tests.integration.test_discogs_import_real_db import discogs_returning, item, release_ids
 from tests.integration.test_real_db_relationships import (
     make_collection_service,
@@ -33,12 +33,12 @@ async def filled_collection(session):
     """Two records, one owned twice with its conditions, one pressing confirmed, and an artist."""
     user = await make_test_user(session)
     collection = await make_test_collection(session, owner_id=user.id)
-    first, second = await existing_albums(session, 2)
+    first, second = await new_albums(session, 2)
     await put_album_in_collection(session, collection.id, first.id, state_record="near_mint", state_cover="good")
     await CollectionAlbumRepository(session).add_or_update(
         collection.id, first.id, {"state_record": "poor", "acquisition_month_year": "2019-05"}, add_copy=True)
     await CollectionAlbumRepository(session).add_or_update(collection.id, second.id, {}, pressing_confirmed=True)
-    artist_id = (await session.execute(select(Artist.id).limit(1))).scalar_one()
+    artist_id = (await make_real_test_artist(session)).id
     session.add(CollectionArtist(collection_id=collection.id, artist_id=artist_id))
     await session.flush()
     return user, collection

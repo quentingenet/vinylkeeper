@@ -15,11 +15,9 @@ though the application code under test calls session.commit() internally via
 transaction_context(), that only releases the SAVEPOINT, not the outer transaction.
 """
 import uuid
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.collection_model import Collection
-from app.models.album_model import Album
 
 from app.repositories.collection_repository import CollectionRepository
 from app.repositories.like_repository import LikeRepository
@@ -33,6 +31,7 @@ from app.services.collection_service import CollectionService
 from app.services.external_reference_service import ExternalReferenceService
 # Shared with the other real-database test modules, which import it from here
 from tests.integration.conftest import make_real_test_user as make_test_user  # noqa: F401
+from tests.integration.conftest import make_real_test_album
 
 
 def make_collection_service(session: AsyncSession) -> CollectionService:
@@ -74,7 +73,8 @@ async def make_test_collection(session: AsyncSession, owner_id: int) -> Collecti
     return collection
 
 
-async def pick_existing_album_id(session: AsyncSession) -> int:
-    return (await session.execute(select(Album.id).limit(1))).scalar_one()
+async def new_album_id(session: AsyncSession) -> int:
+    """A record made for the test: the tests never depend on the records already in the database."""
+    return (await make_real_test_album(session)).id
 
 

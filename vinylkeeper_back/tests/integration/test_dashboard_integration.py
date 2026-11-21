@@ -22,10 +22,10 @@ from sqlalchemy import select, text
 from app.models.collection_album import CollectionAlbum
 from app.models.collection_model import Collection
 
-from tests.integration.conftest import make_real_test_user as make_test_user
+from tests.integration.conftest import make_real_test_albums, make_real_test_user as make_test_user
 from tests.integration.test_real_db_relationships import (
     make_test_collection,
-    pick_existing_album_id,
+    new_album_id,
     put_album_in_collection,
 )
 
@@ -47,7 +47,7 @@ class TestUserStatsBatch:
     async def test_counts_reflect_created_collection_and_album(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
+        album_id = await new_album_id(real_session)
         await put_album_in_collection(real_session, collection.id, album_id)
 
         repo = DashboardRepository(real_session)
@@ -65,7 +65,7 @@ class TestGlobalCollectionsCounts:
 
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
+        album_id = await new_album_id(real_session)
         await put_album_in_collection(real_session, collection.id, album_id)
 
         after = await repo.get_global_collections_counts()
@@ -79,7 +79,7 @@ class TestPublicCollectionsCount:
 
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
+        album_id = await new_album_id(real_session)
         await put_album_in_collection(real_session, collection.id, album_id)
 
         after = await repo.get_public_collections_count()
@@ -118,7 +118,7 @@ class TestLatestAlbum:
     async def test_newly_added_album_becomes_latest(self, real_session):
         user = await make_test_user(real_session)
         collection = await make_test_collection(real_session, owner_id=user.id)
-        album_id = await pick_existing_album_id(real_session)
+        album_id = await new_album_id(real_session)
         await put_album_in_collection(real_session, collection.id, album_id)
 
         repo = DashboardRepository(real_session)
@@ -136,7 +136,7 @@ class TestRecentAlbumsOnePerWork:
         """Two pressings of one work and another record, added after anything in the database."""
         user = await make_test_user(session)
         collection = await make_test_collection(session, owner_id=user.id)
-        original, reissue, other = (await session.execute(select(Album).order_by(Album.id).limit(3))).scalars().all()
+        original, reissue, other = await make_real_test_albums(session, 3)
         master = f"itest-{uuid.uuid4().hex[:8]}"
         original.external_master_id = master
         reissue.external_master_id = master
@@ -202,7 +202,7 @@ class TestSavedCopiesInUserStats:
         kept = await make_test_collection(real_session, owner_id=user.id)
         saved = await make_test_collection(real_session, owner_id=user.id)
         saved.saved_from_collection_id = kept.id
-        album_id = await pick_existing_album_id(real_session)
+        album_id = await new_album_id(real_session)
         await put_album_in_collection(real_session, kept.id, album_id)
         await put_album_in_collection(real_session, saved.id, album_id)
         await real_session.flush()

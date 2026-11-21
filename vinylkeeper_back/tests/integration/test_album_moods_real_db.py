@@ -18,6 +18,8 @@ from app.models.album_mood_model import AlbumMood
 from app.models.collection_model import Collection
 from app.models.reference_data.moods import Mood
 from app.repositories.collection_repository import CollectionRepository
+from tests.integration.conftest import make_real_test_user
+from tests.integration.test_real_db_relationships import make_test_collection
 
 
 async def make_test_album(session: AsyncSession) -> Album:
@@ -110,16 +112,17 @@ class TestCollectionsUnaffected:
     """Mood.collections is now lazy="raise": loading collections must not touch it."""
 
     async def test_collection_loads_with_relations_and_mood_id_unchanged(self, real_session):
-        row = (await real_session.execute(
-            text("SELECT id, mood_id FROM collections ORDER BY id LIMIT 1")
-        )).one_or_none()
-        if row is None:
-            pytest.skip("No collection in the database copy")
+        # A collection of the test, with a mood: an empty database (the CI) has none
+        owner = await make_real_test_user(real_session)
+        made = await make_test_collection(real_session, owner_id=owner.id)
+        made.mood_id = await mood_id(real_session, "calm")
+        await real_session.flush()
+        real_session.expunge(made)
 
-        collection = await CollectionRepository(real_session).get_by_id(row.id, load_relations=True)
+        collection = await CollectionRepository(real_session).get_by_id(made.id, load_relations=True)
 
-        assert collection.id == row.id
-        assert collection.mood_id == row.mood_id
+        assert collection.id == made.id
+        assert collection.mood_id == made.mood_id
         assert collection.mood is None or isinstance(collection.mood, Mood)
 
     async def test_public_collections_listing_still_works(self, real_session):

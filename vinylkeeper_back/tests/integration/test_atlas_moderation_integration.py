@@ -271,10 +271,15 @@ class TestLikeUnlikePlace:
 
 async def test_map_spots_carry_their_name_and_type_for_the_list_by_city(real_session):
     """The list under the map shows the name and type of every spot, read from the map response."""
+    # A moderated spot of the test: an empty database (the CI) has none
+    place_type = (await real_session.execute(select(PlaceType).limit(1))).scalar_one()
+    mine = Place(name=f"itest spot {uuid.uuid4().hex[:8]}", address="1 Test Street", city="Paris", country="France",
+                 latitude=48.8566, longitude=2.3522, place_type_id=place_type.id, is_moderated=True, is_valid=True)
+    real_session.add(mine)
+    await real_session.flush()
     service = AtlasService(AtlasRepository(real_session), ModerationRequestRepository(real_session))
     spots = await service.get_map_places()
 
-    if not spots:
-        pytest.skip("No moderated spot in this dataset")
+    assert any(spot.id == mine.id and spot.place_type == place_type.name for spot in spots)
     assert all(spot.name for spot in spots)
     assert all(spot.place_type for spot in spots)
