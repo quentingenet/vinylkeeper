@@ -48,7 +48,8 @@ class ImageProxyService:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.http_client = http_client
 
-    def _validate_domain(self, url: str) -> None:
+    def _validate_domain(self, url: str) -> str:
+        """The URL of a Discogs image, reduced to https, its host and its path (the cache key and what is fetched)."""
         if not url or not url.strip():
             raise ValidationError(
                 error_code=ErrorCode.INVALID_INPUT,
@@ -69,6 +70,15 @@ class ImageProxyService:
                 message=f"Domain not allowed: {domain}",
                 details={"allowed_domains": self.ALLOWED_DOMAINS, "url": url}
             )
+        if parsed.scheme != "https":
+            raise ValidationError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="Image URL must use https",
+                details={"url": url}
+            )
+        # A Discogs image URL has no query: one added (?x=1, ?x=2...) would be a new fetch and a new cache
+        # file each time for the same image. A user, a password or a port are refused above (netloc is the host)
+        return f"https://{domain}{parsed.path}"
 
     def _validate_dimensions(self, width: int, height: int) -> None:
         if width <= 0 or height <= 0:
@@ -254,7 +264,7 @@ class ImageProxyService:
     ) -> Tuple[bytes, str]:
         quality = quality or self.DEFAULT_QUALITY
 
-        self._validate_domain(src)
+        src = self._validate_domain(src)
         self._validate_dimensions(width, height)
         self._validate_quality(quality)
 

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import BackgroundTasks
 from app.repositories.user_repository import UserRepository
-from app.core.security import verify_password_async, hash_password_async
+from app.core.security import verify_password_async, hash_password_async, verify_unknown_account_password
 from sqlalchemy.exc import IntegrityError
 from app.utils.auth_utils.auth import (
     TokenType,
@@ -56,6 +56,8 @@ class UserService:
         """Authenticate a user with email and password"""
         user = await self.repository.get_user_by_email(email)
         if not user:
+            # As long as a wrong password: the time of the answer must not tell the account exists
+            await verify_unknown_account_password(password)
             raise InvalidCredentialsError()
 
         if not await verify_password_async(user.password, password):

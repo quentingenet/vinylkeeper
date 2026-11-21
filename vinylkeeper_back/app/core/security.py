@@ -1,4 +1,6 @@
 import asyncio
+import secrets
+from functools import lru_cache
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
@@ -58,3 +60,17 @@ async def hash_password_async(password: str) -> str:
 
 async def verify_password_async(hashed_password: str, plain_password: str) -> bool:
     return await asyncio.to_thread(verify_password, hashed_password, plain_password)
+
+
+@lru_cache(maxsize=1)
+def _unknown_account_hash() -> str:
+    """A hash of a random password, made once: what an email without account is checked against."""
+    return ph.hash(secrets.token_urlsafe(32))
+
+
+async def verify_unknown_account_password(plain_password: str) -> None:
+    """
+    The same Argon2 work as a real check, for an email that has no account: a login answers as slowly
+    either way, so its time does not tell whether the account exists. Always fails, never raises.
+    """
+    await asyncio.to_thread(verify_password, _unknown_account_hash(), plain_password)

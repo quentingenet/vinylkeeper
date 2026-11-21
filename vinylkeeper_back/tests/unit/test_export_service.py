@@ -11,6 +11,7 @@ from app.models.association_tables import CollectionArtist
 from app.models.album_model import Album
 from app.models.artist_model import Artist
 from app.models.reference_data.external_sources import ExternalSource
+from app.utils.csv_export import stream_csv
 
 
 def make_service():
@@ -204,7 +205,7 @@ class TestStreamCsv:
             yield ["header1", "header2"]
             yield ["value1", "value2"]
 
-        response = service._stream_csv(filename="test.csv", rows=rows())
+        response = stream_csv(filename="test.csv", rows=rows())
 
         chunks = [chunk async for chunk in response.body_iterator]
         content = b"".join(

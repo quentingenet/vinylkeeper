@@ -568,11 +568,23 @@ class TestSessionsFromTheEndpoints:
 
     async def test_logout_revokes_the_session_of_the_refresh_token(self, client, mock_user, fake_sessions):
         client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid)))
+        client.cookies.set("csrf_token", "csrf")
 
-        resp = await client.post("/api/users/logout")
+        resp = await client.post("/api/users/logout", headers={"X-CSRF-Token": "csrf"})
 
         assert resp.status_code == 200
         assert [payload["sub"] for payload in fake_sessions.revoked] == [str(mock_user.user_uuid)]
+
+    async def test_another_site_cannot_log_the_member_out(self, client, mock_user, fake_sessions):
+        """The browser sends the cookies of the session with a form of another site, never the CSRF header."""
+        client.cookies.set("refresh_token", make_legacy_refresh_token(str(mock_user.user_uuid)))
+        client.cookies.set("csrf_token", "csrf")
+
+        resp = await client.post("/api/users/logout")
+
+        assert resp.status_code == 403
+        assert fake_sessions.revoked == []
+        assert "refresh_token" not in resp.cookies
 
     async def test_the_app_logs_out_with_its_refresh_token_as_bearer(self, client, mock_user, fake_sessions):
         token = make_legacy_refresh_token(str(mock_user.user_uuid))
@@ -583,7 +595,8 @@ class TestSessionsFromTheEndpoints:
 
     async def test_logout_with_an_invalid_token_still_succeeds(self, client, fake_sessions):
         client.cookies.set("refresh_token", "garbage")
-        assert (await client.post("/api/users/logout")).status_code == 200
+        client.cookies.set("csrf_token", "csrf")
+        assert (await client.post("/api/users/logout", headers={"X-CSRF-Token": "csrf"})).status_code == 200
         assert fake_sessions.revoked == []
 
     async def test_a_password_change_gives_this_device_a_new_session(self, auth_client, fake_sessions):

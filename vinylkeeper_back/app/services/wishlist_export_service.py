@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import io
 from datetime import UTC, datetime
 from typing import Iterable
@@ -14,6 +13,7 @@ from odf.text import P
 from app.core.logging import logger
 from app.models.wishlist_model import Wishlist
 from app.repositories.wishlist_repository import WishlistRepository
+from app.utils.csv_export import stream_csv
 
 
 class WishlistExportService:
@@ -36,7 +36,7 @@ class WishlistExportService:
                 for item in items:
                     yield self._row(item)
 
-            response = self._stream_csv(filename=filename, rows=row_iter())
+            response = stream_csv(filename=filename, rows=row_iter())
             logger.info(
                 f"Export success: kind={export_kind} format={export_format} user={username} rows={rows_count}"
             )
@@ -98,30 +98,6 @@ class WishlistExportService:
             item.image_url or "",
             item.created_at.isoformat() if item.created_at else "",
         ]
-
-    def _stream_csv(self, filename: str, rows: Iterable[list[str]]) -> StreamingResponse:
-        def generate() -> Iterable[bytes]:
-            buffer = io.StringIO()
-            writer = csv.writer(buffer, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-            first_chunk = True
-
-            for row in rows:
-                buffer.seek(0)
-                buffer.truncate(0)
-                writer.writerow(row)
-                chunk = buffer.getvalue()
-
-                if first_chunk:
-                    first_chunk = False
-                    chunk = "\ufeff" + chunk
-
-                yield chunk.encode("utf-8")
-
-        return StreamingResponse(
-            generate(),
-            media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-        )
 
     def _build_ods(self, sheet_name: str, headers: list[str], rows: list[list[str]]) -> bytes:
         doc = OpenDocumentSpreadsheet()

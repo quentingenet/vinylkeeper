@@ -34,7 +34,7 @@ from app.core.config_env import settings
 from app.deps.deps import get_session_service, get_user_service
 from app.core.logging import log_activity, mask_email, set_log_actor
 from app.utils.auth_utils.auth import (
-    TokenType, bearer_token, decode_refresh_token, get_current_user, get_refresh_user,
+    TokenType, bearer_token, decode_refresh_token, get_current_user, get_refresh_user, verify_csrf,
 )
 from app.models.user_model import User
 from app.core.exceptions import (
@@ -171,6 +171,10 @@ async def logout(
     response: Response,
     sessions: SessionService = Depends(get_session_service),
 ) -> MessageResponse:
+    # Logging out with the cookies of the browser needs the CSRF token, as any other change: another site
+    # must not end the member's session. The native app (Bearer) and a browser with no session left need none.
+    if bearer_token(request) is None and request.cookies.get("refresh_token"):
+        verify_csrf(request)
     # This device's session ends for good, not only its cookies. A request without a valid refresh
     # token (already logged out, expired) has no session to end: logging out works anyway.
     try:

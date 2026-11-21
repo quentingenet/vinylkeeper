@@ -262,8 +262,9 @@ class TestOverHttp:
         user = await make_real_test_user(real_session)
         token = await sessions.open(user)
         http.cookies.set("refresh_token", token)
+        http.cookies.set("csrf_token", "csrf")
 
-        assert (await http.post("/api/users/logout")).status_code == 200
+        assert (await http.post("/api/users/logout", headers={"X-CSRF-Token": "csrf"})).status_code == 200
         http.cookies.set("refresh_token", token)
 
         assert (await http.post("/api/users/refresh-token")).status_code == 401

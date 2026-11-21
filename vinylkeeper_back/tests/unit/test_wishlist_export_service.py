@@ -5,6 +5,7 @@ from app.services.wishlist_export_service import WishlistExportService
 from app.models.wishlist_model import Wishlist
 from app.models.reference_data.entity_types import EntityType
 from app.models.reference_data.external_sources import ExternalSource
+from app.utils.csv_export import stream_csv
 
 
 def make_service():
@@ -64,7 +65,7 @@ class TestStreamCsv:
             yield ["a", "b"]
             yield ["1", "2"]
 
-        response = service._stream_csv(filename="wishlist.csv", rows=rows())
+        response = stream_csv(filename="wishlist.csv", rows=rows())
 
         chunks = [chunk async for chunk in response.body_iterator]
         content = b"".join(

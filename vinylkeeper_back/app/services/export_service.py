@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import io
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -22,6 +21,7 @@ from app.models.collection_album import CollectionAlbum, CollectionAlbumCopy
 from app.models.collection_model import Collection
 from app.repositories.collection_album_repository import CollectionAlbumRepository
 from app.repositories.collection_repository import CollectionRepository
+from app.utils.csv_export import stream_csv
 from app.utils.vinyl_state_mapping import VinylStateMapping
 
 
@@ -67,7 +67,7 @@ class ExportService:
                 for album, collection_album in albums_with_metadata:
                     yield from self._album_to_csv_rows(album, collection_album, collection)
 
-            response = self._stream_csv(filename=filename, rows=row_iter())
+            response = stream_csv(filename=filename, rows=row_iter())
             logger.info(
                 f"Export success: kind={export_kind} format={export_format}"
                 f" user={username} collection_id={collection_id} rows={rows_count}"
@@ -107,7 +107,7 @@ class ExportService:
                         artist, collection_artist, collection
                     )
 
-            response = self._stream_csv(filename=filename, rows=row_iter())
+            response = stream_csv(filename=filename, rows=row_iter())
             logger.info(
                 f"Export success: kind={export_kind} format={export_format}"
                 f" user={username} collection_id={collection_id} rows={rows_count}"
@@ -213,32 +213,6 @@ class ExportService:
                 details={"collection_id": collection_id},
             )
         return collection
-
-    def _stream_csv(self, filename: str, rows: Iterable[list[str]]) -> StreamingResponse:
-        def generate() -> Iterable[bytes]:
-            buffer = io.StringIO()
-            writer = csv.writer(buffer, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-            first_chunk = True
-
-            for row in rows:
-                buffer.seek(0)
-                buffer.truncate(0)
-                writer.writerow(row)
-                chunk = buffer.getvalue()
-
-                if first_chunk:
-                    first_chunk = False
-                    chunk = "\ufeff" + chunk
-
-                yield chunk.encode("utf-8")
-
-        return StreamingResponse(
-            generate(),
-            media_type="text/csv; charset=utf-8",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-            },
-        )
 
     def _file_response(self, export_file: ExportFile) -> Response:
         return Response(

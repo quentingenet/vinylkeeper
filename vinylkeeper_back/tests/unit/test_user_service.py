@@ -91,6 +91,15 @@ class TestAuthenticate:
         with pytest.raises(InvalidCredentialsError):
             await service.authenticate("test@example.com", "wrong_password")
 
+    async def test_an_unknown_email_costs_the_same_password_check(self):
+        """Without it the answer comes at once, and its speed tells the account does not exist."""
+        service, repo, _ = make_service(user=None)
+        repo.get_user_by_email = AsyncMock(return_value=None)
+        with patch("app.services.user_service.verify_unknown_account_password", new_callable=AsyncMock) as check:
+            with pytest.raises(InvalidCredentialsError):
+                await service.authenticate("ghost@example.com", "password")
+        check.assert_awaited_once_with("password")
+
 
 # ---------------------------------------------------------------------------
 # create_user()

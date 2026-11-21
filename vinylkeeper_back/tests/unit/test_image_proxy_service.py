@@ -115,3 +115,35 @@ def test_other_formats_are_refused_before_decoding(service, source_format):
 def test_bytes_that_are_no_image_are_refused(service):
     with pytest.raises(ValidationError):
         service._process_image(b"not an image", 300, 300, 85, "webp")
+
+
+async def test_an_added_query_is_the_same_image_and_the_same_cache_file(service, monkeypatch):
+    """?x=1, ?x=2... would otherwise cost a fetch and a new file each, for one image."""
+    fetched = []
+
+    async def fake_fetch(url):
+        fetched.append(url)
+        return b"raw"
+
+    monkeypatch.setattr(service, "_fetch_image", fake_fetch)
+    monkeypatch.setattr(service, "_process_image", lambda data, w, h, q, fmt: b"cover")
+
+    for suffix in ("", "?x=1", "?x=2#y"):
+        await service.get_proxy_image(f"https://i.discogs.com/a.jpg{suffix}", 300, 300, 85, cacheable=True)
+
+    assert fetched == ["https://i.discogs.com/a.jpg"]
+
+
+@pytest.mark.parametrize("src", [
+    "http://i.discogs.com/a.jpg",
+    "https://user:pass@i.discogs.com/a.jpg",
+    "https://i.discogs.com:8443/a.jpg",
+    "https://i.discogs.com.evil.example/a.jpg",
+])
+async def test_only_https_discogs_images_are_fetched(service, monkeypatch, src):
+    async def fake_fetch(url):
+        raise AssertionError("must not be fetched")
+
+    monkeypatch.setattr(service, "_fetch_image", fake_fetch)
+    with pytest.raises(ValidationError):
+        await service.get_proxy_image(src, 300, 300, 85)
