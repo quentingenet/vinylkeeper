@@ -31,6 +31,11 @@ class VinylStateMapping:
     }
 
     @classmethod
+    def ids_by_name(cls) -> Dict[str, int]:
+        """The ids the code relies on: the vinyl_states table must have exactly these (checked at startup)."""
+        return dict(cls._NAME_TO_ID)
+
+    @classmethod
     def get_id_from_name(cls, name: str) -> int | None:
         """Get vinyl state ID from name"""
         if not name:

@@ -1,5 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.db.vinyl_state_ids import keep_sequence_past_the_ids
+from app.utils.vinyl_state_mapping import VinylStateMapping
 from app.models.reference_data.roles import Role
 from app.models.reference_data.moderation_statuses import ModerationStatus
 from app.models.reference_data.place_types import PlaceType
@@ -65,11 +67,14 @@ async def check_reference_data_exists(db: AsyncSession) -> bool:
     return True
 
 
-async def insert_enum_values(db: AsyncSession, model, enum_class, descriptions: dict = None):
+async def insert_enum_values(db: AsyncSession, model, enum_class, descriptions: dict = None, ids: dict = None):
+    """The missing values of the enum. ids: the id of each, when the code relies on it (vinyl states)."""
     for value in enum_class:
         result = await db.execute(select(model).filter_by(name=value.value))
         if not result.scalar_one_or_none():
             kwargs = {"name": value.value}
+            if ids:
+                kwargs["id"] = ids[value.value]
             if descriptions and value.value in descriptions:
                 kwargs["description"] = descriptions[value.value]
             db.add(model(**kwargs))
@@ -81,10 +86,15 @@ async def insert_reference_values(db: AsyncSession):
         await insert_enum_values(db, ModerationStatus, ModerationStatusEnum)
         await insert_enum_values(db, PlaceType, PlaceTypeEnum)
         await insert_enum_values(db, EntityType, EntityTypeEnum)
-        await insert_enum_values(db, VinylState, VinylStateEnum, VINYL_STATE_DESCRIPTIONS)
+        # With the ids of VinylStateMapping, whatever the sequence: conditions are stored by id
+        await insert_enum_values(db, VinylState, VinylStateEnum, VINYL_STATE_DESCRIPTIONS,
+                                 ids=VinylStateMapping.ids_by_name())
+        await db.flush()
+        await keep_sequence_past_the_ids(db)
         await insert_enum_values(db, Mood, MoodEnum, MOOD_DESCRIPTIONS)
         await insert_enum_values(db, ExternalSource, ExternalSourceEnum)
         await db.commit()
     except Exception as e:
         await db.rollback()
         raise Exception(f"Failed to insert reference values: {str(e)}")
+

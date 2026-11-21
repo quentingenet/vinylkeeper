@@ -4,20 +4,26 @@ from fastapi import FastAPI
 import httpx
 
 from app.db.session import AsyncSessionLocal, engine
-from app.db.init_references_data_db import insert_reference_values, check_reference_data_exists
+from app.db.init_references_data_db import (
+    VINYL_STATE_DESCRIPTIONS, check_reference_data_exists, insert_reference_values,
+)
+from app.db.vinyl_state_ids import fix_vinyl_state_ids, reference_data_lock
 from app.core.logging import logger
 from app.services.discogs_usage_service import discogs_usage
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: initialize reference data
-    async with AsyncSessionLocal() as db:
+    # Startup: initialize reference data, one worker at a time (the others find it done)
+    async with reference_data_lock(), AsyncSessionLocal() as db:
         try:
             if not await check_reference_data_exists(db):
                 logger.info("🟡 Insert reference data (missing tables)...")
                 await insert_reference_values(db)
                 logger.info("✅ Reference data inserted.")
+            # The conditions of the copies are stored by id: the ids of vinyl_states are brought back to the
+            # ones of the code if they differ. A state unknown to the code cannot be fixed: no start then
+            await fix_vinyl_state_ids(db, VINYL_STATE_DESCRIPTIONS)
         except Exception as e:
             logger.error(f"Failed to initialize reference data: {e}")
             raise
