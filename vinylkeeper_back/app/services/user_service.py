@@ -27,6 +27,7 @@ from app.core.exceptions import (
     InvalidResetTokenError,
     PasswordUpdateError,
     UserNotFoundError,
+    ResourceNotFoundError,
     DuplicateEmailError,
     DuplicateUsernameError,
     ValidationError,
@@ -84,10 +85,13 @@ class UserService:
             logger.warning(f"last_seen_at not updated for user {user.username}: {str(e)}")
 
     async def get_user_by_uuid(self, user_uuid: str) -> User:
-        """Get a user by UUID"""
+        """
+        Another member, by UUID (whose wishlist is asked). Unknown: a 404, not the 401 of UserNotFoundError,
+        which is about the session itself and would make the frontend refresh it, then say it expired.
+        """
         user = await self.repository.get_user_by_uuid(user_uuid)
         if not user:
-            raise UserNotFoundError(user_uuid)
+            raise ResourceNotFoundError("User", user_uuid)
         return user
 
     async def create_user(self, user_data: UserCreate) -> User:

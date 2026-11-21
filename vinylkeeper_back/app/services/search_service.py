@@ -264,20 +264,12 @@ class SearchService:
             ArtistMetadata: Detailed artist information
 
         Raises:
+            ValidationError: If the artist ID is not numeric
             ServerError: If artist not found or API communication fails
         """
-        if not artist_id or not artist_id.strip():
-            logger.error(f"Invalid artist_id provided: '{artist_id}'")
-            raise ServerError(
-                error_code=ErrorCode.INVALID_INPUT,
-                message="Invalid artist ID provided",
-                details={"artist_id": artist_id}
-            )
-
-        # Validate that artist_id is numeric
-        if not artist_id.isdigit():
-            logger.error(f"Non-numeric artist_id provided: '{artist_id}'")
-            raise ServerError(
+        # A Discogs id is digits only: anything else is a mistake of the client (400), not of the server
+        if not artist_id or not artist_id.isdigit():
+            raise ValidationError(
                 error_code=ErrorCode.INVALID_INPUT,
                 message="Artist ID must be numeric",
                 details={"artist_id": artist_id}
@@ -388,20 +380,12 @@ class SearchService:
             AlbumMetadata: Detailed album information
 
         Raises:
+            ValidationError: If the album ID is not numeric
             ServerError: If album not found or API communication fails
         """
-        if not album_id or not album_id.strip():
-            logger.error(f"Invalid album_id provided: '{album_id}'")
-            raise ServerError(
-                error_code=ErrorCode.INVALID_INPUT,
-                message="Invalid album ID provided",
-                details={"album_id": album_id}
-            )
-
-        # Validate that album_id is numeric
-        if not album_id.isdigit():
-            logger.error(f"Non-numeric album_id provided: '{album_id}'")
-            raise ServerError(
+        # A Discogs id is digits only: anything else is a mistake of the client (400), not of the server
+        if not album_id or not album_id.isdigit():
+            raise ValidationError(
                 error_code=ErrorCode.INVALID_INPUT,
                 message="Album ID must be numeric",
                 details={"album_id": album_id}

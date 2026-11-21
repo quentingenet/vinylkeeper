@@ -39,7 +39,7 @@ from app.services.album_enrichment_service import (
 )
 from app.repositories.discogs_usage_repository import DiscogsUsageRepository
 from app.repositories.mood_assignment_repository import MoodAssignmentRepository
-from app.services.album_price_service import AlbumPriceService
+from app.services.album_price_service import AlbumPriceService, price_lock
 from app.services.discogs_usage_service import DiscogsSource, DiscogsUsageService, discogs_usage
 from app.services.mood_assignment_service import MoodAssignmentService
 
@@ -100,9 +100,14 @@ async def run(args: argparse.Namespace) -> EnrichmentReport:
             if args.refresh_editions_before:
                 await service.refresh_stale_editions(args.refresh_editions_before, args.limit, report=report)
             if not args.skip_prices:
-                # Re-evaluations asked from the dashboard and left by a stopped or rate-limited run
-                price_client = DiscogsClient(http_client, source=DiscogsSource.PRICE)
-                await AlbumPriceService(AlbumPriceRepository(db), price_client).work_requests(report=report)
+                # Re-evaluations asked from the dashboard and left by a stopped or rate-limited run. Under the
+                # lock of the button: a run of the button in progress is not doubled, it finishes the queue itself
+                async with price_lock() as acquired:
+                    if acquired:
+                        price_client = DiscogsClient(http_client, source=DiscogsSource.PRICE)
+                        await AlbumPriceService(AlbumPriceRepository(db), price_client).work_requests(report=report)
+                    else:
+                        print("Prices skipped: a re-evaluation of the dashboard is working through the queue")
         # The counts of the admin gauge are kept a month
         purged = await DiscogsUsageService(DiscogsUsageRepository(db)).purge()
         await db.commit()

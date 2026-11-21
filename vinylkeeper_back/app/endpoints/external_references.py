@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Path, Response
 from fastapi import status as http_status
 from app.utils.auth_utils.auth import get_current_user
@@ -149,7 +150,8 @@ async def replace_pressing(
 async def get_user_wishlist_paginated(
     page: int = Query(1, gt=0, description="Page number"),
     limit: int = Query(8, gt=0, le=50, description="Number of items per page"),
-    user_uuid: Optional[str] = Query(
+    # A UUID: anything else is refused (422) before the database is asked
+    user_uuid: Optional[UUID] = Query(
         None, description="User UUID to get wishlist for (defaults to current user)"),
     search: Optional[str] = Query(None, max_length=255, description="Search by title"),
     sort_order: str = Query("newest", pattern="^(newest|oldest)$", description="Sort order"),
@@ -166,7 +168,7 @@ async def get_user_wishlist_paginated(
     """
     if user_uuid:
         # Convert UUID to user_id
-        target_user = await user_service.get_user_by_uuid(user_uuid)
+        target_user = await user_service.get_user_by_uuid(str(user_uuid))
         target_user_id = target_user.id
 
         # Check if target user has at least one public collection
@@ -177,7 +179,7 @@ async def get_user_wishlist_paginated(
                 raise ForbiddenError(
                     error_code=ErrorCode.FORBIDDEN_OWNER,
                     message="You don't have permission to view this wishlist (user has no public collections)",
-                    details={"user_uuid": user_uuid}
+                    details={"user_uuid": str(user_uuid)}
                 )
     else:
         target_user_id = current_user.id

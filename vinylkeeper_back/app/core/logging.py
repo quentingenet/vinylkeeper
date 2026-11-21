@@ -69,7 +69,8 @@ log_config = {
         },
         "app": {
             "level": app_level,
-            "handlers": ["console", "file"],
+            # error_file too: the errors of the app itself go to errors_api_vk.log, not only the libraries' ones
+            "handlers": ["console", "file", "error_file"],
             "propagate": False,
         },
         "httpx": {

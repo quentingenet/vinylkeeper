@@ -1,9 +1,11 @@
 """
 Discogs suggested prices of the releases kept in collections, and the daily EUR exchange rates.
-Both run in the nightly enrichment job (python -m app.cli.enrich_albums), never in a request.
+Prices are fetched on demand only: the re-evaluate button of the dashboard queues them, and its
+background task (run_price_requests) or the nightly job works through the queue, under one lock.
 """
+from contextlib import asynccontextmanager
 from datetime import date
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Optional
 
 import httpx
 from sqlalchemy import func, select
@@ -123,25 +125,36 @@ async def refresh_exchange_rates(repository: AlbumPriceRepository, http_client: 
     return True
 
 
+@asynccontextmanager
+async def price_lock() -> AsyncIterator[bool]:
+    """
+    The price lock of the whole server, held while the block runs: True when taken, False when another
+    run (the re-evaluate button, the nightly job) already works through the queue. A single run then
+    spends the Discogs quota, whatever the number of users and processes.
+    """
+    async with engine.connect() as lock_connection:
+        if not (await lock_connection.execute(select(func.pg_try_advisory_lock(PRICE_LOCK_KEY)))).scalar():
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            await lock_connection.execute(select(func.pg_advisory_unlock(PRICE_LOCK_KEY)))
+
+
 async def run_price_requests() -> None:
-    """
-    Background task of the re-evaluate button: works through the queue while holding the price
-    lock, so a single run spends the Discogs quota whatever the number of users. Never raises.
-    """
+    """Background task of the re-evaluate button: works through the queue under the price lock. Never raises."""
     try:
-        async with engine.connect() as lock_connection:
-            if not (await lock_connection.execute(select(func.pg_try_advisory_lock(PRICE_LOCK_KEY)))).scalar():
+        async with price_lock() as acquired:
+            if not acquired:
                 return  # Another run works through the same queue
-            try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as http_client:
-                    async with AsyncSessionLocal() as db:
-                        repository = AlbumPriceRepository(db)
-                        # A re-evaluation shows today's dollar too: one call, the previous rate stays on failure
-                        await refresh_exchange_rates(repository, http_client)
-                        client = DiscogsClient(http_client, source=DiscogsSource.PRICE,
-                                               min_interval=REQUEST_MIN_INTERVAL_SECONDS)
-                        await AlbumPriceService(repository, client).work_requests()
-            finally:
-                await lock_connection.execute(select(func.pg_advisory_unlock(PRICE_LOCK_KEY)))
+            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as http_client:
+                async with AsyncSessionLocal() as db:
+                    repository = AlbumPriceRepository(db)
+                    # A re-evaluation shows today's dollar too: one call, the previous rate stays on failure
+                    await refresh_exchange_rates(repository, http_client)
+                    client = DiscogsClient(http_client, source=DiscogsSource.PRICE,
+                                           min_interval=REQUEST_MIN_INTERVAL_SECONDS)
+                    await AlbumPriceService(repository, client).work_requests()
     except Exception as e:
         logger.error(f"Album price requests run failed: {str(e)}", exc_info=True)

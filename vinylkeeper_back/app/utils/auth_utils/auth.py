@@ -258,8 +258,9 @@ def verify_csrf(request: Request) -> None:
 
     cookie_token = request.cookies.get("csrf_token")
     header_token = request.headers.get("x-csrf-token")
+    # Compared as bytes: compare_digest refuses a str that is not ASCII (a forged header), which would be a 500
     valid = bool(cookie_token) and bool(header_token) and secrets.compare_digest(
-        cookie_token, header_token
+        cookie_token.encode(), header_token.encode()
     )
 
     if not valid:

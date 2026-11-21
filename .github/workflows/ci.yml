@@ -48,7 +48,6 @@ jobs:
       SMTP_FROM_ADDRESS: ci@example.com
       FRONTEND_URL: http://localhost:5173
       ALLOWED_ORIGINS: http://localhost:5173
-      DEFAULT_ROLE_ID: "2"
       DISCOGS_API_URL: https://api.discogs.com
       DISCOGS_API_KEY: ci
       USER_AGENT: VinylKeeperCI/1.0

@@ -1,9 +1,11 @@
 """Counting of the calls made to Discogs and the gauge built from the counts (no database, no network)."""
+import asyncio
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
+import pytest
 
 import app.services.discogs_usage_service as module
 from app.repositories.discogs_usage_repository import UsageCounts
@@ -75,6 +77,37 @@ class TestRecorder:
             await recorder.flush()
 
         assert recorder.take() == {(HOUR, "oauth"): UsageCounts(calls=1)}
+
+    async def test_a_write_cancelled_at_shutdown_keeps_the_counts(self):
+        """The writer is cancelled at shutdown, maybe mid-write: the last flush must still have the counts."""
+        recorder = DiscogsUsageRecorder()
+        recorder.record(DiscogsSource.OAUTH, answer(), now=NOW)
+        session = AsyncMock()
+        session.__aenter__.return_value = session
+        repository = MagicMock(add=AsyncMock(side_effect=asyncio.CancelledError()))
+
+        with patch.object(module, "AsyncSessionLocal", return_value=session), \
+                patch.object(module, "DiscogsUsageRepository", return_value=repository):
+            with pytest.raises(asyncio.CancelledError):
+                await recorder.flush()
+
+        assert recorder.take() == {(HOUR, "oauth"): UsageCounts(calls=1)}
+
+    async def test_counts_committed_are_not_given_back(self):
+        """Cancelled once the commit is done (closing the session): given back, they would count twice."""
+        recorder = DiscogsUsageRecorder()
+        recorder.record(DiscogsSource.OAUTH, answer(), now=NOW)
+        session = AsyncMock()
+        session.__aenter__.return_value = session
+        session.__aexit__.side_effect = asyncio.CancelledError()
+        repository = MagicMock(add=AsyncMock())
+
+        with patch.object(module, "AsyncSessionLocal", return_value=session), \
+                patch.object(module, "DiscogsUsageRepository", return_value=repository):
+            with pytest.raises(asyncio.CancelledError):
+                await recorder.flush()
+
+        assert recorder.take() == {}
 
 
 def row(hour: datetime, source: str, calls: int, rate_limited: int = 0, min_remaining: int | None = None):

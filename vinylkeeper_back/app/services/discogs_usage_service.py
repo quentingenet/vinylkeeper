@@ -80,17 +80,25 @@ class DiscogsUsageRecorder:
                                          else min(current.min_remaining, unsaved.min_remaining))
 
     async def flush(self) -> None:
-        """Writes the counts. Never raises: the counts stay for the next write when the database fails."""
+        """
+        Writes the counts. Never raises: the counts stay for the next write when the database fails, and
+        when the process stops in the middle of a write (cancelled), so the last flush at shutdown has them.
+        """
         counts = self.take()
         if not counts:
             return
+        written = False
         try:
             async with AsyncSessionLocal() as db:
                 await DiscogsUsageRepository(db).add(counts)
                 await db.commit()
+                # Committed: given back after this, they would be counted twice
+                written = True
         except Exception as e:
             logger.warning(f"Discogs usage not written, kept for the next write: {e}")
-            self.give_back(counts)
+        finally:
+            if not written:
+                self.give_back(counts)
 
     async def run(self) -> None:
         """Writes the counts once per FLUSH_INTERVAL_SECONDS until cancelled."""

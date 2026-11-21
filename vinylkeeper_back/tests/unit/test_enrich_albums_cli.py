@@ -1,4 +1,5 @@
 """CLI wiring for the album enrichment backfill (no database, no network)."""
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,9 +16,16 @@ def prices():
     repository.count_requests = AsyncMock(return_value=0)
     service = MagicMock()
     service.work_requests = AsyncMock()
+    lock = MagicMock(acquired=True)
+
+    @asynccontextmanager
+    async def fake_price_lock():
+        yield lock.acquired
+
     with patch.object(cli, "AlbumPriceRepository", return_value=repository), \
-            patch.object(cli, "AlbumPriceService", return_value=service):
-        yield MagicMock(repository=repository, service=service)
+            patch.object(cli, "AlbumPriceService", return_value=service), \
+            patch.object(cli, "price_lock", fake_price_lock):
+        yield MagicMock(repository=repository, service=service, lock=lock)
 
 
 def patched_session():
@@ -183,6 +191,22 @@ async def test_only_the_queued_re_evaluations_are_priced_unless_skipped(prices):
         prices.service.work_requests.reset_mock()
         await cli.run(cli.parse_args(["--skip-prices"]))
         prices.service.work_requests.assert_not_called()
+
+
+async def test_the_queue_is_left_to_a_re_evaluation_already_running(prices, capsys):
+    """The button holds the price lock: the nightly job does not price the same queue a second time."""
+    service = MagicMock()
+    for name in ("enrich_pending_releases", "enrich_pending_masters", "enrich_pending_editions"):
+        setattr(service, name, AsyncMock())
+    prices.lock.acquired = False
+
+    with patched_session(), \
+            patch.object(cli, "AlbumEnrichmentRepository"), \
+            patch.object(cli, "AlbumEnrichmentService", return_value=service):
+        await cli.run(cli.parse_args([]))
+
+    prices.service.work_requests.assert_not_called()
+    assert "Prices skipped" in capsys.readouterr().out
 
 
 async def test_refresh_editions_only_when_asked():

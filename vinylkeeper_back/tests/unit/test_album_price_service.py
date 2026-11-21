@@ -1,10 +1,12 @@
 """Discogs suggested prices, the re-evaluation queue and exchange rates (no network, no database)."""
 from datetime import date
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+
+import app.services.album_price_service as price_module
 
 from app.services.album_enrichment_service import (
     DiscogsAccessDeniedError,
@@ -113,3 +115,43 @@ class TestExchangeRates:
             assert await refresh_exchange_rates(repository, client) is False
 
         repository.save_rate.assert_not_called()
+
+
+def lock_engine(taken: bool) -> tuple[MagicMock, AsyncMock]:
+    """An engine whose connection answers pg_try_advisory_lock with `taken`."""
+    connection = AsyncMock()
+    connection.__aenter__.return_value = connection
+    connection.execute.return_value = MagicMock(scalar=MagicMock(return_value=taken))
+    return MagicMock(connect=MagicMock(return_value=connection)), connection
+
+
+class TestPriceLock:
+    async def test_taken_then_released_after_the_block(self):
+        engine, connection = lock_engine(True)
+        with patch.object(price_module, "engine", engine):
+            async with price_module.price_lock() as acquired:
+                assert acquired is True
+                assert connection.execute.await_count == 1
+        assert connection.execute.await_count == 2  # pg_advisory_unlock
+
+    async def test_held_elsewhere_is_not_released_by_us(self):
+        engine, connection = lock_engine(False)
+        with patch.object(price_module, "engine", engine):
+            async with price_module.price_lock() as acquired:
+                assert acquired is False
+        assert connection.execute.await_count == 1
+
+    async def test_released_when_the_block_fails(self):
+        engine, connection = lock_engine(True)
+        with patch.object(price_module, "engine", engine):
+            with pytest.raises(RuntimeError):
+                async with price_module.price_lock():
+                    raise RuntimeError("Discogs down")
+        assert connection.execute.await_count == 2
+
+    async def test_the_button_does_nothing_while_another_run_holds_the_lock(self):
+        engine, _ = lock_engine(False)
+        with patch.object(price_module, "engine", engine), \
+                patch.object(price_module, "AlbumPriceService") as service:
+            await price_module.run_price_requests()
+        service.assert_not_called()

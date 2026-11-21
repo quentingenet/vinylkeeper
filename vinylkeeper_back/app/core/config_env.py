@@ -47,9 +47,6 @@ class Settings(BaseSettings):
     # Allowed origins
     ALLOWED_ORIGINS: str
 
-    # Default role id
-    DEFAULT_ROLE_ID: int
-
     # external API
     DISCOGS_API_URL: str
     DISCOGS_API_KEY: str
