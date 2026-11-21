@@ -133,6 +133,9 @@
     "owner": "by {{name}}",
     "privateNow": "Private now",
     "resolved": "Report resolved, with the other open reports of this collection.",
+    "makePrivate": "Make private",
+    "madePrivate": "Collection made private, its open reports are resolved.",
+    "makePrivateFailed": "The collection could not be made private.",
     "reasons": {
       "offensive": "Offensive",
       "spam": "Spam",

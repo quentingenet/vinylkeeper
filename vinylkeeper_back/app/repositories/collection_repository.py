@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, func, and_, case, insert, literal
+from sqlalchemy import select, func, and_, case, insert, literal, update
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.collection_model import Collection
@@ -164,6 +164,18 @@ class CollectionRepository(TransactionalMixin):
             logger.error(
                 f"Database integrity error updating collection: {str(e)}", exc_info=True)
             raise DuplicateFieldError("name", collection.name)
+
+    async def make_private(self, collection_id: int) -> bool:
+        """
+        Take a collection out of the community and of its share link, without loading it (no commit).
+        False when it is already private or gone.
+        """
+        result = await self.db.execute(
+            update(Collection)
+            .where(Collection.id == collection_id, Collection.is_public.is_(True))
+            .values(is_public=False)
+        )
+        return result.rowcount > 0
 
     async def delete(self, collection: Collection) -> bool:
         """Delete a collection without committing (transaction managed by service)."""

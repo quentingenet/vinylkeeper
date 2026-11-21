@@ -137,6 +137,9 @@
     "owner": "von {{name}}",
     "privateNow": "Jetzt privat",
     "resolved": "Meldung erledigt, zusammen mit den anderen offenen Meldungen dieser Sammlung.",
+    "makePrivate": "Privat machen",
+    "madePrivate": "Sammlung auf privat gesetzt, ihre offenen Meldungen sind erledigt.",
+    "makePrivateFailed": "Die Sammlung konnte nicht auf privat gesetzt werden.",
     "reasons": {
       "offensive": "Anstößig",
       "spam": "Spam",

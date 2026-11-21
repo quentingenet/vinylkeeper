@@ -8,6 +8,7 @@ import type { CollectionReport, CollectionReportList } from "@services/AdminApiS
 
 const admin = vi.hoisted(() => ({
   getCollectionReports: vi.fn(), resolveCollectionReport: vi.fn(), dismissCollectionReport: vi.fn(),
+  makeReportedCollectionPrivate: vi.fn(),
 }));
 vi.mock("@services/AdminApiService", () => ({ adminApiService: admin }));
 
@@ -68,6 +69,37 @@ describe("CollectionReportsPanel", () => {
     await waitFor(() => expect(admin.dismissCollectionReport).toHaveBeenCalledWith(7));
   });
 
+  it("makes the reported collection private", async () => {
+    admin.makeReportedCollectionPrivate.mockResolvedValue({
+      ...report, status: "resolved", collection: { ...report.collection, is_public: false },
+    });
+    renderPanel();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Make private" }));
+
+    expect(await screen.findByText("Collection made private, its open reports are resolved.")).toBeInTheDocument();
+    expect(admin.makeReportedCollectionPrivate).toHaveBeenCalledWith(7);
+  });
+
+  it("says when the collection could not be made private", async () => {
+    admin.makeReportedCollectionPrivate.mockRejectedValue(new Error("network"));
+    renderPanel();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Make private" }));
+
+    expect(await screen.findByText("The collection could not be made private.")).toBeInTheDocument();
+  });
+
+  it("an open report of a collection already private offers no way to make it private", async () => {
+    admin.getCollectionReports.mockResolvedValue(list([
+      { ...report, collection: { ...report.collection, is_public: false } },
+    ]));
+    renderPanel();
+
+    expect(await screen.findByRole("button", { name: "Resolve" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Make private" })).not.toBeInTheDocument();
+  });
+
   it("a collection made private since is not linked, and a closed report has no action", async () => {
     admin.getCollectionReports.mockResolvedValue(list([
       { ...report, status: "resolved", collection: { ...report.collection, is_public: false } },
@@ -77,6 +109,7 @@ describe("CollectionReportsPanel", () => {
     expect(await screen.findByText("Private now")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Bob's crates" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Resolve" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Make private" })).not.toBeInTheDocument();
   });
 
   it("says when nothing is open", async () => {

@@ -8,6 +8,7 @@ from fastapi import BackgroundTasks
 
 from app.core.exceptions import ErrorCode, ResourceNotFoundError, ValidationError
 from app.core.logging import log_activity
+from app.core.transaction import transaction_context
 from app.mails.client_mail import MailSubject
 from app.models.collection_report_model import CollectionReport
 from app.models.user_model import User
@@ -90,3 +91,16 @@ class CollectionReportService(ReportService[CollectionReport]):
     async def dismiss(self, report_id: int, admin: User) -> CollectionReportResponse:
         """Nothing was wrong: only this report is closed."""
         return report_response(await self.dismiss_report(report_id, admin))
+
+    async def make_private(self, report_id: int, admin: User) -> CollectionReportResponse:
+        """
+        The abuse is real: the collection leaves the community and its share link stops working at once.
+        Every open report of it is resolved. Its owner keeps it, and can make it public again.
+        """
+        report = await self.open_report(report_id)
+        async with transaction_context(self.repository.db):
+            await self.collection_repository.make_private(report.collection_id)
+            await self.repository.close_open_for_target(report.collection_id, admin.id)
+        log_activity(f"admin {admin.username}",
+                     f"made reported collection #{report.collection_id} private (report #{report_id})")
+        return report_response(await self.reloaded(report_id))

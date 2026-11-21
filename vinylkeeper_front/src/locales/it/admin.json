@@ -137,6 +137,9 @@
     "owner": "di {{name}}",
     "privateNow": "Ora privata",
     "resolved": "Segnalazione risolta, con le altre segnalazioni aperte di questa collezione.",
+    "makePrivate": "Rendi privata",
+    "madePrivate": "Collezione resa privata, le sue segnalazioni aperte sono risolte.",
+    "makePrivateFailed": "Non è stato possibile rendere privata la collezione.",
     "reasons": {
       "offensive": "Offensivo",
       "spam": "Spam",

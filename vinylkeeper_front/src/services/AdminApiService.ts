@@ -212,6 +212,11 @@ class AdminApiService extends BaseApiService {
     return this.post<CollectionReport>(`/vk-admin/collection-reports/${reportId}/dismiss`);
   }
 
+  /** The abuse is real: the collection becomes private, its open reports are resolved */
+  async makeReportedCollectionPrivate(reportId: number): Promise<CollectionReport> {
+    return this.post<CollectionReport>(`/vk-admin/collection-reports/${reportId}/make-private`);
+  }
+
   /** Reports of wrong information on Atlas spots, open ones first */
   async getPlaceReports(status: PlaceReportStatus | "all", page = 1, limit = 20): Promise<PlaceReportList> {
     return this.get<PlaceReportList>(`/vk-admin/place-reports?status=${status}&page=${page}&limit=${limit}`);

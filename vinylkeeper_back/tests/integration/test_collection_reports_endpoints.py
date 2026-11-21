@@ -68,6 +68,7 @@ class TestAdmin:
         ("get", "/api/vk-admin/collection-reports"),
         ("post", "/api/vk-admin/collection-reports/7/resolve"),
         ("post", "/api/vk-admin/collection-reports/7/dismiss"),
+        ("post", "/api/vk-admin/collection-reports/7/make-private"),
     ])
     async def test_a_member_is_refused(self, member_client, service, method, url):
         response = await getattr(member_client, method)(url)
@@ -95,3 +96,13 @@ class TestAdmin:
         assert (resolved.json()["status"], dismissed.json()["status"]) == ("resolved", "dismissed")
         service.resolve.assert_awaited_once_with(7, mock_user)
         service.dismiss.assert_awaited_once_with(7, mock_user)
+
+    async def test_the_admin_makes_the_reported_collection_private(self, admin_client, service, mock_user):
+        service.make_private.return_value = REPORT.model_copy(update={
+            "status": "resolved", "collection": COLLECTION.model_copy(update={"is_public": False})})
+
+        response = await admin_client.post("/api/vk-admin/collection-reports/7/make-private")
+
+        assert response.status_code == 200
+        assert (response.json()["status"], response.json()["collection"]["is_public"]) == ("resolved", False)
+        service.make_private.assert_awaited_once_with(7, mock_user)

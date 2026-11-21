@@ -160,3 +160,30 @@ class TestAdmin:
         assert [statuses[r.id] for r in on_collection] == ["resolved", "resolved"]
         with pytest.raises(ValidationError, match="already resolved"):
             await service.resolve(on_collection[1].id, admin)
+
+    async def test_making_the_collection_private_resolves_its_open_reports(self, real_session):
+        admin = await make_test_user(real_session)
+        first, second = await make_test_user(real_session), await make_test_user(real_session)
+        _, collection = await public_collection_of_someone_else(real_session)
+        service = make_service(real_session)
+        for member in (first, second):
+            await service.report_collection(
+                member, collection.id, CollectionReportCreate(reason="offensive"), BackgroundTasks())
+        reports = [r for r in (await service.list_reports("open", 1, 50)).items if r.collection.id == collection.id]
+
+        made_private = await service.make_private(reports[0].id, admin)
+
+        assert (made_private.status, made_private.collection.is_public) == ("resolved", False)
+        is_public = (await real_session.execute(
+            text("SELECT is_public FROM collections WHERE id = :id"), {"id": collection.id})).scalar_one()
+        assert is_public is False
+        statuses = {r.id: r.status for r in (await service.list_reports(None, 1, 50)).items
+                    if r.collection.id == collection.id}
+        assert set(statuses.values()) == {"resolved"}
+        # A closed report has no action left, and a private collection cannot be reported again
+        with pytest.raises(ValidationError, match="already resolved"):
+            await service.make_private(reports[1].id, admin)
+        with pytest.raises(ResourceNotFoundError):
+            await service.report_collection(
+                await make_test_user(real_session), collection.id, CollectionReportCreate(reason="spam"),
+                BackgroundTasks())

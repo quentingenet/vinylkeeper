@@ -211,6 +211,17 @@ async def dismiss_collection_report(
     return report
 
 
+@router.post("/collection-reports/{report_id}/make-private", response_model=CollectionReportResponse,
+             status_code=status.HTTP_200_OK)
+async def make_reported_collection_private(
+    report_id: int = Path(..., gt=0),
+    user: User = Depends(require_admin),
+    service: CollectionReportService = Depends(get_collection_report_service),
+):
+    """The abuse is real: the collection becomes private, its open reports are resolved (admin only)"""
+    return await service.make_private(report_id, user)
+
+
 @router.patch("/places/{place_id}", response_model=ReportedPlace, status_code=status.HTTP_200_OK)
 async def update_place_as_admin(
     place_id: int = Path(..., gt=0),

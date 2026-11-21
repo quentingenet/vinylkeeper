@@ -137,6 +137,9 @@
     "owner": "de {{name}}",
     "privateNow": "Ahora privada",
     "resolved": "Denuncia resuelta, con las demás denuncias abiertas de esta colección.",
+    "makePrivate": "Hacer privada",
+    "madePrivate": "Colección hecha privada, sus denuncias abiertas están resueltas.",
+    "makePrivateFailed": "No se pudo hacer privada la colección.",
     "reasons": {
       "offensive": "Ofensivo",
       "spam": "Spam",

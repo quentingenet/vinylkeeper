@@ -29,6 +29,15 @@ export default function CollectionReportsPanel() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.moderation.allCollectionReports() });
     succeeded(message);
   };
+  const makePrivate = useMutation({
+    mutationFn: (reportId: number) => adminApiService.makeReportedCollectionPrivate(reportId),
+    onSuccess: () => {
+      // The collection leaves the community lists too
+      void queryClient.invalidateQueries({ queryKey: queryKeys.collections.public.all() });
+      done(t("collectionReports.madePrivate"));
+    },
+    onError: failed(t("collectionReports.makePrivateFailed")),
+  });
   const resolve = useMutation({
     mutationFn: (reportId: number) => adminApiService.resolveCollectionReport(reportId),
     onSuccess: () => done(t("collectionReports.resolved")),
@@ -39,7 +48,7 @@ export default function CollectionReportsPanel() {
     onSuccess: () => done(t("reports.dismissed")),
     onError: failed(t("reports.dismissFailed")),
   });
-  const busy = resolve.isPending || dismiss.isPending;
+  const busy = resolve.isPending || dismiss.isPending || makePrivate.isPending;
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -89,6 +98,17 @@ export default function CollectionReportsPanel() {
                 <Button size="small" onClick={() => dismiss.mutate(report.id)} disabled={busy}>
                   {t("reports.dismiss")}
                 </Button>
+                {report.collection.is_public && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    onClick={() => makePrivate.mutate(report.id)}
+                    disabled={busy}
+                  >
+                    {t("collectionReports.makePrivate")}
+                  </Button>
+                )}
               </Box>
             )}
           </>
